@@ -1,0 +1,1359 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NATS Driver Registry</title>
+
+  <style>
+    :root{
+      --summer:#facc15;
+      --autumn:#f97316;
+      --winter:#0ea5e9;
+      --spring:#22c55e;
+
+      --bg: var(--summer);
+      --panel-bg:#ffffff;
+      --ink:#111827;
+      --muted:#6b7280;
+
+      --border-soft: rgba(15,23,42,0.12);
+      --border-strong: rgba(15,23,42,0.35);
+
+      --shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05);
+      --shadow-strong: 0 30px 90px rgba(15,23,42,0.30), 0 0 0 1px rgba(15,23,42,0.18);
+
+      --radius:0px;
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+
+    body{
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      padding: 24px 18px;
+      min-height: 100vh;
+    }
+
+    .wrap{ width:min(1180px, 100%); margin: 0 auto; position:relative; }
+
+    .shell{
+      position: relative;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-strong);
+      border: 1px solid var(--border-strong);
+      padding: 22px 22px 20px;
+      overflow: hidden;
+    }
+    .shell::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(135deg,
+          rgba(255,255,255,0.18) 0%,
+          rgba(0,0,0,0.04) 55%,
+          rgba(255,255,255,0.12) 100%),
+        repeating-linear-gradient(135deg,
+          rgba(0,0,0,0.030) 0px,
+          rgba(0,0,0,0.030) 1px,
+          rgba(0,0,0,0.000) 1px,
+          rgba(0,0,0,0.000) 7px);
+      opacity: 0.35;
+      mix-blend-mode: multiply;
+    }
+
+    .content{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+
+    .header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:18px;
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 12px;
+    }
+
+    .kicker{
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .title{
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-top: 6px;
+      color: var(--ink);
+    }
+    .sub{
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 6px;
+      max-width: 70ch;
+      line-height: 1.6;
+    }
+    .header-right{
+      text-align:right;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .tabs{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+    }
+
+    .tab{
+      border:1px solid var(--border-soft);
+      background:#fff;
+      border-radius: var(--radius);
+      padding: 10px 12px 9px;
+      box-shadow: 0 14px 30px rgba(15,23,42,0.09);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor:pointer;
+      color: var(--ink);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab::after{
+      content:"";
+      position:absolute;
+      inset:auto 0 0 0;
+      height: 3px;
+      background: transparent;
+      opacity: .95;
+    }
+    .tab[data-tab="portal"]::after{ background: var(--winter); }
+    .tab[data-tab="register"]::after{ background: var(--spring); }
+
+    .tab.active{
+      border-color: rgba(15,23,42,0.55);
+      box-shadow: 0 18px 40px rgba(15,23,42,0.12);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .panel{
+      background: var(--panel-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 14px 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .panelTitle{
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    .accentBar{ width: 4px; height: 14px; background: var(--summer); display:inline-block; }
+
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    label{
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 900;
+      display:block;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea{
+      width:100%;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      padding: 10px 10px;
+      font-size: 13px;
+      background: #f9fafb;
+      color: var(--ink);
+      outline: none;
+    }
+    textarea{ min-height: 90px; resize: vertical; }
+
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btnbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+    .btn{
+      border: 1px solid rgba(15,23,42,0.65);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--ink);
+      padding: 10px 14px 9px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor:pointer;
+      position: relative;
+      overflow:hidden;
+    }
+    .btn.primary{
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+    .btn:disabled{ opacity: .45; cursor: default; }
+
+    /* Button loading state */
+    .btn.loading{
+      pointer-events:none;
+      opacity: 0.92;
+    }
+    .btn.loading::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0.00) 0%,
+        rgba(255,255,255,0.10) 40%,
+        rgba(255,255,255,0.00) 80%);
+      transform: translateX(-110%);
+      animation: btnSweep 0.95s linear infinite;
+      mix-blend-mode: screen;
+    }
+    @keyframes btnSweep{
+      to{ transform: translateX(110%); }
+    }
+
+    /* Inline spinner */
+    .spinner{
+      width: 16px; height: 16px;
+      border: 2px solid rgba(15,23,42,0.18);
+      border-top-color: rgba(15,23,42,0.72);
+      border-radius: 999px;
+      animation: spin 0.75s linear infinite;
+      flex: 0 0 auto;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+
+    .toast{
+      border: 1px solid var(--border-soft);
+      background: #fff;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .toast.good{ border-left: 4px solid var(--spring); }
+    .toast.bad{ border-left: 4px solid #ef4444; }
+
+    /* Portal tabs */
+    .portalTabs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      border: 1px solid var(--border-soft);
+      background:#fff;
+      padding: 10px;
+      border-radius: var(--radius);
+      box-shadow: 0 14px 30px rgba(15,23,42,0.09);
+    }
+
+    .ptab{
+      border: 1px solid var(--border-soft);
+      background:#fff;
+      border-radius: var(--radius);
+      padding: 10px 12px 9px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor:pointer;
+      color: var(--ink);
+      position: relative;
+      overflow:hidden;
+      min-width: 160px;
+      transition: transform .12s ease;
+    }
+    .ptab:active{ transform: translateY(1px); }
+
+    .ptab .tabBar{
+      position:absolute;
+      left:0; right:0; top:0;
+      height:3px;
+      background: transparent;
+      opacity: 0.95;
+    }
+    .ptab[data-accent="summer"] .tabBar{ background: var(--summer); }
+    .ptab[data-accent="autumn"] .tabBar{ background: var(--autumn); }
+    .ptab[data-accent="winter"] .tabBar{ background: var(--winter); }
+    .ptab[data-accent="spring"] .tabBar{ background: var(--spring); }
+
+    /* Glow accents on active portal tabs */
+    .ptab.active{
+      border-color: rgba(15,23,42,0.55);
+      background: rgba(15,23,42,0.02);
+      box-shadow:
+        0 18px 40px rgba(15,23,42,0.10),
+        0 0 0 1px rgba(15,23,42,0.05);
+    }
+    .ptab.active[data-accent="summer"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(250,204,21,0.35); }
+    .ptab.active[data-accent="autumn"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(249,115,22,0.35); }
+    .ptab.active[data-accent="winter"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(14,165,233,0.35); }
+    .ptab.active[data-accent="spring"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(34,197,94,0.35); }
+
+    .portalSection{ display:none; }
+    .portalSection.active{ display:block; }
+
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border-soft);
+    }
+    .table th, .table td{
+      padding: 8px 8px;
+      border-bottom: 1px solid var(--border-soft);
+      font-size: 12px;
+      text-align:left;
+      vertical-align: top;
+    }
+    .table th{
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 900;
+      background: #f9fafb;
+    }
+
+    /* Portal Status card */
+    .statusCard{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding: 12px;
+      border: 1px solid var(--border-soft);
+      background: #f9fafb;
+    }
+    .statusTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .statusTitle{
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .statusChip{
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 900;
+      border: 1px solid var(--border-soft);
+      padding: 8px 10px 7px;
+      background: #fff;
+      white-space: nowrap;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .statusChip.ok{ border-color: rgba(34,197,94,0.55); box-shadow: 0 0 18px rgba(34,197,94,0.22); }
+    .statusChip.wait{ border-color: rgba(14,165,233,0.55); box-shadow: 0 0 18px rgba(14,165,233,0.22); }
+    .statusChip.bad{ border-color: rgba(239,68,68,0.55); box-shadow: 0 0 18px rgba(239,68,68,0.18); }
+
+    .statusBody{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .kv{
+      border: 1px solid var(--border-soft);
+      background:#fff;
+      padding: 10px 10px 9px;
+    }
+    .kv .k{
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+    .kv .v{
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .statusNote{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .row{ grid-template-columns: 1fr; }
+      .header{ flex-direction:column; align-items:flex-start; }
+      .header-right{ text-align:left; }
+      .ptab{ min-width: 0; width: 100%; }
+      .statusBody{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <div class="content">
+
+        <div class="header">
+          <div>
+            <div class="kicker">ROK THE NATS</div>
+            <div class="title">Driver Registry & Portal</div>
+            <div class="sub">Log in with Driver ID or Email + PIN to access and maintain your profile. Registrations require admin approval.</div>
+          </div>
+          <div class="header-right">
+            <div>UI: F1-Style Database</div>
+            <div>Background: Summer Nats</div>
+            <div>Text: Black</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab" data-tab="portal" type="button">Login</button>
+          <button class="tab" data-tab="register" type="button">New Registration</button>
+        </div>
+
+        <div id="modeGate" class="panel" style="display:flex; flex-direction:column; gap:10px;">
+          <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Select an option to continue</div>
+          <div class="hint">
+            Choose <b>Login</b> if you already have a <b>Driver ID or Email</b> and <b>PIN</b>. Choose <b>New Registration</b> to create a new driver record.
+          </div>
+        </div>
+
+        <div id="bodyArea" style="display:none;">
+          <div id="toast"></div>
+
+          <!-- LOGIN / PORTAL -->
+          <div id="tab-portal" style="display:none;">
+            <div class="grid">
+              <div class="panel">
+                <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Driver Login</div>
+
+                <div class="row">
+                  <div>
+                    <label>Driver ID or Email</label>
+                    <input id="login_identifier" placeholder="UUID or guardian email address" autocomplete="username" />
+                  </div>
+                  <div>
+                    <label>PIN</label>
+                    <input id="login_pin" placeholder="6-digit PIN" inputmode="numeric" autocomplete="current-password" />
+                  </div>
+                </div>
+
+                <div class="btnbar">
+                  <button class="btn primary" id="btnLogin" type="button">Login</button>
+                  <button class="btn" id="btnLogout" type="button" disabled>Logout</button>
+                </div>
+
+                <div class="hint">If you lost your PIN, contact Admin for a reset. Profile access is PIN-gated.</div>
+              </div>
+
+              <div class="panel">
+                <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Portal Status</div>
+                <div id="portalStatus">
+                  <div class="statusCard">
+                    <div class="statusTop">
+                      <div class="statusTitle">Session</div>
+                      <div class="statusChip wait">Not logged in</div>
+                    </div>
+                    <div class="statusBody">
+                      <div class="kv">
+                        <div class="k">Driver</div>
+                        <div class="v">—</div>
+                      </div>
+                      <div class="kv">
+                        <div class="k">Class</div>
+                        <div class="v">—</div>
+                      </div>
+                      <div class="kv">
+                        <div class="k">Driver ID / Email</div>
+                        <div class="v">—</div>
+                      </div>
+                      <div class="kv">
+                        <div class="k">Status</div>
+                        <div class="v">—</div>
+                      </div>
+                    </div>
+                    <div class="statusNote">Log in to load your portal. You will see your profile, entrant details, and NAT entry controls.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Portal tabs -->
+            <div id="portalTabs" class="portalTabs" style="display:none; margin-top:14px;">
+              <button class="ptab active" data-ptab="driver" data-accent="summer" type="button"><span class="tabBar"></span>Driver</button>
+              <button class="ptab" data-ptab="contacts" data-accent="autumn" type="button"><span class="tabBar"></span>Entrant Details</button>
+              <button class="ptab" data-ptab="medical" data-accent="winter" type="button"><span class="tabBar"></span>Medical & Consent</button>
+              <button class="ptab" data-ptab="points" data-accent="spring" type="button"><span class="tabBar"></span>Points</button>
+              <button class="ptab" data-ptab="race" data-accent="winter" type="button"><span class="tabBar"></span>Race Entry</button>
+              <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Requests</button>
+            </div>
+
+            <!-- Portal sections -->
+            <div id="portalSections" style="display:none; margin-top:14px;">
+
+              <div class="portalSection active" data-psection="driver">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--summer)"></span>Driver Profile (Editable UI)</div>
+                  <div class="hint">UI-only stage: fields shown for editing. Backend save wiring will follow after design sign-off.</div>
+
+                  <div class="row">
+                    <div>
+                      <label>First name</label>
+                      <input id="p_first_name" />
+                    </div>
+                    <div>
+                      <label>Last name</label>
+                      <input id="p_last_name" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div>
+                      <label>Class</label>
+                      <input id="p_class" />
+                    </div>
+                    <div>
+                      <label>Race number</label>
+                      <input id="p_race_number" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div>
+                      <label>License number</label>
+                      <input id="p_license_number" />
+                    </div>
+                    <div>
+                      <label>Transponder number</label>
+                      <input id="p_transponder_number" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div>
+                      <label>Kart brand</label>
+                      <input id="p_kart_brand" />
+                    </div>
+                    <div>
+                      <label>Engine type</label>
+                      <input id="p_engine_type" />
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div>
+                      <label>Team name</label>
+                      <input id="p_team_name" />
+                    </div>
+                    <div>
+                      <label>Coach name</label>
+                      <input id="p_coach_name" />
+                    </div>
+                  </div>
+
+                  <div class="btnbar">
+                    <button class="btn primary" id="btnSaveProfile" type="button" disabled>Save Changes</button>
+                  </div>
+                  <div class="hint">Save is disabled until backend update routes are implemented.</div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="contacts">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--autumn)"></span>Entrant Details</div>
+                  <div id="p_contactsTable" class="hint">No data loaded.</div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="medical">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Medical & Consent</div>
+                  <div id="p_medicalBlock" class="hint">No data loaded.</div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="points">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Points</div>
+                  <div id="p_pointsTable" class="hint">No points loaded.</div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="race">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>NAT Entry</div>
+                  <div class="hint">UI-only stage. Next step: lock prefilled driver data and integrate Jotform metadata (race name / products) once you approve UX.</div>
+
+                  <div class="row">
+                    <div>
+                      <label>NATS event</label>
+                      <select id="race_nat">
+                        <option value="summer" selected>Summer Nats</option>
+                        <option value="autumn">Autumn Nats</option>
+                        <option value="winter">Winter Nats</option>
+                        <option value="spring">Spring Nats</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label>Entry type</label>
+                      <select id="race_entry_type">
+                        <option value="full" selected>Full NAT</option>
+                        <option value="sat">Saturday Only</option>
+                        <option value="sun">Sunday Only</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <label>Notes (optional)</label>
+                  <textarea id="race_notes" placeholder="Optional notes for admin / scrutineering / entrant info"></textarea>
+
+                  <div class="btnbar">
+                    <button class="btn primary" id="btnSubmitRace" type="button" disabled>Enter Race</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="requests">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--autumn)"></span>Contact Admin</div>
+                  <div class="hint">End-user friendly request (no JSON). This will email the admin once the backend wiring is enabled.</div>
+
+                  <div class="row">
+                    <div>
+                      <label>Your name</label>
+                      <input id="reqName" />
+                    </div>
+                    <div>
+                      <label>Your email</label>
+                      <input id="reqEmail" />
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div>
+                      <label>Your phone</label>
+                      <input id="reqPhone" />
+                    </div>
+                    <div>
+                      <label>Subject</label>
+                      <input id="reqSubject" placeholder="e.g. Update race number" />
+                    </div>
+                  </div>
+
+                  <label>Message</label>
+                  <textarea id="reqMessage" placeholder="Write your request clearly."></textarea>
+
+                  <div class="btnbar">
+                    <button class="btn primary" id="btnSendRequest" type="button" disabled>Send to Admin</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- REGISTER -->
+          <div id="tab-register" class="grid" style="display:none;">
+            <div class="panel">
+              <div class="panelTitle"><span class="accentBar" style="background:var(--summer)"></span>Driver Identity</div>
+              <div class="row">
+                <div>
+                  <label>First name *</label>
+                  <input id="r_first_name" />
+                </div>
+                <div>
+                  <label>Last name *</label>
+                  <input id="r_last_name" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Date of birth (YYYY-MM-DD) *</label>
+                  <input id="r_dob" placeholder="2012-05-14" />
+                </div>
+                <div>
+                  <label>Nationality</label>
+                  <input id="r_nat" placeholder="South African" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>ID / Passport (stored privately)</label>
+                  <input id="r_id" placeholder="Optional" />
+                </div>
+                <div>
+                  <label>Gender (optional)</label>
+                  <input id="r_gender" placeholder="Optional" />
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Competition</div>
+              <div class="row">
+                <div>
+                  <label>Championship</label>
+                  <input id="r_champ" value="ROK NATS 2026" />
+                </div>
+                <div>
+                  <label>Class *</label>
+                  <select id="r_class">
+                    <option value="">Select class</option>
+                    <option>Cadet</option>
+                    <option>Mini U10</option>
+                    <option>Mini</option>
+                    <option>OK-J</option>
+                    <option>OK-N</option>
+                    <option>Shifter</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Race number (optional now)</label>
+                  <input id="r_race" placeholder="e.g. 207" />
+                </div>
+                <div>
+                  <label>Team name</label>
+                  <input id="r_team" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Coach name</label>
+                  <input id="r_coach" />
+                </div>
+                <div>
+                  <label>Kart brand</label>
+                  <input id="r_kart" placeholder="Tony Kart" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Engine type</label>
+                  <input id="r_engine" placeholder="Pool engine / Owned / Sealed" />
+                </div>
+                <div>
+                  <label>Transponder number</label>
+                  <input id="r_transponder" />
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" style="grid-column:1 / -1;">
+              <div class="panelTitle"><span class="accentBar" style="background:var(--autumn)"></span>Entrant Details</div>
+              <div class="row">
+                <div>
+                  <label>Primary guardian full name *</label>
+                  <input id="c_name" />
+                </div>
+                <div>
+                  <label>Relationship *</label>
+                  <input id="c_rel" placeholder="Mother / Father / Guardian" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Email *</label>
+                  <input id="c_email" />
+                </div>
+                <div>
+                  <label>Mobile phone *</label>
+                  <input id="c_phone" placeholder="+27..." />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Emergency contact?</label>
+                  <select id="c_emergency">
+                    <option value="Y">Yes</option>
+                    <option value="N">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Consent contact?</label>
+                  <select id="c_consent">
+                    <option value="Y">Yes</option>
+                    <option value="N">No</option>
+                  </select>
+                </div>
+              </div>
+              <div class="hint">Additional contacts can be added later via Admin. This MVP captures at least one entrant/guardian contact.</div>
+            </div>
+
+            <div class="panel">
+              <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Medical & Consent</div>
+              <div class="row">
+                <div>
+                  <label>Allergies</label>
+                  <input id="m_allergies" />
+                </div>
+                <div>
+                  <label>Medical conditions</label>
+                  <input id="m_conditions" />
+                </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Medication</label>
+                  <input id="m_medication" />
+                </div>
+                <div>
+                  <label>Doctor phone</label>
+                  <input id="m_doctor_phone" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label>Data processing consent *</label>
+                  <select id="consent_signed">
+                    <option value="Y">I agree</option>
+                    <option value="N">I do not agree</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Media release (optional)</label>
+                  <select id="media_release_signed">
+                    <option value="N">No</option>
+                    <option value="Y">Yes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="hint">This system stores personal info of minors. Only operationally necessary data should be collected.</div>
+            </div>
+
+            <div class="panel">
+              <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Profile Photo (Admin-only)</div>
+              <label>Upload profile photo (JPG/PNG)</label>
+              <input id="photo" type="file" accept="image/*" />
+              <div class="hint">Photo is stored in Drive with Admin-only visibility. It is not publicly accessible.</div>
+            </div>
+
+            <div class="panel" style="grid-column:1 / -1;">
+              <div class="btnbar">
+                <button class="btn primary" id="btnRegister" type="button">Submit Registration</button>
+                <button class="btn" id="btnResetReg" type="button">Reset</button>
+              </div>
+              <div class="hint">After submission, you receive a Driver ID and a PIN. Save the PIN; it is shown only once.</div>
+
+              <textarea id="regResult" placeholder="Result will appear here" style="margin-top:10px;"></textarea>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  
+    const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwa2RN4A7voR5MocFyWFXo965WQOrmXIcWY0QgY1a96tLxEGKgTYLxUxuBl21TwnY2H/exec';
+
+
+    let currentDriverId = "";
+    let currentPin = "";
+    let currentProfile = null;
+
+    function escapeHtml(s){
+      return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+
+    function toast(type, msg){
+      const el = document.getElementById("toast");
+      if(!el) return;
+      el.innerHTML = msg ? `<div class="toast ${type}">${escapeHtml(msg)}</div>` : "";
+    }
+
+    async function api(action, payload) {
+      const body = new URLSearchParams();
+      body.set("action", action);
+      body.set("payload", JSON.stringify(payload || {}));
+
+      const res = await fetch(API_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: body.toString()
+      });
+
+      const ct = res.headers.get("content-type") || "";
+      if (!ct.includes("application/json")) {
+        const text = await res.text();
+        throw new Error("Server returned non-JSON response:\n" + text);
+      }
+
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error?.message || "Unknown server error");
+      return json.data;
+    }
+
+    function safeReplaceUrl_(url){
+      try { history.replaceState(null, "", url); } catch(e) { /* ignore in srcdoc sandbox */ }
+    }
+
+    function setMode(mode){
+      document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+      if(mode){
+        const active = document.querySelector(`.tab[data-tab="${mode}"]`);
+        if(active) active.classList.add("active");
+      }
+
+      const gate = document.getElementById("modeGate");
+      const body = document.getElementById("bodyArea");
+      const portal = document.getElementById("tab-portal");
+      const reg  = document.getElementById("tab-register");
+
+      if(!mode){
+        if(gate) gate.style.display = "flex";
+        if(body) body.style.display = "none";
+        if(portal) portal.style.display = "none";
+        if(reg)  reg.style.display  = "none";
+        toast("", "");
+        safeReplaceUrl_(location.pathname + location.search);
+        return;
+      }
+
+      if(gate) gate.style.display = "none";
+      if(body) body.style.display = "block";
+      if(portal) portal.style.display = (mode==="portal") ? "block" : "none";
+      if(reg)  reg.style.display  = (mode==="register") ? "grid" : "none";
+
+      safeReplaceUrl_(location.pathname + location.search + "#" + mode);
+      toast("", "");
+    }
+
+    function setPortalTab(key){
+      document.querySelectorAll(".ptab").forEach(b=>b.classList.remove("active"));
+      const btn = document.querySelector(`.ptab[data-ptab="${key}"]`);
+      if(btn) btn.classList.add("active");
+
+      document.querySelectorAll(".portalSection").forEach(s=>s.classList.remove("active"));
+      const sec = document.querySelector(`.portalSection[data-psection="${key}"]`);
+      if(sec) sec.classList.add("active");
+    }
+
+    /* Status helpers */
+    function setStatusCard_(opts){
+      const {
+        chipText="Not logged in",
+        chipKind="wait",
+        driver="—",
+        klass="—",
+        ident="—",
+        status="—",
+        note="Log in to load your portal. You will see your profile, entrant details, and NAT entry controls.",
+        spinner=false
+      } = (opts || {});
+
+      const chipClass = (chipKind==="ok") ? "ok" : (chipKind==="bad") ? "bad" : "wait";
+      const spinHtml = spinner ? `<span class="spinner" aria-hidden="true"></span>` : "";
+
+      document.getElementById("portalStatus").innerHTML = `
+        <div class="statusCard">
+          <div class="statusTop">
+            <div class="statusTitle">Session</div>
+            <div class="statusChip ${chipClass}">${spinHtml}${escapeHtml(chipText)}</div>
+          </div>
+
+          <div class="statusBody">
+            <div class="kv"><div class="k">Driver</div><div class="v">${escapeHtml(driver)}</div></div>
+            <div class="kv"><div class="k">Class</div><div class="v">${escapeHtml(klass)}</div></div>
+            <div class="kv"><div class="k">Driver ID / Email</div><div class="v">${escapeHtml(ident)}</div></div>
+            <div class="kv"><div class="k">Status</div><div class="v">${escapeHtml(status)}</div></div>
+          </div>
+
+          <div class="statusNote">${escapeHtml(note)}</div>
+        </div>
+      `;
+    }
+
+    function setButtonLoading_(btn, isLoading, labelWhenNotLoading){
+      if(!btn) return;
+      if(isLoading){
+        btn.classList.add("loading");
+        btn.dataset.prevText = btn.textContent;
+        btn.textContent = "Working";
+      }else{
+        btn.classList.remove("loading");
+        btn.textContent = labelWhenNotLoading || btn.dataset.prevText || btn.textContent;
+      }
+    }
+
+    function clearPortal(){
+      currentDriverId = "";
+      currentPin = "";
+      currentProfile = null;
+
+      document.getElementById("portalTabs").style.display = "none";
+      document.getElementById("portalSections").style.display = "none";
+
+      document.getElementById("btnLogout").disabled = true;
+      document.getElementById("btnSaveProfile").disabled = true;
+      document.getElementById("btnSubmitRace").disabled = true;
+      document.getElementById("btnSendRequest").disabled = true;
+
+      setStatusCard_();
+
+      ["p_first_name","p_last_name","p_class","p_race_number","p_license_number","p_transponder_number","p_kart_brand","p_engine_type","p_team_name","p_coach_name"]
+        .forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+
+      document.getElementById("p_contactsTable").innerHTML = `<div class="hint">No data loaded.</div>`;
+      document.getElementById("p_medicalBlock").innerHTML = `<div class="hint">No data loaded.</div>`;
+      document.getElementById("p_pointsTable").innerHTML = `<div class="hint">No points loaded.</div>`;
+
+      setPortalTab("driver");
+    }
+
+    function renderPortal(profile, identShown){
+      const d = profile.driver || {};
+      const contacts = profile.contacts || [];
+      const med = profile.medical || {};
+      const points = profile.points || [];
+
+      const driverName = `${(d.first_name||"").trim()} ${(d.last_name||"").trim()}`.trim() || "—";
+
+      setStatusCard_({
+        chipText: "Logged in",
+        chipKind: "ok",
+        driver: driverName,
+        klass: d.class || "—",
+        ident: identShown || d.driver_id || "—",
+        status: d.status || "Approved",
+        note: "Portal loaded. Use the tabs above to review and manage your information."
+      });
+
+      document.getElementById("portalTabs").style.display = "flex";
+      document.getElementById("portalSections").style.display = "block";
+      document.getElementById("btnLogout").disabled = false;
+
+      document.getElementById("p_first_name").value = d.first_name || "";
+      document.getElementById("p_last_name").value = d.last_name || "";
+      document.getElementById("p_class").value = d.class || "";
+      document.getElementById("p_race_number").value = d.race_number || "";
+      document.getElementById("p_license_number").value = d.license_number || "";
+      document.getElementById("p_transponder_number").value = d.transponder_number || "";
+      document.getElementById("p_kart_brand").value = d.kart_brand || "";
+      document.getElementById("p_engine_type").value = d.engine_type || "";
+      document.getElementById("p_team_name").value = d.team_name || "";
+      document.getElementById("p_coach_name").value = d.coach_name || "";
+
+      const rows = (contacts.length ? contacts : [{}]).map(c => `
+        <tr>
+          <td>${escapeHtml(c.relationship||"")}</td>
+          <td>${escapeHtml(c.full_name||"")}</td>
+          <td>${escapeHtml(c.email||"")}</td>
+          <td>${escapeHtml(c.phone_mobile||"")}</td>
+          <td>${escapeHtml([
+            (c.emergency_contact==="Y"?"Emergency":""),
+            (c.consent_contact==="Y"?"Consent":""),
+            (c.billing_contact==="Y"?"Billing":"")
+          ].filter(Boolean).join(" / "))}</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("p_contactsTable").innerHTML = `
+        <table class="table">
+          <thead><tr><th>Relationship</th><th>Name</th><th>Email</th><th>Mobile</th><th>Flags</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      document.getElementById("p_medicalBlock").innerHTML = `
+        <div class="hint">
+          Allergies: <b>${escapeHtml(med.allergies||"")}</b><br/>
+          Conditions: <b>${escapeHtml(med.medical_conditions||"")}</b><br/>
+          Medication: <b>${escapeHtml(med.medication||"")}</b><br/>
+          Consent Signed: <b>${escapeHtml(med.consent_signed||"")}</b> (${escapeHtml(med.consent_date||"")})<br/>
+          Indemnity Signed: <b>${escapeHtml(med.indemnity_signed||"")}</b><br/>
+          Media Release Signed: <b>${escapeHtml(med.media_release_signed||"")}</b><br/>
+        </div>
+      `;
+
+      const prow = (points.length ? points : [{}]).map(p => `
+        <tr>
+          <td>${escapeHtml(p.season||"")}</td>
+          <td>${escapeHtml(p.event||"")}</td>
+          <td>${escapeHtml(p.round||"")}</td>
+          <td>${escapeHtml(p.class||"")}</td>
+          <td>${escapeHtml(p.total_points||"")}</td>
+          <td>${escapeHtml(p.notes||"")}</td>
+        </tr>
+      `).join("");
+
+      document.getElementById("p_pointsTable").innerHTML = `
+        <table class="table">
+          <thead><tr><th>Season</th><th>Event</th><th>Round</th><th>Class</th><th>Total</th><th>Notes</th></tr></thead>
+          <tbody>${prow}</tbody>
+        </table>
+      `;
+
+      document.getElementById("btnSaveProfile").disabled = true;
+      document.getElementById("btnSubmitRace").disabled = true;
+      document.getElementById("btnSendRequest").disabled = true;
+    }
+
+    function looksLikeEmail_(s){
+      const v = String(s || "").trim();
+      return v.includes("@") && v.includes(".");
+    }
+
+    // Tab switching
+    document.querySelectorAll(".tab").forEach(btn=>{
+      btn.addEventListener("click", ()=> setMode(btn.dataset.tab));
+    });
+
+    // Portal sub-tabs
+    document.addEventListener("click", (e)=>{
+      const p = e.target.closest(".ptab");
+      if(!p) return;
+      setPortalTab(p.dataset.ptab);
+    });
+
+    /* LOGIN (Driver ID OR Email) */
+    document.getElementById("btnLogin").addEventListener("click", async ()=>{
+      const btn = document.getElementById("btnLogin");
+
+      try{
+        toast("", "");
+
+        const ident = document.getElementById("login_identifier").value.trim();
+        const pin = document.getElementById("login_pin").value.trim();
+
+        if(!ident) throw new Error("Enter Driver ID or Email.");
+        if(!pin) throw new Error("Enter PIN.");
+
+        // Immediate acknowledgement
+        setButtonLoading_(btn, true, "Login");
+        setStatusCard_({
+          chipText: "Authenticating",
+          chipKind: "wait",
+          driver: "—",
+          klass: "—",
+          ident: ident,
+          status: "—",
+          note: "Request received. Verifying credentials and loading your portal…",
+          spinner: true
+        });
+
+        const minDwellMs = 650;
+        const t0 = Date.now();
+
+        currentPin = pin;
+
+        let profile;
+        if (looksLikeEmail_(ident)) {
+          // Email login
+          profile = await api("getDriverProfileByEmail", { email: ident.toLowerCase(), pin });
+          currentDriverId = (profile && profile.driver && profile.driver.driver_id) ? String(profile.driver.driver_id) : "";
+        } else {
+          // Driver ID login
+          currentDriverId = ident;
+          profile = await api("getDriverProfile", { driver_id: ident, pin });
+        }
+
+        const elapsed = Date.now() - t0;
+        if(elapsed < minDwellMs){
+          await new Promise(r => setTimeout(r, minDwellMs - elapsed));
+        }
+
+        currentProfile = profile;
+        renderPortal(profile, ident);
+        toast("good", "Login successful. Portal loaded.");
+      }catch(err){
+        setStatusCard_({
+          chipText: "Login failed",
+          chipKind: "bad",
+          driver: "—",
+          klass: "—",
+          ident: document.getElementById("login_identifier").value.trim() || "—",
+          status: "—",
+          note: err.message || "Unable to log in."
+        });
+        toast("bad", err.message || "Unable to log in.");
+        clearPortal();
+      }finally{
+        setButtonLoading_(btn, false, "Login");
+      }
+    });
+
+    // Enter key to login
+    ["login_identifier","login_pin"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el){
+        el.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter"){
+            e.preventDefault();
+            document.getElementById("btnLogin").click();
+          }
+        });
+      }
+    });
+
+    document.getElementById("btnLogout").addEventListener("click", ()=>{
+      document.getElementById("login_identifier").value = "";
+      document.getElementById("login_pin").value = "";
+      clearPortal();
+      toast("good", "Logged out.");
+    });
+
+    /* Registration */
+    document.getElementById("btnRegister").addEventListener("click", async ()=>{
+      try{
+        toast("", "");
+        const consent = document.getElementById("consent_signed").value === "Y";
+        if(!consent) throw new Error("Consent must be accepted.");
+
+        const photoInput = document.getElementById("photo");
+        let photo_b64 = "", photo_name = "", photo_mime = "";
+
+        if(photoInput.files && photoInput.files[0]){
+          const f = photoInput.files[0];
+          photo_name = f.name;
+          photo_mime = f.type || "application/octet-stream";
+          photo_b64 = await fileToB64_(f);
+        }
+
+        const payload = {
+          first_name: document.getElementById("r_first_name").value.trim(),
+          last_name: document.getElementById("r_last_name").value.trim(),
+          date_of_birth: document.getElementById("r_dob").value.trim(),
+          nationality: document.getElementById("r_nat").value.trim(),
+          gender: document.getElementById("r_gender").value.trim(),
+          id_or_passport_number: document.getElementById("r_id").value.trim(),
+
+          championship: document.getElementById("r_champ").value.trim(),
+          class: document.getElementById("r_class").value.trim(),
+          race_number: document.getElementById("r_race").value.trim(),
+          team_name: document.getElementById("r_team").value.trim(),
+          coach_name: document.getElementById("r_coach").value.trim(),
+          kart_brand: document.getElementById("r_kart").value.trim(),
+          engine_type: document.getElementById("r_engine").value.trim(),
+          transponder_number: document.getElementById("r_transponder").value.trim(),
+
+          consent_signed: true,
+          media_release_signed: (document.getElementById("media_release_signed").value === "Y"),
+
+          medical: {
+            allergies: document.getElementById("m_allergies").value.trim(),
+            medical_conditions: document.getElementById("m_conditions").value.trim(),
+            medication: document.getElementById("m_medication").value.trim(),
+            doctor_phone: document.getElementById("m_doctor_phone").value.trim(),
+            consent_date: new Date().toISOString().slice(0,10)
+          },
+
+          contacts: [{
+            relationship: document.getElementById("c_rel").value.trim() || "Guardian",
+            full_name: document.getElementById("c_name").value.trim(),
+            email: document.getElementById("c_email").value.trim(),
+            phone_mobile: document.getElementById("c_phone").value.trim(),
+            emergency_contact: (document.getElementById("c_emergency").value === "Y"),
+            consent_contact: (document.getElementById("c_consent").value === "Y"),
+            billing_contact: false
+          }],
+
+          profile_photo_b64: photo_b64,
+          profile_photo_name: photo_name,
+          profile_photo_mime: photo_mime
+        };
+
+        const data = await api("registerDriver", payload);
+
+        document.getElementById("regResult").value =
+`Registration submitted.\n\nDriver ID: ${data.driver_id}\nStatus: ${data.status}\n\nPIN (SAVE THIS): ${data.pin}\n\n${data.message}\n`;
+
+        toast("good", "Registration submitted. Save the PIN shown in the result box.");
+      }catch(err){
+        toast("bad", err.message);
+      }
+    });
+
+    document.getElementById("btnResetReg").addEventListener("click", ()=>{
+      [
+        "r_first_name","r_last_name","r_dob","r_nat","r_gender","r_id","r_class","r_race","r_team","r_coach","r_kart","r_engine","r_transponder",
+        "c_name","c_rel","c_email","c_phone","m_allergies","m_conditions","m_medication","m_doctor_phone","regResult"
+      ].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+      document.getElementById("consent_signed").value = "Y";
+      document.getElementById("media_release_signed").value = "N";
+      document.getElementById("photo").value = "";
+      toast("", "");
+    });
+
+    function fileToB64_(file){
+      return new Promise((resolve, reject)=>{
+        const r = new FileReader();
+        r.onload = ()=> {
+          const dataUrl = String(r.result || "");
+          const b64 = dataUrl.split(",")[1] || "";
+          resolve(b64);
+        };
+        r.onerror = ()=> reject(new Error("Failed to read file"));
+        r.readAsDataURL(file);
+      });
+    }
+
+    /* Init */
+    clearPortal();
+    const initial = (location.hash || "").replace("#","").trim();
+    if(initial === "portal" || initial === "register"){
+      setMode(initial);
+    }else{
+      setMode(null);
+    }
+
+    api("ping", {}).catch(()=>{});
+  </script>
+</body>
+</html>
