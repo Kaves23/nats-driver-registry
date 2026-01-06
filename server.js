@@ -227,6 +227,7 @@ app.post('/api/loginWithPassword', async (req, res) => {
 
 // Register new driver
 app.post('/api/registerDriver', async (req, res) => {
+  const client = await pool.connect();
   try {
     const {
       first_name, last_name, date_of_birth, nationality, gender, id_or_passport_number,
@@ -241,77 +242,51 @@ app.post('/api/registerDriver', async (req, res) => {
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
     const pin_hash = await bcryptjs.hash(pin, 10);
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
+    await client.query('BEGIN');
 
-      // Insert driver - only insert columns we know exist
-      try {
-        await client.query(
-          `INSERT INTO drivers (driver_id, first_name, last_name, date_of_birth, nationality, gender,
-            id_or_passport_number, championship, class, race_number, team_name, coach_name,
-            kart_brand, engine_type, transponder_number, pin_hash, status, license_document, profile_photo)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
-          [driver_id, first_name, last_name, date_of_birth, nationality, gender, id_or_passport_number,
-            championship, klass, race_number, team_name, coach_name, kart_brand, engine_type,
-            transponder_number, pin_hash, 'Pending',
-            license_b64 ? JSON.stringify({b64: license_b64, name: license_name, mime: license_mime}) : null,
-            photo_b64 ? JSON.stringify({b64: photo_b64, name: photo_name, mime: photo_mime}) : null]
-        );
-      } catch (e) {
-        console.log('Full driver insert failed, trying basic fields:', e.message);
-        // Try with just required fields
+    // Insert driver with just required fields
+    await client.query(
+      `INSERT INTO drivers (driver_id, first_name, last_name, pin_hash, status)
+      VALUES ($1, $2, $3, $4, $5)`,
+      [driver_id, first_name, last_name, pin_hash, 'Pending']
+    );
+
+    // Try to update with additional fields
+    try {
+      await client.query(
+        `UPDATE drivers SET date_of_birth = $1, nationality = $2, gender = $3,
+          id_or_passport_number = $4, championship = $5, class = $6, race_number = $7,
+          team_name = $8, coach_name = $9, kart_brand = $10, engine_type = $11,
+          transponder_number = $12, license_document = $13, profile_photo = $14
+        WHERE driver_id = $15`,
+        [date_of_birth, nationality, gender, id_or_passport_number, championship, klass,
+          race_number, team_name, coach_name, kart_brand, engine_type, transponder_number,
+          license_b64 ? JSON.stringify({b64: license_b64, name: license_name, mime: license_mime}) : null,
+          photo_b64 ? JSON.stringify({b64: photo_b64, name: photo_name, mime: photo_mime}) : null,
+          driver_id]
+      );
+    } catch (e) {
+      console.log('Could not update additional driver fields:', e.message);
+    }
+
+    // Insert contacts
+    if (contacts && contacts.length > 0) {
+      for (const contact of contacts) {
         try {
           await client.query(
-            `INSERT INTO drivers (driver_id, first_name, last_name, pin_hash, status, license_document, profile_photo)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [driver_id, first_name, last_name, pin_hash, 'Pending',
-              license_b64 ? JSON.stringify({b64: license_b64, name: license_name, mime: license_mime}) : null,
-              photo_b64 ? JSON.stringify({b64: photo_b64, name: photo_name, mime: photo_mime}) : null]
+            `INSERT INTO contacts (driver_id, email)
+            VALUES ($1, $2)`,
+            [driver_id, contact.email]
           );
-        } catch (e2) {
-          console.log('Could not insert driver with files, trying without files:', e2.message);
-          try {
-            await client.query(
-              `INSERT INTO drivers (driver_id, first_name, last_name, pin_hash, status)
-              VALUES ($1, $2, $3, $4, $5)`,
-              [driver_id, first_name, last_name, pin_hash, 'Pending']
-            );
-          } catch (e3) {
-            throw new Error('Could not create driver account: ' + e3.message);
-          }
+        } catch (e) {
+          console.log('Could not insert contact:', e.message);
         }
       }
+    }
 
-      // Insert contacts
-      if (contacts && contacts.length > 0) {
-        for (const contact of contacts) {
-          try {
-            await client.query(
-              `INSERT INTO contacts (driver_id, relationship, full_name, email, phone_mobile,
-                emergency_contact, consent_contact, billing_contact)
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-              [driver_id, contact.relationship, contact.full_name, contact.email, contact.phone_mobile,
-                contact.emergency_contact, contact.consent_contact, contact.billing_contact]
-            );
-          } catch (e) {
-            console.log('Full contact insert failed, trying minimal fields:', e.message);
-            try {
-              await client.query(
-                `INSERT INTO contacts (driver_id, email)
-                VALUES ($1, $2)`,
-                [driver_id, contact.email]
-              );
-            } catch (e2) {
-              console.log('Could not insert contact:', e2.message);
-              // Continue without contact
-            }
-          }
-        }
-      }
-
-      // Insert medical consent
-      if (medical) {
+    // Insert medical consent
+    if (medical) {
+      try {
         await client.query(
           `INSERT INTO medical_consent (driver_id, allergies, medical_conditions, medication,
             doctor_phone, consent_signed, consent_date, indemnity_signed, media_release_signed)
@@ -319,16 +294,13 @@ app.post('/api/registerDriver', async (req, res) => {
           [driver_id, medical.allergies, medical.medical_conditions, medical.medication,
             medical.doctor_phone, consent_signed, medical.consent_date, 'N', media_release_signed]
         );
+      } catch (e) {
+        console.log('Could not insert medical consent:', e.message);
       }
-
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
     }
 
+    await client.query('COMMIT');
+    
     res.json({
       success: true,
       data: {
@@ -339,7 +311,14 @@ app.post('/api/registerDriver', async (req, res) => {
       }
     });
   } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('Rollback error:', rollbackErr);
+    }
     res.status(400).json({ success: false, error: { message: err.message } });
+  } finally {
+    client.release();
   }
 });
 
