@@ -1418,7 +1418,7 @@
   <script>
   
     // ====== NEW API ENDPOINT (Node.js Backend) ======
-    const API_ENDPOINT = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : 'https://rokthenats.co.za/api';
+    const API_ENDPOINT = '/api';
 
     // ====== MD5 HASH FUNCTION FOR PAYFAST ======
     function md5(str) {
@@ -2175,7 +2175,7 @@
       }
 
       // Store payment in database
-      fetch('http://localhost:3000/api/storePayment', {
+      fetch('/api/storePayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2200,9 +2200,7 @@
       form.style.display = 'none';
 
       // Determine the notify URL based on environment
-      const notifyUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000/api/payfast-itn'  // Local development
-        : `${window.location.protocol}//${window.location.hostname}:3000/api/payfast-itn`; // Production
+      const notifyUrl = `${window.location.protocol}//${window.location.host}/api/payfast-itn`;
 
       // Build form fields in the order PayFast requires for signature
       const fields = {
@@ -2258,7 +2256,7 @@
       const container = document.getElementById('paymentHistoryContainer');
       if (!container || !currentDriverId) return;
 
-      fetch('http://localhost:3000/api/getPaymentHistory', {
+      fetch('/api/getPaymentHistory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ driver_id: currentDriverId })
