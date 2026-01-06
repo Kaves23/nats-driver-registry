@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NATS Admin - Audit Log & Database</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    /* Login Screen */
+    .login-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #0d0d0d;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+    }
+
+    .login-box {
+      background: #2a2a2a;
+      padding: 40px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid #404040;
+    }
+
+    .login-box h1 {
+      color: #fff;
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+
+    .login-box p {
+      color: #999;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #e0e0e0;
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      background: #1a1a1a;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #0066cc;
+      background: #242424;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .login-btn:hover {
+      background: #0052a3;
+    }
+
+    .error-message {
+      color: #ff6b6b;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: #3d2020;
+      border-radius: 4px;
+      border: 1px solid #cc3333;
+      display: none;
+      font-size: 14px;
+    }
+
+    .content-wrapper {
+      display: none;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    input, select, button {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+      border: none;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #764ba2;
+    }
+
+    .logs-table {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: #f5f5f5;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 2px solid #eee;
+      font-size: 13px;
+    }
+
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+
+    tr:hover {
+      background: #f9f9f9;
+    }
+
+    .timestamp {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .action {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .action.update {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .action.create {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+
+    .field-name {
+      background: #f5f5f5;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .value-change {
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .old-value {
+      color: #d32f2f;
+    }
+
+    .new-value {
+      color: #388e3c;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      color: #999;
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .no-logs {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    /* Header and Logout button */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      color: white;
+      margin-bottom: 0;
+    }
+
+    .logout-btn {
+      padding: 10px 20px;
+      background: #d32f2f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      background: #b71c1c;
+    }
+
+    /* Tab System */
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-btn {
+      padding: 10px 20px;
+      background: #f0f0f0;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .tab-btn:hover {
+      border-color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Database Tab Styles */
+    .table-container {
+      background: white;
+      border-radius: 10px;
+      overflow: auto;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+      max-height: 70vh;
+    }
+
+    .table-container table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-container th {
+      background: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 2px solid #eee;
+      position: sticky;
+      top: 0;
+      font-size: 12px;
+    }
+
+    .table-container td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 12px;
+      color: #666;
+      word-break: break-word;
+      max-width: 400px;
+    }
+
+    .table-container tr:hover {
+      background: #f9f9f9;
+    }
+
+    .table-select {
+      margin-bottom: 15px;
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .table-select label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .table-select select {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .db-loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    .db-error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+
+    .table-info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      color: #1976d2;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div class="login-wrapper" id="loginWrapper">
+    <div class="login-box">
+      <h1>NATS Admin</h1>
+      <p>Audit Log & Database Access</p>
+      <div class="error-message" id="errorMessage"></div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="adminPassword" placeholder="Enter password" onkeypress="if(event.key==='Enter') loginAccess()">
+      </div>
+      <button class="login-btn" onclick="loginAccess()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- Content Wrapper -->
+  <div class="content-wrapper" id="contentWrapper">
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Audit Log & Database Management</h1>
+        <button class="logout-btn" onclick="logoutAccess()">Logout</button>
+      </div>
+
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('audit')">📋 Audit Log</button>
+        <button class="tab-btn" onclick="switchTab('database')">💾 Database</button>
+      </div>
+
+      <!-- Audit Log Tab -->
+      <div id="auditTab" class="tab-content active">
+        <div class="filters">
+          <input type="text" id="filterDriverId" placeholder="Filter by Driver ID...">
+          <input type="text" id="filterEmail" placeholder="Filter by Email...">
+          <input type="text" id="filterField" placeholder="Filter by Field...">
+          <button onclick="loadLogs()">Search</button>
+          <button onclick="exportLogs()" style="background: #4caf50;">📥 Export CSV</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-number" id="totalLogs">0</div>
+            <div class="stat-label">Total Changes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="uniqueDrivers">0</div>
+            <div class="stat-label">Drivers Updated</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="todayChanges">0</div>
+            <div class="stat-label">Today's Changes</div>
+          </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div class="logs-table">
+          <div id="logsContainer">
+            <div class="loading">Loading audit logs...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Tab -->
+      <div id="databaseTab" class="tab-content">
+        <div class="table-select">
+          <label for="tableSelector">Select Table to View:</label>
+          <select id="tableSelector" onchange="onTableSelect()">
+            <option value="">-- Choose a table --</option>
+            <option value="drivers">Drivers</option>
+            <option value="admin_messages">Admin Messages</option>
+            <option value="audit_log">Audit Log</option>
+            <option value="race_entries">Race Entries</option>
+            <option value="rentals">Rentals</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Filter Section -->
+        <div id="filterSection" style="display: none; background: white; padding: 15px; border-radius: 5px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+          <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333;">Search & Filter:</label>
+          <div id="dynamicFilters"></div>
+          <button onclick="loadTableData()" style="margin-top: 10px; background: #667eea;">🔍 Search</button>
+          <button onclick="clearFilters()" style="margin-top: 10px; background: #999; margin-left: 10px;">Clear</button>
+        </div>
+
+        <div id="databaseError" class="db-error" style="display: none;"></div>
+        <div id="tableInfo" class="table-info" style="display: none;"></div>
+        
+        <div class="table-container" id="databaseContainer">
+          <div class="db-loading">Select a table to view data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = 'natsadmin2026';
+    let allLogs = [];
+
+    // ===== LOGIN/LOGOUT =====
+    function loginAccess() {
+      const password = document.getElementById('adminPassword').value;
+      const errorMsg = document.getElementById('errorMessage');
+      
+      if (!password) {
+        errorMsg.textContent = 'Please enter a password';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      if (password === ADMIN_PASSWORD) {
+        document.getElementById('loginWrapper').style.display = 'none';
+        document.getElementById('contentWrapper').style.display = 'block';
+        loadLogs();
+      } else {
+        errorMsg.textContent = 'Invalid password';
+        errorMsg.style.display = 'block';
+      }
+    }
+
+    function logoutAccess() {
+      document.getElementById('loginWrapper').style.display = 'flex';
+      document.getElementById('contentWrapper').style.display = 'none';
+      document.getElementById('adminPassword').value = '';
+      document.getElementById('errorMessage').style.display = 'none';
+    }
+
+    // ===== TAB SWITCHING =====
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabName + 'Tab').classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // ===== AUDIT LOG FUNCTIONS =====
+    async function loadLogs() {
+      try {
+        const response = await fetch('/api/getAuditLog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit: 1000 })
+        });
+
+        if (!response.ok) throw new Error('Failed to load audit logs');
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Unknown error');
+
+        allLogs = result.data.logs || [];
+        displayLogs();
+        updateStats();
+      } catch (err) {
+        console.error('Error loading logs:', err);
+        const errorEl = document.getElementById('error');
+        if (errorEl) {
+          errorEl.textContent = '❌ ' + err.message;
+          errorEl.style.display = 'block';
+        }
+      }
+    }
+
+    function displayLogs() {
+      const driverId = document.getElementById('filterDriverId').value.toLowerCase();
+      const email = document.getElementById('filterEmail').value.toLowerCase();
+      const field = document.getElementById('filterField').value.toLowerCase();
+
+      let filtered = allLogs.filter(log => {
+        return (!driverId || log.driver_id?.toLowerCase().includes(driverId)) &&
+               (!email || log.driver_email?.toLowerCase().includes(email)) &&
+               (!field || log.field_name?.toLowerCase().includes(field));
+      });
+
+      if (filtered.length === 0) {
+        document.getElementById('logsContainer').innerHTML = '<div class="no-logs">No audit logs found</div>';
+        return;
+      }
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Driver Email</th>
+              <th>Driver ID</th>
+              <th>Action</th>
+              <th>Field</th>
+              <th>Old Value</th>
+              <th>New Value</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      filtered.forEach(log => {
+        const timestamp = new Date(log.timestamp).toLocaleString();
+        const actionClass = log.action.toLowerCase().includes('update') ? 'update' : 'create';
+        
+        html += `
+          <tr>
+            <td><span class="timestamp">${timestamp}</span></td>
+            <td>${log.driver_email || '-'}</td>
+            <td>${log.driver_id || '-'}</td>
+            <td><span class="action ${actionClass}">${log.action}</span></td>
+            <td><span class="field-name">${log.field_name}</span></td>
+            <td><span class="value-change old-value">${(log.old_value || '-').substring(0, 50)}</span></td>
+            <td><span class="value-change new-value">${(log.new_value || '-').substring(0, 50)}</span></td>
+          </tr>
+        `;
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('logsContainer').innerHTML = html;
+    }
+
+    function updateStats() {
+      document.getElementById('totalLogs').textContent = allLogs.length;
+
+      const uniqueDrivers = new Set(allLogs.map(log => log.driver_id)).size;
+      document.getElementById('uniqueDrivers').textContent = uniqueDrivers;
+
+      const today = new Date().toDateString();
+      const todayCount = allLogs.filter(log => {
+        return new Date(log.timestamp).toDateString() === today;
+      }).length;
+      document.getElementById('todayChanges').textContent = todayCount;
+    }
+
+    function exportLogs() {
+      const driverId = document.getElementById('filterDriverId').value.toLowerCase();
+      const email = document.getElementById('filterEmail').value.toLowerCase();
+      const field = document.getElementById('filterField').value.toLowerCase();
+
+      let filtered = allLogs.filter(log => {
+        return (!driverId || log.driver_id?.toLowerCase().includes(driverId)) &&
+               (!email || log.driver_email?.toLowerCase().includes(email)) &&
+               (!field || log.field_name?.toLowerCase().includes(field));
+      });
+
+      let csv = 'Timestamp,Driver Email,Driver ID,Action,Field,Old Value,New Value\n';
+      filtered.forEach(log => {
+        const timestamp = new Date(log.timestamp).toISOString();
+        csv += `"${timestamp}","${log.driver_email || '-'}","${log.driver_id || '-'}","${log.action}","${log.field_name}","${(log.old_value || '-').replace(/"/g, '""')}","${(log.new_value || '-').replace(/"/g, '""')}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit_log_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    // ===== DATABASE FUNCTIONS =====
+    const filterConfigs = {
+      drivers: [
+        { name: 'driver_email', label: 'Email Address', type: 'text' },
+        { name: 'first_name', label: 'First Name', type: 'text' },
+        { name: 'last_name', label: 'Last Name', type: 'text' },
+        { name: 'class', label: 'Class', type: 'text' },
+        { name: 'race_number', label: 'Race Number', type: 'text' },
+        { name: 'team_name', label: 'Team Name', type: 'text' },
+        { name: 'status', label: 'Status', type: 'text' }
+      ],
+      admin_messages: [
+        { name: 'driver_email', label: 'Driver Email', type: 'text' },
+        { name: 'driver_name', label: 'Driver Name', type: 'text' },
+        { name: 'subject', label: 'Subject', type: 'text' }
+      ],
+      audit_log: [
+        { name: 'driver_email', label: 'Driver Email', type: 'text' },
+        { name: 'action', label: 'Action', type: 'text' },
+        { name: 'field_name', label: 'Field Name', type: 'text' }
+      ],
+      race_entries: [
+        { name: 'driver_id', label: 'Driver ID', type: 'text' },
+        { name: 'race_name', label: 'Race Name', type: 'text' }
+      ],
+      rentals: [
+        { name: 'driver_id', label: 'Driver ID', type: 'text' }
+      ]
+    };
+
+    function onTableSelect() {
+      const tableName = document.getElementById('tableSelector').value;
+      if (!tableName) {
+        document.getElementById('filterSection').style.display = 'none';
+        document.getElementById('databaseContainer').innerHTML = '<div class="db-loading">Select a table to view data</div>';
+        return;
+      }
+
+      // Show filter section
+      document.getElementById('filterSection').style.display = 'block';
+
+      // Build dynamic filters
+      const filters = filterConfigs[tableName] || [];
+      let filterHtml = '';
+
+      filters.forEach(filter => {
+        filterHtml += `
+          <div style="margin-bottom: 10px; display: inline-block; margin-right: 15px;">
+            <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">${filter.label}</label>
+            <input type="text" id="filter_${filter.name}" placeholder="Search..." style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; width: 200px;">
+          </div>
+        `;
+      });
+
+      document.getElementById('dynamicFilters').innerHTML = filterHtml || '<p style="color: #999; font-size: 14px;">No filters available for this table</p>';
+      
+      // Load data
+      loadTableData();
+    }
+
+    function clearFilters() {
+      const filterInputs = document.querySelectorAll('#dynamicFilters input');
+      filterInputs.forEach(input => input.value = '');
+      loadTableData();
+    }
+
+    async function loadTableData() {
+      const tableName = document.getElementById('tableSelector').value;
+      if (!tableName) {
+        document.getElementById('databaseContainer').innerHTML = '<div class="db-loading">Select a table to view data</div>';
+        document.getElementById('tableInfo').style.display = 'none';
+        document.getElementById('databaseError').style.display = 'none';
+        return;
+      }
+
+      try {
+        document.getElementById('databaseContainer').innerHTML = '<div class="db-loading">Loading table data...</div>';
+        document.getElementById('databaseError').style.display = 'none';
+
+        // Collect filter values
+        const filters = filterConfigs[tableName] || [];
+        const filterObj = {};
+        filters.forEach(filter => {
+          const value = document.getElementById(`filter_${filter.name}`).value;
+          if (value) {
+            filterObj[filter.name] = value;
+          }
+        });
+
+        const response = await fetch('/api/getDatabaseTable', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            table: tableName,
+            filter: filterObj,
+            limit: 100
+          })
+        });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Failed to load table data');
+
+        const data = result.data || {};
+        const rows = data.rows || [];
+        const rowCount = data.rowCount || 0;
+        const displayCount = data.displayCount || rows.length;
+
+        if (rows.length === 0) {
+          document.getElementById('databaseContainer').innerHTML = '<div class="db-loading">No data found in this table</div>';
+          document.getElementById('tableInfo').innerHTML = `<strong>Table:</strong> ${tableName} | <strong>Total Rows:</strong> ${rowCount}`;
+          document.getElementById('tableInfo').style.display = 'block';
+          return;
+        }
+
+        // Display table info
+        const infoEl = document.getElementById('tableInfo');
+        let filterText = Object.keys(filterObj).length > 0 ? ` | <strong>Filters Applied:</strong> ${Object.keys(filterObj).length}` : '';
+        infoEl.innerHTML = `<strong>Table:</strong> ${tableName} | <strong>Total Rows:</strong> ${rowCount} | <strong>Showing:</strong> ${displayCount} rows${filterText}`;
+        infoEl.style.display = 'block';
+
+        // Build HTML table
+        const columns = Object.keys(rows[0]);
+        let html = '<table><thead><tr>';
+        
+        columns.forEach(col => {
+          html += `<th>${escapeHtml(col)}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        rows.forEach(row => {
+          html += '<tr>';
+          columns.forEach(col => {
+            let value = row[col];
+            if (value === null || value === undefined) {
+              value = '-';
+            } else if (typeof value === 'object') {
+              value = JSON.stringify(value);
+            } else {
+              value = String(value);
+            }
+            const displayValue = value.length > 100 ? value.substring(0, 100) + '...' : value;
+            html += `<td title="${escapeHtml(value)}">${escapeHtml(displayValue)}</td>`;
+          });
+          html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('databaseContainer').innerHTML = html;
+
+      } catch (err) {
+        console.error('Database error:', err);
+        document.getElementById('databaseContainer').innerHTML = '<div class="db-loading">Error loading table</div>';
+        const errorEl = document.getElementById('databaseError');
+        errorEl.innerHTML = '❌ ' + err.message;
+        errorEl.style.display = 'block';
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

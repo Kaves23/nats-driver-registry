@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Payment Successful - NATS Driver Registry</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #22c55e 0%, #0ea5e9 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      max-width: 500px;
+      width: 100%;
+      padding: 60px 40px;
+      text-align: center;
+    }
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+      color: #111827;
+    }
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 30px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .details {
+      background: #f9fafb;
+      padding: 20px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      color: #6b7280;
+      font-weight: 600;
+    }
+    .detail-value {
+      color: #111827;
+      font-weight: 600;
+    }
+    .btn {
+      display: inline-block;
+      background: #111827;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1f2937; }
+    .note {
+      color: #6b7280;
+      font-size: 12px;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">✅</div>
+    <h1>Payment Successful!</h1>
+    <p class="subtitle">Your payment has been processed successfully. You will receive a confirmation email shortly.</p>
+    
+    <div class="details" id="paymentDetails">
+      <div class="detail-row">
+        <span class="detail-label">Transaction ID:</span>
+        <span class="detail-value" id="transactionId">—</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Amount:</span>
+        <span class="detail-value" id="amount">—</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Status:</span>
+        <span class="detail-value" id="status">Completed</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Date:</span>
+        <span class="detail-value" id="date">—</span>
+      </div>
+    </div>
+
+    <button class="btn" onclick="window.location.href='/driver_portal.html#portal'">Return to Portal</button>
+
+    <div class="note">
+      <p>A confirmation email has been sent to your registered email address.</p>
+      <p style="margin-top: 10px;">If you have any questions, please contact admin@rokthenats.co.za</p>
+    </div>
+  </div>
+
+  <script>
+    // Extract payment details from URL params or session
+    function getParam(name) {
+      const url = new URL(window.location);
+      return url.searchParams.get(name);
+    }
+
+    const transactionId = getParam('pf_payment_id') || getParam('m_payment_id') || 'Processing';
+    const amount = getParam('amount') || getParam('m_amount') || '—';
+    const date = new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    document.getElementById('transactionId').textContent = transactionId;
+    document.getElementById('amount').textContent = amount ? `R${parseFloat(amount).toFixed(2)}` : '—';
+    document.getElementById('date').textContent = date;
+  </script>
+</body>
+</html>

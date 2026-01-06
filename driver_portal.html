@@ -10,7 +10,7 @@
       --summer:#facc15;
       --autumn:#f97316;
       --winter:#0ea5e9;
-      --spring:#22c55e;
+      --spring:#4ade80;
 
       --bg: var(--summer);
       --panel-bg:#ffffff;
@@ -28,9 +28,13 @@
 
     *{ box-sizing:border-box; margin:0; padding:0; }
 
+    html{
+      background: var(--summer);
+    }
+
     body{
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      background: var(--bg);
+      background: var(--summer);
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
       padding: 24px 18px;
@@ -115,6 +119,8 @@
       color: var(--muted);
       line-height: 1.5;
     }
+    /* Back link placement in header */
+    .header-right .back-link-wrap { margin-top: 6px; }
 
     .tabs{
       display:flex;
@@ -157,6 +163,31 @@
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
+    }
+
+    /* Ensure tabs are properly hidden */
+    /* Tab visibility - hidden by default */
+    #tab-portal {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    #tab-register {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    /* Show when active */
+    #tab-portal.show {
+      display: block !important;
+      visibility: visible !important;
+    }
+    
+    #tab-register.show {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 14px !important;
+      visibility: visible !important;
     }
 
     .panel{
@@ -271,7 +302,272 @@
     }
     @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    .toast{
+    /* Championship selector */
+    .champ-selector{
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .champ-selector-group{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .champ-option{
+      padding: 16px 12px;
+      border: 2px solid var(--border-soft);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+      font-size: 13px;
+      background: #f9fafb;
+      color: var(--ink);
+    }
+    .champ-option:first-child{
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .champ-option:last-child{
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+    .champ-option:only-child{
+      border-radius: var(--radius);
+    }
+    .champ-option:hover{
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(15,23,42,0.12);
+    }
+    .champ-option.selected{
+      color: #fff;
+      border-color: var(--ink);
+    }
+    .champ-option.rok-nats.selected{
+      background: #0ea5e9;
+      border-color: #0ea5e9;
+    }
+    .champ-option.rok-nc.selected{
+      background: #f97316;
+      border-color: #f97316;
+    }
+    .champ-option.rok-sc.selected{
+      background: #ec4899;
+      border-color: #ec4899;
+    }
+    .champ-option.all.selected{
+      background: #22c55e;
+      border-color: #22c55e;
+    }
+
+    /* ===== PREMIUM ANIMATIONS ===== */
+    @media (prefers-reduced-motion: no-preference){
+
+      /* Page load - fade in shell */
+      .shell{
+        animation: shellFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+
+      /* Stagger panels */
+      .panel{
+        animation: panelSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+      .panel:nth-child(1){ animation-delay: 0.05s; }
+      .panel:nth-child(2){ animation-delay: 0.1s; }
+      .panel:nth-child(3){ animation-delay: 0.15s; }
+      .panel:nth-child(4){ animation-delay: 0.2s; }
+      .panel:nth-child(5){ animation-delay: 0.25s; }
+
+      @keyframes shellFadeIn{
+        from{
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to{
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes panelSlideIn{
+        from{
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to{
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Input focus glow */
+      input:focus, select:focus, textarea:focus{
+        border-color: var(--ink);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      /* Button hover lift and glow */
+      .btn{
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .btn:not(:disabled):hover{
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+        border-color: var(--ink);
+      }
+      .btn.primary:not(:disabled):hover{
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+      }
+
+      /* Championship option animations */
+      .champ-option{
+        transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      .champ-option::before{
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.4) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+      .champ-option:hover::before{
+        opacity: 1;
+      }
+      .champ-option.selected{
+        transform: scale(1.05);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+      }
+      .champ-option.rok-nats.selected{
+        box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
+      }
+      .champ-option.rok-nc.selected{
+        box-shadow: 0 8px 24px rgba(249, 115, 22, 0.4);
+      }
+      .champ-option.rok-sc.selected{
+        box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
+      }
+      .champ-option.all.selected{
+        box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+      }
+
+      /* Toast slide in */
+      .toast{
+        animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+
+      @keyframes toastSlideIn{
+        from{
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to{
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      /* Modal fade and scale */
+      #forgotPasswordModal{
+        animation: modalFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+      #forgotPasswordModal > div{
+        animation: modalScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+
+      @keyframes modalFadeIn{
+        from{ opacity: 0; }
+        to{ opacity: 1; }
+      }
+
+      @keyframes modalScaleIn{
+        from{
+          opacity: 0;
+          transform: scale(0.92);
+        }
+        to{
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes confirmScaleIn{
+        from{
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to{
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* Status card animations */
+      .statusCard{
+        animation: statusCardSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+      }
+
+      @keyframes statusCardSlideIn{
+        from{
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to{
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes tabBounce{
+        0%, 100%{
+          transform: translateY(0);
+        }
+        25%{
+          transform: translateY(-8px);
+        }
+        50%{
+          transform: translateY(0);
+        }
+        75%{
+          transform: translateY(-4px);
+        }
+      }
+
+      .ptab.bounce{
+        animation: tabBounce 0.8s ease-in-out;
+      }
+
+      /* Spinner enhanced */
+      .spinner{
+        animation: spin 0.75s linear infinite;
+        filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.12));
+      }
+
+      /* Smooth hover for tabs */
+      .ptab{
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .ptab:not(.active):hover{
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+      }
+      .ptab.active{
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+      }
+
+      /* Subtle glow on focus within forms */
+      .panel:focus-within{
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15,23,42,0.05);
+        transition: box-shadow 0.3s ease;
+      }
+
+    } /* end prefers-reduced-motion */
+
       border: 1px solid var(--border-soft);
       background: #fff;
       padding: 10px 12px;
@@ -394,7 +690,7 @@
       align-items:center;
       gap:8px;
     }
-    .statusChip.ok{ border-color: rgba(34,197,94,0.55); box-shadow: 0 0 18px rgba(34,197,94,0.22); }
+    .statusChip.ok{ border-color: rgba(34,197,94,0.55); box-shadow: 0 0 20px rgba(34,197,94,0.40), 0 0 40px rgba(34,197,94,0.25); }
     .statusChip.wait{ border-color: rgba(14,165,233,0.55); box-shadow: 0 0 18px rgba(14,165,233,0.22); }
     .statusChip.bad{ border-color: rgba(239,68,68,0.55); box-shadow: 0 0 18px rgba(239,68,68,0.18); }
 
@@ -424,10 +720,69 @@
       line-height: 1.35;
       word-break: break-word;
     }
+    .kv .v span{
+      display: inline-block !important;
+      padding: 8px 16px !important;
+      border-radius: 6px !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+      border: 2px solid !important;
+      border-color: inherit !important;
+    }
     .statusNote{
       font-size: 12px;
       color: var(--muted);
       line-height: 1.7;
+    }
+
+    /* Payment Cards */
+    .paymentCard{
+      background: #fff;
+      border: 1px solid var(--border-soft);
+      border-radius: 0;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+    .paymentCard:hover{
+      border-color: #22c55e;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+    }
+    .paymentCard-title{
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+    }
+    .paymentCard-desc{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .paymentCard-price{
+      font-size: 20px;
+      font-weight: 900;
+      color: #22c55e;
+      letter-spacing: 0.02em;
+    }
+    .paymentCard-btn{
+      background: #22c55e;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 13px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+    }
+    .paymentCard-btn:hover{
+      background: #16a34a;
     }
 
     @media (max-width: 980px){
@@ -449,13 +804,13 @@
         <div class="header">
           <div>
             <div class="kicker">ROK THE NATS</div>
-            <div class="title">Driver Registry & Portal</div>
-            <div class="sub">Log in with Driver ID or Email + PIN to access and maintain your profile. Registrations require admin approval.</div>
+            <div class="title">SUMMER NATS 2026</div>
+            <div class="sub">20–22 March 2026 · Red Star Raceway, Delmas · Driver Registration Portal</div>
           </div>
           <div class="header-right">
-            <div>UI: F1-Style Database</div>
-            <div>Background: Summer Nats</div>
-            <div>Text: Black</div>
+            <div class="back-link-wrap">
+              <button class="btn" onclick="window.location.href='index.html'" type="button">Home</button>
+            </div>
           </div>
         </div>
 
@@ -467,36 +822,47 @@
         <div id="modeGate" class="panel" style="display:flex; flex-direction:column; gap:10px;">
           <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Select an option to continue</div>
           <div class="hint">
-            Choose <b>Login</b> if you already have a <b>Driver ID or Email</b> and <b>PIN</b>. Choose <b>New Registration</b> to create a new driver record.
+            Choose <b>Login</b> to access your driver account. Choose <b>New Registration</b> to create a new driver record.
           </div>
         </div>
 
         <div id="bodyArea" style="display:none;">
           <div id="toast"></div>
 
+          <!-- Confirmation Modal -->
+          <div id="confirmationModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9999; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); max-width: 400px; text-align: center; animation: confirmScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: auto;" onclick="event.stopPropagation();">
+              <div id="confirmIcon" style="font-size: 48px; margin-bottom: 16px;">✓</div>
+              <h2 id="confirmTitle" style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #111827;">Profile Saved</h2>
+              <p id="confirmMessage" style="font-size: 14px; color: #6b7280; margin-bottom: 24px; line-height: 1.5;">Your profile has been saved successfully!</p>
+              <button id="confirmButton" style="background: #22c55e; color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">OK</button>
+            </div>
+          </div>
+
           <!-- LOGIN / PORTAL -->
-          <div id="tab-portal" style="display:none;">
+          <div id="tab-portal">
             <div class="grid">
               <div class="panel">
                 <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Driver Login</div>
 
                 <div class="row">
                   <div>
-                    <label>Driver ID or Email</label>
-                    <input id="login_identifier" placeholder="UUID or guardian email address" autocomplete="username" />
+                    <label>Email Address</label>
+                    <input id="login_identifier" placeholder="your.email@example.com" autocomplete="email" />
                   </div>
                   <div>
-                    <label>PIN</label>
-                    <input id="login_pin" placeholder="6-digit PIN" inputmode="numeric" autocomplete="current-password" />
+                    <label>Password</label>
+                    <input id="login_password" placeholder="Your password" type="password" autocomplete="current-password" />
                   </div>
                 </div>
 
                 <div class="btnbar">
                   <button class="btn primary" id="btnLogin" type="button">Login</button>
                   <button class="btn" id="btnLogout" type="button" disabled>Logout</button>
+                  <button class="btn" id="forgotPasswordLink" type="button">Forgot Password</button>
                 </div>
 
-                <div class="hint">If you lost your PIN, contact Admin for a reset. Profile access is PIN-gated.</div>
+                <div class="hint">Enter your email and password to access your driver portal.</div>
               </div>
 
               <div class="panel">
@@ -537,8 +903,8 @@
               <button class="ptab" data-ptab="contacts" data-accent="autumn" type="button"><span class="tabBar"></span>Entrant Details</button>
               <button class="ptab" data-ptab="medical" data-accent="winter" type="button"><span class="tabBar"></span>Medical & Consent</button>
               <button class="ptab" data-ptab="points" data-accent="spring" type="button"><span class="tabBar"></span>Points</button>
-              <button class="ptab" data-ptab="race" data-accent="winter" type="button"><span class="tabBar"></span>Race Entry</button>
-              <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Requests</button>
+              <button class="ptab" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
+              <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
             </div>
 
             <!-- Portal sections -->
@@ -546,8 +912,15 @@
 
               <div class="portalSection active" data-psection="driver">
                 <div class="panel">
-                  <div class="panelTitle"><span class="accentBar" style="background:var(--summer)"></span>Driver Profile (Editable UI)</div>
-                  <div class="hint">UI-only stage: fields shown for editing. Backend save wiring will follow after design sign-off.</div>
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--summer)"></span>Driver Profile</div>
+                  <div class="hint">View your registered driver information. Contact admin for updates to identity or competition details.</div>
+
+                  <div class="row">
+                    <div>
+                      <label>Email Address</label>
+                      <input id="p_email" readonly />
+                    </div>
+                  </div>
 
                   <div class="row">
                     <div>
@@ -563,7 +936,15 @@
                   <div class="row">
                     <div>
                       <label>Class</label>
-                      <input id="p_class" />
+                      <select id="p_class">
+                        <option value="">Select a class...</option>
+                        <option value="CADET">CADET</option>
+                        <option value="MINI ROK U/10">MINI ROK U/10</option>
+                        <option value="MINI ROK">MINI ROK</option>
+                        <option value="OK-J">OK-J</option>
+                        <option value="OK-N">OK-N</option>
+                        <option value="KZ2">KZ2</option>
+                      </select>
                     </div>
                     <div>
                       <label>Race number</label>
@@ -587,10 +968,6 @@
                       <label>Kart brand</label>
                       <input id="p_kart_brand" />
                     </div>
-                    <div>
-                      <label>Engine type</label>
-                      <input id="p_engine_type" />
-                    </div>
                   </div>
 
                   <div class="row">
@@ -607,7 +984,6 @@
                   <div class="btnbar">
                     <button class="btn primary" id="btnSaveProfile" type="button" disabled>Save Changes</button>
                   </div>
-                  <div class="hint">Save is disabled until backend update routes are implemented.</div>
                 </div>
               </div>
 
@@ -634,8 +1010,8 @@
 
               <div class="portalSection" data-psection="race">
                 <div class="panel">
-                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>NAT Entry</div>
-                  <div class="hint">UI-only stage. Next step: lock prefilled driver data and integrate Jotform metadata (race name / products) once you approve UX.</div>
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Race Entry</div>
+                  <div class="hint">Submit your entry for upcoming NATS events. Your driver information is pre-filled for your convenience.</div>
 
                   <div class="row">
                     <div>
@@ -658,7 +1034,7 @@
                   </div>
 
                   <label>Notes (optional)</label>
-                  <textarea id="race_notes" placeholder="Optional notes for admin / scrutineering / entrant info"></textarea>
+                  <textarea id="race_notes" placeholder="Add any special notes or requests"></textarea>
 
                   <div class="btnbar">
                     <button class="btn primary" id="btnSubmitRace" type="button" disabled>Enter Race</button>
@@ -669,7 +1045,7 @@
               <div class="portalSection" data-psection="requests">
                 <div class="panel">
                   <div class="panelTitle"><span class="accentBar" style="background:var(--autumn)"></span>Contact Admin</div>
-                  <div class="hint">End-user friendly request (no JSON). This will email the admin once the backend wiring is enabled.</div>
+                  <div class="hint">Submit a request or message to our admin team. We'll review and respond promptly.</div>
 
                   <div class="row">
                     <div>
@@ -701,11 +1077,103 @@
                 </div>
               </div>
 
+              <div class="portalSection" data-psection="payments">
+                <!-- NEXT RACE DETAILS SECTION -->
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:#ef4444"></span>Next Race</div>
+                  <div style="padding: 20px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 8px; border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);">
+                    <div style="margin-bottom: 16px;">
+                      <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Upcoming Event</div>
+                      <div style="font-size: 20px; font-weight: 700; color: #1f2937; text-transform: uppercase;" id="nextRaceTitle">14 FEBRUARY 2026 - REDSTAR RACEWAY (NORTHERN REGIONS CROWN)</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                      <div>
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Location</div>
+                        <div style="font-size: 14px; color: #374151;" id="nextRaceLocation">Redstar Raceway</div>
+                      </div>
+                      <div>
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Status</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <div style="width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);"></div>
+                          <span style="font-size: 14px; color: #374151; font-weight: 600;">Registration Closed</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button class="btn primary" id="btnQuickEntry" type="button" style="width: 100%;">Enter This Race</button>
+                  </div>
+                </div>
+
+                <!-- PAYMENT STATUS SUMMARY -->
+                <div class="panel" style="margin-top: 16px;">
+                  <div class="panelTitle"><span class="accentBar" style="background:#3b82f6"></span>Payment & Entry Status</div>
+                  
+                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Engine Rental</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div id="p_engine_fee_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
+                        No
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Entry</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">(All entries, engine rental, tyres, fuel for all 8 rounds)</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div id="p_season_entry_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
+                        Not Registered
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;" id="nextRaceLabel">Next Race Entry</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div id="p_next_race_entry_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
+                        Not Registered
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Next Race Engine Rental</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div id="p_engine_rental_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
+                        No
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PAYMENT OPTIONS -->
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:#22c55e"></span>POOL ENGINE RENTAL</div>
+                  <div class="hint">Select and pay for engine rentals, race entries, or all-in packages for your competition.</div>
+
+                  <div id="paymentsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 20px;">
+                    <!-- Payment options will be populated here based on class -->
+                  </div>
+                </div>
+
+                <!-- Payment History Section -->
+                <div class="panel" style="margin-top: 24px;">
+                  <div class="panelTitle"><span class="accentBar" style="background:#22c55e"></span>Payment History</div>
+                  <div class="hint">Track all your payment transactions and statuses.</div>
+                  <div id="paymentHistoryContainer" style="margin-top: 16px;">
+                    <div style="color: #6b7280; text-align: center; padding: 20px;">Loading payment history...</div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
           <!-- REGISTER -->
-          <div id="tab-register" class="grid" style="display:none;">
+          <div id="tab-register">
             <div class="panel">
               <div class="panelTitle"><span class="accentBar" style="background:var(--summer)"></span>Driver Identity</div>
               <div class="row">
@@ -730,8 +1198,8 @@
               </div>
               <div class="row">
                 <div>
-                  <label>ID / Passport (stored privately)</label>
-                  <input id="r_id" placeholder="Optional" />
+                  <label>ID / Passport *</label>
+                  <input id="r_id" placeholder="ID or passport number" />
                 </div>
                 <div>
                   <label>Gender (optional)</label>
@@ -742,48 +1210,50 @@
 
             <div class="panel">
               <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Competition</div>
-              <div class="row">
-                <div>
-                  <label>Championship</label>
-                  <input id="r_champ" value="ROK NATS 2026" />
+              <div style="margin-bottom: 16px;">
+                <label style="display:block; font-weight:600; margin-bottom:10px; font-size:13px;">Championship *</label>
+                <div class="champ-selector">
+                  <div class="champ-option rok-nats selected" data-champ="ROK NATS">ROK NATS</div>
+                  <div class="champ-selector-group">
+                    <div class="champ-option rok-nc" data-champ="ROK Northern Crown">Northern Crown</div>
+                    <div class="champ-option rok-sc" data-champ="ROK Southern Crown">Southern Crown</div>
+                  </div>
+                  <div class="champ-option all" data-champ="ALL">ALL</div>
                 </div>
-                <div>
-                  <label>Class *</label>
-                  <select id="r_class">
-                    <option value="">Select class</option>
-                    <option>Cadet</option>
-                    <option>Mini U10</option>
-                    <option>Mini</option>
-                    <option>OK-J</option>
-                    <option>OK-N</option>
-                    <option>Shifter</option>
-                  </select>
-                </div>
+                <input id="r_champ" type="hidden" value="ROK NATS" />
               </div>
               <div class="row">
                 <div>
-                  <label>Race number (optional now)</label>
+                  <label>Class</label>
+                  <select id="r_class">
+                    <option value="">Select class</option>
+                    <option value="CADET">CADET</option>
+                    <option value="MINI ROK U/10">MINI ROK U/10</option>
+                    <option value="MINI ROK">MINI ROK</option>
+                    <option value="OK-J">OK-J</option>
+                    <option value="OK-N">OK-N</option>
+                    <option value="KZ2">KZ2</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Race number (optional)</label>
                   <input id="r_race" placeholder="e.g. 207" />
                 </div>
+              </div>
+              <div class="row">
                 <div>
                   <label>Team name</label>
                   <input id="r_team" />
                 </div>
-              </div>
-              <div class="row">
                 <div>
                   <label>Coach name</label>
                   <input id="r_coach" />
                 </div>
-                <div>
-                  <label>Kart brand</label>
-                  <input id="r_kart" placeholder="Tony Kart" />
-                </div>
               </div>
               <div class="row">
                 <div>
-                  <label>Engine type</label>
-                  <input id="r_engine" placeholder="Pool engine / Owned / Sealed" />
+                  <label>Kart brand</label>
+                  <input id="r_kart" placeholder="Tony Kart" />
                 </div>
                 <div>
                   <label>Transponder number</label>
@@ -794,6 +1264,7 @@
 
             <div class="panel" style="grid-column:1 / -1;">
               <div class="panelTitle"><span class="accentBar" style="background:var(--autumn)"></span>Entrant Details</div>
+              <div style="margin-bottom:8px;"><label><input type="checkbox" id="entrant_same" /> Entrant is same as driver</label></div>
               <div class="row">
                 <div>
                   <label>Primary guardian full name *</label>
@@ -867,8 +1338,8 @@
                 <div>
                   <label>Media release (optional)</label>
                   <select id="media_release_signed">
+                    <option value="Y" selected>Yes</option>
                     <option value="N">No</option>
-                    <option value="Y">Yes</option>
                   </select>
                 </div>
               </div>
@@ -877,10 +1348,38 @@
             </div>
 
             <div class="panel">
-              <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Profile Photo (Admin-only)</div>
-              <label>Upload profile photo (JPG/PNG)</label>
-              <input id="photo" type="file" accept="image/*" />
-              <div class="hint">Photo is stored in Drive with Admin-only visibility. It is not publicly accessible.</div>
+              <div class="panelTitle"><span class="accentBar" style="background:var(--ink)"></span>Account Security</div>
+              <div class="row">
+                <div>
+                  <label>Create a password *</label>
+                  <input id="r_password" type="password" placeholder="Min 8 characters" />
+                </div>
+                <div>
+                  <label>Confirm password *</label>
+                  <input id="r_password_confirm" type="password" placeholder="Repeat password" />
+                </div>
+              </div>
+              <div class="hint">Your password will be hashed and secured. You'll use this email and password to log in immediately after registration.</div>
+            </div>
+
+            <div class="panel">
+              <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Documents</div>
+              <div class="hint">Upload a profile photo and driver license. These help with race documentation and driver verification.</div>
+              <div class="row">
+                <div>
+                  <label>Profile Photo</label>
+                  <input id="r_profilePhoto" type="file" accept="image/*" />
+                </div>
+                <div>
+                  <label>Driver License *</label>
+                  <input id="r_driverLicense" type="file" accept="image/*,.pdf" />
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" style="grid-column:1 / -1;">
+              <div class="panelTitle"><span class="accentBar" style="background:var(--green)"></span>Registration Result</div>
+              <textarea id="regResult" style="min-height: 120px; resize: vertical;" placeholder="Registration results will appear here..." readonly></textarea>
             </div>
 
             <div class="panel" style="grid-column:1 / -1;">
@@ -888,9 +1387,6 @@
                 <button class="btn primary" id="btnRegister" type="button">Submit Registration</button>
                 <button class="btn" id="btnResetReg" type="button">Reset</button>
               </div>
-              <div class="hint">After submission, you receive a Driver ID and a PIN. Save the PIN; it is shown only once.</div>
-
-              <textarea id="regResult" placeholder="Result will appear here" style="margin-top:10px;"></textarea>
             </div>
           </div>
 
@@ -899,13 +1395,191 @@
     </div>
   </div>
 
+  <!-- FORGOT PASSWORD MODAL -->
+  <div id="forgotPasswordModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+    <div style="background:#fff; padding:32px; border-radius:8px; max-width:400px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+      <h2 style="margin:0 0 16px 0; font-size:18px; font-weight:700;">Reset Your Password</h2>
+      <p style="margin:0 0 20px 0; color:#666; font-size:14px;">Enter the email address associated with your account. We'll send you a link to reset your password.</p>
+      
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px; font-size:13px;">Email Address</label>
+        <input id="forgotEmail" type="email" placeholder="your.email@example.com" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-family:inherit; font-size:14px;" />
+      </div>
+
+      <div id="forgotMessage" style="margin-bottom:16px; padding:12px; border-radius:4px; display:none; font-size:13px;"></div>
+
+      <div style="display:flex; gap:10px;">
+        <button id="btnSendReset" class="btn primary" type="button" style="flex:1;">Send Reset Link</button>
+        <button id="btnCloseForgot" class="btn" type="button" style="flex:1;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
   
-    const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwa2RN4A7voR5MocFyWFXo965WQOrmXIcWY0QgY1a96tLxEGKgTYLxUxuBl21TwnY2H/exec';
+    // ====== NEW API ENDPOINT (Node.js Backend) ======
+    const API_ENDPOINT = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : 'https://rokthenats.co.za/api';
 
+    // ====== MD5 HASH FUNCTION FOR PAYFAST ======
+    function md5(str) {
+      // Simple MD5 implementation for PayFast signature
+      // This is a basic implementation for client-side use
+      function RotateLeft(lValue, iShiftBits) {
+        return (lValue << iShiftBits) | (lValue >>> (32 - iShiftBits));
+      }
+      function AddUnsigned(lX, lY) {
+        var lX4, lY4, lX8, lY8, lResult;
+        lX8 = (lX & 0x80000000);
+        lY8 = (lY & 0x80000000);
+        lX4 = (lX & 0x40000000);
+        lY4 = (lY & 0x40000000);
+        lResult = (lX & 0x3FFFFFFF) + (lY & 0x3FFFFFFF);
+        if (lX4 & lY4) {
+          return (lResult ^ 0x80000000 ^ lX8 ^ lY8);
+        }
+        if (lX4 | lY4) {
+          if (lResult & 0x40000000) {
+            return (lResult ^ 0xC0000000 ^ lX8 ^ lY8);
+          } else {
+            return (lResult ^ 0x40000000 ^ lX8 ^ lY8);
+          }
+        } else {
+          return (lResult ^ lX8 ^ lY8);
+        }
+      }
+      function F(x, y, z) { return (x & y) | ((~x) & z); }
+      function G(x, y, z) { return (x & z) | (y & (~z)); }
+      function H(x, y, z) { return (x ^ y ^ z); }
+      function I(x, y, z) { return (y ^ (x | (~z))); }
+      function FF(a, b, c, d, x, s, ac) {
+        a = AddUnsigned(a, AddUnsigned(AddUnsigned(F(b, c, d), x), ac));
+        return AddUnsigned(RotateLeft(a, s), b);
+      }
+      function GG(a, b, c, d, x, s, ac) {
+        a = AddUnsigned(a, AddUnsigned(AddUnsigned(G(b, c, d), x), ac));
+        return AddUnsigned(RotateLeft(a, s), b);
+      }
+      function HH(a, b, c, d, x, s, ac) {
+        a = AddUnsigned(a, AddUnsigned(AddUnsigned(H(b, c, d), x), ac));
+        return AddUnsigned(RotateLeft(a, s), b);
+      }
+      function II(a, b, c, d, x, s, ac) {
+        a = AddUnsigned(a, AddUnsigned(AddUnsigned(I(b, c, d), x), ac));
+        return AddUnsigned(RotateLeft(a, s), b);
+      }
+      function ConvertToWordArray(str) {
+        var lWordCount;
+        var lMessageLength = str.length;
+        var lNumberOfWords_temp1 = lMessageLength + 8;
+        var lNumberOfWords_temp2 = (lNumberOfWords_temp1 - (lNumberOfWords_temp1 % 64)) / 64;
+        var lNumberOfWords = (lNumberOfWords_temp2 + 1) * 16;
+        var lWordArray = Array(lNumberOfWords - 1);
+        var lBytePosition = 0;
+        var lByteCount = 0;
+        while (lByteCount < lMessageLength) {
+          lWordCount = (lByteCount - (lByteCount % 4)) / 4;
+          lBytePosition = (lByteCount % 4) * 8;
+          lWordArray[lWordCount] = (lWordArray[lWordCount] | (str.charCodeAt(lByteCount) << lBytePosition));
+          lByteCount++;
+        }
+        lWordCount = (lByteCount - (lByteCount % 4)) / 4;
+        lBytePosition = (lByteCount % 4) * 8;
+        lWordArray[lWordCount] = lWordArray[lWordCount] | (0x80 << lBytePosition);
+        lWordArray[lNumberOfWords - 2] = lMessageLength << 3;
+        lWordArray[lNumberOfWords - 1] = lMessageLength >>> 29;
+        return lWordArray;
+      }
+      function WordToHex(lValue) {
+        var WordToHexValue = "", lByte, lCount;
+        for (lCount = 0; lCount <= 3; lCount++) {
+          lByte = (lValue >>> (lCount * 8)) & 255;
+          WordToHexValue += ((lByte < 16) ? "0" : "") + lByte.toString(16);
+        }
+        return WordToHexValue;
+      }
+      var x = ConvertToWordArray(str);
+      var a = 0x67452301;
+      var b = 0xefcdab89;
+      var c = 0x98badcfe;
+      var d = 0x10325476;
+      for (var q = 0; q < x.length; q += 16) {
+        var aa = a, bb = b, cc = c, dd = d;
+        a = FF(a, b, c, d, x[q + 0], 7, 0xd76aa478);
+        d = FF(d, a, b, c, x[q + 1], 12, 0xe8c7b756);
+        c = FF(c, d, a, b, x[q + 2], 17, 0x242070db);
+        b = FF(b, c, d, a, x[q + 3], 22, 0xc1bdceee);
+        a = FF(a, b, c, d, x[q + 4], 7, 0xf57c0faf);
+        d = FF(d, a, b, c, x[q + 5], 12, 0x4787c62a);
+        c = FF(c, d, a, b, x[q + 6], 17, 0xa8304613);
+        b = FF(b, c, d, a, x[q + 7], 22, 0xfd469501);
+        a = FF(a, b, c, d, x[q + 8], 7, 0x698098d8);
+        d = FF(d, a, b, c, x[q + 9], 12, 0x8b44f7af);
+        c = FF(c, d, a, b, x[q + 10], 17, 0xffff5bb1);
+        b = FF(b, c, d, a, x[q + 11], 22, 0x895cd7be);
+        a = FF(a, b, c, d, x[q + 12], 7, 0x6b901122);
+        d = FF(d, a, b, c, x[q + 13], 12, 0xfd987193);
+        c = FF(c, d, a, b, x[q + 14], 17, 0xa679438e);
+        b = FF(b, c, d, a, x[q + 15], 22, 0x49b40821);
+        a = GG(a, b, c, d, x[q + 1], 5, 0xf61e2562);
+        d = GG(d, a, b, c, x[q + 6], 9, 0xc040b340);
+        c = GG(c, d, a, b, x[q + 11], 14, 0x265e5a51);
+        b = GG(b, c, d, a, x[q + 0], 20, 0xe9b6c7aa);
+        a = GG(a, b, c, d, x[q + 5], 5, 0xd62f105d);
+        d = GG(d, a, b, c, x[q + 10], 9, 0x2441453);
+        c = GG(c, d, a, b, x[q + 15], 14, 0xd8a1e681);
+        b = GG(b, c, d, a, x[q + 4], 20, 0xe7d3fbc8);
+        a = GG(a, b, c, d, x[q + 9], 5, 0x21e1cde6);
+        d = GG(d, a, b, c, x[q + 14], 9, 0xc33707d6);
+        c = GG(c, d, a, b, x[q + 3], 14, 0xf4d50d87);
+        b = GG(b, c, d, a, x[q + 8], 20, 0x455a14ed);
+        a = GG(a, b, c, d, x[q + 13], 5, 0xa9e3e905);
+        d = GG(d, a, b, c, x[q + 2], 9, 0xfcefa3f8);
+        c = GG(c, d, a, b, x[q + 7], 14, 0x676f02d9);
+        b = GG(b, c, d, a, x[q + 12], 20, 0x8d2a4c8a);
+        a = HH(a, b, c, d, x[q + 5], 4, 0xfffa3942);
+        d = HH(d, a, b, c, x[q + 8], 11, 0x8771f681);
+        c = HH(c, d, a, b, x[q + 11], 16, 0x6d9d6122);
+        b = HH(b, c, d, a, x[q + 14], 23, 0xfde5380c);
+        a = HH(a, b, c, d, x[q + 1], 4, 0xa4beea44);
+        d = HH(d, a, b, c, x[q + 4], 11, 0x4bdecfa9);
+        c = HH(c, d, a, b, x[q + 7], 16, 0xf6bb4b60);
+        b = HH(b, c, d, a, x[q + 10], 23, 0xbebfbc70);
+        a = HH(a, b, c, d, x[q + 13], 4, 0x289b7ec6);
+        d = HH(d, a, b, c, x[q + 0], 11, 0xeaa127fa);
+        c = HH(c, d, a, b, x[q + 3], 16, 0xd4ef3085);
+        b = HH(b, c, d, a, x[q + 6], 23, 0x4881d05);
+        a = HH(a, b, c, d, x[q + 9], 4, 0xd9d4d039);
+        d = HH(d, a, b, c, x[q + 12], 11, 0xe6db99e5);
+        c = HH(c, d, a, b, x[q + 15], 16, 0x1fa27cf8);
+        b = HH(b, c, d, a, x[q + 2], 23, 0xc4ac5665);
+        a = II(a, b, c, d, x[q + 0], 6, 0xf4292244);
+        d = II(d, a, b, c, x[q + 7], 10, 0x432aff97);
+        c = II(c, d, a, b, x[q + 14], 15, 0xab9423a7);
+        b = II(b, c, d, a, x[q + 5], 21, 0xfc93a039);
+        a = II(a, b, c, d, x[q + 12], 6, 0x655b59c3);
+        d = II(d, a, b, c, x[q + 3], 10, 0x8f0ccc92);
+        c = II(c, d, a, b, x[q + 10], 15, 0xffeff47d);
+        b = II(b, c, d, a, x[q + 1], 21, 0x85845dd1);
+        a = II(a, b, c, d, x[q + 8], 6, 0x6fa87e4f);
+        d = II(d, a, b, c, x[q + 15], 10, 0xfe2ce6e0);
+        c = II(c, d, a, b, x[q + 6], 15, 0xa3014314);
+        b = II(b, c, d, a, x[q + 13], 21, 0x4e0811a1);
+        a = II(a, b, c, d, x[q + 4], 6, 0xf7537e82);
+        d = II(d, a, b, c, x[q + 11], 10, 0xbd3af235);
+        c = II(c, d, a, b, x[q + 2], 15, 0x2ad7d2bb);
+        b = II(b, c, d, a, x[q + 9], 21, 0xeb86d391);
+        a = AddUnsigned(a, aa);
+        b = AddUnsigned(b, bb);
+        c = AddUnsigned(c, cc);
+        d = AddUnsigned(d, dd);
+      }
+      var temp = WordToHex(a) + WordToHex(b) + WordToHex(c) + WordToHex(d);
+      return temp.toLowerCase();
+    }
 
     let currentDriverId = "";
-    let currentPin = "";
+    let currentEmail = "";
+    let currentPassword = "";
     let currentProfile = null;
 
     function escapeHtml(s){
@@ -916,24 +1590,55 @@
       const el = document.getElementById("toast");
       if(!el) return;
       el.innerHTML = msg ? `<div class="toast ${type}">${escapeHtml(msg)}</div>` : "";
+      
+      // Trigger border flash on success
+      if (type === 'good' && msg) {
+        // Just show the toast message, no visual flash
+      }
     }
 
-    async function api(action, payload) {
-      const body = new URLSearchParams();
-      body.set("action", action);
-      body.set("payload", JSON.stringify(payload || {}));
+    function showConfirmation(title, message, icon = "✓") {
+      const modal = document.getElementById("confirmationModal");
+      const titleEl = document.getElementById("confirmTitle");
+      const messageEl = document.getElementById("confirmMessage");
+      const iconEl = document.getElementById("confirmIcon");
+      const btnEl = document.getElementById("confirmButton");
 
-      const res = await fetch(API_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: body.toString()
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      iconEl.textContent = icon;
+
+      modal.style.display = "flex";
+
+      // Remove any existing listeners to prevent duplicates
+      btnEl.replaceWith(btnEl.cloneNode(true));
+      const newBtn = document.getElementById("confirmButton");
+
+      return new Promise((resolve) => {
+        const handleClose = () => {
+          modal.style.display = "none";
+          modal.onclick = null;
+          resolve();
+        };
+
+        newBtn.onclick = handleClose;
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            handleClose();
+          }
+        };
       });
+    }
 
-      const ct = res.headers.get("content-type") || "";
-      if (!ct.includes("application/json")) {
-        const text = await res.text();
-        throw new Error("Server returned non-JSON response:\n" + text);
-      }
+    // Updated API function for new server format
+    async function api(action, payload) {
+      const url = `${API_ENDPOINT}/${action}`;
+      
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
 
       const json = await res.json();
       if (!json.success) throw new Error(json.error?.message || "Unknown server error");
@@ -944,33 +1649,65 @@
       try { history.replaceState(null, "", url); } catch(e) { /* ignore in srcdoc sandbox */ }
     }
 
-    function setMode(mode){
-      document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-      if(mode){
-        const active = document.querySelector(`.tab[data-tab="${mode}"]`);
-        if(active) active.classList.add("active");
-      }
+    // Initialize - both tabs should be hidden by default
+    const initReg = document.getElementById("tab-register");
+    const initPortal = document.getElementById("tab-portal");
+    
+    if(initReg) {
+      initReg.classList.remove("show");
+    }
+    if(initPortal) {
+      initPortal.classList.remove("show");
+    }
+    console.log("Initialization complete. Portal shown:", initPortal?.classList.contains("show"), "Register shown:", initReg?.classList.contains("show"));
 
+    function setMode(mode){
+      console.log("setMode called with:", mode);
+      
+      const portal = document.getElementById("tab-portal");
+      const reg = document.getElementById("tab-register");
       const gate = document.getElementById("modeGate");
       const body = document.getElementById("bodyArea");
-      const portal = document.getElementById("tab-portal");
-      const reg  = document.getElementById("tab-register");
+      
+      // Always update tab buttons
+      document.querySelectorAll(".tab").forEach(b => {
+        b.classList.remove("active");
+      });
+      
+      if (mode) {
+        const activeBtn = document.querySelector(`.tab[data-tab="${mode}"]`);
+        if (activeBtn) {
+          activeBtn.classList.add("active");
+        }
+      }
 
-      if(!mode){
-        if(gate) gate.style.display = "flex";
-        if(body) body.style.display = "none";
-        if(portal) portal.style.display = "none";
-        if(reg)  reg.style.display  = "none";
+      // First, always remove show from both tabs
+      if (portal) portal.classList.remove("show");
+      if (reg) reg.classList.remove("show");
+
+      if (!mode) {
+        // Return to mode selection
+        console.log("Returning to mode selection");
+        if (gate) gate.style.display = "flex";
+        if (body) body.style.display = "none";
         toast("", "");
         safeReplaceUrl_(location.pathname + location.search);
         return;
       }
 
-      if(gate) gate.style.display = "none";
-      if(body) body.style.display = "block";
-      if(portal) portal.style.display = (mode==="portal") ? "block" : "none";
-      if(reg)  reg.style.display  = (mode==="register") ? "grid" : "none";
+      // Showing a mode
+      console.log("Showing mode:", mode);
+      if (gate) gate.style.display = "none";
+      if (body) body.style.display = "block";
 
+      // Add show to the selected tab only
+      if (mode === "portal" && portal) {
+        portal.classList.add("show");
+      } else if (mode === "register" && reg) {
+        reg.classList.add("show");
+      }
+
+      console.log("setMode complete. Portal:", portal?.classList.contains("show") ? "shown" : "hidden", "Register:", reg?.classList.contains("show") ? "shown" : "hidden");
       safeReplaceUrl_(location.pathname + location.search + "#" + mode);
       toast("", "");
     }
@@ -984,6 +1721,16 @@
       const sec = document.querySelector(`.portalSection[data-psection="${key}"]`);
       if(sec) sec.classList.add("active");
     }
+
+    /* Class colors mapping */
+    const classColors = {
+      'CADET': '#ec4899',
+      'MINI ROK U/10': '#f59e0b',
+      'MINI ROK': '#06b6d4',
+      'OK-J': '#8b5cf6',
+      'OK-N': '#6366f1',
+      'KZ2': '#8b5cf6'
+    };
 
     /* Status helpers */
     function setStatusCard_(opts){
@@ -1000,6 +1747,21 @@
 
       const chipClass = (chipKind==="ok") ? "ok" : (chipKind==="bad") ? "bad" : "wait";
       const spinHtml = spinner ? `<span class="spinner" aria-hidden="true"></span>` : "";
+      const klassColor = classColors[klass] || '#9ca3af';
+      const klassDisplay = klass === "—" ? "—" : `<span style="display: inline-block; padding: 8px 16px; border: 2px solid ${klassColor}; color: ${klassColor}; border-radius: 6px; font-weight: 700; font-size: 13px; background: transparent;">${escapeHtml(klass)}</span>`;
+      
+      // Add bounce animation to Entries & Rentals tab on login
+      if(chipKind === "ok") {
+        setTimeout(() => {
+          const paymentsTab = document.querySelector('.ptab[data-ptab="payments"]');
+          if(paymentsTab) {
+            paymentsTab.classList.add('bounce');
+            setTimeout(() => {
+              paymentsTab.classList.remove('bounce');
+            }, 800);
+          }
+        }, 100);
+      }
 
       document.getElementById("portalStatus").innerHTML = `
         <div class="statusCard">
@@ -1010,7 +1772,7 @@
 
           <div class="statusBody">
             <div class="kv"><div class="k">Driver</div><div class="v">${escapeHtml(driver)}</div></div>
-            <div class="kv"><div class="k">Class</div><div class="v">${escapeHtml(klass)}</div></div>
+            <div class="kv"><div class="k">Class</div><div class="v">${klassDisplay}</div></div>
             <div class="kv"><div class="k">Driver ID / Email</div><div class="v">${escapeHtml(ident)}</div></div>
             <div class="kv"><div class="k">Status</div><div class="v">${escapeHtml(status)}</div></div>
           </div>
@@ -1047,7 +1809,7 @@
 
       setStatusCard_();
 
-      ["p_first_name","p_last_name","p_class","p_race_number","p_license_number","p_transponder_number","p_kart_brand","p_engine_type","p_team_name","p_coach_name"]
+      ["p_first_name","p_last_name","p_class","p_race_number","p_license_number","p_transponder_number","p_kart_brand","p_team_name","p_coach_name"]
         .forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
 
       document.getElementById("p_contactsTable").innerHTML = `<div class="hint">No data loaded.</div>`;
@@ -1078,7 +1840,11 @@
       document.getElementById("portalTabs").style.display = "flex";
       document.getElementById("portalSections").style.display = "block";
       document.getElementById("btnLogout").disabled = false;
+      document.getElementById("btnSaveProfile").disabled = false;
+      document.getElementById("btnSubmitRace").disabled = false;
+      document.getElementById("btnSendRequest").disabled = false;
 
+      document.getElementById("p_email").value = d.email || identShown || "";
       document.getElementById("p_first_name").value = d.first_name || "";
       document.getElementById("p_last_name").value = d.last_name || "";
       document.getElementById("p_class").value = d.class || "";
@@ -1086,9 +1852,60 @@
       document.getElementById("p_license_number").value = d.license_number || "";
       document.getElementById("p_transponder_number").value = d.transponder_number || "";
       document.getElementById("p_kart_brand").value = d.kart_brand || "";
-      document.getElementById("p_engine_type").value = d.engine_type || "";
       document.getElementById("p_team_name").value = d.team_name || "";
       document.getElementById("p_coach_name").value = d.coach_name || "";
+
+      // Update engine fee status (Season Engine Rental)
+      const engineFeeEl = document.getElementById("p_engine_fee_status");
+      const engineFeePaid = d.paid_engine_fee === 'Y' ? true : false;
+      if (engineFeeEl) {
+        engineFeeEl.textContent = engineFeePaid ? 'Registered' : 'Not Registered';
+        engineFeeEl.style.background = engineFeePaid ? '#10b981' : '#ef4444';
+      }
+
+      // Update season entry status
+      const seasonEntryEl = document.getElementById("p_season_entry_status");
+      if (seasonEntryEl) {
+        const status = d.season_entry_status || 'Not Registered';
+        const displayStatus = (status === 'Registered' || status === 'Confirmed') ? 'Registered' : 'Not Registered';
+        seasonEntryEl.textContent = displayStatus;
+        seasonEntryEl.style.background = displayStatus === 'Registered' ? '#10b981' : '#ef4444';
+      }
+
+      // Update next race entry status with dynamic date
+      const nextRaceEl = document.getElementById("p_next_race_entry_status");
+      const nextRaceLabel = document.getElementById("nextRaceLabel");
+      if (nextRaceEl && nextRaceLabel) {
+        const status = d.next_race_entry_status || 'Not Registered';
+        const displayStatus = (status === 'Registered' || status === 'Confirmed') ? 'Registered' : 'Not Registered';
+        nextRaceEl.textContent = displayStatus;
+        nextRaceEl.style.background = displayStatus === 'Registered' ? '#10b981' : '#ef4444';
+        // Update label with next race date (14 Feb at Redstar)
+        nextRaceLabel.textContent = 'Next Race Entry (14 Feb - Redstar)';
+      }
+
+      // Update engine rental status (Next Race Engine Rental)
+      // If Season Engine Rental (paid_engine_fee) is paid, this is always Registered/Green
+      const engineRentalEl = document.getElementById("p_engine_rental_status");
+      if (engineRentalEl) {
+        if (engineFeePaid) {
+          // Season engine rental is paid, so next race engine rental is always Registered
+          engineRentalEl.textContent = 'Registered';
+          engineRentalEl.style.background = '#10b981';
+        } else {
+          // No season rental, check if next race only rental is paid
+          const nextRaceRentalStatus = d.next_race_engine_rental_status || 'No';
+          const displayStatus = (nextRaceRentalStatus === 'Yes' || nextRaceRentalStatus === 'Paid') ? 'Registered' : 'Not Registered';
+          engineRentalEl.textContent = displayStatus;
+          engineRentalEl.style.background = displayStatus === 'Registered' ? '#10b981' : '#ef4444';
+        }
+      }
+
+      // Populate payment options based on class
+      populatePaymentOptions(d.class);
+      
+      // Load payment history
+      loadPaymentHistory();
 
       const rows = (contacts.length ? contacts : [{}]).map(c => `
         <tr>
@@ -1140,9 +1957,420 @@
         </table>
       `;
 
-      document.getElementById("btnSaveProfile").disabled = true;
-      document.getElementById("btnSubmitRace").disabled = true;
-      document.getElementById("btnSendRequest").disabled = true;
+      // Keep buttons enabled - user is still logged in
+      // Do NOT disable buttons when switching tabs
+    }
+
+    function populatePaymentOptions(driverClass) {
+      const container = document.getElementById("paymentsContainer");
+      if (!container) return;
+
+      let html = '';
+
+      // Mini ROK / Mini ROK U10
+      if (driverClass === "MINI ROK" || driverClass === "MINI ROK U/10") {
+        html = `
+          <div class="paymentCard">
+            <div class="paymentCard-title">Per Race Day</div>
+            <div class="paymentCard-desc">Engine rental for one race day</div>
+            <div class="paymentCard-price">R3,500</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="3500">
+              <input type="hidden" name="item_name" value="Mini - Per Race Day">
+              <input type="hidden" name="item_description" value="Engine rental for one race day">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+          <div class="paymentCard">
+            <div class="paymentCard-title">Weekend Rental</div>
+            <div class="paymentCard-desc">Engine rental for both days</div>
+            <div class="paymentCard-price">R5,800</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="5800">
+              <input type="hidden" name="item_name" value="Mini - Weekend Rental">
+              <input type="hidden" name="item_description" value="Engine rental for both days">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+          <div class="paymentCard">
+            <div class="paymentCard-title">Full Season</div>
+            <div class="paymentCard-desc">Engine rental for all 8 race days</div>
+            <div class="paymentCard-price">R23,200</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="23200">
+              <input type="hidden" name="item_name" value="Mini - Full Season">
+              <input type="hidden" name="item_description" value="Engine rental for all 8 race days">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+          <div class="paymentCard">
+            <div class="paymentCard-title">ALL IN OPTION</div>
+            <div class="paymentCard-desc">All race entries, engine rental, transponder, fuel and race tyres for 8 race days</div>
+            <div class="paymentCard-price">R75,640</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="75640">
+              <input type="hidden" name="item_name" value="Mini - ALL IN OPTION">
+              <input type="hidden" name="item_description" value="All race entries, engine rental, transponder, fuel and race tyres for 8 race days">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+        `;
+      }
+      // OK-J / OK-N
+      else if (driverClass === "OK-J" || driverClass === "OK-N") {
+        html = `
+          <div class="paymentCard">
+            <div class="paymentCard-title">Per Race Day</div>
+            <div class="paymentCard-desc">Engine rental for one race day</div>
+            <div class="paymentCard-price">R6,500</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="6500">
+              <input type="hidden" name="item_name" value="OK-J - Per Race Day">
+              <input type="hidden" name="item_description" value="Engine rental for one race day">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+          <div class="paymentCard">
+            <div class="paymentCard-title">Weekend Rental</div>
+            <div class="paymentCard-desc">Engine rental for both race days</div>
+            <div class="paymentCard-price">R13,000</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="13000">
+              <input type="hidden" name="item_name" value="OK-J - Weekend Rental">
+              <input type="hidden" name="item_description" value="Engine rental for both race days">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+          <div class="paymentCard">
+            <div class="paymentCard-title">Full Season</div>
+            <div class="paymentCard-desc">Engine rental for all 8 race days</div>
+            <div class="paymentCard-price">R44,000</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="44000">
+              <input type="hidden" name="item_name" value="OK-J - Full Season">
+              <input type="hidden" name="item_description" value="Engine rental for all 8 race days">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+          <div class="paymentCard">
+            <div class="paymentCard-title">ALL IN OPTION</div>
+            <div class="paymentCard-desc">All race entries, engine rental, transponder, fuel, and race tyres for 8 race days</div>
+            <div class="paymentCard-price">R107,760</div>
+            <form name="PayFastPayNowForm" action="https://payment.payfast.io/eng/process" method="post" style="display:inline;">
+              <input type="hidden" name="cmd" value="_paynow">
+              <input type="hidden" name="receiver" value="18906399">
+              <input type="hidden" name="return_url" value="https://rokthenats.co.za/payment-success.html">
+              <input type="hidden" name="cancel_url" value="https://rokthenats.co.za/payment-cancel.html">
+              <input type="hidden" name="notify_url" value="https://rokthenats.co.za/api/payfast-itn">
+              <input type="hidden" name="amount" value="107760">
+              <input type="hidden" name="item_name" value="OK-J - ALL IN OPTION">
+              <input type="hidden" name="item_description" value="All race entries, engine rental, transponder, fuel, and race tyres for 8 race days">
+              <button type="submit" class="paymentCard-btn">Proceed to Payment</button>
+            </form>
+          </div>
+        `;
+      }
+      // Cadet
+      else if (driverClass === "CADET") {
+        html = `
+          <div style="padding: 20px; text-align: center; color: #6b7280; background: #f3f4f6; border-radius: 6px;">
+            <p style="margin: 0; font-weight: 600;">Engine rental not available for CADET class</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px;">CADET drivers compete with their own engines</p>
+          </div>
+        `;
+      }
+      // Default message if class not set
+      else {
+        html = `
+          <div style="padding: 20px; text-align: center; color: #6b7280;">
+            Select your class in the registration tab to see available payment options.
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function handlePayment(title, price, reference) {
+      // PayFast Redirect Integration with Payment Tracking
+      // Extract amount from price string (e.g., "R3,500" -> 3500)
+      const amount = parseFloat(price.replace(/[^\d.]/g, ''));
+      
+      if (!amount || isNaN(amount)) {
+        toast('bad', 'Invalid payment amount');
+        return;
+      }
+
+      // Get current driver info
+      if (!currentEmail || !currentDriverId) {
+        toast('bad', 'Please log in to proceed with payment');
+        return;
+      }
+
+      const firstName = document.getElementById("p_first_name").value || currentEmail.split('@')[0];
+      const lastName = document.getElementById("p_last_name").value || '';
+
+      // PayFast merchant details (LIVE CREDENTIALS)
+      const merchantId = '18906399';
+      const merchantKey = 'fbxpiwtzoh1gg';
+      
+      // Validate credentials are configured
+      if (!merchantId || !merchantKey) {
+        toast('bad', '❌ PayFast credentials not configured. Admin must update merchant ID and key.');
+        console.error('PayFast credentials missing');
+        return;
+      }
+
+      // Store payment reference in localStorage for tracking
+      const paymentRef = reference + '_' + Date.now();
+      const paymentData = {
+        reference: paymentRef,
+        title: title,
+        amount: amount,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Store in localStorage
+      try {
+        let payments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+        payments.push(paymentData);
+        localStorage.setItem('pendingPayments', JSON.stringify(payments));
+      } catch (e) {
+        console.warn('Could not store payment to localStorage:', e);
+      }
+
+      // Store payment in database
+      fetch('http://localhost:3000/api/storePayment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driver_id: currentDriverId,
+          item_name: title,
+          amount: amount,
+          reference: paymentRef
+        })
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          console.log('✅ Payment stored:', data.data.payment_id);
+        } else {
+          console.warn('⚠️ Failed to store payment:', data.error);
+        }
+      }).catch(err => console.warn('Error storing payment:', err));
+
+      // Create hidden form for PayFast submission
+      const form = document.createElement('form');
+      form.method = 'POST';
+      // Use LIVE PayFast URL (your credentials are for production)
+      form.action = 'https://www.payfast.co.za/eng/process';
+      form.style.display = 'none';
+
+      // Determine the notify URL based on environment
+      const notifyUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000/api/payfast-itn'  // Local development
+        : `${window.location.protocol}//${window.location.hostname}:3000/api/payfast-itn`; // Production
+
+      // Build form fields in the order PayFast requires for signature
+      const fields = {
+        merchant_id: merchantId,
+        merchant_key: merchantKey,
+        return_url: window.location.origin + '/payment-success.html',
+        cancel_url: window.location.origin + '/payment-cancel.html',
+        notify_url: notifyUrl,
+        name_first: firstName,
+        name_last: lastName,
+        email_address: currentEmail,
+        item_name: title,
+        item_description: title,
+        amount: amount.toFixed(2),
+        m_payment_id: paymentRef,
+        custom_str1: currentDriverId
+      };
+
+      // Calculate MD5 signature for PayFast
+      // Signature = md5(merchant_id + amount + currency + m_payment_id + merchant_key)
+      const signatureString = `${merchantId}${amount.toFixed(2)}ZAR${paymentRef}${merchantKey}`;
+      const signature = md5(signatureString);
+
+      // Add fields to form
+      for (const [key, value] of Object.entries(fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      }
+
+      // Add signature field
+      const sigInput = document.createElement('input');
+      sigInput.type = 'hidden';
+      sigInput.name = 'signature';
+      sigInput.value = signature;
+      form.appendChild(sigInput);
+
+      // Submit form to PayFast
+      document.body.appendChild(form);
+      
+      toast('good', `Redirecting to PayFast for payment of ${price}...`);
+      
+      // Submit after brief delay to show toast
+      setTimeout(() => {
+        form.submit();
+      }, 500);
+    }
+
+    // Load and display payment history
+    function loadPaymentHistory() {
+      const container = document.getElementById('paymentHistoryContainer');
+      if (!container || !currentDriverId) return;
+
+      fetch('http://localhost:3000/api/getPaymentHistory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driver_id: currentDriverId })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success || !data.data?.payments || data.data.payments.length === 0) {
+          container.innerHTML = '<div style="color: #6b7280; text-align: center; padding: 20px;">No payments yet. Make your first payment to get started.</div>';
+          return;
+        }
+
+        const payments = data.data.payments;
+        const completedPayments = payments.filter(p => p.payment_status === 'Complete');
+        const pendingPayments = payments.filter(p => p.payment_status === 'Pending');
+        
+        const html = `
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <button type="button" class="paymentFilter" data-filter="completed" style="padding: 8px 16px; background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;">Completed (${completedPayments.length})</button>
+              <button type="button" class="paymentFilter" data-filter="pending" style="padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; display: ${pendingPayments.length > 0 ? 'block' : 'none'};">Pending (${pendingPayments.length})</button>
+            </div>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--border-soft);">
+                <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--muted); font-size: 12px;">Date</th>
+                <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--muted); font-size: 12px;">Description</th>
+                <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--muted); font-size: 12px;">Amount</th>
+                <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--muted); font-size: 12px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="paymentTableBody">
+              ${completedPayments.map(p => {
+                const date = new Date(p.created_at).toLocaleDateString('en-ZA');
+                const statusColor = p.payment_status === 'Complete' ? '#22c55e' : 
+                                   p.payment_status === 'Pending' ? '#f59e0b' : '#ef4444';
+                const statusIcon = p.payment_status === 'Complete' ? '✓' : 
+                                  p.payment_status === 'Pending' ? '⏳' : '✕';
+                return `
+                  <tr style="border-bottom: 1px solid var(--border-soft);" class="payment-row completed">
+                    <td style="padding: 12px; font-size: 13px;">${date}</td>
+                    <td style="padding: 12px; font-size: 13px;">${p.item_name || 'Payment'}</td>
+                    <td style="padding: 12px; font-size: 13px; font-weight: 600;">R${parseFloat(p.amount_gross).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 12px; font-size: 13px;">
+                      <span style="display: inline-block; padding: 4px 8px; border-radius: 3px; background: ${statusColor}20; color: ${statusColor}; font-weight: 600; font-size: 11px;">
+                        ${statusIcon} ${p.payment_status}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+              ${pendingPayments.map(p => {
+                const date = new Date(p.created_at).toLocaleDateString('en-ZA');
+                const statusColor = '#f59e0b';
+                const statusIcon = '⏳';
+                return `
+                  <tr style="border-bottom: 1px solid var(--border-soft); display: none;" class="payment-row pending">
+                    <td style="padding: 12px; font-size: 13px;">${date}</td>
+                    <td style="padding: 12px; font-size: 13px;">${p.item_name || 'Payment'}</td>
+                    <td style="padding: 12px; font-size: 13px; font-weight: 600;">R${parseFloat(p.amount_gross).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 12px; font-size: 13px;">
+                      <span style="display: inline-block; padding: 4px 8px; border-radius: 3px; background: ${statusColor}20; color: ${statusColor}; font-weight: 600; font-size: 11px;">
+                        ${statusIcon} Pending
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-soft);">
+            <div style="display: flex; justify-content: space-between; font-weight: 600;" id="totalPaymentDisplay">
+              <span>Total Payments (Completed):</span>
+              <span style="color: var(--spring);">R${(completedPayments.reduce((sum, p) => sum + parseFloat(p.amount_gross), 0)).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        `;
+        container.innerHTML = html;
+        
+        // Add filter functionality
+        const filterButtons = container.querySelectorAll('.paymentFilter');
+        filterButtons.forEach(btn => {
+          btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            filterButtons.forEach(b => b.style.opacity = '0.6');
+            this.style.opacity = '1';
+            
+            const rows = container.querySelectorAll('.payment-row');
+            rows.forEach(row => {
+              row.style.display = row.classList.contains(filter) ? '' : 'none';
+            });
+            
+            if (filter === 'pending') {
+              const pendingTotal = pendingPayments.reduce((sum, p) => sum + parseFloat(p.amount_gross), 0);
+              document.getElementById('totalPaymentDisplay').innerHTML = `
+                <span>Total Payments (Pending):</span>
+                <span style="color: var(--autumn);">R${pendingTotal.toLocaleString('en-ZA', {minimumFractionDigits: 2})}</span>
+              `;
+            } else {
+              const completedTotal = completedPayments.reduce((sum, p) => sum + parseFloat(p.amount_gross), 0);
+              document.getElementById('totalPaymentDisplay').innerHTML = `
+                <span>Total Payments (Completed):</span>
+                <span style="color: var(--spring);">R${completedTotal.toLocaleString('en-ZA', {minimumFractionDigits: 2})}</span>
+              `;
+            }
+          });
+        });
+      })
+      .catch(err => {
+        console.error('Error loading payment history:', err);
+        container.innerHTML = '<div style="color: #ef4444; padding: 12px;">Error loading payment history</div>';
+      });
     }
 
     function looksLikeEmail_(s){
@@ -1162,18 +2390,18 @@
       setPortalTab(p.dataset.ptab);
     });
 
-    /* LOGIN (Driver ID OR Email) */
+    /* LOGIN (Email + Password) */
     document.getElementById("btnLogin").addEventListener("click", async ()=>{
       const btn = document.getElementById("btnLogin");
 
       try{
         toast("", "");
 
-        const ident = document.getElementById("login_identifier").value.trim();
-        const pin = document.getElementById("login_pin").value.trim();
+        const email = document.getElementById("login_identifier").value.trim().toLowerCase();
+        const password = document.getElementById("login_password").value.trim();
 
-        if(!ident) throw new Error("Enter Driver ID or Email.");
-        if(!pin) throw new Error("Enter PIN.");
+        if(!email || !email.includes("@")) throw new Error("Enter your email address.");
+        if(!password) throw new Error("Enter your password.");
 
         // Immediate acknowledgement
         setButtonLoading_(btn, true, "Login");
@@ -1182,7 +2410,7 @@
           chipKind: "wait",
           driver: "—",
           klass: "—",
-          ident: ident,
+          ident: email,
           status: "—",
           note: "Request received. Verifying credentials and loading your portal…",
           spinner: true
@@ -1191,18 +2419,11 @@
         const minDwellMs = 650;
         const t0 = Date.now();
 
-        currentPin = pin;
-
-        let profile;
-        if (looksLikeEmail_(ident)) {
-          // Email login
-          profile = await api("getDriverProfileByEmail", { email: ident.toLowerCase(), pin });
-          currentDriverId = (profile && profile.driver && profile.driver.driver_id) ? String(profile.driver.driver_id) : "";
-        } else {
-          // Driver ID login
-          currentDriverId = ident;
-          profile = await api("getDriverProfile", { driver_id: ident, pin });
-        }
+        // Call new loginWithPassword endpoint
+        const profile = await api('loginWithPassword', { email, password });
+        currentDriverId = (profile && profile.driver && profile.driver.driver_id) ? String(profile.driver.driver_id) : "";
+        currentEmail = email;
+        currentPassword = password;
 
         const elapsed = Date.now() - t0;
         if(elapsed < minDwellMs){
@@ -1210,7 +2431,7 @@
         }
 
         currentProfile = profile;
-        renderPortal(profile, ident);
+        renderPortal(profile, email);
         toast("good", "Login successful. Portal loaded.");
       }catch(err){
         setStatusCard_({
@@ -1229,6 +2450,83 @@
       }
     });
 
+    /* FORGOT PASSWORD */
+    document.getElementById("forgotPasswordLink").addEventListener("click", (e) => {
+      const modal = document.getElementById("forgotPasswordModal");
+      const msgEl = document.getElementById("forgotMessage");
+      const emailEl = document.getElementById("forgotEmail");
+      
+      // Reset modal state
+      emailEl.value = "";
+      msgEl.style.display = "none";
+      msgEl.textContent = "";
+      msgEl.className = "";
+      
+      // Show modal
+      modal.style.display = "flex";
+    });
+
+    document.getElementById("btnCloseForgot").addEventListener("click", () => {
+      document.getElementById("forgotPasswordModal").style.display = "none";
+    });
+
+    // Close modal when clicking outside
+    document.getElementById("forgotPasswordModal").addEventListener("click", (e) => {
+      if (e.target.id === "forgotPasswordModal") {
+        document.getElementById("forgotPasswordModal").style.display = "none";
+      }
+    });
+
+    document.getElementById("btnSendReset").addEventListener("click", async () => {
+      const btn = document.getElementById("btnSendReset");
+      const emailEl = document.getElementById("forgotEmail");
+      const msgEl = document.getElementById("forgotMessage");
+      const email = emailEl.value.trim().toLowerCase();
+
+      try {
+        if (!email || !email.includes("@")) {
+          throw new Error("Please enter a valid email address.");
+        }
+
+        setButtonLoading_(btn, true, "Send Reset Link");
+        msgEl.style.display = "none";
+
+        // Call server
+        await api("requestPasswordReset", { email });
+
+        // Show success message
+        msgEl.style.display = "block";
+        msgEl.className = "hint" + " good";
+        msgEl.style.padding = "12px";
+        msgEl.style.borderRadius = "4px";
+        msgEl.style.backgroundColor = "#d4edda";
+        msgEl.style.color = "#155724";
+        msgEl.style.border = "1px solid #c3e6cb";
+        msgEl.textContent = "Check your email for a password reset link. It will expire in 24 hours.";
+
+        emailEl.value = "";
+      } catch (err) {
+        msgEl.style.display = "block";
+        msgEl.className = "hint" + " bad";
+        msgEl.style.padding = "12px";
+        msgEl.style.borderRadius = "4px";
+        msgEl.style.backgroundColor = "#f8d7da";
+        msgEl.style.color = "#721c24";
+        msgEl.style.border = "1px solid #f5c6cb";
+        msgEl.textContent = err.message || "Failed to send reset link.";
+      } finally {
+        setButtonLoading_(btn, false, "Send Reset Link");
+      }
+    });
+
+    // Allow Enter key to send reset
+    document.getElementById("forgotEmail").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("btnSendReset").click();
+      }
+    });
+
     // Enter key to login
     ["login_identifier","login_pin"].forEach(id=>{
       const el = document.getElementById(id);
@@ -1244,9 +2542,182 @@
 
     document.getElementById("btnLogout").addEventListener("click", ()=>{
       document.getElementById("login_identifier").value = "";
-      document.getElementById("login_pin").value = "";
+      document.getElementById("login_password").value = "";
       clearPortal();
       toast("good", "Logged out.");
+    });
+
+    /* SAVE PROFILE */
+    /* SEND REQUEST TO ADMIN */
+    document.getElementById("btnSendRequest").addEventListener("click", async () => {
+      const btn = document.getElementById("btnSendRequest");
+      try {
+        toast("", "");
+        if (!currentEmail) throw new Error("Not logged in.");
+
+        const name = document.getElementById("reqName").value.trim();
+        const email = document.getElementById("reqEmail").value.trim();
+        const phone = document.getElementById("reqPhone").value.trim();
+        const subject = document.getElementById("reqSubject").value.trim();
+        const message = document.getElementById("reqMessage").value.trim();
+
+        if (!subject) throw new Error("Please enter a subject.");
+        if (!message) throw new Error("Please enter a message.");
+
+        setButtonLoading_(btn, true, "Sending...");
+
+        // Send request to backend
+        const result = await api('contactAdmin', {
+          driver_id: currentDriverId,
+          name: name || currentEmail.split('@')[0],
+          email: email || currentEmail,
+          registered_email: currentEmail,
+          phone: phone,
+          subject: subject,
+          message: message
+        });
+
+        toast("good", "Message sent to admin! We'll respond soon.");
+        document.getElementById("reqName").value = "";
+        document.getElementById("reqEmail").value = "";
+        document.getElementById("reqPhone").value = "";
+        document.getElementById("reqSubject").value = "";
+        document.getElementById("reqMessage").value = "";
+      } catch (err) {
+        toast("bad", err.message || "Failed to send message.");
+      } finally {
+        setButtonLoading_(btn, false, "Send to Admin");
+      }
+    });
+
+    document.getElementById("btnSaveProfile").addEventListener("click", async ()=>{
+      const btn = document.getElementById("btnSaveProfile");
+      try {
+        toast("", "");
+        if(!currentEmail || !currentPassword) {
+          console.error("Save failed: Not logged in. Email:", currentEmail, "Password set:", !!currentPassword);
+          throw new Error("Not logged in.");
+        }
+
+        setButtonLoading_(btn, true, "Save Changes");
+
+        const updatedProfile = {
+          driver_id: currentDriverId,
+          email: currentEmail,
+          password: currentPassword,
+          first_name: document.getElementById("p_first_name").value.trim(),
+          last_name: document.getElementById("p_last_name").value.trim(),
+          class: document.getElementById("p_class").value.trim(),
+          race_number: document.getElementById("p_race_number").value.trim(),
+          license_number: document.getElementById("p_license_number").value.trim(),
+          transponder_number: document.getElementById("p_transponder_number").value.trim(),
+          kart_brand: document.getElementById("p_kart_brand").value.trim(),
+          team_name: document.getElementById("p_team_name").value.trim(),
+          coach_name: document.getElementById("p_coach_name").value.trim()
+        };
+
+        console.log("Sending save profile request:", updatedProfile);
+
+        // Call server to update profile - WAIT for DB confirmation
+        // api() function throws if not successful, so if we get here, save succeeded
+        const result = await api('updateDriver', updatedProfile);
+
+        console.log("Profile save result:", result);
+
+        // Only show success AFTER database confirmed
+        await showConfirmation("Profile Saved", "Your changes have been saved successfully!");
+        
+        // Update form with returned driver data (database confirmed data)
+        console.log("Updating form with saved data from database...");
+        if (result.driver) {
+          const d = result.driver;
+          currentProfile = d;
+          document.getElementById("p_first_name").value = d.first_name || "";
+          document.getElementById("p_last_name").value = d.last_name || "";
+          document.getElementById("p_class").value = d.class || "";
+          document.getElementById("p_race_number").value = d.race_number || "";
+          document.getElementById("p_license_number").value = d.license_number || "";
+          document.getElementById("p_transponder_number").value = d.transponder_number || "";
+          document.getElementById("p_kart_brand").value = d.kart_brand || "";
+          document.getElementById("p_team_name").value = d.team_name || "";
+          document.getElementById("p_coach_name").value = d.coach_name || "";
+          console.log("Form updated with data verified from database", d);
+        }
+        
+        setStatusCard_({
+          chipText: "Updated",
+          chipKind: "ok",
+          driver: `${updatedProfile.first_name} ${updatedProfile.last_name}`,
+          klass: updatedProfile.class || "—",
+          ident: currentEmail,
+          status: "Approved",
+          note: "Your profile has been saved."
+        });
+      } catch(err) {
+        console.error("Save profile error:", err);
+        toast("bad", err.message || "Failed to save profile.");
+      } finally {
+        setButtonLoading_(btn, false, "Save Changes");
+      }
+    });
+
+    // Update status card when class is changed
+    document.getElementById("p_class").addEventListener("change", function() {
+      const selectedClass = this.value;
+      const classColor = classColors[selectedClass] || '#9ca3af';
+      
+      // Update the class display in the status card if logged in
+      if (currentProfile && currentProfile.driver) {
+        setStatusCard_({
+          chipText: "Logged in",
+          chipKind: "ok",
+          driver: `${currentProfile.driver.first_name || ''} ${currentProfile.driver.last_name || ''}`.trim() || '—',
+          klass: selectedClass || '—',
+          ident: currentEmail || currentProfile.driver.driver_id || '—',
+          status: currentProfile.driver.status || 'Approved',
+          note: 'Portal loaded. Use the tabs above to review and manage your information.'
+        });
+      }
+    });
+
+    /* SUBMIT RACE ENTRY */
+    document.getElementById("btnSubmitRace").addEventListener("click", async ()=>{
+      const btn = document.getElementById("btnSubmitRace");
+      try {
+        toast("", "");
+        if(!currentEmail || !currentPassword) throw new Error("Not logged in.");
+
+        setButtonLoading_(btn, true, "Enter Race");
+
+        const raceEntry = {
+          driver_id: currentDriverId,
+          email: currentEmail,
+          password: currentPassword,
+          race_name: document.getElementById("race_nat").value || "Summer Nats",
+          entry_type: document.getElementById("race_entry_type").value || "full",
+          notes: document.getElementById("race_notes").value.trim() || ""
+        };
+
+        // Call server to submit race entry
+        const result = await api('submitRaceEntry', raceEntry);
+
+        toast("good", "Race entry submitted successfully!");
+        document.getElementById("race_notes").value = "";
+        
+        setStatusCard_({
+          chipText: "Entry Submitted",
+          chipKind: "ok",
+          driver: currentProfile ? `${currentProfile.driver.first_name || ""} ${currentProfile.driver.last_name || ""}`.trim() : "—",
+          klass: currentProfile ? (currentProfile.driver.class || "—") : "—",
+          ident: currentEmail,
+          status: "Entry Pending",
+          note: `You are entered for ${raceEntry.race_name}. Entry is pending admin review.`
+        });
+      } catch(err) {
+        toast("bad", err.message || "Failed to submit race entry.");
+      } finally {
+        setButtonLoading_(btn, false, "Enter Race");
+      }
     });
 
     /* Registration */
@@ -1256,14 +2727,42 @@
         const consent = document.getElementById("consent_signed").value === "Y";
         if(!consent) throw new Error("Consent must be accepted.");
 
-        const photoInput = document.getElementById("photo");
-        let photo_b64 = "", photo_name = "", photo_mime = "";
+        // Validate required ID/Passport
+        const idPassport = document.getElementById("r_id").value.trim();
+        if(!idPassport) throw new Error("ID / Passport is required.");
 
-        if(photoInput.files && photoInput.files[0]){
-          const f = photoInput.files[0];
-          photo_name = f.name;
-          photo_mime = f.type || "application/octet-stream";
-          photo_b64 = await fileToB64_(f);
+        // Validate and upload license file (required)
+        const licenseInput = document.getElementById("r_driverLicense");
+        if(!licenseInput || !licenseInput.files || licenseInput.files.length === 0) {
+          throw new Error("Driver License document is required.");
+        }
+
+        let license_b64 = "", license_name = "", license_mime = "";
+        const licenseFile = licenseInput.files[0];
+        license_name = licenseFile.name;
+        license_mime = licenseFile.type;
+        
+        // Convert license to base64
+        license_b64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(licenseFile);
+        });
+
+        // Optional: profile photo upload
+        let photo_b64 = "", photo_name = "", photo_mime = "";
+        const photoInput = document.getElementById("r_profilePhoto");
+        if(photoInput && photoInput.files && photoInput.files.length > 0) {
+          const photoFile = photoInput.files[0];
+          photo_name = photoFile.name;
+          photo_mime = photoFile.type;
+          photo_b64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(photoFile);
+          });
         }
 
         const payload = {
@@ -1272,7 +2771,6 @@
           date_of_birth: document.getElementById("r_dob").value.trim(),
           nationality: document.getElementById("r_nat").value.trim(),
           gender: document.getElementById("r_gender").value.trim(),
-          id_or_passport_number: document.getElementById("r_id").value.trim(),
 
           championship: document.getElementById("r_champ").value.trim(),
           class: document.getElementById("r_class").value.trim(),
@@ -1280,69 +2778,375 @@
           team_name: document.getElementById("r_team").value.trim(),
           coach_name: document.getElementById("r_coach").value.trim(),
           kart_brand: document.getElementById("r_kart").value.trim(),
-          engine_type: document.getElementById("r_engine").value.trim(),
           transponder_number: document.getElementById("r_transponder").value.trim(),
 
-          consent_signed: true,
-          media_release_signed: (document.getElementById("media_release_signed").value === "Y"),
+          // Contact information
+          contact_name: document.getElementById("c_name").value.trim(),
+          contact_email: document.getElementById("c_email").value.trim(),
+          contact_phone: document.getElementById("c_phone").value.trim(),
+          contact_relationship: document.getElementById("c_rel").value.trim() || "Guardian",
 
-          medical: {
-            allergies: document.getElementById("m_allergies").value.trim(),
-            medical_conditions: document.getElementById("m_conditions").value.trim(),
-            medication: document.getElementById("m_medication").value.trim(),
-            doctor_phone: document.getElementById("m_doctor_phone").value.trim(),
-            consent_date: new Date().toISOString().slice(0,10)
-          },
+          // File uploads
+          license_b64: license_b64,
+          license_name: license_name,
+          license_mime: license_mime,
+          photo_b64: photo_b64,
+          photo_name: photo_name,
+          photo_mime: photo_mime,
 
-          contacts: [{
-            relationship: document.getElementById("c_rel").value.trim() || "Guardian",
-            full_name: document.getElementById("c_name").value.trim(),
-            email: document.getElementById("c_email").value.trim(),
-            phone_mobile: document.getElementById("c_phone").value.trim(),
-            emergency_contact: (document.getElementById("c_emergency").value === "Y"),
-            consent_contact: (document.getElementById("c_consent").value === "Y"),
-            billing_contact: false
-          }],
-
-          profile_photo_b64: photo_b64,
-          profile_photo_name: photo_name,
-          profile_photo_mime: photo_mime
+          // Password from registration form
+          password: document.getElementById("r_password").value.trim()
         };
+
+        // Validate password
+        if (!payload.password || payload.password.length < 8) {
+          throw new Error("Password must be at least 8 characters.");
+        }
+
+        const confirmPassword = document.getElementById("r_password_confirm").value.trim();
+        if (payload.password !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+
+        // Show progress UI
+        const btn = document.getElementById("btnRegister");
+        if(btn){ btn.classList.add('loading'); btn.disabled = true; }
+        document.getElementById("regResult").value = 'Submitting registration...';
+        toast("", "Submitting registration...");
 
         const data = await api("registerDriver", payload);
 
         document.getElementById("regResult").value =
-`Registration submitted.\n\nDriver ID: ${data.driver_id}\nStatus: ${data.status}\n\nPIN (SAVE THIS): ${data.pin}\n\n${data.message}\n`;
+      `Registration submitted successfully!\n\nDriver ID: ${data.driver_id}\nStatus: Pending\n\nYour account has been created. You can log in with your email and password.\nAn admin will review your registration and contact you if any changes are needed.\n\n${data.message || ""}\n`;
 
-        toast("good", "Registration submitted. Save the PIN shown in the result box.");
+        toast("good", "Registration submitted successfully!");
+        if(btn){ btn.classList.remove('loading'); btn.disabled = false; }
       }catch(err){
         toast("bad", err.message);
       }
     });
 
+    // Championship selector wiring with interactive glow
+    document.querySelectorAll('.champ-option').forEach(option => {
+      option.addEventListener('click', () => {
+        document.querySelectorAll('.champ-option').forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+        document.getElementById('r_champ').value = option.dataset.champ;
+      });
+
+      // Interactive radial gradient on mouse move
+      option.addEventListener('mousemove', (e) => {
+        const rect = option.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        option.style.setProperty('--x', x + '%');
+        option.style.setProperty('--y', y + '%');
+      });
+    });
+
+    // Entrant-same-as-driver checkbox wiring
+    const entrantChk = document.getElementById('entrant_same');
+    if(entrantChk){
+      entrantChk.addEventListener('change', ()=>{
+        const checked = entrantChk.checked;
+        const rFirst = document.getElementById('r_first_name');
+        const rLast = document.getElementById('r_last_name');
+        const cName = document.getElementById('c_name');
+        const cRel = document.getElementById('c_rel');
+        const cEmail = document.getElementById('c_email');
+        const cPhone = document.getElementById('c_phone');
+        if(checked){
+          if(cName && rFirst && rLast) cName.value = (rFirst.value.trim() + ' ' + rLast.value.trim()).trim();
+          if(cRel) cRel.value = 'Driver';
+          // Only disable name and relationship, NOT email/phone (those are always needed)
+          [cName,cRel].forEach(el=>{ if(el) el.disabled = true; });
+        } else {
+          [cName,cRel].forEach(el=>{ if(el) el.disabled = false; });
+        }
+      });
+    }
+
     document.getElementById("btnResetReg").addEventListener("click", ()=>{
       [
-        "r_first_name","r_last_name","r_dob","r_nat","r_gender","r_id","r_class","r_race","r_team","r_coach","r_kart","r_engine","r_transponder",
+        "r_first_name","r_last_name","r_dob","r_nat","r_gender","r_id","r_class","r_race","r_team","r_coach","r_kart","r_transponder",
         "c_name","c_rel","c_email","c_phone","m_allergies","m_conditions","m_medication","m_doctor_phone","regResult"
       ].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+      ["r_profilePhoto","r_driverLicense"].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
       document.getElementById("consent_signed").value = "Y";
-      document.getElementById("media_release_signed").value = "N";
-      document.getElementById("photo").value = "";
+      document.getElementById("media_release_signed").value = "Y";
+      const chk = document.getElementById('entrant_same'); if(chk) chk.checked = false;
       toast("", "");
     });
 
-    function fileToB64_(file){
-      return new Promise((resolve, reject)=>{
-        const r = new FileReader();
-        r.onload = ()=> {
-          const dataUrl = String(r.result || "");
-          const b64 = dataUrl.split(",")[1] || "";
-          resolve(b64);
-        };
-        r.onerror = ()=> reject(new Error("Failed to read file"));
-        r.readAsDataURL(file);
-      });
+    // Set account password after registration (client prompt -> server)
+    document.getElementById('btnSetPassword').addEventListener('click', async ()=>{
+      try{
+        const txt = document.getElementById('regResult').value || '';
+        const m = txt.match(/Driver ID:\s*([A-Za-z0-9-]+)/);
+        const driverId = m ? m[1] : (currentDriverId || '');
+        if(!driverId) return toast('bad', 'No Driver ID found. Log in or copy Driver ID from the registration result.');
+
+        const pw = prompt('Choose a secure password for your account (min 8 chars):');
+        if(!pw || pw.length < 8) return toast('bad', 'Password must be at least 8 characters.');
+
+        const resp = await api('setDriverPassword', { driver_id: driverId, password: pw });
+        if(resp && resp.ok) toast('good', 'Password set. You can now log in with email and password.');
+      }catch(err){
+        toast('bad', err.message || 'Unable to set password');
+      }
+    });
+
+    // Forgot password -> request reset token via email
+    document.getElementById('forgotPasswordLink').addEventListener('click', async (ev)=>{
+      ev.preventDefault();
+      try{
+        const ident = document.getElementById('login_identifier').value.trim();
+        const email = looksLikeEmail_(ident) ? ident : (prompt('Enter the email address used for your account:') || '');
+        if(!email) return toast('bad', 'Email required');
+        await api('requestPasswordReset', { email: email.toLowerCase() });
+        toast('good', 'Password reset requested. Check your email for a reset link.');
+      }catch(err){
+        toast('bad', err.message || 'Unable to request password reset');
+      }
+    });
+
+    // Photo upload disabled — related helper functions removed.
+
+    // ------------------ JotForm submission helper (client) ------------------
+    function buildSubmissionFromRegister() {
+      return {
+        driver_id: "", // optional: filled if you have one
+        submission_source: "driver_portal",
+
+        driver_first_name: (document.getElementById("r_first_name").value || "").trim(),
+        driver_last_name: (document.getElementById("r_last_name").value || "").trim(),
+        driver_dob: (document.getElementById("r_dob").value || "").trim(),
+        driver_email: (document.getElementById("c_email").value || "").trim(),
+        id_or_passport_number: (document.getElementById("r_id").value || "").trim(),
+        driver_class: (document.getElementById("r_class").value || "").trim(),
+        race_number: (document.getElementById("r_race").value || "").trim(),
+        team_name: (document.getElementById("r_team").value || "").trim(),
+        tyre_class: (document.getElementById("r_kart").value || "").trim(),
+
+        primary_contact_full_name: (document.getElementById("c_name").value || "").trim(),
+        primary_contact_email: (document.getElementById("c_email").value || "").trim(),
+        primary_contact_phone: (document.getElementById("c_phone").value || "").trim(),
+
+        entrant_same_as_driver: (document.getElementById("entrant_same").checked ? "Yes" : "No"),
+        entrant_full_name: (document.getElementById("c_name").value || "").trim(),
+        entrant_email: (document.getElementById("c_email").value || "").trim(),
+        entrant_phone: (document.getElementById("c_phone").value || "").trim(),
+
+        consent_signed: (document.getElementById("consent_signed").value || "Y"),
+        media_release_signed: (document.getElementById("media_release_signed").value || "Y"),
+        indemnity_signed: "",
+
+        wants_to_enter_race: "No",
+        add_entry_race_name: "",
+        add_entry_notes: "",
+        engine_rental: "No",
+        admin_notes: ""
+      };
     }
+
+    async function submitJotformFromRegister() {
+      const btn = document.getElementById('btnSubmitJotform');
+      const jotformId = (document.getElementById('jform_id').value || '').trim();
+      if(!jotformId) return toast('bad', 'Enter the JotForm Form ID first.');
+
+      try{
+        setButtonLoading_(btn, true, 'Send to JotForm');
+        toast('', 'Sending to JotForm...');
+
+        const submission = buildSubmissionFromRegister();
+        // include driver_id if we have one (e.g., after registration login)
+        if(currentDriverId) submission.driver_id = currentDriverId;
+
+        const data = await api('createJotformSubmission', {
+          form_id: jotformId,
+          submission: submission,
+          driver_id: submission.driver_id || undefined
+        });
+
+        toast('good', 'JotForm submission recorded.');
+        // show minimal response in regResult
+        const regResult = document.getElementById('regResult');
+        if(regResult){
+          regResult.value = 'JotForm result:\n' + JSON.stringify(data, null, 2) + '\n\n' + (regResult.value || '');
+        }
+      }catch(err){
+        toast('bad', err.message || 'JotForm submission failed');
+      }finally{
+        setButtonLoading_(btn, false, 'Send to JotForm');
+      }
+    }
+
+    document.getElementById('btnSubmitJotform').addEventListener('click', submitJotformFromRegister);
+
+    /* ====== RACE ENTRY MODAL ====== */
+    const entryModal = document.createElement('div');
+    entryModal.id = 'raceEntryModal';
+    entryModal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto;';
+    entryModal.innerHTML = `
+      <div style="background: white; max-width: 500px; margin: 40px auto; border-radius: 8px; box-shadow: 0 20px 25px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
+        <!-- Header -->
+        <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1f2937;">Enter Race</h2>
+          <button type="button" onclick="document.getElementById('raceEntryModal').style.display = 'none'" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">×</button>
+        </div>
+
+        <!-- Race Info -->
+        <div style="padding: 20px; background: #f0fdf4; border-bottom: 1px solid #e5e7eb;">
+          <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">EVENT</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1f2937;">14 February 2026 - Redstar Regional</div>
+          <div style="font-size: 13px; color: #6b7280; margin-top: 8px;">📍 Redstar Raceway</div>
+        </div>
+
+        <!-- Entry Items -->
+        <div style="padding: 20px;">
+          <div style="font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 0.05em;">Entry Details</div>
+
+          <!-- Base Entry -->
+          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-weight: 600; color: #1f2937; font-size: 14px;">Race Entry (14 Feb)</div>
+              <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R450</div>
+            </div>
+            <div style="font-size: 12px; color: #6b7280;">Single race entry at Redstar Regional</div>
+          </div>
+
+          <!-- Tyres Option -->
+          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">Add Tyres (Set of 4)</div>
+                <div style="font-size: 12px; color: #6b7280;">Optional tyre set for the race</div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R250</div>
+                <input type="checkbox" id="addTyres" style="cursor: pointer; width: 18px; height: 18px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Transponder Option -->
+          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">Rent Transponder</div>
+                <div style="font-size: 12px; color: #6b7280;">Tracking device rental for the race</div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R100</div>
+                <input type="checkbox" id="addTransponder" style="cursor: pointer; width: 18px; height: 18px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Engine Rental (Conditional) -->
+          <div id="engineRentalOption" style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">Engine Rental</div>
+                <div style="font-size: 12px; color: #6b7280;">Engine rental for this race</div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R150</div>
+                <input type="checkbox" id="addEngineRental" style="cursor: pointer; width: 18px; height: 18px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Friday Practice Note -->
+          <div style="padding: 12px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #92400e; font-weight: 600;">📋 Friday Practice Fee</div>
+            <div style="font-size: 12px; color: #92400e; margin-top: 4px;">Please arrange Friday practice fees directly with track administration.</div>
+          </div>
+
+          <!-- Total -->
+          <div style="padding: 16px; background: #f3f4f6; border-radius: 6px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="color: #6b7280; font-size: 14px;">Base Entry</span>
+              <span style="color: #1f2937; font-weight: 600;">R450</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; display: none;" id="tyresLine">
+              <span style="color: #6b7280; font-size: 14px;">+ Tyres</span>
+              <span style="color: #1f2937; font-weight: 600;">R250</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; display: none;" id="transponderLine">
+              <span style="color: #6b7280; font-size: 14px;">+ Transponder</span>
+              <span style="color: #1f2937; font-weight: 600;">R100</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; display: none;" id="engineLine">
+              <span style="color: #6b7280; font-size: 14px;">+ Engine Rental</span>
+              <span style="color: #1f2937; font-weight: 600;">R150</span>
+            </div>
+            <div style="border-top: 2px solid #e5e7eb; padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; color: #1f2937;">TOTAL</span>
+              <span style="font-size: 18px; font-weight: 700; color: #22c55e;" id="totalPrice">R450</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <button type="button" onclick="document.getElementById('raceEntryModal').style.display = 'none'" style="padding: 12px; border: 2px solid #e5e7eb; background: white; color: #374151; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
+            <button type="button" id="proceedToPayment" style="padding: 12px; background: #22c55e; color: white; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">Proceed to Payment</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(entryModal);
+
+    // Entry form logic
+    function updateEntryTotal() {
+      let total = 450; // Base entry
+      const tyres = document.getElementById('addTyres').checked;
+      const transponder = document.getElementById('addTransponder').checked;
+      const engine = document.getElementById('addEngineRental').checked;
+
+      document.getElementById('tyresLine').style.display = tyres ? 'flex' : 'none';
+      document.getElementById('transponderLine').style.display = transponder ? 'flex' : 'none';
+      document.getElementById('engineLine').style.display = engine ? 'flex' : 'none';
+
+      if (tyres) total += 250;
+      if (transponder) total += 100;
+      if (engine) total += 150;
+
+      document.getElementById('totalPrice').textContent = 'R' + total;
+    }
+
+    document.getElementById('addTyres').addEventListener('change', updateEntryTotal);
+    document.getElementById('addTransponder').addEventListener('change', updateEntryTotal);
+    document.getElementById('addEngineRental').addEventListener('change', updateEntryTotal);
+
+    // Show/hide engine rental based on season status
+    function updateEngineRentalOption() {
+      const engineFeeEl = document.getElementById('p_engine_fee_status');
+      const hasSeasonEngine = engineFeeEl && engineFeeEl.textContent === 'Registered';
+      document.getElementById('engineRentalOption').style.display = hasSeasonEngine ? 'none' : 'block';
+      if (hasSeasonEngine) {
+        document.getElementById('addEngineRental').checked = false;
+        updateEntryTotal();
+      }
+    }
+
+    // Open entry modal
+    document.getElementById('btnQuickEntry').addEventListener('click', function() {
+      updateEngineRentalOption();
+      document.getElementById('raceEntryModal').style.display = 'flex';
+    });
+
+    // Proceed to payment
+    document.getElementById('proceedToPayment').addEventListener('click', function() {
+      const items = [];
+      if (true) items.push('Race Entry: R450');
+      if (document.getElementById('addTyres').checked) items.push('Tyres: R250');
+      if (document.getElementById('addTransponder').checked) items.push('Transponder: R100');
+      if (document.getElementById('addEngineRental').checked) items.push('Engine Rental: R150');
+      
+      alert('Entry items:\n' + items.join('\n') + '\n\nProceeding to PayFast payment...\n\n(Payment integration coming next)');
+      document.getElementById('raceEntryModal').style.display = 'none';
+    });
 
     /* Init */
     clearPortal();
@@ -1353,7 +3157,42 @@
       setMode(null);
     }
 
-    api("ping", {}).catch(()=>{});
+    // Handle password reset token if present in URL (deployed Apps Script can include ?reset_token=...)
+    (async function handleResetTokenFromUrl(){
+      try{
+        const params = new URLSearchParams(location.search || "");
+        const token = params.get('reset_token') || params.get('token');
+        const driver_id = params.get('driver_id');
+        
+        if(!token) {
+          // normal ping
+          api("ping", {}).catch(()=>{});
+          return;
+        }
+
+        // Build strong password requirement message
+        const pwPrompt = 'Enter a new password to reset your account.\n\n' +
+          'Requirements:\n' +
+          '• At least 8 characters\n' +
+          '• At least one uppercase letter (A-Z)\n' +
+          '• At least one lowercase letter (a-z)\n' +
+          '• At least one number (0-9)\n' +
+          '• At least one special character (!@#$%^&*)';
+        
+        const pw = prompt(pwPrompt);
+        if(!pw) { alert('Password reset cancelled.'); return; }
+
+        // call server reset
+        const result = await api('resetPassword', { token: token, driver_id: driver_id, new_password: pw });
+        alert('Password reset successful! You can now log in with your email and new password.');
+        // remove token from URL
+        try { history.replaceState(null,'', location.pathname); } catch(e){}
+        // redirect to login
+        try { location.hash = '#portal'; } catch(e){}
+      }catch(err){
+        alert('Password reset failed: ' + (err.message || err));
+      }
+    })();
   </script>
 </body>
 </html>

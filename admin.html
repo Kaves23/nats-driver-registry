@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NATS Admin Portal</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+
+    .login-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #0d0d0d;
+    }
+
+    .login-box {
+      background: #2a2a2a;
+      padding: 40px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid #404040;
+    }
+
+    .login-box h1 {
+      color: #fff;
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+
+    .login-box p {
+      color: #999;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #e0e0e0;
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      background: #1a1a1a;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #0066cc;
+      background: #242424;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .login-btn:hover {
+      background: #0052a3;
+    }
+
+    .error-message {
+      color: #ff6b6b;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: #3d2020;
+      border-radius: 4px;
+      border: 1px solid #cc3333;
+      display: none;
+      font-size: 14px;
+    }
+
+    /* Admin Dashboard */
+    .admin-wrapper {
+      display: none;
+      min-height: 100vh;
+      background: #0d0d0d;
+    }
+
+    .admin-header {
+      background: #1a1a1a;
+      border-bottom: 1px solid #404040;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .admin-header h1 {
+      color: #fff;
+      font-size: 24px;
+    }
+
+    .logout-btn {
+      padding: 10px 20px;
+      background: #d32f2f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      background: #b71c1c;
+    }
+
+    .admin-tabs {
+      display: flex;
+      gap: 10px;
+      padding: 0 20px;
+      border-bottom: 1px solid #404040;
+      background: #1a1a1a;
+      position: sticky;
+      top: 60px;
+      z-index: 50;
+    }
+
+    .tab-btn {
+      padding: 15px 20px;
+      background: transparent;
+      color: #999;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: #e0e0e0;
+    }
+
+    .tab-btn.active {
+      color: #0066cc;
+      border-bottom-color: #0066cc;
+    }
+
+    .admin-content {
+      padding: 20px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .filters-bar {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #404040;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filters-bar input,
+    .filters-bar select {
+      padding: 10px;
+      background: #2a2a2a;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+
+    .filters-bar input:focus,
+    .filters-bar select:focus {
+      outline: none;
+      border-color: #0066cc;
+    }
+
+    .search-btn {
+      padding: 10px 20px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .search-btn:hover {
+      background: #0052a3;
+    }
+
+    .table-wrapper {
+      background: #1a1a1a;
+      border-radius: 8px;
+      border: 1px solid #404040;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: #242424;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #e0e0e0;
+      border-bottom: 1px solid #404040;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #303030;
+      color: #e0e0e0;
+    }
+
+    tr:hover {
+      background: #242424;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-approved {
+      background: #1b5e20;
+      color: #4caf50;
+    }
+
+    .status-pending {
+      background: #4d3a00;
+      color: #ffc107;
+    }
+
+    .status-paid {
+      background: #0d47a1;
+      color: #42a5f5;
+    }
+
+    .status-unpaid {
+      background: #b71c1c;
+      color: #ff6b6b;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .edit-btn {
+      background: #0066cc;
+      color: white;
+    }
+
+    .edit-btn:hover {
+      background: #0052a3;
+    }
+
+    .reset-btn {
+      background: #ff9800;
+      color: white;
+    }
+
+    .reset-btn:hover {
+      background: #e68900;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 90%;
+      border: 1px solid #404040;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-content h2 {
+      margin-bottom: 20px;
+      color: #fff;
+      font-size: 20px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      background: #2a2a2a;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 14px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #0066cc;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .modal-buttons button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .save-btn {
+      background: #4caf50;
+      color: white;
+    }
+
+    .save-btn:hover {
+      background: #388e3c;
+    }
+
+    .cancel-btn {
+      background: #404040;
+      color: #e0e0e0;
+    }
+
+    .cancel-btn:hover {
+      background: #505050;
+    }
+
+    /* Message Styles */
+    .message-item {
+      padding: 16px;
+      border-left: 4px solid #404040;
+      background: #242424;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .message-item.msg-unread {
+      border-left-color: #ff6b6b;
+      background: #2a2424;
+    }
+
+    .message-item.msg-read {
+      border-left-color: #404040;
+      background: #1a1a1a;
+      opacity: 0.8;
+    }
+
+    .message-item:hover {
+      background: #2a2a2a;
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .message-body {
+      word-break: break-word;
+      line-height: 1.5;
+      color: #d0d0d0;
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 4px;
+      color: white;
+      z-index: 2000;
+      animation: slideIn 0.3s ease-out;
+      font-size: 14px;
+    }
+
+    .toast.success {
+      background: #4caf50;
+    }
+
+    .toast.error {
+      background: #d32f2f;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes successBorderFlash {
+      0% {
+        border: 4px solid #10b981;
+        box-shadow: inset 0 0 0 4px #10b981;
+      }
+      50% {
+        border: 4px solid #10b981;
+        box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.6);
+      }
+      100% {
+        border: 4px solid transparent;
+        box-shadow: none;
+      }
+    }
+
+    body.success-flash {
+      animation: successBorderFlash 0.8s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div class="login-wrapper" id="loginWrapper">
+    <div class="login-box">
+      <h1>NATS Admin</h1>
+      <p>Driver Management Portal</p>
+      <div class="error-message" id="errorMessage"></div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="adminPassword" placeholder="Enter password">
+      </div>
+      <button class="login-btn" onclick="adminLogin()">Sign In</button>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div class="admin-wrapper" id="adminWrapper">
+    <div class="admin-header">
+      <h1>Driver Management</h1>
+      <button class="logout-btn" onclick="adminLogout()">Logout</button>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
+      <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
+    </div>
+
+    <!-- Drivers Tab -->
+    <div id="driversTab" class="admin-content">
+      <div class="filters-bar">
+        <input type="text" id="searchEmail" placeholder="Search email...">
+        <input type="text" id="searchName" placeholder="Search name...">
+        <select id="filterStatus">
+          <option value="">All Status</option>
+          <option value="Approved">Approved</option>
+          <option value="Pending">Pending</option>
+        </select>
+        <select id="filterPaid">
+          <option value="">All Payment</option>
+          <option value="Paid">Paid</option>
+          <option value="Unpaid">Unpaid</option>
+        </select>
+        <button class="search-btn" onclick="loadDrivers()">Search</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th>Race #</th>
+              <th>Team</th>
+              <th>Coach</th>
+              <th>Kart Brand</th>
+              <th>Engine</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="driversTable">
+            <tr><td colspan="10" class="loading">Loading drivers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Messages Tab -->
+    <div id="messagesTab" class="admin-content" style="display: none;">
+      <div style="margin-bottom: 20px;">
+        <button class="search-btn" onclick="loadMessages()" style="margin-right: 10px;">Refresh Messages</button>
+        <button class="search-btn" style="background: #666;" onclick="clearReadMessages()">Clear Read</button>
+      </div>
+      <div id="messagesList" style="background: #2a2a2a; border-radius: 8px;">
+        <div class="loading">Loading messages...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <h2>Edit Driver</h2>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="editEmail">
+      </div>
+      <div class="form-group">
+        <label>First Name</label>
+        <input type="text" id="editFirstName">
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input type="text" id="editLastName">
+      </div>
+      <div class="form-group">
+        <label>Class</label>
+        <input type="text" id="editClass">
+      </div>
+      <div class="form-group">
+        <label>Race Number</label>
+        <input type="text" id="editRaceNumber">
+      </div>
+      <div class="form-group">
+        <label>License Number</label>
+        <input type="text" id="editLicenseNumber">
+      </div>
+      <div class="form-group">
+        <label>Transponder Number</label>
+        <input type="text" id="editTransponderNumber">
+      </div>
+      <div class="form-group">
+        <label>Team Name</label>
+        <input type="text" id="editTeamName">
+      </div>
+      <div class="form-group">
+        <label>Coach Name</label>
+        <input type="text" id="editCoachName">
+      </div>
+      <div class="form-group">
+        <label>Kart Brand</label>
+        <input type="text" id="editKartBrand">
+      </div>
+      <div class="form-group">
+        <label>Season Engine Rental Status</label>
+        <select id="editEngineRentalStatus">
+          <option value="N">Not Paid</option>
+          <option value="Y">Paid</option>
+        </select>
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">For cash payments: Set to "Paid" if driver has paid season engine rental fee</small>
+      </div>
+      <div class="form-group">
+        <label>Next Race Entry Status</label>
+        <select id="editNextRaceEntry">
+          <option value="Not Registered">Not Registered</option>
+          <option value="Registered">Registered</option>
+          <option value="Confirmed">Confirmed</option>
+        </select>
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">For cash payments: Set based on whether driver has paid for next race</small>
+      </div>
+      <div class="form-group">
+        <label>Next Race Engine Rental Status</label>
+        <select id="editNextRaceEngineRental">
+          <option value="No">Not Renting</option>
+          <option value="Yes">Renting Engine</option>
+        </select>
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">For cash payments: Set to "Renting Engine" if driver rented engine for this race</small>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="editStatus">
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Paid Status</label>
+        <select id="editPaid">
+          <option value="Unpaid">Unpaid</option>
+          <option value="Paid">Paid</option>
+        </select>
+      </div>
+
+      <!-- Driver Documents Section -->
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">Driver Documents</h3>
+        <div class="form-group">
+          <label>Driver License</label>
+          <div id="driverLicenseSection" style="padding: 8px 12px; background: #f3f4f6; border-radius: 4px; font-size: 13px;">
+            <button type="button" id="viewLicenseBtn" class="btn" style="background: #3b82f6; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer; margin-right: 8px;">View License</button>
+            <span id="licenseStatus" style="color: #666;">No license uploaded</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Profile Photo</label>
+          <div id="profilePhotoSection" style="padding: 8px 12px; background: #f3f4f6; border-radius: 4px; font-size: 13px;">
+            <button type="button" id="viewPhotoBtn" class="btn" style="background: #3b82f6; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer; margin-right: 8px;">View Photo</button>
+            <span id="photoStatus" style="color: #666;">No photo uploaded</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+        <button class="save-btn" onclick="saveDriver()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD = 'natsadmin2026';
+    let currentDriver = null;
+    let allDrivers = [];
+
+    function adminLogin() {
+      const pwEl = document.getElementById('adminPassword');
+      if (!pwEl) {
+        console.error('adminPassword element not found');
+        return;
+      }
+      
+      const password = pwEl.value;
+      if (password === ADMIN_PASSWORD) {
+        const loginWrapper = document.getElementById('loginWrapper');
+        const adminWrapper = document.getElementById('adminWrapper');
+        if (loginWrapper) loginWrapper.style.display = 'none';
+        if (adminWrapper) adminWrapper.style.display = 'block';
+        loadDrivers();
+      } else {
+        const errorMsg = document.getElementById('errorMessage');
+        if (errorMsg) {
+          errorMsg.textContent = 'Invalid password';
+          errorMsg.style.display = 'block';
+        }
+      }
+    }
+
+    function adminLogout() {
+      const loginWrapper = document.getElementById('loginWrapper');
+      const adminWrapper = document.getElementById('adminWrapper');
+      const pwEl = document.getElementById('adminPassword');
+      const errorMsg = document.getElementById('errorMessage');
+      
+      if (loginWrapper) loginWrapper.style.display = 'flex';
+      if (adminWrapper) adminWrapper.style.display = 'none';
+      if (pwEl) pwEl.value = '';
+      if (errorMsg) errorMsg.style.display = 'none';
+    }
+
+    async function loadDrivers() {
+      try {
+        const payload = {
+          email: document.getElementById('searchEmail').value,
+          name: document.getElementById('searchName').value,
+          status: document.getElementById('filterStatus').value,
+          paid: document.getElementById('filterPaid').value
+        };
+
+        console.log('Loading drivers with payload:', payload);
+
+        const response = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        console.log('Response status:', response.status);
+        const result = await response.json();
+        console.log('Response data:', result);
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to load drivers');
+        }
+
+        allDrivers = result.data.drivers || [];
+        console.log('Drivers loaded:', allDrivers.length);
+        displayDrivers(allDrivers);
+      } catch (err) {
+        console.error('Error:', err);
+        showToast(err.message, 'error');
+        const table = document.getElementById('driversTable');
+        if (table) {
+          table.innerHTML = '<tr><td colspan="10" class="loading">Error loading drivers: ' + err.message + '</td></tr>';
+        }
+      }
+    }
+
+    function displayDrivers(drivers) {
+      const table = document.getElementById('driversTable');
+      if (!table) {
+        console.error('driversTable element not found');
+        return;
+      }
+      
+      console.log('displayDrivers called with', drivers.length, 'drivers');
+      
+      if (!drivers || drivers.length === 0) {
+        console.log('No drivers to display');
+        table.innerHTML = '<tr><td colspan="10" class="loading">No drivers found</td></tr>';
+        return;
+      }
+
+      let html = '';
+      drivers.forEach((driver, index) => {
+        console.log(`Processing driver ${index}:`, driver);
+        const email = driver.driver_email || driver.email || '-';
+        const name = `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || '-';
+        const status = driver.status || 'Pending';
+        const paidStatus = driver.paid_status || 'Unpaid';
+        const coachName = driver.coach_name || '-';
+        const kartBrand = driver.kart_brand || '-';
+        const engineType = driver.engine_type || '-';
+        const transponder = driver.transponder_number || '-';
+
+        html += `
+          <tr>
+            <td>${email}</td>
+            <td>${name}</td>
+            <td>${driver.class || '-'}</td>
+            <td>${driver.race_number || '-'}</td>
+            <td>${driver.team_name || '-'}</td>
+            <td>${coachName}</td>
+            <td>${kartBrand}</td>
+            <td>${engineType}</td>
+            <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+            <td>
+              <div class="action-buttons">
+                <button class="action-btn edit-btn" onclick="openEditModal('${driver.driver_id}')">Edit</button>
+                <button class="action-btn reset-btn" onclick="resetPassword('${driver.driver_id}')">Reset PW</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      console.log('Generated HTML length:', html.length);
+      console.log('Setting innerHTML to table');
+      table.innerHTML = html;
+      console.log('Table innerHTML set successfully');
+    }
+
+    function openEditModal(driverId) {
+      if (!driverId) {
+        showToast('No driver ID provided', 'error');
+        return;
+      }
+      
+      const driver = allDrivers.find(d => d.driver_id == driverId);
+      if (!driver) {
+        showToast('Driver not found in list', 'error');
+        return;
+      }
+      
+      currentDriver = driver;
+      
+      // Set form values safely - handle undefined/null fields
+      const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = (value || '');
+      };
+      setVal('editEmail', driver.driver_email || driver.email || '');
+      setVal('editFirstName', driver.first_name);
+      setVal('editLastName', driver.last_name);
+      setVal('editClass', driver.class);
+      setVal('editRaceNumber', driver.race_number);
+      setVal('editLicenseNumber', driver.license_number);
+      setVal('editTransponderNumber', driver.transponder_number);
+      setVal('editTeamName', driver.team_name);
+      setVal('editCoachName', driver.coach_name);
+      setVal('editKartBrand', driver.kart_brand);
+      setVal('editEngineRentalStatus', driver.paid_engine_fee || 'N');
+      setVal('editNextRaceEntry', driver.next_race_entry_status || 'Not Registered');
+      setVal('editNextRaceEngineRental', driver.next_race_engine_rental_status || 'No');
+      setVal('editStatus', driver.status || 'Pending');
+      setVal('editPaid', driver.paid_status || 'Unpaid');
+      
+      // Update document status display
+      const licenseStatus = document.getElementById('licenseStatus');
+      const photoStatus = document.getElementById('photoStatus');
+      if (driver.license_document) {
+        licenseStatus.textContent = '✓ License uploaded';
+        licenseStatus.style.color = '#10b981';
+      } else {
+        licenseStatus.textContent = 'No license uploaded';
+        licenseStatus.style.color = '#666';
+      }
+      if (driver.profile_photo) {
+        photoStatus.textContent = '✓ Photo uploaded';
+        photoStatus.style.color = '#10b981';
+      } else {
+        photoStatus.textContent = 'No photo uploaded';
+        photoStatus.style.color = '#666';
+      }
+      
+      // Add event listeners for file download buttons
+      const viewLicenseBtn = document.getElementById('viewLicenseBtn');
+      const viewPhotoBtn = document.getElementById('viewPhotoBtn');
+      
+      if (viewLicenseBtn) {
+        viewLicenseBtn.onclick = () => viewDriverFile(driver.driver_id, 'license');
+      }
+      if (viewPhotoBtn) {
+        viewPhotoBtn.onclick = () => viewDriverFile(driver.driver_id, 'photo');
+      }
+      
+      const modal = document.getElementById('editModal');
+      if (modal) {
+        modal.classList.add('show');
+      }
+    }
+
+    async function viewDriverFile(driverId, fileType) {
+      try {
+        const response = await fetch('/api/downloadDriverFile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver_id: driverId, file_type: fileType })
+        });
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error.message);
+        
+        const { b64, fileName, mimeType } = result.data;
+        
+        // Open in new window or download depending on type
+        if (mimeType.startsWith('image/')) {
+          // For images, open in new tab to view
+          const imgWindow = window.open();
+          imgWindow.document.write(`<img src="data:${mimeType};base64,${b64}" style="max-width:100%; padding:20px;">`);
+        } else {
+          // For PDFs or other files, download
+          const link = document.createElement('a');
+          link.href = `data:${mimeType};base64,${b64}`;
+          link.download = fileName || `${fileType}.pdf`;
+          link.click();
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function closeEditModal() {
+      const modal = document.getElementById('editModal');
+      if (modal) {
+        modal.classList.remove('show');
+      }
+    }
+
+    async function saveDriver() {
+      try {
+        // Validate currentDriver exists
+        if (!currentDriver || !currentDriver.driver_id) {
+          showToast('No driver selected', 'error');
+          return;
+        }
+        
+        // Safely get element values
+        const getVal = (id) => {
+          const el = document.getElementById(id);
+          return el ? (el.value || '') : '';
+        };
+        
+        const payload = {
+          driver_id: currentDriver.driver_id,
+          email: getVal('editEmail'),
+          first_name: getVal('editFirstName'),
+          last_name: getVal('editLastName'),
+          class: getVal('editClass'),
+          race_number: getVal('editRaceNumber'),
+          license_number: getVal('editLicenseNumber'),
+          transponder_number: getVal('editTransponderNumber'),
+          team_name: getVal('editTeamName'),
+          coach_name: getVal('editCoachName'),
+          kart_brand: getVal('editKartBrand'),
+          paid_engine_fee: getVal('editEngineRentalStatus'),
+          next_race_entry_status: getVal('editNextRaceEntry'),
+          next_race_engine_rental_status: getVal('editNextRaceEngineRental'),
+          status: getVal('editStatus'),
+          paid_status: getVal('editPaid')
+        };
+        
+        console.log('Saving with payload:', payload);
+        
+        const response = await fetch('/api/updateDriver', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+        
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Update failed');
+
+        showToast('Driver updated successfully', 'success');
+        closeEditModal();
+        loadDrivers();
+      } catch (err) {
+        console.error('saveDriver error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function resetPassword(driverId) {
+      if (!driverId) {
+        showToast('No driver ID provided', 'error');
+        return;
+      }
+      
+      if (!confirm('Send password reset email to this driver?')) return;
+
+      try {
+        const response = await fetch('/api/sendPasswordReset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver_id: driverId })
+        });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Failed to send email');
+
+        showToast('Password reset email sent', 'success');
+      } catch (err) {
+        console.error('resetPassword error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      // Trigger border flash on success
+      if (type === 'success') {
+        document.body.classList.add('success-flash');
+        setTimeout(() => {
+          document.body.classList.remove('success-flash');
+        }, 800);
+      }
+      
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Tab switching
+    function switchTab(tabName) {
+      const driversTab = document.getElementById('driversTab');
+      const messagesTab = document.getElementById('messagesTab');
+      const tabs = document.querySelectorAll('.tab-btn');
+
+      if (tabName === 'drivers') {
+        driversTab.style.display = 'block';
+        messagesTab.style.display = 'none';
+        tabs[0].classList.add('active');
+        tabs[1].classList.remove('active');
+      } else if (tabName === 'messages') {
+        driversTab.style.display = 'none';
+        messagesTab.style.display = 'block';
+        tabs[0].classList.remove('active');
+        tabs[1].classList.add('active');
+        loadMessages();
+      }
+    }
+
+    // Load messages from backend
+    async function loadMessages() {
+      try {
+        const response = await fetch('/api/getAdminMessages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Failed to load messages');
+
+        const messages = result.data.messages || [];
+        displayMessages(messages);
+
+        // Update badge
+        const unreadCount = messages.filter(m => !m.read_status).length;
+        const badge = document.getElementById('msgBadge');
+        if (badge) {
+          badge.textContent = unreadCount > 0 ? unreadCount : '';
+        }
+      } catch (err) {
+        console.error('loadMessages error:', err);
+        const msgList = document.getElementById('messagesList');
+        if (msgList) {
+          msgList.innerHTML = '<div style="padding: 20px; color: #ef4444;">Error loading messages: ' + err.message + '</div>';
+        }
+      }
+    }
+
+    // Display messages
+    function displayMessages(messages) {
+      const msgList = document.getElementById('messagesList');
+      if (!msgList) return;
+
+      if (!messages || messages.length === 0) {
+        msgList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No messages yet</div>';
+        return;
+      }
+
+      let html = '';
+      messages.forEach((msg) => {
+        const readClass = msg.read_status ? 'msg-read' : 'msg-unread';
+        const createdDate = new Date(msg.created_at).toLocaleString();
+        html += `
+          <div class="message-item ${readClass}">
+            <div class="message-header">
+              <div style="flex: 1;">
+                <div style="font-weight: 600; color: #fff; margin-bottom: 6px;">${msg.subject}</div>
+                <div style="font-size: 13px; color: #0066cc; font-weight: 500; margin-bottom: 2px;"><strong>Account:</strong> ${msg.registered_email}</div>
+                <div style="font-size: 12px; color: #ffa500; margin-bottom: 4px;"><strong>Provided:</strong> ${msg.driver_email}</div>
+                <div style="font-size: 12px; color: #999;">From: ${msg.driver_name}</div>
+                <div style="font-size: 12px; color: #999;">${createdDate}</div>
+              </div>
+              <button class="msg-btn" onclick="markMessageRead(${msg.id})" style="background: #0066cc; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Mark Read</button>
+            </div>
+            <div class="message-body" style="margin-top: 10px; padding: 12px; background: #1a1a1a; border-radius: 4px; border-left: 3px solid #0066cc;">
+              ${msg.message.replace(/\n/g, '<br />')}
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: #666;">
+              ${msg.driver_phone ? '<strong>Phone:</strong> ' + msg.driver_phone + '<br />' : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      msgList.innerHTML = html;
+    }
+
+    // Mark message as read
+    async function markMessageRead(messageId) {
+      try {
+        const response = await fetch('/api/markMessageAsRead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message_id: messageId })
+        });
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Failed to mark message');
+
+        loadMessages();
+      } catch (err) {
+        console.error('markMessageRead error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // Clear read messages
+    function clearReadMessages() {
+      if (!confirm('Delete all read messages? This cannot be undone.')) return;
+      // Could implement if needed
+      showToast('Feature coming soon', 'error');
+    }
+
+    const adminPasswordEl = document.getElementById('adminPassword');
+    if (adminPasswordEl) {
+      adminPasswordEl.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') adminLogin();
+      });
+    }
+  </script>
+</body>
+</html>
