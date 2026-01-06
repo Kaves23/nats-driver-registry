@@ -240,36 +240,32 @@ app.post('/api/registerDriver', async (req, res) => {
 
     const driver_id = uuidv4();
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const pin_hash = await bcryptjs.hash(pin, 10);
 
     await client.query('BEGIN');
 
-    // Insert driver with just required fields
+    // Insert driver with just basic fields that definitely exist
     await client.query(
-      `INSERT INTO drivers (driver_id, first_name, last_name, pin_hash, status)
-      VALUES ($1, $2, $3, $4, $5)`,
-      [driver_id, first_name, last_name, pin_hash, 'Pending']
+      `INSERT INTO drivers (driver_id, first_name, last_name, status)
+      VALUES ($1, $2, $3, $4)`,
+      [driver_id, first_name, last_name, 'Pending']
     );
 
-    // Try to update with additional fields
+    // Try to update with additional optional fields
     try {
       await client.query(
         `UPDATE drivers SET date_of_birth = $1, nationality = $2, gender = $3,
           id_or_passport_number = $4, championship = $5, class = $6, race_number = $7,
           team_name = $8, coach_name = $9, kart_brand = $10, engine_type = $11,
-          transponder_number = $12, license_document = $13, profile_photo = $14
-        WHERE driver_id = $15`,
+          transponder_number = $12
+        WHERE driver_id = $13`,
         [date_of_birth, nationality, gender, id_or_passport_number, championship, klass,
-          race_number, team_name, coach_name, kart_brand, engine_type, transponder_number,
-          license_b64 ? JSON.stringify({b64: license_b64, name: license_name, mime: license_mime}) : null,
-          photo_b64 ? JSON.stringify({b64: photo_b64, name: photo_name, mime: photo_mime}) : null,
-          driver_id]
+          race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, driver_id]
       );
     } catch (e) {
       console.log('Could not update additional driver fields:', e.message);
     }
 
-    // Insert contacts
+    // Try to insert contacts
     if (contacts && contacts.length > 0) {
       for (const contact of contacts) {
         try {
@@ -284,15 +280,13 @@ app.post('/api/registerDriver', async (req, res) => {
       }
     }
 
-    // Insert medical consent
+    // Try to insert medical consent
     if (medical) {
       try {
         await client.query(
-          `INSERT INTO medical_consent (driver_id, allergies, medical_conditions, medication,
-            doctor_phone, consent_signed, consent_date, indemnity_signed, media_release_signed)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [driver_id, medical.allergies, medical.medical_conditions, medical.medication,
-            medical.doctor_phone, consent_signed, medical.consent_date, 'N', media_release_signed]
+          `INSERT INTO medical_consent (driver_id, allergies, medical_conditions, medication)
+          VALUES ($1, $2, $3, $4)`,
+          [driver_id, medical.allergies, medical.medical_conditions, medical.medication]
         );
       } catch (e) {
         console.log('Could not insert medical consent:', e.message);
