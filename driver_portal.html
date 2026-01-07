@@ -2883,20 +2883,6 @@
       toast("", "");
     });
 
-    // Forgot password -> request reset token via email
-    document.getElementById('forgotPasswordLink').addEventListener('click', async (ev)=>{
-      ev.preventDefault();
-      try{
-        const ident = document.getElementById('login_identifier').value.trim();
-        const email = looksLikeEmail_(ident) ? ident : (prompt('Enter the email address used for your account:') || '');
-        if(!email) return toast('bad', 'Email required');
-        await api('requestPasswordReset', { email: email.toLowerCase() });
-        toast('good', 'Password reset requested. Check your email for a reset link.');
-      }catch(err){
-        toast('bad', err.message || 'Unable to request password reset');
-      }
-    });
-
     // Photo upload disabled — related helper functions removed.
     // JotForm submission removed — replaced with PayFast race entry system via portal
 
