@@ -248,6 +248,7 @@ app.post('/api/registerDriver', async (req, res) => {
       first_name, last_name, email, date_of_birth, nationality, gender, id_or_passport_number,
       championship, class: klass, race_number, team_name, coach_name, kart_brand, engine_type, transponder_number,
       consent_signed, media_release_signed,
+      password,
       medical, contacts,
       license_b64, license_name, license_mime,
       photo_b64, photo_name, photo_mime
@@ -256,6 +257,8 @@ app.post('/api/registerDriver', async (req, res) => {
     if (!email) throw new Error('Email is required');
     if (!first_name) throw new Error('First name is required');
     if (!last_name) throw new Error('Last name is required');
+    if (!password) throw new Error('Password is required');
+    if (password.length < 8) throw new Error('Password must be at least 8 characters');
 
     // Check if email already exists
     const existingEmail = await pool.query(
@@ -268,17 +271,21 @@ app.post('/api/registerDriver', async (req, res) => {
 
     const driver_id = uuidv4();
     console.log(`✅ Generated driver_id: ${driver_id}`);
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Hash password
+    const password_hash = await bcryptjs.hash(password, 10);
+    console.log(`✅ Password hashed for ${email}`);
 
     await client.query('BEGIN');
 
-    // Insert driver with just basic fields that definitely exist
+    // Insert driver with basic fields AND password_hash
+
     console.log(`📝 Registering driver: ${first_name} ${last_name} (${email})`);
     try {
       await client.query(
-        `INSERT INTO drivers (driver_id, first_name, last_name, status)
-        VALUES ($1, $2, $3, $4)`,
-        [driver_id, first_name, last_name, 'Pending']
+        `INSERT INTO drivers (driver_id, first_name, last_name, status, password_hash)
+        VALUES ($1, $2, $3, $4, $5)`,
+        [driver_id, first_name, last_name, 'Pending', password_hash]
       );
       console.log(`✅ Driver inserted: ${driver_id}`);
     } catch (insertErr) {

@@ -2763,6 +2763,17 @@
           });
         }
 
+        // Note: Password is set during registration
+        // Validate password BEFORE building payload
+        const password = document.getElementById("r_password").value.trim();
+        const confirmPassword = document.getElementById("r_password_confirm").value.trim();
+        if (!password || password.length < 8) {
+          throw new Error("Password must be at least 8 characters.");
+        }
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+        
         const payload = {
           first_name: document.getElementById("r_first_name").value.trim(),
           last_name: document.getElementById("r_last_name").value.trim(),
@@ -2792,24 +2803,14 @@
           photo_name: photo_name,
           photo_mime: photo_mime,
 
-          // Password from registration form
-          password: document.getElementById("r_password").value.trim()
+          // Password for account login
+          password: password
         };
 
         // Validate email
         if (!payload.email) {
           console.error('Email is empty!', 'c_email element:', document.getElementById("c_email"), 'value:', document.getElementById("c_email").value);
           throw new Error("Email is required - field appears empty.");
-        }
-
-        // Validate password
-        if (!payload.password || payload.password.length < 8) {
-          throw new Error("Password must be at least 8 characters.");
-        }
-
-        const confirmPassword = document.getElementById("r_password_confirm").value.trim();
-        if (payload.password !== confirmPassword) {
-          throw new Error("Passwords do not match.");
         }
 
         // Show progress UI
@@ -2880,24 +2881,6 @@
       document.getElementById("media_release_signed").value = "Y";
       const chk = document.getElementById('entrant_same'); if(chk) chk.checked = false;
       toast("", "");
-    });
-
-    // Set account password after registration (client prompt -> server)
-    document.getElementById('btnSetPassword').addEventListener('click', async ()=>{
-      try{
-        const txt = document.getElementById('regResult').value || '';
-        const m = txt.match(/Driver ID:\s*([A-Za-z0-9-]+)/);
-        const driverId = m ? m[1] : (currentDriverId || '');
-        if(!driverId) return toast('bad', 'No Driver ID found. Log in or copy Driver ID from the registration result.');
-
-        const pw = prompt('Choose a secure password for your account (min 8 chars):');
-        if(!pw || pw.length < 8) return toast('bad', 'Password must be at least 8 characters.');
-
-        const resp = await api('setDriverPassword', { driver_id: driverId, password: pw });
-        if(resp && resp.ok) toast('good', 'Password set. You can now log in with email and password.');
-      }catch(err){
-        toast('bad', err.message || 'Unable to set password');
-      }
     });
 
     // Forgot password -> request reset token via email
