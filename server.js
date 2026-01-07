@@ -163,7 +163,6 @@ app.post('/api/test-email', async (req, res) => {
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
-});
 
 // Test endpoint to check database
 app.get('/api/test-db', async (req, res) => {
