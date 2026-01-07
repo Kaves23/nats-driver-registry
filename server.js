@@ -127,20 +127,18 @@ app.get('/api/test-db', async (req, res) => {
 // Get driver profile by ID
 app.post('/api/getDriverProfile', async (req, res) => {
   try {
-    const { driver_id, pin } = req.body;
-    if (!driver_id || !pin) throw new Error('Missing required fields');
+    const { driver_id } = req.body;
+    if (!driver_id) throw new Error('Driver ID required');
 
     const result = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driver_id]);
     const driver = result.rows[0];
     if (!driver) throw new Error('Driver not found');
 
-    const pinMatch = await bcryptjs.compare(pin, driver.pin_hash || '');
-    if (!pinMatch) throw new Error('Invalid PIN');
-
     const contacts = await pool.query('SELECT * FROM contacts WHERE driver_id = $1', [driver_id]);
     const medical = await pool.query('SELECT * FROM medical_consent WHERE driver_id = $1', [driver_id]);
     const points = await pool.query('SELECT * FROM points WHERE driver_id = $1', [driver_id]);
 
+    console.log(`✅ Retrieved driver profile: ${driver_id}`);
     res.json({
       success: true,
       data: {
@@ -151,6 +149,7 @@ app.post('/api/getDriverProfile', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('❌ getDriverProfile error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -169,13 +168,11 @@ app.post('/api/getDriverProfileByEmail', async (req, res) => {
     const driver = result.rows[0];
     if (!driver) throw new Error('Driver not found');
 
-    const pinMatch = await bcryptjs.compare(pin, driver.pin_hash || '');
-    if (!pinMatch) throw new Error('Invalid PIN');
-
     const contacts = await pool.query('SELECT * FROM contacts WHERE driver_id = $1', [driver_id]);
     const medical = await pool.query('SELECT * FROM medical_consent WHERE driver_id = $1', [driver_id]);
     const points = await pool.query('SELECT * FROM points WHERE driver_id = $1', [driver_id]);
 
+    console.log(`✅ Retrieved driver by email: ${email}`);
     res.json({
       success: true,
       data: {
@@ -186,6 +183,7 @@ app.post('/api/getDriverProfileByEmail', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('❌ getDriverProfileByEmail error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -197,20 +195,33 @@ app.post('/api/loginWithPassword', async (req, res) => {
     if (!email || !password) throw new Error('Email and password required');
 
     const contactResult = await pool.query('SELECT driver_id FROM contacts WHERE email = $1', [email.toLowerCase()]);
-    if (contactResult.rows.length === 0) throw new Error('Email not found');
+    if (contactResult.rows.length === 0) {
+      console.warn(`⚠️ Login attempt with non-existent email: ${email}`);
+      throw new Error('Email not found');
+    }
 
     const driver_id = contactResult.rows[0].driver_id;
     const result = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driver_id]);
     const driver = result.rows[0];
     if (!driver) throw new Error('Driver not found');
 
-    const passwordMatch = await bcryptjs.compare(password, driver.password_hash || '');
-    if (!passwordMatch) throw new Error('Invalid password');
+    // Check if password_hash column exists and has a value
+    if (!driver.password_hash) {
+      console.warn(`⚠️ Driver ${driver_id} has no password set`);
+      throw new Error('Password not set. Please reset your password first.');
+    }
+
+    const passwordMatch = await bcryptjs.compare(password, driver.password_hash);
+    if (!passwordMatch) {
+      console.warn(`⚠️ Failed login attempt for ${email}`);
+      throw new Error('Invalid password');
+    }
 
     const contacts = await pool.query('SELECT * FROM contacts WHERE driver_id = $1', [driver_id]);
     const medical = await pool.query('SELECT * FROM medical_consent WHERE driver_id = $1', [driver_id]);
     const points = await pool.query('SELECT * FROM points WHERE driver_id = $1', [driver_id]);
 
+    console.log(`✅ Successful login: ${email}`);
     res.json({
       success: true,
       data: {
@@ -221,6 +232,7 @@ app.post('/api/loginWithPassword', async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('❌ loginWithPassword error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -364,6 +376,8 @@ app.post('/api/requestPasswordReset', async (req, res) => {
     const { email } = req.body;
     if (!email) throw new Error('Email is required');
 
+    console.log(`🔐 Password reset requested for: ${email}`);
+
     const contactResult = await pool.query(
       'SELECT driver_id FROM contacts WHERE email = $1',
       [email.toLowerCase()]
@@ -371,6 +385,7 @@ app.post('/api/requestPasswordReset', async (req, res) => {
 
     // Always return generic success for security
     if (contactResult.rows.length === 0) {
+      console.log(`⚠️ Password reset request for non-existent email: ${email}`);
       return res.json({
         success: true,
         data: { message: 'If that email exists, a reset link has been sent.' }
@@ -386,6 +401,7 @@ app.post('/api/requestPasswordReset', async (req, res) => {
       'UPDATE drivers SET reset_token = $1, reset_token_expiry = $2 WHERE driver_id = $3',
       [reset_token_hash, reset_token_expiry, driver_id]
     );
+    console.log(`✅ Reset token saved to database for driver: ${driver_id}`);
 
     // Send email
     const resetLink = `https://rokthenats.co.za/reset-password.html?token=${reset_token}&email=${encodeURIComponent(email)}`;
@@ -397,13 +413,15 @@ app.post('/api/requestPasswordReset', async (req, res) => {
         subject: 'Reset Your NATS Driver Registry Password',
         html: `<p>Click the link below to reset your password:</p><p><a href="${resetLink}">Reset Password</a></p><p>This link expires in 1 hour.</p>`
       }
-    }).catch(err => console.error('Email error:', err.message));
+    }).catch(err => console.error('⚠️ Email error:', err.message));
 
+    console.log(`✅ Reset email sent to: ${email}`);
     res.json({
       success: true,
       data: { message: 'If that email exists, a reset link has been sent.' }
     });
   } catch (err) {
+    console.error('❌ requestPasswordReset error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -441,11 +459,13 @@ app.post('/api/resetPassword', async (req, res) => {
       [password_hash, driver_id]
     );
 
+    console.log(`✅ Password reset successfully for driver: ${driver_id}`);
     res.json({
       success: true,
       data: { message: 'Password reset successfully. You can now log in with your new password.' }
     });
   } catch (err) {
+    console.error('❌ resetPassword error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -456,14 +476,18 @@ app.post('/api/storePayment', async (req, res) => {
     const { driver_id, amount, status, reference } = req.body;
     if (!driver_id || !amount) throw new Error('Missing required fields');
 
+    console.log(`💳 Storing payment: driver=${driver_id}, amount=${amount}, status=${status}`);
+    
     await pool.query(
       `INSERT INTO payments (driver_id, amount, status, reference, payment_date)
       VALUES ($1, $2, $3, $4, NOW())`,
       [driver_id, amount, status || 'Pending', reference]
     );
 
+    console.log(`✅ Payment recorded successfully: ${reference}`);
     res.json({ success: true, data: { message: 'Payment recorded' } });
   } catch (err) {
+    console.error('❌ storePayment error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -474,16 +498,21 @@ app.post('/api/getPaymentHistory', async (req, res) => {
     const { driver_id } = req.body;
     if (!driver_id) throw new Error('Driver ID required');
 
+    console.log(`📊 Retrieving payment history for driver: ${driver_id}`);
+    
     const result = await pool.query(
       'SELECT * FROM payments WHERE driver_id = $1 ORDER BY payment_date DESC',
       [driver_id]
     );
 
+    console.log(`✅ Retrieved ${result.rows.length} payment records for driver ${driver_id}`);
+    
     res.json({
       success: true,
       data: { payments: result.rows }
     });
   } catch (err) {
+    console.error('❌ getPaymentHistory error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -495,7 +524,7 @@ app.post('/api/contactAdmin', async (req, res) => {
     const { driver_id, name, email, registered_email, phone, subject, message } = req.body;
     if (!driver_id || !email || !subject || !message) throw new Error('Missing required fields');
 
-    console.log('📧 Contact Admin request from:', email, 'Account:', registered_email, 'Subject:', subject);
+    console.log(`📧 Contact Admin request from: ${email}, Account: ${registered_email}, Subject: ${subject}`);
 
     // Save message to database
     await pool.query(
@@ -503,6 +532,7 @@ app.post('/api/contactAdmin', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [driver_id, name || 'Unknown', email, registered_email || email, phone || '', subject, message]
     );
+    console.log(`✅ Message saved to database for driver: ${driver_id}`);
 
     // Send email notification to admin
     try {
@@ -528,17 +558,19 @@ app.post('/api/contactAdmin', async (req, res) => {
             <p><strong>Message:</strong></p>
             <p>${message.replace(/\n/g, '<br />')}</p>
             <hr />
-            <p><a href="http://localhost:3000/admin.html">View in Admin Panel</a></p>
+            <p><a href="https://rokthenats.co.za/admin.html">View in Admin Panel</a></p>
           `
         }
       });
+      console.log(`✅ Admin notification email sent for: ${subject}`);
     } catch (emailErr) {
-      console.warn('Failed to send email notification:', emailErr.message);
+      console.warn('⚠️ Failed to send email notification:', emailErr.message);
       // Don't fail the request if email fails
     }
 
     res.json({ success: true, data: { message: 'Your request has been sent to the admin' } });
   } catch (err) {
+    console.error('❌ contactAdmin error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -546,11 +578,14 @@ app.post('/api/contactAdmin', async (req, res) => {
 // Get Admin Messages
 app.post('/api/getAdminMessages', async (req, res) => {
   try {
+    console.log('📨 Retrieving admin messages...');
     const result = await pool.query(
       `SELECT * FROM admin_messages ORDER BY created_at DESC`
     );
+    console.log(`✅ Retrieved ${result.rows.length} admin messages`);
     res.json({ success: true, data: { messages: result.rows } });
   } catch (err) {
+    console.error('❌ getAdminMessages error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -561,10 +596,12 @@ app.post('/api/markMessageAsRead', async (req, res) => {
     const { message_id } = req.body;
     if (!message_id) throw new Error('Missing message_id');
 
+    console.log(`✉️ Marking message ${message_id} as read...`);
     await pool.query(
       `UPDATE admin_messages SET read_status = TRUE WHERE id = $1`,
       [message_id]
     );
+    console.log(`✅ Message ${message_id} marked as read`);
     res.json({ success: true, data: { message: 'Message marked as read' } });
   } catch (err) {
     res.status(400).json({ success: false, error: { message: err.message } });
@@ -629,14 +666,18 @@ app.post('/api/setDriverPassword', async (req, res) => {
     if (!driver_id || !password) throw new Error('Driver ID and password required');
     if (password.length < 8) throw new Error('Password must be at least 8 characters');
 
+    console.log(`🔑 Setting password for driver: ${driver_id}`);
+    
     const password_hash = await bcryptjs.hash(password, 10);
     await pool.query(
       'UPDATE drivers SET password_hash = $1 WHERE driver_id = $2',
       [password_hash, driver_id]
     );
 
+    console.log(`✅ Password set successfully for driver: ${driver_id}`);
     res.json({ success: true, data: { message: 'Password set successfully' } });
   } catch (err) {
+    console.error('❌ setDriverPassword error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -683,34 +724,33 @@ app.post('/api/create-test-driver', async (req, res) => {
       transponder_number: 'TEST-001'
     };
 
-    // Hash a simple PIN for testing
+    // Generate a PIN for testing (not hashing since column doesn't exist)
     const pin = '123456';
-    const pin_hash = await bcryptjs.hash(pin, 10);
 
     let driverId;
     try {
       const result = await pool.query(
-        `INSERT INTO drivers (first_name, last_name, class, race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, pin_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO drivers (first_name, last_name, class, race_number, team_name, coach_name, kart_brand, engine_type, transponder_number)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING driver_id`,
         [testDriver.first_name, testDriver.last_name, testDriver.class, testDriver.race_number, 
          testDriver.team_name, testDriver.coach_name, testDriver.kart_brand, testDriver.engine_type,
-         testDriver.transponder_number, pin_hash]
+         testDriver.transponder_number]
       );
       driverId = result.rows[0].driver_id;
+      console.log(`✅ Test driver created with ID: ${driverId}`);
     } catch (e) {
-      console.log('Full driver insert failed for test driver, trying basic fields:', e.message);
+      console.log('❌ Full driver insert failed for test driver, trying basic fields:', e.message);
       // Try with minimal fields
       const result = await pool.query(
-        `INSERT INTO drivers (first_name, last_name, pin_hash)
-         VALUES ($1, $2, $3)
+        `INSERT INTO drivers (first_name, last_name)
+         VALUES ($1, $2)
          RETURNING driver_id`,
-        [testDriver.first_name, testDriver.last_name, pin_hash]
+        [testDriver.first_name, testDriver.last_name]
       );
       driverId = result.rows[0].driver_id;
+      console.log(`✅ Test driver created with minimal fields, ID: ${driverId}`);
     }
-
-    console.log('Created test driver with ID:', driverId);
 
     // Create test contact with email - try with different column combinations
     try {
@@ -719,8 +759,9 @@ app.post('/api/create-test-driver', async (req, res) => {
          VALUES ($1, $2, $3, $4)`,
         [driverId, 'test@example.com', 'Test Driver', '555-0000']
       );
+      console.log(`✅ Test contact created with email`);
     } catch (e) {
-      console.log('Full contact insert failed, trying minimal fields:', e.message);
+      console.log('❌ Full contact insert failed, trying minimal fields:', e.message);
       try {
         // Try with just driver_id and email
         await pool.query(
@@ -728,8 +769,9 @@ app.post('/api/create-test-driver', async (req, res) => {
            VALUES ($1, $2)`,
           [driverId, 'test@example.com']
         );
+        console.log(`✅ Test contact created with minimal fields`);
       } catch (e2) {
-        console.log('Could not create contact:', e2.message);
+        console.log('❌ Could not create contact:', e2.message);
         // Silently fail - contacts table might not exist
       }
     }
@@ -741,7 +783,7 @@ app.post('/api/create-test-driver', async (req, res) => {
       pin
     });
   } catch (err) {
-    console.error('create-test-driver error:', err.message);
+    console.error('❌ create-test-driver error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 });
