@@ -1239,12 +1239,7 @@ app.post('/api/getDatabaseTable', async (req, res) => {
   }
 });
 
-// 404 handler for API routes that don't exist
-app.use('/api', (req, res) => {
-  res.status(404).json({ success: false, error: { message: 'API endpoint not found' } });
-});
-
-// Serve static files from the project root (AFTER all API routes and 404 handler)
+// Serve static files from the project root (AFTER all API routes)
 app.use(express.static(path.join(__dirname, '.')));
 
 const PORT = process.env.PORT || 3000;
