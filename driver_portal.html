@@ -3181,7 +3181,7 @@
         if(!pw) { alert('Password reset cancelled.'); return; }
 
         // call server reset
-        const result = await api('resetPassword', { token: token, driver_id: driver_id, new_password: pw });
+        const result = await api('resetPassword', { token: token, email: currentEmail || email, newPassword: pw });
         alert('Password reset successful! You can now log in with your email and new password.');
         // remove token from URL
         try { history.replaceState(null,'', location.pathname); } catch(e){}
