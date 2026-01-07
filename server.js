@@ -514,36 +514,6 @@ app.post('/api/getPaymentHistory', async (req, res) => {
   }
 });
 
-// Create JotForm Submission
-app.post('/api/createJotformSubmission', async (req, res) => {
-  try {
-    const { form_id, submission, driver_id } = req.body;
-    if (!form_id || !submission) throw new Error('Missing required fields: form_id, submission');
-
-    console.log(`📋 Recording JotForm submission for form: ${form_id}, driver: ${driver_id}`);
-
-    // Store JotForm submission in database for audit trail
-    await pool.query(
-      `INSERT INTO jotform_submissions (driver_id, form_id, submission_data, submitted_at)
-       VALUES ($1, $2, $3, NOW())`,
-      [driver_id || null, form_id, JSON.stringify(submission)]
-    );
-
-    console.log(`✅ JotForm submission recorded: form=${form_id}, driver=${driver_id}`);
-    res.json({ 
-      success: true, 
-      data: { 
-        message: 'JotForm submission recorded successfully',
-        form_id: form_id,
-        submission_id: form_id
-      } 
-    });
-  } catch (err) {
-    console.error('❌ createJotformSubmission error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
-  }
-});
-
 // Update Driver Profile
 // Contact Admin
 app.post('/api/contactAdmin', async (req, res) => {

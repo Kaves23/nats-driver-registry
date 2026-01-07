@@ -2909,77 +2909,7 @@
     });
 
     // Photo upload disabled — related helper functions removed.
-
-    // ------------------ JotForm submission helper (client) ------------------
-    function buildSubmissionFromRegister() {
-      return {
-        driver_id: "", // optional: filled if you have one
-        submission_source: "driver_portal",
-
-        driver_first_name: (document.getElementById("r_first_name").value || "").trim(),
-        driver_last_name: (document.getElementById("r_last_name").value || "").trim(),
-        driver_dob: (document.getElementById("r_dob").value || "").trim(),
-        driver_email: (document.getElementById("c_email").value || "").trim(),
-        id_or_passport_number: (document.getElementById("r_id").value || "").trim(),
-        driver_class: (document.getElementById("r_class").value || "").trim(),
-        race_number: (document.getElementById("r_race").value || "").trim(),
-        team_name: (document.getElementById("r_team").value || "").trim(),
-        tyre_class: (document.getElementById("r_kart").value || "").trim(),
-
-        primary_contact_full_name: (document.getElementById("c_name").value || "").trim(),
-        primary_contact_email: (document.getElementById("c_email").value || "").trim(),
-        primary_contact_phone: (document.getElementById("c_phone").value || "").trim(),
-
-        entrant_same_as_driver: (document.getElementById("entrant_same").checked ? "Yes" : "No"),
-        entrant_full_name: (document.getElementById("c_name").value || "").trim(),
-        entrant_email: (document.getElementById("c_email").value || "").trim(),
-        entrant_phone: (document.getElementById("c_phone").value || "").trim(),
-
-        consent_signed: (document.getElementById("consent_signed").value || "Y"),
-        media_release_signed: (document.getElementById("media_release_signed").value || "Y"),
-        indemnity_signed: "",
-
-        wants_to_enter_race: "No",
-        add_entry_race_name: "",
-        add_entry_notes: "",
-        engine_rental: "No",
-        admin_notes: ""
-      };
-    }
-
-    async function submitJotformFromRegister() {
-      const btn = document.getElementById('btnSubmitJotform');
-      const jotformId = (document.getElementById('jform_id').value || '').trim();
-      if(!jotformId) return toast('bad', 'Enter the JotForm Form ID first.');
-
-      try{
-        setButtonLoading_(btn, true, 'Send to JotForm');
-        toast('', 'Sending to JotForm...');
-
-        const submission = buildSubmissionFromRegister();
-        // include driver_id if we have one (e.g., after registration login)
-        if(currentDriverId) submission.driver_id = currentDriverId;
-
-        const data = await api('createJotformSubmission', {
-          form_id: jotformId,
-          submission: submission,
-          driver_id: submission.driver_id || undefined
-        });
-
-        toast('good', 'JotForm submission recorded.');
-        // show minimal response in regResult
-        const regResult = document.getElementById('regResult');
-        if(regResult){
-          regResult.value = 'JotForm result:\n' + JSON.stringify(data, null, 2) + '\n\n' + (regResult.value || '');
-        }
-      }catch(err){
-        toast('bad', err.message || 'JotForm submission failed');
-      }finally{
-        setButtonLoading_(btn, false, 'Send to JotForm');
-      }
-    }
-
-    document.getElementById('btnSubmitJotform').addEventListener('click', submitJotformFromRegister);
+    // JotForm submission removed — replaced with PayFast race entry system via portal
 
     /* ====== RACE ENTRY MODAL ====== */
     const entryModal = document.createElement('div');
