@@ -792,6 +792,10 @@
       .header-right{ text-align:left; }
       .ptab{ min-width: 0; width: 100%; }
       .statusBody{ grid-template-columns: 1fr; }
+      
+      /* Hide championship buttons on mobile, show dropdown */
+      #champ-buttons-container{ display: none !important; }
+      #champ-select{ display: block !important; }
     }
   </style>
 </head>
@@ -1188,8 +1192,8 @@
               </div>
               <div class="row">
                 <div>
-                  <label>Date of birth (YYYY-MM-DD) *</label>
-                  <input id="r_dob" placeholder="2012-05-14" />
+                  <label>Date of birth *</label>
+                  <input id="r_dob" type="date" />
                 </div>
                 <div>
                   <label>Nationality</label>
@@ -1212,7 +1216,7 @@
               <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Competition</div>
               <div style="margin-bottom: 16px;">
                 <label style="display:block; font-weight:600; margin-bottom:10px; font-size:13px;">Championship *</label>
-                <div class="champ-selector">
+                <div class="champ-selector" id="champ-buttons-container">
                   <div class="champ-option rok-nats selected" data-champ="ROK NATS">ROK NATS</div>
                   <div class="champ-selector-group">
                     <div class="champ-option rok-nc" data-champ="ROK Northern Crown">Northern Crown</div>
@@ -1220,6 +1224,12 @@
                   </div>
                   <div class="champ-option all" data-champ="ALL">ALL</div>
                 </div>
+                <select id="champ-select" style="display:none; width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:14px;">
+                  <option value="ROK NATS">ROK NATS</option>
+                  <option value="ROK Northern Crown">Northern Crown</option>
+                  <option value="ROK Southern Crown">Southern Crown</option>
+                  <option value="ALL">ALL</option>
+                </select>
                 <input id="r_champ" type="hidden" value="ROK NATS" />
               </div>
               <div class="row">
@@ -2862,6 +2872,9 @@
         document.querySelectorAll('.champ-option').forEach(o => o.classList.remove('selected'));
         option.classList.add('selected');
         document.getElementById('r_champ').value = option.dataset.champ;
+        // Also update dropdown if visible
+        const select = document.getElementById('champ-select');
+        if(select) select.value = option.dataset.champ;
       });
 
       // Interactive radial gradient on mouse move
@@ -2873,6 +2886,14 @@
         option.style.setProperty('--y', y + '%');
       });
     });
+
+    // Championship dropdown wiring (for mobile)
+    const champSelect = document.getElementById('champ-select');
+    if(champSelect) {
+      champSelect.addEventListener('change', () => {
+        document.getElementById('r_champ').value = champSelect.value;
+      });
+    }
 
     // Entrant-same-as-driver checkbox wiring
     const entrantChk = document.getElementById('entrant_same');

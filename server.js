@@ -95,6 +95,41 @@ app.all('/api/ping', (req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
 });
 
+// Test email endpoint
+app.post('/api/test-email', async (req, res) => {
+  try {
+    const { email, driver_id } = req.body;
+    if (!email) throw new Error('Email required');
+    
+    const test_driver_id = driver_id || 'TEST-' + Date.now();
+    
+    console.log(`📧 Sending test registration email to ${email}...`);
+    await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+      key: process.env.MAILCHIMP_API_KEY,
+      message: {
+        to: [{ email: email }],
+        from_email: process.env.MAILCHIMP_FROM_EMAIL,
+        subject: 'NATS Driver Registration Confirmation - TEST',
+        html: `<h2>Welcome to NATS!</h2>
+          <p>This is a TEST registration confirmation email.</p>
+          <p><strong>Driver ID:</strong> ${test_driver_id}</p>
+          <p>Please save this information for your records.</p>
+          <p>You can log in with your email and password once your registration is approved.</p>
+          <p>You will receive another email once your registration has been reviewed by an administrator.</p>`
+      }
+    });
+    
+    console.log(`✅ Test email sent to ${email}`);
+    res.json({
+      success: true,
+      data: { message: `Test email sent to ${email}` }
+    });
+  } catch (err) {
+    console.error('❌ Test email error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // Test endpoint to check database
 app.get('/api/test-db', async (req, res) => {
   try {
