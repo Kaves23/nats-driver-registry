@@ -1634,15 +1634,26 @@
     async function api(action, payload) {
       const url = `${API_ENDPOINT}/${action}`;
       
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload || {})
-      });
+      console.log(`🔄 API call: ${action}, payload size: ${JSON.stringify(payload).length} bytes`);
+      
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload || {})
+        });
 
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error?.message || "Unknown server error");
-      return json.data;
+        console.log(`📡 API response status: ${res.status} for ${action}`);
+
+        const json = await res.json();
+        console.log(`📦 API response data:`, json);
+
+        if (!json.success) throw new Error(json.error?.message || "Unknown server error");
+        return json.data;
+      } catch (err) {
+        console.error(`❌ API error for ${action}:`, err);
+        throw err;
+      }
     }
 
     function safeReplaceUrl_(url){
@@ -2819,7 +2830,18 @@
         document.getElementById("regResult").value = 'Submitting registration...';
         toast("", "Submitting registration...");
 
+        console.log('📝 Sending registration payload:', {
+          first_name: payload.first_name,
+          last_name: payload.last_name,
+          email: payload.email,
+          license_size: payload.license_b64.length,
+          photo_size: payload.photo_b64.length,
+          payload_size: JSON.stringify(payload).length
+        });
+
         const data = await api("registerDriver", payload);
+
+        console.log('✅ Registration response:', data);
 
         document.getElementById("regResult").value =
       `Registration submitted successfully!\n\nDriver ID: ${data.driver_id}\nStatus: Pending\n\nYour account has been created. You can log in with your email and password.\nAn admin will review your registration and contact you if any changes are needed.\n\n${data.message || ""}\n`;
@@ -2827,7 +2849,10 @@
         toast("good", "Registration submitted successfully!");
         if(btn){ btn.classList.remove('loading'); btn.disabled = false; }
       }catch(err){
-        toast("bad", err.message);
+        console.error('❌ Registration error:', err);
+        toast("bad", err.message || 'Registration failed');
+        const btn = document.getElementById("btnRegister");
+        if(btn){ btn.classList.remove('loading'); btn.disabled = false; }
       }
     });
 
