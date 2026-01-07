@@ -256,12 +256,18 @@ app.post('/api/registerDriver', async (req, res) => {
 
     // Insert driver with just basic fields that definitely exist
     console.log(`📝 Registering driver: ${first_name} ${last_name} (${email})`);
-    await client.query(
-      `INSERT INTO drivers (driver_id, first_name, last_name, status)
-      VALUES ($1, $2, $3, $4)`,
-      [driver_id, first_name, last_name, 'Pending']
-    );
-    console.log(`✅ Driver inserted: ${driver_id}`);
+    try {
+      await client.query(
+        `INSERT INTO drivers (driver_id, first_name, last_name, status)
+        VALUES ($1, $2, $3, $4)`,
+        [driver_id, first_name, last_name, 'Pending']
+      );
+      console.log(`✅ Driver inserted: ${driver_id}`);
+    } catch (insertErr) {
+      console.error('❌ Driver insert error:', insertErr.message);
+      await client.query('ROLLBACK');
+      throw new Error('Failed to create driver record: ' + insertErr.message);
+    }
 
     // Try to update with additional optional fields
     try {
