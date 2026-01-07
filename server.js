@@ -15,9 +15,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (HTML, CSS, JS)
-app.use(express.static(path.join(__dirname, '.')));
-
 // Database connection
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -1242,8 +1239,13 @@ app.post('/api/getDatabaseTable', async (req, res) => {
   }
 });
 
-// Serve static files from the project root (AFTER all API routes)
-app.use(express.static(path.join(__dirname)));
+// 404 handler for API routes that don't exist
+app.use('/api', (req, res) => {
+  res.status(404).json({ success: false, error: { message: 'API endpoint not found' } });
+});
+
+// Serve static files from the project root (AFTER all API routes and 404 handler)
+app.use(express.static(path.join(__dirname, '.')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
