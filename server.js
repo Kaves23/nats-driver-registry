@@ -257,6 +257,15 @@ app.post('/api/registerDriver', async (req, res) => {
     if (!first_name) throw new Error('First name is required');
     if (!last_name) throw new Error('Last name is required');
 
+    // Check if email already exists
+    const existingEmail = await pool.query(
+      'SELECT driver_id FROM contacts WHERE email = $1',
+      [email.toLowerCase()]
+    );
+    if (existingEmail.rows.length > 0) {
+      throw new Error('Email address already registered. Please use a different email or log in with your existing account.');
+    }
+
     const driver_id = uuidv4();
     console.log(`✅ Generated driver_id: ${driver_id}`);
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
@@ -298,15 +307,14 @@ app.post('/api/registerDriver', async (req, res) => {
     try {
       await client.query(
         `INSERT INTO contacts (driver_id, email)
-        VALUES ($1, $2)
-        ON CONFLICT DO NOTHING`,
+        VALUES ($1, $2)`,
         [driver_id, email.toLowerCase()]
       );
       console.log(`✅ Email contact saved: ${email}`);
     } catch (e) {
       console.error('❌ Could not insert email contact:', e.message);
-      // If contacts table doesn't exist or has issues, don't fail registration
-      console.log('⚠️ Continuing without contacts table insert...');
+      await client.query('ROLLBACK');
+      throw new Error('Failed to save email address: ' + e.message);
     }
 
     // Try to insert other contacts
