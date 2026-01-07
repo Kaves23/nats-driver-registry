@@ -298,13 +298,15 @@ app.post('/api/registerDriver', async (req, res) => {
     try {
       await client.query(
         `INSERT INTO contacts (driver_id, email)
-        VALUES ($1, $2)`,
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING`,
         [driver_id, email.toLowerCase()]
       );
       console.log(`✅ Email contact saved: ${email}`);
     } catch (e) {
-      console.log('⚠️ Could not insert email contact:', e.message);
-      throw new Error('Failed to save email address: ' + e.message);
+      console.error('❌ Could not insert email contact:', e.message);
+      // If contacts table doesn't exist or has issues, don't fail registration
+      console.log('⚠️ Continuing without contacts table insert...');
     }
 
     // Try to insert other contacts
