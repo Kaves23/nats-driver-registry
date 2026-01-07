@@ -230,7 +230,7 @@ app.post('/api/registerDriver', async (req, res) => {
   const client = await pool.connect();
   try {
     const {
-      first_name, last_name, date_of_birth, nationality, gender, id_or_passport_number,
+      first_name, last_name, email, date_of_birth, nationality, gender, id_or_passport_number,
       championship, class: klass, race_number, team_name, coach_name, kart_brand, engine_type, transponder_number,
       consent_signed, media_release_signed,
       medical, contacts,
@@ -238,17 +238,21 @@ app.post('/api/registerDriver', async (req, res) => {
       photo_b64, photo_name, photo_mime
     } = req.body;
 
+    if (!email) throw new Error('Email is required');
+
     const driver_id = uuidv4();
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
 
     await client.query('BEGIN');
 
     // Insert driver with just basic fields that definitely exist
+    console.log(`📝 Registering driver: ${first_name} ${last_name} (${email})`);
     await client.query(
       `INSERT INTO drivers (driver_id, first_name, last_name, status)
       VALUES ($1, $2, $3, $4)`,
       [driver_id, first_name, last_name, 'Pending']
     );
+    console.log(`✅ Driver inserted: ${driver_id}`);
 
     // Try to update with additional optional fields
     try {
@@ -262,10 +266,23 @@ app.post('/api/registerDriver', async (req, res) => {
           race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, driver_id]
       );
     } catch (e) {
-      console.log('Could not update additional driver fields:', e.message);
+      console.log('⚠️ Could not update additional driver fields:', e.message);
     }
 
-    // Try to insert contacts
+    // Insert email as first contact - REQUIRED
+    try {
+      await client.query(
+        `INSERT INTO contacts (driver_id, email)
+        VALUES ($1, $2)`,
+        [driver_id, email.toLowerCase()]
+      );
+      console.log(`✅ Email contact saved: ${email}`);
+    } catch (e) {
+      console.log('⚠️ Could not insert email contact:', e.message);
+      throw new Error('Failed to save email address: ' + e.message);
+    }
+
+    // Try to insert other contacts
     if (contacts && contacts.length > 0) {
       for (const contact of contacts) {
         try {
@@ -275,7 +292,7 @@ app.post('/api/registerDriver', async (req, res) => {
             [driver_id, contact.email]
           );
         } catch (e) {
-          console.log('Could not insert contact:', e.message);
+          console.log('⚠️ Could not insert additional contact:', e.message);
         }
       }
     }
@@ -289,11 +306,35 @@ app.post('/api/registerDriver', async (req, res) => {
           [driver_id, medical.allergies, medical.medical_conditions, medical.medication]
         );
       } catch (e) {
-        console.log('Could not insert medical consent:', e.message);
+        console.log('⚠️ Could not insert medical consent:', e.message);
       }
     }
 
     await client.query('COMMIT');
+    console.log(`✅ Transaction committed for driver ${driver_id}`);
+    
+    // Send confirmation email
+    try {
+      console.log(`📧 Sending confirmation email to ${email}...`);
+      await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+        key: process.env.MAILCHIMP_API_KEY,
+        message: {
+          to: [{ email: email }],
+          from_email: process.env.MAILCHIMP_FROM_EMAIL,
+          subject: 'NATS Driver Registration Confirmation',
+          html: `<h2>Welcome to NATS!</h2>
+            <p>Your driver registration has been received and is pending admin approval.</p>
+            <p><strong>Driver ID:</strong> ${driver_id}</p>
+            <p><strong>PIN:</strong> ${pin}</p>
+            <p>Please save this information for your records.</p>
+            <p>You will receive another email once your registration is approved.</p>`
+        }
+      });
+      console.log(`✅ Confirmation email sent to ${email}`);
+    } catch (emailErr) {
+      console.error('⚠️ Email error (non-blocking):', emailErr.message);
+      // Don't fail the registration if email fails
+    }
     
     res.json({
       success: true,
@@ -301,7 +342,7 @@ app.post('/api/registerDriver', async (req, res) => {
         driver_id: driver_id,
         pin: pin,
         status: 'Pending',
-        message: 'Registration submitted. Your registration is pending admin approval.'
+        message: 'Registration submitted. Your registration is pending admin approval. Check your email for confirmation.'
       }
     });
   } catch (err) {
@@ -310,6 +351,7 @@ app.post('/api/registerDriver', async (req, res) => {
     } catch (rollbackErr) {
       console.error('Rollback error:', rollbackErr);
     }
+    console.error('❌ Registration error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   } finally {
     client.release();
