@@ -2796,6 +2796,12 @@
           password: document.getElementById("r_password").value.trim()
         };
 
+        // Validate email
+        if (!payload.email) {
+          console.error('Email is empty!', 'c_email element:', document.getElementById("c_email"), 'value:', document.getElementById("c_email").value);
+          throw new Error("Email is required - field appears empty.");
+        }
+
         // Validate password
         if (!payload.password || payload.password.length < 8) {
           throw new Error("Password must be at least 8 characters.");
