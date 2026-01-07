@@ -2766,6 +2766,7 @@
         const payload = {
           first_name: document.getElementById("r_first_name").value.trim(),
           last_name: document.getElementById("r_last_name").value.trim(),
+          email: document.getElementById("c_email").value.trim(),
           date_of_birth: document.getElementById("r_dob").value.trim(),
           nationality: document.getElementById("r_nat").value.trim(),
           gender: document.getElementById("r_gender").value.trim(),
@@ -2780,7 +2781,6 @@
 
           // Contact information
           contact_name: document.getElementById("c_name").value.trim(),
-          contact_email: document.getElementById("c_email").value.trim(),
           contact_phone: document.getElementById("c_phone").value.trim(),
           contact_relationship: document.getElementById("c_rel").value.trim() || "Guardian",
 
