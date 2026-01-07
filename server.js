@@ -305,10 +305,11 @@ app.post('/api/registerDriver', async (req, res) => {
 
     // Insert email as first contact - REQUIRED
     try {
+      const contact_id = uuidv4();
       await client.query(
-        `INSERT INTO contacts (driver_id, email)
-        VALUES ($1, $2)`,
-        [driver_id, email.toLowerCase()]
+        `INSERT INTO contacts (contact_id, driver_id, email)
+        VALUES ($1, $2, $3)`,
+        [contact_id, driver_id, email.toLowerCase()]
       );
       console.log(`✅ Email contact saved: ${email}`);
     } catch (e) {
@@ -321,10 +322,11 @@ app.post('/api/registerDriver', async (req, res) => {
     if (contacts && contacts.length > 0) {
       for (const contact of contacts) {
         try {
+          const contact_id = uuidv4();
           await client.query(
-            `INSERT INTO contacts (driver_id, email)
-            VALUES ($1, $2)`,
-            [driver_id, contact.email]
+            `INSERT INTO contacts (contact_id, driver_id, email)
+            VALUES ($1, $2, $3)`,
+            [contact_id, driver_id, contact.email]
           );
         } catch (e) {
           console.log('⚠️ Could not insert additional contact:', e.message);
