@@ -238,6 +238,12 @@ app.post('/api/loginWithPassword', async (req, res) => {
 app.post('/api/registerDriver', async (req, res) => {
   const client = await pool.connect();
   try {
+    console.log('📥 registerDriver request received:', {
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      email: req.body.email
+    });
+
     const {
       first_name, last_name, email, date_of_birth, nationality, gender, id_or_passport_number,
       championship, class: klass, race_number, team_name, coach_name, kart_brand, engine_type, transponder_number,
@@ -248,8 +254,11 @@ app.post('/api/registerDriver', async (req, res) => {
     } = req.body;
 
     if (!email) throw new Error('Email is required');
+    if (!first_name) throw new Error('First name is required');
+    if (!last_name) throw new Error('Last name is required');
 
     const driver_id = uuidv4();
+    console.log(`✅ Generated driver_id: ${driver_id}`);
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
 
     await client.query('BEGIN');
@@ -273,13 +282,14 @@ app.post('/api/registerDriver', async (req, res) => {
     try {
       await client.query(
         `UPDATE drivers SET date_of_birth = $1, nationality = $2, gender = $3,
-          id_or_passport_number = $4, championship = $5, class = $6, race_number = $7,
-          team_name = $8, coach_name = $9, kart_brand = $10, engine_type = $11,
-          transponder_number = $12
-        WHERE driver_id = $13`,
-        [date_of_birth, nationality, gender, id_or_passport_number, championship, klass,
+          championship = $4, class = $5, race_number = $6,
+          team_name = $7, coach_name = $8, kart_brand = $9, engine_type = $10,
+          transponder_number = $11
+        WHERE driver_id = $12`,
+        [date_of_birth, nationality, gender, championship, klass,
           race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, driver_id]
       );
+      console.log(`✅ Driver additional fields updated`);
     } catch (e) {
       console.log('⚠️ Could not update additional driver fields:', e.message);
     }
