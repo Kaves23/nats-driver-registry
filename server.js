@@ -95,6 +95,21 @@ app.all('/api/ping', (req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
 });
 
+// Debug endpoint to check environment variables
+app.get('/api/debug-env', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      mailchimp_api_key: process.env.MAILCHIMP_API_KEY ? process.env.MAILCHIMP_API_KEY.substring(0, 5) + '...' : 'NOT SET',
+      mailchimp_from_email: process.env.MAILCHIMP_FROM_EMAIL || 'NOT SET',
+      mailchimp_from_name: process.env.MAILCHIMP_FROM_NAME || 'NOT SET',
+      db_host: process.env.DB_HOST ? 'SET' : 'NOT SET',
+      node_env: process.env.NODE_ENV || 'NOT SET',
+      all_env_keys: Object.keys(process.env)
+    }
+  });
+});
+
 // Test email endpoint
 app.post('/api/test-email', async (req, res) => {
   try {
