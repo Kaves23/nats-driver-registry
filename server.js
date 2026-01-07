@@ -91,7 +91,7 @@ const logAuditEvent = async (driver_id, driver_email, action, field_name, old_va
 };
 
 // Health check
-app.get('/api/ping', (req, res) => {
+app.all('/api/ping', (req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
 });
 
@@ -369,9 +369,9 @@ app.post('/api/registerDriver', async (req, res) => {
           html: `<h2>Welcome to NATS!</h2>
             <p>Your driver registration has been received and is pending admin approval.</p>
             <p><strong>Driver ID:</strong> ${driver_id}</p>
-            <p><strong>PIN:</strong> ${pin}</p>
             <p>Please save this information for your records.</p>
-            <p>You will receive another email once your registration is approved.</p>`
+            <p>You can log in with your email and password once your registration is approved.</p>
+            <p>You will receive another email once your registration has been reviewed by an administrator.</p>`
         }
       });
       console.log(`✅ Confirmation email sent to ${email}`);
@@ -384,9 +384,8 @@ app.post('/api/registerDriver', async (req, res) => {
       success: true,
       data: {
         driver_id: driver_id,
-        pin: pin,
         status: 'Pending',
-        message: 'Registration submitted. Your registration is pending admin approval. Check your email for confirmation.'
+        message: 'Registration submitted successfully. Your registration is pending admin approval. Check your email for confirmation.'
       }
     });
   } catch (err) {
