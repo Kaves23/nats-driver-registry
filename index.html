@@ -1070,9 +1070,9 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-size: 0.75rem;
-  color: rgba(17,24,39,.92);
+  color: var(--text-main);
   padding: 10px 12px;
-  border: 1.5px solid rgba(0,0,0,.85);
+  border: 1.5px solid var(--text-main);
   border-radius: 0;
   background: transparent;
   transition: transform .15s ease, opacity .15s ease;
@@ -2076,14 +2076,6 @@ body[data-season="spring"] .info-section-select {
         panelOut 0.8s ease-in 10s forwards;
     }
 
-    .overview-animation .nats-panel--northern {
-      background: #1e40af;
-      color: #dbeafe;
-      animation:
-        panelInBottomRight 1.2s cubic-bezier(0.18, 0.9, 0.25, 1) 7.3s forwards,
-        panelOut 0.8s ease-in 10s forwards;
-    }
-
     .overview-animation .nats-center-tagline {
       position: absolute;
       top: 50%;
@@ -2496,7 +2488,6 @@ body[data-season="spring"] .info-section-select {
     .overview-animation .final-logo-tile--autumn { background: #b45309; color: #fefce8; }
     .overview-animation .final-logo-tile--winter { background: #0ea5e9; color: #e0f2fe; }
     .overview-animation .final-logo-tile--spring { background: #22c55e; color: #ecfdf5; }
-    .overview-animation .final-logo-tile--northern { background: #1e40af; color: #dbeafe; }
 
     @keyframes logoIn {
       from { opacity: 0; transform: translateY(-10px) scale(0.96); }
@@ -5125,20 +5116,6 @@ the paddock quickly and consistently.
             </div>
           </section>
 
-          <section class="nats-panel nats-panel--northern" aria-label="Northern Regions Crown">
-            <div class="nats-lockup">
-              <div class="nats-kicker">
-                ROK CUP SOUTH AFRICA · REGIONAL CHAMPIONSHIP
-              </div>
-              <div class="nats-title">
-                NORTHERN REGIONS CROWN
-              </div>
-              <div class="nats-meta">
-                MULTIPLE VENUES · JANUARY TO DECEMBER 2026 · REGIONAL ROUNDS
-              </div>
-            </div>
-          </section>
-
           <section class="nats-panel nats-panel--winter" aria-label="Winter NATS — Formula K">
             <div class="nats-lockup">
               <div class="nats-kicker">
@@ -5289,10 +5266,6 @@ the paddock quickly and consistently.
               <div class="final-logo-tile final-logo-tile--spring">
                 <div class="final-logo-title">SPRING NATS</div>
                 <div class="final-logo-meta">KILLARNEY · 10–12 SEP</div>
-              </div>
-              <div class="final-logo-tile final-logo-tile--northern">
-                <div class="final-logo-title">NORTHERN REGIONS</div>
-                <div class="final-logo-meta">MULTIPLE VENUES · JAN–DEC</div>
               </div>
             </div>
 
@@ -5626,8 +5599,12 @@ the paddock quickly and consistently.
       const season = seasons[index];
       body.setAttribute('data-season', season.id);
 
-      kickerText.textContent =
-        `ROK CUP SOUTH AFRICA NATIONAL ROUND ${season.rounds} PROUDLY PRESENT THE`;
+      if (season.id === 'northern') {
+        kickerText.textContent = `ROK CUP SOUTH AFRICA PROUDLY PRESENT THE`;
+      } else {
+        kickerText.textContent =
+          `ROK CUP SOUTH AFRICA NATIONAL ROUND ${season.rounds} PROUDLY PRESENT THE`;
+      }
       titleText.textContent       = season.name;
       infoModalTitle.textContent  = `${season.name} · INFORMATION`;
       enterModalTitle.textContent = `ENTER ${season.name}`;
