@@ -5447,7 +5447,7 @@ the paddock quickly and consistently.
       { id: 'autumn', name: 'AUTUMN NATS', rounds: '3&4', track: 'IDUBE RACEWAY',        dates: '08–10 MAY 2026' },
       { id: 'winter', name: 'WINTER NATS', rounds: '5&6', track: 'FORMULA K',            dates: '10–12 JULY 2026' },
       { id: 'spring', name: 'SPRING NATS', rounds: '7&8', track: 'KILLARNEY RACEWAY',    dates: '10–12 SEP 2026' },
-      { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'MULTIPLE VENUES', dates: 'JAN–DEC 2026' }
+      { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'MULTIPLE VENUES', dates: '14 FEB – REDSTAR|21 MAR – REDSTAR|22 MAR – REDSTAR|11 APR – VKC|11 JUL – FORMULA K|12 JUL – FORMULA K|07 NOV – REDSTAR' }
     ];
 
     let currentIndex = 0;
@@ -5601,9 +5601,11 @@ the paddock quickly and consistently.
 
       if (season.id === 'northern') {
         kickerText.textContent = `ROK CUP SOUTH AFRICA PROUDLY PRESENT THE`;
+        eventDatesMain.innerHTML = season.dates.split('|').join('<br>');
       } else {
         kickerText.textContent =
           `ROK CUP SOUTH AFRICA NATIONAL ROUND ${season.rounds} PROUDLY PRESENT THE`;
+        eventDatesMain.textContent = season.dates;
       }
       titleText.textContent       = season.name;
       infoModalTitle.textContent  = `${season.name} · INFORMATION`;
