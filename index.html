@@ -1027,6 +1027,18 @@
       background: transparent;
     }
 
+    .btn--next-race {
+      background: var(--text-main);
+      color: var(--bg-color);
+      border-color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .btn--next-race:hover {
+      opacity: 0.85;
+      background: var(--text-main);
+    }
+
     /* SEASON DROPDOWN (no longer used visually, kept styles if reintroduced) */
     .season-dropdown-wrapper {
       margin-top: 0;
@@ -2158,6 +2170,15 @@ body[data-season="spring"] .info-section-select {
     @keyframes prizeBlockOut {
       from { opacity: 1; }
       to   { opacity: 0; }
+    }
+
+    @keyframes highlightNextRace {
+      0%, 100% { background: transparent; }
+      50% { background: rgba(255, 255, 255, 0.15); }
+    }
+
+    .next-race-highlight {
+      animation: highlightNextRace 2s ease-in-out 3 !important;
     }
 
     .overview-animation .weekend-heading {
@@ -3501,6 +3522,7 @@ body[data-season="spring"] .info-section-select {
     <div class="event-dates-main" id="eventDatesMain"></div>
 
     <div class="actions">
+      <button class="btn btn--next-race" id="btnNextRace">NEXT RACE</button>
       <button class="btn" id="btnMoreInfo">MORE INFO</button>
       <button class="btn" id="btnEnterNow">REGISTER HERE</button>
     </div>
@@ -5450,6 +5472,27 @@ the paddock quickly and consistently.
       { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'MULTIPLE VENUES', dates: '14 FEB – REDSTAR|21 MAR – REDSTAR|22 MAR – REDSTAR|11 APR – VKC|11 JUL – FORMULA K|12 JUL – FORMULA K|07 NOV – REDSTAR' }
     ];
 
+    // All races with dates for "next race" logic
+    const allRaces = [
+      { seasonId: 'northern', date: new Date(2026, 1, 14), displayDate: '14 FEB – REDSTAR' },
+      { seasonId: 'summer', date: new Date(2026, 2, 20), displayDate: '20–22 MAR' },
+      { seasonId: 'northern', date: new Date(2026, 2, 21), displayDate: '21 MAR – REDSTAR' },
+      { seasonId: 'northern', date: new Date(2026, 2, 22), displayDate: '22 MAR – REDSTAR' },
+      { seasonId: 'northern', date: new Date(2026, 3, 11), displayDate: '11 APR – VKC' },
+      { seasonId: 'autumn', date: new Date(2026, 4, 8), displayDate: '08–10 MAY' },
+      { seasonId: 'northern', date: new Date(2026, 6, 11), displayDate: '11 JUL – FORMULA K' },
+      { seasonId: 'winter', date: new Date(2026, 6, 10), displayDate: '10–12 JULY' },
+      { seasonId: 'northern', date: new Date(2026, 6, 12), displayDate: '12 JUL – FORMULA K' },
+      { seasonId: 'spring', date: new Date(2026, 8, 10), displayDate: '10–12 SEP' },
+      { seasonId: 'northern', date: new Date(2026, 10, 7), displayDate: '07 NOV – REDSTAR' }
+    ];
+
+    function getNextRace() {
+      const now = new Date();
+      const upcoming = allRaces.filter(race => race.date > now).sort((a, b) => a.date - b.date);
+      return upcoming.length > 0 ? upcoming[0] : allRaces[0];
+    }
+
     let currentIndex = 0;
 
     const body            = document.body;
@@ -5485,6 +5528,7 @@ the paddock quickly and consistently.
     const overviewModal = document.getElementById('overviewModal');
     const btnMoreInfo   = document.getElementById('btnMoreInfo');
     const btnEnterNow   = document.getElementById('btnEnterNow');
+    const btnNextRace   = document.getElementById('btnNextRace');
 
     const btnPrevSeason = document.getElementById('btnPrevSeason');
     const btnNextSeason = document.getElementById('btnNextSeason');
@@ -5799,6 +5843,25 @@ function closeModals() {
 
     btnPrevSeason.addEventListener('click', () => goTo(-1));
     btnNextSeason.addEventListener('click', () => goTo(1));
+
+    btnNextRace.addEventListener('click', () => {
+      const nextRace = getNextRace();
+      const seasonIndex = seasons.findIndex(s => s.id === nextRace.seasonId);
+      if (seasonIndex !== -1) {
+        currentIndex = seasonIndex;
+        applySeason(currentIndex);
+        
+        // Highlight the specific date
+        setTimeout(() => {
+          const dateElement = document.getElementById('eventDatesMain');
+          if (dateElement) {
+            dateElement.classList.remove('next-race-highlight');
+            void dateElement.offsetWidth; // Trigger reflow
+            dateElement.classList.add('next-race-highlight');
+          }
+        }, 100);
+      }
+    });
 
     if (seasonSelect) {
       seasonSelect.addEventListener('change', (e) => {
