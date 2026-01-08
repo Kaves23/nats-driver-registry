@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Template Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f4f5f7;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #111827;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        input[type="email"], input[type="text"], select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input[type="email"]:focus, input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #111827;
+            box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #111827;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1f2937;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #111827;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 6px;
+            display: none;
+        }
+        .result.success {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            display: block;
+        }
+        .result.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            display: block;
+        }
+        .email-preview {
+            margin-top: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .email-preview-header {
+            background: #f9fafb;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+        }
+        .email-preview-content {
+            padding: 20px;
+            background: white;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .email-preview-content iframe {
+            width: 100%;
+            border: none;
+            height: 500px;
+        }
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #1e40af;
+            font-size: 14px;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 NATS Email Template Tester</h1>
+        
+        <div class="info-box">
+            <strong>📌 About This Tool</strong>
+            This tool displays email template previews from the production server. Enter your email address and select a template to see how the email will be formatted and styled.
+        </div>
+
+        <form id="emailForm">
+            <div class="form-group">
+                <label for="email">Email Address:</label>
+                <input type="email" id="email" name="email" value="john@rokcup.co.za" required>
+            </div>
+
+            <div class="form-group">
+                <label for="template">Select Template:</label>
+                <select id="template" name="template" required>
+                    <option value="">-- Choose Template --</option>
+                    <option value="registration">Registration Confirmation</option>
+                    <option value="password">Password Reset</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn-primary" onclick="loadTemplate()">Preview Template</button>
+                <button type="button" class="btn-secondary" onclick="sendEmail()">Send Test Email</button>
+            </div>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div id="preview" class="email-preview" style="display: none;">
+            <div class="email-preview-header">
+                Email Preview: <span id="previewTitle"></span>
+            </div>
+            <div class="email-preview-content">
+                <iframe id="previewFrame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showMessage(message, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
+        }
+
+        function getTemplateInfo(type) {
+            const templates = {
+                registration: {
+                    name: 'Registration Confirmation',
+                    subject: 'Welcome to the 2026 ROK Cup South Africa NATS',
+                    endpoint: '/api/sendTestEmail'
+                },
+                password: {
+                    name: 'Password Reset',
+                    subject: 'Reset Your NATS Driver Registry Password',
+                    endpoint: '/api/requestPasswordReset'
+                }
+            };
+            return templates[type];
+        }
+
+        function loadTemplate() {
+            const template = document.getElementById('template').value;
+            if (!template) {
+                showMessage('Please select a template', false);
+                return;
+            }
+
+            const info = getTemplateInfo(template);
+            const preview = document.getElementById('preview');
+            const previewTitle = document.getElementById('previewTitle');
+            const previewFrame = document.getElementById('previewFrame');
+
+            previewTitle.textContent = info.name;
+            
+            // Load template HTML from email-templates folder
+            fetch(`/email-templates/${template === 'registration' ? 'registration-confirmation' : 'password-reset'}.html`)
+                .then(response => response.text())
+                .then(html => {
+                    previewFrame.srcdoc = html;
+                    preview.style.display = 'block';
+                    showMessage(`✅ Template loaded: ${info.name}. Subject: "${info.subject}"`, true);
+                })
+                .catch(err => {
+                    showMessage(`❌ Error loading template: ${err.message}`, false);
+                    preview.style.display = 'none';
+                });
+        }
+
+        function sendEmail() {
+            const email = document.getElementById('email').value;
+            const template = document.getElementById('template').value;
+
+            if (!email || !template) {
+                showMessage('Please fill in all fields', false);
+                return;
+            }
+
+            const info = getTemplateInfo(template);
+            const endpoint = template === 'registration' ? '/api/sendTestEmail' : '/api/requestPasswordReset';
+
+            // Show loading state
+            showMessage(`📧 Sending ${info.name} to ${email}...`, true);
+
+            fetch(`https://rokthenats.co.za${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(`✅ Success! Email sent to ${email}\n\nTemplate: ${info.name}\nSubject: ${info.subject}`, true);
+                } else {
+                    showMessage(`❌ Error: ${data.error?.message || 'Unknown error'}`, false);
+                }
+            })
+            .catch(err => {
+                showMessage(`❌ Error sending email: ${err.message}\n\nNote: The production server may not have the email endpoints deployed yet.`, false);
+            });
+        }
+
+        // Load preview when template changes
+        document.getElementById('template').addEventListener('change', function() {
+            if (this.value) {
+                loadTemplate();
+            }
+        });
+    </script>
+</body>
+</html>

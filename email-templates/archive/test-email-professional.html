@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to NATS - Email System Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2d2d2d;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .email-container {
+            max-width: 620px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 50px 30px;
+            text-align: center;
+            border-bottom: 4px solid #facc15;
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #facc15;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        
+        .hero-text {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .tagline {
+            color: #facc15;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        
+        /* Main content */
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 20px;
+        }
+        
+        .intro-message {
+            color: #444444;
+            margin-bottom: 25px;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
+            padding: 30px;
+            border-radius: 0;
+            text-align: center;
+            margin: 30px 0;
+            color: #1a1a1a;
+        }
+        
+        .badge-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+        }
+        
+        .badge-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .badge-subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        /* Quick Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 30px 0;
+        }
+        
+        .info-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            padding: 16px;
+            text-align: center;
+            border-top: 3px solid #facc15;
+        }
+        
+        .info-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: #facc15;
+            margin-bottom: 6px;
+        }
+        
+        .info-label {
+            font-size: 11px;
+            color: #666666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Features Section */
+        .section-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eeeeee;
+        }
+        
+        .feature-list {
+            background: #f5f5f5;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 3px solid #facc15;
+        }
+        
+        .feature-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            color: #444444;
+            line-height: 1.6;
+        }
+        
+        .feature-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .feature-check {
+            color: #facc15;
+            font-weight: 700;
+            min-width: 20px;
+        }
+        
+        .feature-text {
+            flex: 1;
+        }
+        
+        /* Portal info */
+        .portal-box {
+            background: #f0f8ff;
+            border-left: 3px solid #0284c7;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 13px;
+            color: #0c4a6e;
+            line-height: 1.6;
+        }
+        
+        .portal-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            background: #fffacd;
+            border-left: 3px solid #facc15;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: center;
+            border-radius: 0;
+        }
+        
+        .cta-text {
+            font-size: 13px;
+            color: #333333;
+            margin-bottom: 12px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: #1a1a1a;
+            color: #facc15;
+            padding: 12px 30px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            border: 2px solid #facc15;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .cta-button:hover {
+            background: #facc15;
+            color: #1a1a1a;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #000000;
+            color: #999999;
+            padding: 30px;
+            text-align: center;
+            border-top: 4px solid #facc15;
+            font-size: 12px;
+        }
+        
+        .footer-title {
+            color: #ffffff;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 13px;
+        }
+        
+        .footer a {
+            color: #facc15;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .footer-divider {
+            height: 1px;
+            background: #333333;
+            margin: 20px 0;
+        }
+        
+        .footer-note {
+            font-size: 11px;
+            color: #777777;
+            margin-top: 15px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .content {
+                padding: 25px 20px;
+            }
+            
+            .greeting {
+                font-size: 18px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-button {
+                width: 100%;
+                padding: 10px 20px;
+            }
+            
+            .logo {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">NATS</div>
+            <div class="hero-text">Connected to the Track</div>
+            <div class="tagline">National Auto Track Series</div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="greeting">Welcome to NATS</div>
+            
+            <div class="intro-message">
+                This test email confirms that our email system is functioning correctly and your account is ready to receive important race communications, entry confirmations, and series announcements.
+            </div>
+            
+            <!-- Status Badge -->
+            <div class="status-badge">
+                <div class="badge-icon">OK</div>
+                <div class="badge-title">System Operational</div>
+                <div class="badge-subtitle">Email connectivity verified and ready for use</div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-value">{{DRIVER_ID}}</div>
+                    <div class="info-label">Your Driver ID</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-value">4</div>
+                    <div class="info-label">Annual Rounds</div>
+                </div>
+            </div>
+            
+            <!-- Features -->
+            <div class="section-header">Portal Features Included</div>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <div class="feature-check">+</div>
+                    <div class="feature-text">Race registration for individual events or full seasons</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-check">+</div>
+                    <div class="feature-text">Real-time championship standings and driver rankings</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-check">+</div>
+                    <div class="feature-text">Payment management for entries and engine rentals</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-check">+</div>
+                    <div class="feature-text">Detailed race results, lap times, and performance analytics</div>
+                </div>
+            </div>
+            
+            <!-- Available Classes -->
+            <div class="section-header">Competitive Classes Available</div>
+            <div class="portal-box">
+                <div class="portal-title">Six Championship Categories</div>
+                <p style="margin: 0; line-height: 1.8;">
+                    CADET | MINI ROK U/10 | MINI ROK | OK-J | OK-N | KZ2
+                </p>
+            </div>
+            
+            <!-- Championships -->
+            <div class="section-header">2026 Race Schedule</div>
+            <div class="portal-box">
+                <div class="portal-title">Four-Round Series Structure</div>
+                <p style="margin: 0; line-height: 1.8;">
+                    Summer (Dec-Jan) | Autumn (Mar-Apr) | Winter (Jun-Jul) | Spring (Sep-Oct)
+                </p>
+            </div>
+            
+            <!-- Engine Rental -->
+            <div class="section-header">Pool Engine Rental Access</div>
+            <div class="portal-box">
+                <div class="portal-title">Flexible Competition Options</div>
+                <p style="margin: 0;">
+                    Access to professionally maintained Rotax engines with fuel, lubricants, and maintenance included. Available per-race or full-season packages.
+                </p>
+            </div>
+            
+            <!-- CTA -->
+            <div class="cta-section">
+                <div class="cta-text">Ready to get started?</div>
+                <a href="{{LOGIN_LINK}}" class="cta-button">Log Into Portal</a>
+            </div>
+            
+            <div style="margin: 25px 0; font-size: 13px; color: #555555; line-height: 1.7;">
+                <p>Next, explore the portal to review upcoming races in your selected championship and class. You can register immediately or review event details and scheduling before committing to races.</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-title">National Auto Track Series</div>
+            <p style="margin: 0 0 8px;">Official ROK Cup South Africa 2026</p>
+            
+            <div class="footer-divider"></div>
+            
+            <p style="margin: 0; font-size: 12px;">
+                <a href="#">Portal Login</a> | <a href="#">Contact Support</a> | <a href="#">Series Information</a>
+            </p>
+            
+            <div class="footer-note">
+                <p style="margin: 15px 0 8px;">Copyright 2026 National Auto Track Series. All rights reserved.</p>
+                <p style="margin: 0;">This is an automated message. Please do not reply to this email. For support, use the contact feature in your portal account.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

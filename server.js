@@ -7,6 +7,7 @@ const bcryptjs = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const axios = require('axios');
+const fs = require('fs');
 
 const app = express();
 const path = require('path');
@@ -90,6 +91,25 @@ const logAuditEvent = async (driver_id, driver_email, action, field_name, old_va
   }
 };
 
+// Load email template and replace variables
+const loadEmailTemplate = (templateName, variables = {}) => {
+  try {
+    const templatePath = path.join(__dirname, 'email-templates', `${templateName}.html`);
+    let html = fs.readFileSync(templatePath, 'utf8');
+    
+    // Replace all variables in the template
+    Object.keys(variables).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      html = html.replace(regex, variables[key]);
+    });
+    
+    return html;
+  } catch (err) {
+    console.error(`Error loading template ${templateName}:`, err.message);
+    return null;
+  }
+};
+
 // Health check
 app.all('/api/ping', (req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
@@ -123,18 +143,14 @@ app.post('/api/test-email', async (req, res) => {
     console.log(`From email: ${process.env.MAILCHIMP_FROM_EMAIL}`);
     
     try {
+      const emailHtml = loadEmailTemplate('registration-confirmation', {});
       const mailchimpResponse = await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
         key: process.env.MAILCHIMP_API_KEY,
         message: {
           to: [{ email: email }],
           from_email: process.env.MAILCHIMP_FROM_EMAIL,
-          subject: 'NATS Driver Registration Confirmation - TEST',
-          html: `<h2>Welcome to NATS!</h2>
-            <p>This is a TEST registration confirmation email.</p>
-            <p><strong>Driver ID:</strong> ${test_driver_id}</p>
-            <p>Please save this information for your records.</p>
-            <p>You can log in with your email and password once your registration is approved.</p>
-            <p>You will receive another email once your registration has been reviewed by an administrator.</p>`
+          subject: 'Welcome to the 2026 ROK Cup South Africa NATS',
+          html: emailHtml
         }
       });
       
@@ -429,18 +445,16 @@ app.post('/api/registerDriver', async (req, res) => {
     // Send confirmation email
     try {
       console.log(`📧 Sending confirmation email to ${email}...`);
+      const emailHtml = loadEmailTemplate('registration-confirmation', {
+        RESET_LINK: resetLink // placeholder for future use if needed
+      });
       await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
         key: process.env.MAILCHIMP_API_KEY,
         message: {
           to: [{ email: email }],
           from_email: process.env.MAILCHIMP_FROM_EMAIL,
-          subject: 'NATS Driver Registration Confirmation',
-          html: `<h2>Welcome to NATS!</h2>
-            <p>Your driver registration has been received and is pending admin approval.</p>
-            <p><strong>Driver ID:</strong> ${driver_id}</p>
-            <p>Please save this information for your records.</p>
-            <p>You can log in with your email and password once your registration is approved.</p>
-            <p>You will receive another email once your registration has been reviewed by an administrator.</p>`
+          subject: 'Welcome to the 2026 ROK Cup South Africa NATS',
+          html: emailHtml
         }
       });
       console.log(`✅ Confirmation email sent to ${email}`);
@@ -505,13 +519,16 @@ app.post('/api/requestPasswordReset', async (req, res) => {
 
     // Send email
     const resetLink = `https://rokthenats.co.za/reset-password.html?token=${reset_token}&email=${encodeURIComponent(email)}`;
+    const emailHtml = loadEmailTemplate('password-reset', {
+      RESET_LINK: resetLink
+    });
     await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
       key: process.env.MAILCHIMP_API_KEY,
       message: {
         to: [{ email: email }],
         from_email: process.env.MAILCHIMP_FROM_EMAIL,
         subject: 'Reset Your NATS Driver Registry Password',
-        html: `<p>Click the link below to reset your password:</p><p><a href="${resetLink}">Reset Password</a></p><p>This link expires in 1 hour.</p>`
+        html: emailHtml
       }
     }).catch(err => console.error('⚠️ Email error:', err.message));
 
@@ -1211,13 +1228,16 @@ app.post('/api/sendPasswordReset', async (req, res) => {
     );
 
     const resetLink = `https://rokthenats.co.za/reset-password.html?token=${reset_token}&email=${encodeURIComponent(email)}`;
+    const emailHtml = loadEmailTemplate('password-reset', {
+      RESET_LINK: resetLink
+    });
     await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
       key: process.env.MAILCHIMP_API_KEY,
       message: {
         to: [{ email: email }],
         from_email: process.env.MAILCHIMP_FROM_EMAIL,
         subject: 'Reset Your NATS Driver Registry Password',
-        html: `<p>Your admin has requested a password reset. Click the link below:</p><p><a href="${resetLink}">Reset Password</a></p><p>This link expires in 1 hour.</p>`
+        html: emailHtml
       }
     }).catch(err => console.error('Email error:', err.message));
 

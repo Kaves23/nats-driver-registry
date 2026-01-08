@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NATS Driver Registration Confirmation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2d2d2d;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .email-container {
+            max-width: 620px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            padding: 40px 30px;
+            text-align: center;
+            border-bottom: 4px solid #facc15;
+            position: relative;
+        }
+        
+        .logo-container {
+            margin-bottom: 15px;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+        
+        .tagline {
+            color: #cccccc;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 8px;
+        }
+        
+        .rok-credit {
+            margin-top: 10px;
+            font-size: 11px;
+            color: #999999;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        /* Main content */
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 20px;
+            border-left: 3px solid #facc15;
+            padding-left: 15px;
+        }
+        
+        .intro-message {
+            color: #444444;
+            margin-bottom: 30px;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+        
+        /* Driver ID Card */
+        .driver-card {
+            background: #000000;
+            border: 2px solid #facc15;
+            padding: 30px;
+            margin: 30px 0;
+            color: #ffffff;
+            text-align: center;
+        }
+        
+        .driver-card-label {
+            font-size: 11px;
+            color: #facc15;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        
+        .driver-card-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .driver-card-text {
+            font-size: 13px;
+            color: #cccccc;
+        }
+        
+        /* Portal Features Section */
+        .section-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eeeeee;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .feature-box {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            padding: 16px;
+            border-left: 3px solid #facc15;
+        }
+        
+        .feature-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 8px;
+        }
+        
+        .feature-description {
+            font-size: 13px;
+            color: #666666;
+            line-height: 1.5;
+        }
+        
+        /* Championship Info */
+        .champ-box {
+            background: #f5f5f5;
+            border: 1px solid #dddddd;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        
+        .champ-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        
+        .champ-list {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #444444;
+            line-height: 1.8;
+        }
+        
+        .champ-list li {
+            margin-bottom: 8px;
+        }
+        
+        /* Next Steps */
+        .next-steps {
+            background: #fffacd;
+            border-left: 3px solid #facc15;
+            padding: 16px;
+            margin: 25px 0;
+            font-size: 13px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        
+        .next-steps h3 {
+            color: #000000;
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .highlight-text {
+            font-weight: 600;
+            color: #000000;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #000000;
+            color: #999999;
+            padding: 30px;
+            text-align: center;
+            border-top: 4px solid #facc15;
+            font-size: 12px;
+        }
+        
+        .footer-title {
+            color: #ffffff;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 13px;
+        }
+        
+        .footer a {
+            color: #facc15;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .footer-divider {
+            height: 1px;
+            background: #333333;
+            margin: 20px 0;
+        }
+        
+        .footer-note {
+            font-size: 11px;
+            color: #777777;
+            margin-top: 15px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            .content {
+                padding: 25px 20px;
+            }
+            
+            .greeting {
+                font-size: 18px;
+            }
+            
+            .driver-card-value {
+                font-size: 26px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-container">
+                <div class="logo">NATS</div>
+                <div class="tagline">National Auto Track Series</div>
+                <div class="rok-credit">Official ROK Cup South Africa Series</div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <div class="greeting">Registration Confirmed</div>
+            
+            <div class="intro-message">
+                Thank you for registering with the National Auto Track Series. Your driver account has been created successfully and is pending administrator verification. Once approved, you will have full access to our online driver portal for race registration, payment management, and performance tracking.
+            </div>
+            
+            <!-- Driver ID Card -->
+            <div class="driver-card">
+                <div class="driver-card-label">Your Driver ID</div>
+                <div class="driver-card-value">{{DRIVER_ID}}</div>
+                <div class="driver-card-text">Keep this ID for all race entries and communications</div>
+            </div>
+            
+            <!-- Portal Features -->
+            <div class="section-header">Portal Features &amp; Access</div>
+            <div class="feature-grid">
+                <div class="feature-box">
+                    <div class="feature-title">Race Registration</div>
+                    <div class="feature-description">Register for individual races or full seasons across all NATS championships and classes.</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Real-Time Standings</div>
+                    <div class="feature-description">Track your performance and compare against other drivers in live championship standings.</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Payment Management</div>
+                    <div class="feature-description">Manage entries, engine rentals, and seasonal packages directly through the portal.</div>
+                </div>
+                <div class="feature-box">
+                    <div class="feature-title">Race Results</div>
+                    <div class="feature-description">Access detailed results, lap times, and performance analytics after each event.</div>
+                </div>
+            </div>
+            
+            <!-- Championships -->
+            <div class="section-header">Available Championships</div>
+            <div class="champ-box">
+                <div class="champ-title">Select Your Series</div>
+                <ul class="champ-list">
+                    <li><strong>ROK NATS</strong> - National Auto Track Series featuring Rotax engine classes</li>
+                    <li><strong>Northern Crown</strong> - Regional championship for northern provinces</li>
+                    <li><strong>Southern Crown</strong> - Regional championship for southern provinces</li>
+                </ul>
+            </div>
+            
+            <!-- Racing Classes -->
+            <div class="section-header">Supported Racing Classes</div>
+            <div class="champ-box">
+                <div class="champ-title">Choose Your Competitive Class</div>
+                <ul class="champ-list">
+                    <li><strong>CADET</strong> - Entry-level class for young drivers</li>
+                    <li><strong>MINI ROK U/10</strong> - For drivers under 10 years old</li>
+                    <li><strong>MINI ROK</strong> - Advanced junior class</li>
+                    <li><strong>OK-J</strong> - Junior shifter class</li>
+                    <li><strong>OK-N</strong> - Senior national class</li>
+                    <li><strong>KZ2</strong> - Senior shifter superkart class</li>
+                </ul>
+            </div>
+            
+            <!-- Season Information -->
+            <div class="section-header">2026 Season Structure</div>
+            <div class="champ-box">
+                <div class="champ-title">Four-Round Annual Series</div>
+                <ul class="champ-list">
+                    <li><strong>Summer Round</strong> - December 2025 through January 2026</li>
+                    <li><strong>Autumn Round</strong> - March through April 2026</li>
+                    <li><strong>Winter Round</strong> - June through July 2026</li>
+                    <li><strong>Spring Round</strong> - September through October 2026</li>
+                </ul>
+            </div>
+            
+            <!-- Engine Rental -->
+            <div class="section-header">Pool Engine Rental Program</div>
+            <div class="champ-box">
+                <div class="champ-title">Cost-Effective Competition Options</div>
+                <p style="font-size: 13px; color: #444444; line-height: 1.6; margin-bottom: 10px;">
+                    The NATS Pool Engine Rental program provides access to professionally maintained Rotax engines. Your rental includes all fuel, lubricants, and maintenance throughout the season.
+                </p>
+                <p style="font-size: 13px; color: #444444; line-height: 1.6;">
+                    Select engines on a per-race basis or commit to a full-season rental package for preferred rates and guaranteed engine availability.
+                </p>
+            </div>
+            
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h3>Next Steps in Your Registration</h3>
+                <p>Your registration is now pending administrator review for document verification. We will complete this verification within 24 to 48 hours. Once approved, you will receive an additional confirmation email with full portal access instructions and race entry guidelines.</p>
+                <p style="margin-top: 12px;">You can immediately <span class="highlight-text">log into the portal using your email and password</span> to explore available races, review championship details, and familiarize yourself with the entry process.</p>
+            </div>
+            
+            <div style="margin: 25px 0; padding: 16px; background: #f0f0f0; border-left: 3px solid #cccccc; font-size: 13px; color: #333333; line-height: 1.6;">
+                <span class="highlight-text">Important:</span> Retain your Driver ID. You will be required to provide this ID for all race entries, technical inspections, and official communications with the series.
+            </div>
+            
+            <div style="margin-top: 25px; font-size: 13px; color: #555555; line-height: 1.7;">
+                <p><span class="highlight-text">Support:</span> Questions about your registration or available races? Contact the NATS administration team through the portal or reply to this email.
+</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-title">National Auto Track Series</div>
+            <p style="margin: 0 0 8px;">Official ROK Cup South Africa 2026</p>
+            
+            <div class="footer-divider"></div>
+            
+            <p style="margin: 0; font-size: 12px;">
+                <a href="#">Portal Login</a> | <a href="#">Contact Support</a> | <a href="#">Series Information</a>
+            </p>
+            
+            <div class="footer-note">
+                <p style="margin: 15px 0 8px;">Copyright 2026 National Auto Track Series. All rights reserved.</p>
+                <p style="margin: 0;">This is an automated message. Please do not reply to this email. For support, use the contact feature in your portal account.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
