@@ -787,7 +787,7 @@
 
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
-      .row{ grid-template-columns: 1fr; }
+      .row{ grid-template-columns: 1fr !important; }
       .header{ flex-direction:column; align-items:flex-start; }
       .header-right{ text-align:left; }
       .ptab{ min-width: 0; width: 100%; }
@@ -796,6 +796,14 @@
       /* Hide championship buttons on mobile, show dropdown */
       #champ-buttons-container{ display: none !important; }
       #champ-select{ display: block !important; }
+      
+      /* Position HOME button at bottom on mobile */
+      .back-link-wrap{ position: fixed; bottom: 20px; right: 20px; margin-top: 0; z-index: 999; }
+    }
+
+    @media (max-width: 768px){
+      .row{ grid-template-columns: 1fr !important; }
+      #tab-register .row{ grid-template-columns: 1fr !important; }
     }
   </style>
 </head>
@@ -1372,7 +1380,7 @@
               <div class="hint">Your password will be hashed and secured. You'll use this email and password to log in immediately after registration.</div>
             </div>
 
-            <div class="panel">
+            <div class="panel" style="display: none;">
               <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Documents</div>
               <div class="hint">Upload a profile photo and driver license. These help with race documentation and driver verification.</div>
               <div class="row">
