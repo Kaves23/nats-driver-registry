@@ -981,12 +981,21 @@
 
     .event-dates-main {
       letter-spacing: 0.2em;
+      white-space: normal;
+      word-break: break-word;
     }
 
     .event-dates-main.northern-dates {
       display: block;
-      line-height: 1.6;
+      line-height: 1.8;
       white-space: normal;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .event-dates-main.northern-dates div {
+      display: block;
+      margin: 0.3rem 0;
     }
 
     .actions {
@@ -5651,7 +5660,7 @@ the paddock quickly and consistently.
 
       if (season.id === 'northern') {
         kickerText.textContent = `ROK CUP SOUTH AFRICA PROUDLY PRESENT THE`;
-        eventDatesMain.innerHTML = season.dates.split('|').join('<br>');
+        eventDatesMain.innerHTML = season.dates.split('|').map(date => `<div>${date}</div>`).join('');
         eventDatesMain.classList.add('northern-dates');
       } else {
         kickerText.textContent =
