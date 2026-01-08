@@ -1393,7 +1393,7 @@
                   <input id="r_profilePhoto" type="file" accept="image/*" />
                 </div>
                 <div>
-                  <label>Driver License *</label>
+                  <label>Driver License</label>
                   <input id="r_driverLicense" type="file" accept="image/*,.pdf" />
                 </div>
               </div>
@@ -2762,24 +2762,22 @@
         const idPassport = document.getElementById("r_id").value.trim();
         if(!idPassport) throw new Error("ID / Passport is required.");
 
-        // Validate and upload license file (required)
-        const licenseInput = document.getElementById("r_driverLicense");
-        if(!licenseInput || !licenseInput.files || licenseInput.files.length === 0) {
-          throw new Error("Driver License document is required.");
-        }
-
+        // Optional: license file upload
         let license_b64 = "", license_name = "", license_mime = "";
-        const licenseFile = licenseInput.files[0];
-        license_name = licenseFile.name;
-        license_mime = licenseFile.type;
-        
-        // Convert license to base64
-        license_b64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(licenseFile);
-        });
+        const licenseInput = document.getElementById("r_driverLicense");
+        if(licenseInput && licenseInput.files && licenseInput.files.length > 0) {
+          const licenseFile = licenseInput.files[0];
+          license_name = licenseFile.name;
+          license_mime = licenseFile.type;
+          
+          // Convert license to base64
+          license_b64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(licenseFile);
+          });
+        }
 
         // Optional: profile photo upload
         let photo_b64 = "", photo_name = "", photo_mime = "";
