@@ -821,7 +821,7 @@
         <div class="header">
           <div>
             <div class="kicker">ROK CUP SOUTH AFRICA</div>
-            <div class="title">SUMMER NATS 2026</div>
+            <div class="title">ROK CUP SOUTH AFRICA</div>
             <div class="sub">Driver Portal and Registration</div>
           </div>
           <div class="header-right">
@@ -3133,20 +3133,6 @@
       // Set the background color CSS variable
       document.documentElement.style.setProperty('--bg', nextRace.color);
       document.body.style.background = nextRace.color;
-      
-      // Update header based on next race
-      const seasonNames = {
-        'summer': 'SUMMER NATS 2026',
-        'autumn': 'AUTUMN NATS 2026',
-        'winter': 'WINTER NATS 2026',
-        'spring': 'SPRING NATS 2026',
-        'northern': 'NORTHERN REGIONS CROWN 2026'
-      };
-      
-      const titleEl = document.querySelector('.title');
-      if (titleEl) {
-        titleEl.textContent = seasonNames[nextRace.seasonId] || 'NATS 2026';
-      }
     }
     
     // Initialize background color based on next race
