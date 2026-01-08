@@ -983,6 +983,12 @@
       letter-spacing: 0.2em;
     }
 
+    .event-dates-main.northern-dates {
+      display: block;
+      line-height: 1.6;
+      white-space: normal;
+    }
+
     .actions {
       display: flex;
       justify-content: center;
@@ -5646,10 +5652,12 @@ the paddock quickly and consistently.
       if (season.id === 'northern') {
         kickerText.textContent = `ROK CUP SOUTH AFRICA PROUDLY PRESENT THE`;
         eventDatesMain.innerHTML = season.dates.split('|').join('<br>');
+        eventDatesMain.classList.add('northern-dates');
       } else {
         kickerText.textContent =
           `ROK CUP SOUTH AFRICA NATIONAL ROUND ${season.rounds} PROUDLY PRESENT THE`;
         eventDatesMain.textContent = season.dates;
+        eventDatesMain.classList.remove('northern-dates');
       }
       titleText.textContent       = season.name;
       infoModalTitle.textContent  = `${season.name} · INFORMATION`;
