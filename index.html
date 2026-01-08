@@ -1044,8 +1044,10 @@
     .side-label button{
   all: unset;
   cursor: pointer;
-  font-weight: 900;
-  letter-spacing: .02em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
   color: rgba(17,24,39,.92);
   padding: 10px 12px;
   border: 1.5px solid rgba(0,0,0,.85);
@@ -3478,7 +3480,7 @@ body[data-season="spring"] .info-section-select {
 
     <div class="actions">
       <button class="btn" id="btnMoreInfo">MORE INFO</button>
-      <button class="btn" id="btnEnterNow">REGISTER HERE NOW</button>
+      <button class="btn" id="btnEnterNow">REGISTER HERE</button>
     </div>
   </div>
 
@@ -3510,8 +3512,8 @@ body[data-season="spring"] .info-section-select {
     <div class="modal-body">
       <div class="info-layout">
         <nav class="info-nav" aria-label="Event information sections">
-          <button class="nav-item nav-item--primary active" data-section="register" type="button">REGISTER HERE</button>
-          <button class="nav-item" data-section="pool" type="button">POOL ENGINES</button>
+          <button class="nav-item" data-section="register" type="button">REGISTER HERE</button>
+          <button class="nav-item nav-item--primary active" data-section="pool" type="button">POOL ENGINES</button>
           <button class="nav-item" data-section="prizes" type="button">CLASSES &amp; PRIZES</button>
           <button class="nav-item" data-section="dates" type="button">DATES</button>
           <button class="nav-item" data-section="track" type="button">TRACK INFO</button>
@@ -3530,8 +3532,8 @@ body[data-season="spring"] .info-section-select {
         <!-- MOBILE-ONLY: single dropdown replacing the section "squares" -->
         <div class="info-section-dropdown">
           <select id="infoSectionSelect" class="info-section-select" aria-label="Select information section">
-            <option value="register">Register here</option>
             <option value="pool">Pool engines</option>
+            <option value="register">Register here</option>
             <option value="prizes">Classes &amp; prizes</option>
             <option value="dates">Dates</option>
             <option value="track">Track info</option>
@@ -3549,7 +3551,7 @@ body[data-season="spring"] .info-section-select {
         </div>
 
         <div class="info-content">
-          <section class="info-section active" data-section-panel="register">
+          <section class="info-section" data-section-panel="register">
             <h3>Register Here</h3>
             <p>Complete the official online entry form below to secure your place for this National event.</p>
             <div class="embed-frame-shell" data-embed-shell="register" data-autoload="1" data-portal-state="idle">
@@ -3590,7 +3592,7 @@ body[data-season="spring"] .info-section-select {
           </div>
           </section>
 
-        <section class="info-section" data-section-panel="pool">
+        <section class="info-section active" data-section-panel="pool">
   <h3>Pool Engines – How ROK Cup South Africa Levels the Playing Field</h3>
 
   <p>
@@ -5589,11 +5591,11 @@ the paddock quickly and consistently.
       }
 
       if (season.id === 'summer') {
-        btnEnterNow.textContent = 'REGISTER HERE NOW';
+        btnEnterNow.textContent = 'REGISTER HERE';
         btnEnterNow.classList.remove('btn--disabled');
       } else {
-        btnEnterNow.textContent = 'ENTER NOW';
-        btnEnterNow.classList.add('btn--disabled');
+        btnEnterNow.textContent = 'REGISTER HERE';
+        btnEnterNow.classList.remove('btn--disabled');
       }
     }
 
