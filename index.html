@@ -5725,19 +5725,14 @@ function closeModals() {
     // ENTER button (homepage)
       btnEnterNow.addEventListener('click', () => {
     // Click acknowledgement (prevents the "nothing happened" feeling)
-    btnEnterNow.classList.add('is-busy');
-    window.setTimeout(() => btnEnterNow.classList.remove('is-busy'), 700);
+    window.location.href = 'driver_portal.html';
 
-    if (activeSeasonId !== 'summer') {
-      showToast(
-        'Entries are not open for the selected season.',
+
+
+
+
         'Select “Summer Nats” to access the entry portal.'
-      );
-      return;
-    }
 
-    // Small delay so the busy indicator is visible before the modal opens
-    window.setTimeout(() => openModal(enterModal), 180);
   });
 
 // Overlay click closes any open modal
