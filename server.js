@@ -485,6 +485,47 @@ app.post('/api/registerDriver', async (req, res) => {
   }
 });
 
+// Admin: Resend welcome email to driver
+app.post('/api/admin/resendWelcomeEmail', async (req, res) => {
+  try {
+    const { driver_id, email } = req.body;
+    if (!driver_id || !email) {
+      throw new Error('Driver ID and email are required');
+    }
+
+    console.log(`📧 Admin resending welcome email to driver ${driver_id} at ${email}...`);
+    
+    try {
+      const emailHtml = loadEmailTemplate('registration-confirmation');
+      if (!emailHtml) {
+        throw new Error('Failed to load email template');
+      }
+      
+      await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+        key: process.env.MAILCHIMP_API_KEY,
+        message: {
+          to: [{ email: email }],
+          from_email: process.env.MAILCHIMP_FROM_EMAIL,
+          subject: 'Welcome to the 2026 ROK Cup South Africa NATS',
+          html: emailHtml
+        }
+      });
+      
+      console.log(`✅ Welcome email resent to ${email}`);
+      res.json({
+        success: true,
+        data: { message: 'Welcome email sent successfully' }
+      });
+    } catch (emailErr) {
+      console.error('❌ Email error:', emailErr.message);
+      throw new Error('Failed to send email: ' + emailErr.message);
+    }
+  } catch (err) {
+    console.error('❌ Resend welcome email error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // Request password reset
 app.post('/api/requestPasswordReset', async (req, res) => {
   try {

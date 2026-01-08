@@ -683,6 +683,7 @@
 
       <div class="modal-buttons">
         <button class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+        <button class="save-btn" onclick="resendWelcomeEmail()" style="background: #10b981;">Resend Welcome Email</button>
         <button class="save-btn" onclick="saveDriver()">Save</button>
       </div>
     </div>
@@ -1007,6 +1008,42 @@
         showToast('Password reset email sent', 'success');
       } catch (err) {
         console.error('resetPassword error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function resendWelcomeEmail() {
+      if (!currentDriver || !currentDriver.driver_id) {
+        showToast('No driver selected', 'error');
+        return;
+      }
+
+      const email = document.getElementById('editEmail')?.value?.trim();
+      if (!email) {
+        showToast('No email address found', 'error');
+        return;
+      }
+      
+      if (!confirm(`Send welcome email to ${email}?`)) return;
+
+      try {
+        const response = await fetch('/api/admin/resendWelcomeEmail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            driver_id: currentDriver.driver_id,
+            email: email
+          })
+        });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Failed to send email');
+
+        showToast('Welcome email sent successfully', 'success');
+      } catch (err) {
+        console.error('resendWelcomeEmail error:', err);
         showToast('Error: ' + err.message, 'error');
       }
     }
