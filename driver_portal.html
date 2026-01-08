@@ -799,11 +799,15 @@
       
       /* Position HOME button at bottom on mobile */
       .back-link-wrap{ position: fixed; bottom: 20px; right: 20px; margin-top: 0; z-index: 999; }
+      
+      /* Single column registration form on mobile */
+      #tab-register.show{ grid-template-columns: 1fr !important; }
     }
 
     @media (max-width: 768px){
       .row{ grid-template-columns: 1fr !important; }
       #tab-register .row{ grid-template-columns: 1fr !important; }
+      #tab-register.show{ grid-template-columns: 1fr !important; }
     }
   </style>
 </head>
