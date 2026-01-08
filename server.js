@@ -445,9 +445,10 @@ app.post('/api/registerDriver', async (req, res) => {
     // Send confirmation email
     try {
       console.log(`📧 Sending confirmation email to ${email}...`);
-      const emailHtml = loadEmailTemplate('registration-confirmation', {
-        RESET_LINK: resetLink // placeholder for future use if needed
-      });
+      const emailHtml = loadEmailTemplate('registration-confirmation');
+      if (!emailHtml) {
+        throw new Error('Failed to load email template');
+      }
       await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
         key: process.env.MAILCHIMP_API_KEY,
         message: {
@@ -459,8 +460,8 @@ app.post('/api/registerDriver', async (req, res) => {
       });
       console.log(`✅ Confirmation email sent to ${email}`);
     } catch (emailErr) {
-      console.error('⚠️ Email error (non-blocking):', emailErr.message);
-      // Don't fail the registration if email fails
+      console.error('❌ Email error:', emailErr.message);
+      // Log but don't block registration
     }
     
     res.json({
