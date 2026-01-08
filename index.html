@@ -916,6 +916,28 @@
   --scrollbar-track: #dcfce7;
     }
 
+    body[data-season="northern"] {
+      --bg-color: #1e40af;
+      --text-main: #dbeafe;
+      --kicker-color: rgba(219, 234, 254, 0.9);
+      --title-color: #dbeafe;
+      --btn-border: rgba(219, 234, 254, 0.95);
+      --btn-text: #dbeafe;
+      --btn-hover-bg: rgba(15, 23, 42, 0.25);
+      --side-label-color: #082f49;
+
+      --modal-bg: rgba(30, 64, 175, 0.9);
+      --modal-text: #dbeafe;
+      --modal-border: #082f49;
+      --nav-active-bg: rgba(25, 55, 130, 0.9);
+      --nav-active-text: #dbeafe;
+      --body-text: rgba(219, 234, 254, 0.98);
+      --link-color: #dbeafe;
+      --link-underline: rgba(219, 234, 254, 0.8);
+      --scrollbar-thumb: #1e40af;
+      --scrollbar-track: #dbeafe;
+    }
+
     .lockup {
       text-align: center;
       padding: 1.5rem;
@@ -2054,6 +2076,14 @@ body[data-season="spring"] .info-section-select {
         panelOut 0.8s ease-in 10s forwards;
     }
 
+    .overview-animation .nats-panel--northern {
+      background: #1e40af;
+      color: #dbeafe;
+      animation:
+        panelInBottomRight 1.2s cubic-bezier(0.18, 0.9, 0.25, 1) 7.3s forwards,
+        panelOut 0.8s ease-in 10s forwards;
+    }
+
     .overview-animation .nats-center-tagline {
       position: absolute;
       top: 50%;
@@ -2466,6 +2496,7 @@ body[data-season="spring"] .info-section-select {
     .overview-animation .final-logo-tile--autumn { background: #b45309; color: #fefce8; }
     .overview-animation .final-logo-tile--winter { background: #0ea5e9; color: #e0f2fe; }
     .overview-animation .final-logo-tile--spring { background: #22c55e; color: #ecfdf5; }
+    .overview-animation .final-logo-tile--northern { background: #1e40af; color: #dbeafe; }
 
     @keyframes logoIn {
       from { opacity: 0; transform: translateY(-10px) scale(0.96); }
@@ -5094,6 +5125,20 @@ the paddock quickly and consistently.
             </div>
           </section>
 
+          <section class="nats-panel nats-panel--northern" aria-label="Northern Regions Crown">
+            <div class="nats-lockup">
+              <div class="nats-kicker">
+                ROK CUP SOUTH AFRICA · REGIONAL CHAMPIONSHIP
+              </div>
+              <div class="nats-title">
+                NORTHERN REGIONS CROWN
+              </div>
+              <div class="nats-meta">
+                MULTIPLE VENUES · JANUARY TO DECEMBER 2026 · REGIONAL ROUNDS
+              </div>
+            </div>
+          </section>
+
           <section class="nats-panel nats-panel--winter" aria-label="Winter NATS — Formula K">
             <div class="nats-lockup">
               <div class="nats-kicker">
@@ -5244,6 +5289,10 @@ the paddock quickly and consistently.
               <div class="final-logo-tile final-logo-tile--spring">
                 <div class="final-logo-title">SPRING NATS</div>
                 <div class="final-logo-meta">KILLARNEY · 10–12 SEP</div>
+              </div>
+              <div class="final-logo-tile final-logo-tile--northern">
+                <div class="final-logo-title">NORTHERN REGIONS</div>
+                <div class="final-logo-meta">MULTIPLE VENUES · JAN–DEC</div>
               </div>
             </div>
 
@@ -5424,7 +5473,8 @@ the paddock quickly and consistently.
       { id: 'summer', name: 'SUMMER NATS', rounds: '1&2', track: 'REDSTAR RACEWAY',      dates: '20–22 MAR 2026' },
       { id: 'autumn', name: 'AUTUMN NATS', rounds: '3&4', track: 'IDUBE RACEWAY',        dates: '08–10 MAY 2026' },
       { id: 'winter', name: 'WINTER NATS', rounds: '5&6', track: 'FORMULA K',            dates: '10–12 JULY 2026' },
-      { id: 'spring', name: 'SPRING NATS', rounds: '7&8', track: 'KILLARNEY RACEWAY',    dates: '10–12 SEP 2026' }
+      { id: 'spring', name: 'SPRING NATS', rounds: '7&8', track: 'KILLARNEY RACEWAY',    dates: '10–12 SEP 2026' },
+      { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'MULTIPLE VENUES', dates: 'JAN–DEC 2026' }
     ];
 
     let currentIndex = 0;
@@ -5835,7 +5885,7 @@ function closeModals() {
     }
 
     // Initial section state (and scroll reset)
-    activateSection('register');
+    activateSection('pool');
   })();
 </script>
     
