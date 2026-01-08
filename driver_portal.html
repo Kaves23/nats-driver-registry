@@ -103,11 +103,12 @@
       color: var(--ink);
     }
     .sub{
-      font-size: 11px;
-      letter-spacing: 0.14em;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--muted);
-      margin-top: 6px;
+      color: var(--ink);
+      margin-top: 8px;
       max-width: 70ch;
       line-height: 1.6;
     }
@@ -819,9 +820,9 @@
 
         <div class="header">
           <div>
-            <div class="kicker">ROK THE NATS</div>
+            <div class="kicker">ROK CUP SOUTH AFRICA</div>
             <div class="title">SUMMER NATS 2026</div>
-            <div class="sub">20–22 March 2026 · Red Star Raceway, Delmas · Driver Registration Portal</div>
+            <div class="sub">Driver Portal and Registration</div>
           </div>
           <div class="header-right">
             <div class="back-link-wrap">
@@ -3108,6 +3109,49 @@
     });
 
     /* Init */
+    
+    // Function to determine next race and set background color
+    function initializeNextRaceColor() {
+      const races = [
+        { seasonId: 'northern', date: new Date(2026, 1, 14), color: '#1e40af' },
+        { seasonId: 'summer', date: new Date(2026, 2, 20), color: '#facc15' },
+        { seasonId: 'northern', date: new Date(2026, 2, 21), color: '#1e40af' },
+        { seasonId: 'northern', date: new Date(2026, 2, 22), color: '#1e40af' },
+        { seasonId: 'northern', date: new Date(2026, 3, 11), color: '#1e40af' },
+        { seasonId: 'autumn', date: new Date(2026, 4, 8), color: '#f97316' },
+        { seasonId: 'winter', date: new Date(2026, 6, 10), color: '#0ea5e9' },
+        { seasonId: 'northern', date: new Date(2026, 6, 11), color: '#1e40af' },
+        { seasonId: 'northern', date: new Date(2026, 6, 12), color: '#1e40af' },
+        { seasonId: 'spring', date: new Date(2026, 8, 10), color: '#4ade80' },
+        { seasonId: 'northern', date: new Date(2026, 10, 7), color: '#1e40af' }
+      ];
+      
+      const now = new Date();
+      const upcoming = races.filter(r => r.date > now).sort((a, b) => a.date - b.date);
+      const nextRace = upcoming.length > 0 ? upcoming[0] : races[0];
+      
+      // Set the background color CSS variable
+      document.documentElement.style.setProperty('--bg', nextRace.color);
+      document.body.style.background = nextRace.color;
+      
+      // Update header based on next race
+      const seasonNames = {
+        'summer': 'SUMMER NATS 2026',
+        'autumn': 'AUTUMN NATS 2026',
+        'winter': 'WINTER NATS 2026',
+        'spring': 'SPRING NATS 2026',
+        'northern': 'NORTHERN REGIONS CROWN 2026'
+      };
+      
+      const titleEl = document.querySelector('.title');
+      if (titleEl) {
+        titleEl.textContent = seasonNames[nextRace.seasonId] || 'NATS 2026';
+      }
+    }
+    
+    // Initialize background color based on next race
+    initializeNextRaceColor();
+    
     clearPortal();
     const initial = (location.hash || "").replace("#","").trim();
     if(initial === "portal" || initial === "register"){
