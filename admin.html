@@ -662,7 +662,32 @@
         </select>
       </div>
 
-      <!-- Driver Documents Section -->
+      <!-- Guardian / Entrant Contact Section -->
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">Guardian / Entrant Contact</h3>
+        <div class="form-group">
+          <label>Guardian Name</label>
+          <input type="text" id="editContactName" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Relationship</label>
+          <input type="text" id="editContactRelationship" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Contact Phone</label>
+          <input type="text" id="editContactPhone" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Emergency Contact?</label>
+          <input type="text" id="editContactEmergency" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Consent Contact?</label>
+          <input type="text" id="editContactConsent" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+      </div>
+
+      <!-- Medical & Consent Section -->
       <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
         <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">Medical & Consent</h3>
         <div class="form-group">
@@ -685,11 +710,15 @@
           <label>Data Processing Consent</label>
           <input type="text" id="editMedicalConsentSigned" readonly style="background: #f3f4f6; color: #666;">
         </div>
+        <div class="form-group">
+          <label>Media Release</label>
+          <input type="text" id="editMediaReleaseSigned" readonly style="background: #f3f4f6; color: #666;">
+        </div>
       </div>
 
       <!-- Driver Documents Section -->
       <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">Driver Documents</h3>
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">Medical & Consent</h3>
         <div class="form-group">
           <label>Driver License</label>
           <div id="driverLicenseSection" style="padding: 8px 12px; background: #f3f4f6; border-radius: 4px; font-size: 13px;">
@@ -881,12 +910,20 @@
       setVal('editStatus', driver.status || 'Pending');
       setVal('editPaid', driver.paid_status || 'Unpaid');
       
+      // Set contact fields (read-only)
+      setVal('editContactName', driver.contact_name || '(not provided)');
+      setVal('editContactRelationship', driver.contact_relationship || '(not provided)');
+      setVal('editContactPhone', driver.contact_phone || '(not provided)');
+      setVal('editContactEmergency', driver.contact_emergency ? 'Yes' : 'No');
+      setVal('editContactConsent', driver.contact_consent ? 'Yes' : 'No');
+      
       // Set medical fields (read-only)
       setVal('editMedicalAllergies', driver.medical_allergies || '(not provided)');
       setVal('editMedicalConditions', driver.medical_conditions || '(not provided)');
       setVal('editMedicalMedication', driver.medical_medication || '(not provided)');
       setVal('editMedicalDoctorPhone', driver.medical_doctor_phone || '(not provided)');
       setVal('editMedicalConsentSigned', driver.medical_consent_signed || '(not provided)');
+      setVal('editMediaReleaseSigned', driver.media_release_signed ? 'Yes' : 'No');
       
       // Update document status display
       const licenseStatus = document.getElementById('licenseStatus');

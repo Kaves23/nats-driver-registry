@@ -2826,6 +2826,15 @@
           contact_name: document.getElementById("c_name").value.trim(),
           contact_phone: document.getElementById("c_phone").value.trim(),
           contact_relationship: document.getElementById("c_rel").value.trim() || "Guardian",
+          contact_emergency: document.getElementById("c_emergency").value,
+          contact_consent: document.getElementById("c_consent").value,
+
+          // Medical information
+          medical_allergies: document.getElementById("m_allergies").value.trim(),
+          medical_conditions: document.getElementById("m_conditions").value.trim(),
+          medical_medication: document.getElementById("m_medication").value.trim(),
+          medical_doctor_phone: document.getElementById("m_doctor_phone").value.trim(),
+          media_release_signed: document.getElementById("media_release_signed").value,
 
           // File uploads
           license_b64: license_b64,

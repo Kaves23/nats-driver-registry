@@ -334,6 +334,8 @@ app.post('/api/registerDriver', async (req, res) => {
       championship, class: klass, race_number, team_name, coach_name, kart_brand, engine_type, transponder_number,
       consent_signed, media_release_signed,
       password,
+      contact_name, contact_phone, contact_relationship, contact_emergency, contact_consent,
+      medical_allergies, medical_conditions, medical_medication, medical_doctor_phone,
       medical, contacts,
       license_b64, license_name, license_mime,
       photo_b64, photo_name, photo_mime
@@ -399,15 +401,16 @@ app.post('/api/registerDriver', async (req, res) => {
     try {
       const contact_id = uuidv4();
       await client.query(
-        `INSERT INTO contacts (contact_id, driver_id, email)
-        VALUES ($1, $2, $3)`,
-        [contact_id, driver_id, email.toLowerCase()]
+        `INSERT INTO contacts (contact_id, driver_id, name, email, phone, relationship, is_emergency, is_consent)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [contact_id, driver_id, contact_name || null, email.toLowerCase(), contact_phone || null, 
+         contact_relationship || 'Guardian', contact_emergency === 'Y' ? true : false, contact_consent === 'Y' ? true : false]
       );
-      console.log(`✅ Email contact saved: ${email}`);
+      console.log(`✅ Guardian contact saved: ${contact_name || 'N/A'} (${email})`);
     } catch (e) {
-      console.error('❌ Could not insert email contact:', e.message);
+      console.error('❌ Could not insert contact:', e.message);
       await client.query('ROLLBACK');
-      throw new Error('Failed to save email address: ' + e.message);
+      throw new Error('Failed to save contact information: ' + e.message);
     }
 
     // Try to insert other contacts
@@ -427,7 +430,20 @@ app.post('/api/registerDriver', async (req, res) => {
     }
 
     // Try to insert medical consent
-    if (medical) {
+    if (medical_allergies || medical_conditions || medical_medication || medical_doctor_phone || consent_signed || media_release_signed) {
+      try {
+        await client.query(
+          `INSERT INTO medical_consent (driver_id, allergies, medical_conditions, medication, doctor_phone, consent_signed, media_release_signed)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [driver_id, medical_allergies || null, medical_conditions || null, medical_medication || null, 
+           medical_doctor_phone || null, consent_signed === 'Y' ? true : false, media_release_signed === 'Y' ? true : false]
+        );
+        console.log(`✅ Medical consent saved`);
+      } catch (e) {
+        console.log('⚠️ Could not insert medical consent:', e.message);
+      }
+    } else if (medical) {
+      // Legacy support: if medical object is passed (backwards compatibility)
       try {
         await client.query(
           `INSERT INTO medical_consent (driver_id, allergies, medical_conditions, medication)
@@ -998,23 +1014,36 @@ app.post('/api/getAllDrivers', async (req, res) => {
     const driverIds = driverResult.rows.map(d => d.driver_id);
     console.log('Driver IDs:', driverIds);
 
-    // Get emails from contacts table
-    let emailMap = {};
+    // Get all contact information (email, phone, name, relationship, emergency, consent flags)
+    let contactMap = {};
     try {
       const contactResult = await pool.query(
-        'SELECT driver_id, email FROM contacts WHERE driver_id = ANY($1)',
+        'SELECT * FROM contacts WHERE driver_id = ANY($1)',
         [driverIds]
       );
-      console.log('Found', contactResult.rows.length, 'contact emails');
+      console.log('Found', contactResult.rows.length, 'contact records');
       contactResult.rows.forEach(c => {
-        if (!emailMap[c.driver_id]) {
-          emailMap[c.driver_id] = c.email;
+        // Store first contact (primary) for each driver
+        if (!contactMap[c.driver_id]) {
+          contactMap[c.driver_id] = c;
         }
       });
-      console.log('Email map:', emailMap);
     } catch (e) {
       console.log('Contacts query failed:', e.message);
     }
+
+    // Get emails from contacts table (for backwards compatibility)
+    let emailMap = {};
+    contactMap.forEach((contact, driverId) => {
+      if (contact.email) {
+        emailMap[driverId] = contact.email;
+      }
+    });
+    Object.entries(contactMap).forEach(([driverId, contact]) => {
+      if (contact.email) {
+        emailMap[driverId] = contact.email;
+      }
+    });
 
     // Get payment info - check if payments table has data
     let paidSet = new Set();
@@ -1055,6 +1084,16 @@ app.post('/api/getAllDrivers', async (req, res) => {
         paid_status: paidSet.has(d.driver_id) ? 'Paid' : 'Unpaid'
       };
       
+      // Add contact information if available
+      if (contactMap[d.driver_id]) {
+        const contact = contactMap[d.driver_id];
+        obj.contact_name = contact.name || '';
+        obj.contact_phone = contact.phone || '';
+        obj.contact_relationship = contact.relationship || '';
+        obj.contact_emergency = contact.is_emergency || false;
+        obj.contact_consent = contact.is_consent || false;
+      }
+      
       // Add optional fields if they exist in the returned data
       if (d.class !== undefined) obj.class = d.class || '';
       if (d.race_number !== undefined) obj.race_number = d.race_number || '';
@@ -1078,6 +1117,7 @@ app.post('/api/getAllDrivers', async (req, res) => {
         obj.medical_doctor_phone = med.doctor_phone || '';
         obj.medical_consent_signed = med.consent_signed || '';
         obj.medical_consent_date = med.consent_date || '';
+        obj.media_release_signed = med.media_release_signed || '';
       }
       
       return obj;
