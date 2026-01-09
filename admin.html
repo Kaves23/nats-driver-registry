@@ -225,30 +225,38 @@
       background: #1a1a1a;
       border-radius: 8px;
       border: 1px solid #404040;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-height: 600px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12px;
+      min-width: 2000px;
     }
 
     th {
       background: #242424;
-      padding: 15px;
+      padding: 12px 8px;
       text-align: left;
       font-weight: 600;
       color: #e0e0e0;
       border-bottom: 1px solid #404040;
       position: sticky;
       top: 0;
+      white-space: nowrap;
     }
 
     td {
-      padding: 12px 15px;
+      padding: 8px;
       border-bottom: 1px solid #303030;
       color: #e0e0e0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
     }
 
     tr:hover {
@@ -549,18 +557,30 @@
             <tr>
               <th>Email</th>
               <th>Name</th>
+              <th>DOB</th>
+              <th>Nationality</th>
+              <th>Gender</th>
+              <th>Championship</th>
               <th>Class</th>
               <th>Race #</th>
               <th>Team</th>
               <th>Coach</th>
               <th>Kart Brand</th>
-              <th>Engine</th>
+              <th>Transponder</th>
+              <th>License #</th>
+              <th>Guardian Name</th>
+              <th>Contact Phone</th>
+              <th>Allergies</th>
+              <th>Medical Conditions</th>
+              <th>Medication</th>
+              <th>Doctor Phone</th>
               <th>Status</th>
+              <th>Paid</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="driversTable">
-            <tr><td colspan="10" class="loading">Loading drivers...</td></tr>
+            <tr><td colspan="22" class="loading">Loading drivers...</td></tr>
           </tbody>
         </table>
       </div>
@@ -832,7 +852,7 @@
       
       if (!drivers || drivers.length === 0) {
         console.log('No drivers to display');
-        table.innerHTML = '<tr><td colspan="10" class="loading">No drivers found</td></tr>';
+        table.innerHTML = '<tr><td colspan="22" class="loading">No drivers found</td></tr>';
         return;
       }
 
@@ -843,22 +863,30 @@
         const name = `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || '-';
         const status = driver.status || 'Pending';
         const paidStatus = driver.paid_status || 'Unpaid';
-        const coachName = driver.coach_name || '-';
-        const kartBrand = driver.kart_brand || '-';
-        const engineType = driver.engine_type || '-';
-        const transponder = driver.transponder_number || '-';
 
         html += `
           <tr>
             <td>${email}</td>
             <td>${name}</td>
+            <td>${driver.date_of_birth || '-'}</td>
+            <td>${driver.nationality || '-'}</td>
+            <td>${driver.gender || '-'}</td>
+            <td>${driver.championship || '-'}</td>
             <td>${driver.class || '-'}</td>
             <td>${driver.race_number || '-'}</td>
             <td>${driver.team_name || '-'}</td>
-            <td>${coachName}</td>
-            <td>${kartBrand}</td>
-            <td>${engineType}</td>
+            <td>${driver.coach_name || '-'}</td>
+            <td>${driver.kart_brand || '-'}</td>
+            <td>${driver.transponder_number || '-'}</td>
+            <td>${driver.license_number || '-'}</td>
+            <td>${driver.contact_name || '-'}</td>
+            <td>${driver.contact_phone || '-'}</td>
+            <td>${driver.medical_allergies || '-'}</td>
+            <td>${driver.medical_conditions || '-'}</td>
+            <td>${driver.medical_medication || '-'}</td>
+            <td>${driver.medical_doctor_phone || '-'}</td>
             <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+            <td>${paidStatus}</td>
             <td>
               <div class="action-buttons">
                 <button class="action-btn edit-btn" onclick="openEditModal('${driver.driver_id}')">Edit</button>
