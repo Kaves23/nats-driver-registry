@@ -1034,13 +1034,8 @@ app.post('/api/getAllDrivers', async (req, res) => {
 
     // Get emails from contacts table (for backwards compatibility)
     let emailMap = {};
-    contactMap.forEach((contact, driverId) => {
-      if (contact.email) {
-        emailMap[driverId] = contact.email;
-      }
-    });
     Object.entries(contactMap).forEach(([driverId, contact]) => {
-      if (contact.email) {
+      if (contact && contact.email) {
         emailMap[driverId] = contact.email;
       }
     });
