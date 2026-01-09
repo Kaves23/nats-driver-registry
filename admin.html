@@ -664,6 +664,31 @@
 
       <!-- Driver Documents Section -->
       <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">Medical & Consent</h3>
+        <div class="form-group">
+          <label>Allergies</label>
+          <input type="text" id="editMedicalAllergies" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Medical Conditions</label>
+          <input type="text" id="editMedicalConditions" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Medication</label>
+          <input type="text" id="editMedicalMedication" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Doctor Phone</label>
+          <input type="text" id="editMedicalDoctorPhone" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+        <div class="form-group">
+          <label>Data Processing Consent</label>
+          <input type="text" id="editMedicalConsentSigned" readonly style="background: #f3f4f6; color: #666;">
+        </div>
+      </div>
+
+      <!-- Driver Documents Section -->
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
         <h3 style="margin: 0 0 12px 0; font-size: 14px; color: #374151;">Driver Documents</h3>
         <div class="form-group">
           <label>Driver License</label>
@@ -855,6 +880,13 @@
       setVal('editNextRaceEngineRental', driver.next_race_engine_rental_status || 'No');
       setVal('editStatus', driver.status || 'Pending');
       setVal('editPaid', driver.paid_status || 'Unpaid');
+      
+      // Set medical fields (read-only)
+      setVal('editMedicalAllergies', driver.medical_allergies || '(not provided)');
+      setVal('editMedicalConditions', driver.medical_conditions || '(not provided)');
+      setVal('editMedicalMedication', driver.medical_medication || '(not provided)');
+      setVal('editMedicalDoctorPhone', driver.medical_doctor_phone || '(not provided)');
+      setVal('editMedicalConsentSigned', driver.medical_consent_signed || '(not provided)');
       
       // Update document status display
       const licenseStatus = document.getElementById('licenseStatus');

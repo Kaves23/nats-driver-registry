@@ -1030,6 +1030,21 @@ app.post('/api/getAllDrivers', async (req, res) => {
       console.log('Payments table query failed - table may not exist or have different structure:', e.message);
     }
 
+    // Get medical consent data for all drivers
+    let medicalMap = {};
+    try {
+      const medicalResult = await pool.query(
+        'SELECT * FROM medical_consent WHERE driver_id = ANY($1)',
+        [driverIds]
+      );
+      console.log('Found', medicalResult.rows.length, 'medical records');
+      medicalResult.rows.forEach(m => {
+        medicalMap[m.driver_id] = m;
+      });
+    } catch (e) {
+      console.log('Medical consent query failed:', e.message);
+    }
+
     // Build driver list with only data we know exists
     let drivers = driverResult.rows.map(d => {
       const obj = {
@@ -1053,6 +1068,17 @@ app.post('/api/getAllDrivers', async (req, res) => {
       if (d.approval_status !== undefined) obj.approval_status = d.approval_status || 'Pending';
       if (d.license_document !== undefined) obj.license_document = d.license_document;
       if (d.profile_photo !== undefined) obj.profile_photo = d.profile_photo;
+      
+      // Add medical data if available
+      if (medicalMap[d.driver_id]) {
+        const med = medicalMap[d.driver_id];
+        obj.medical_allergies = med.allergies || '';
+        obj.medical_conditions = med.medical_conditions || '';
+        obj.medical_medication = med.medication || '';
+        obj.medical_doctor_phone = med.doctor_phone || '';
+        obj.medical_consent_signed = med.consent_signed || '';
+        obj.medical_consent_date = med.consent_date || '';
+      }
       
       return obj;
     });
