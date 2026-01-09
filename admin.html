@@ -295,6 +295,41 @@
       color: #ff6b6b;
     }
 
+    .class-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .class-cadet {
+      background: #d32f2f;
+    }
+
+    .class-mini-rok-u10 {
+      background: #f57c00;
+    }
+
+    .class-mini-rok {
+      background: #fbc02d;
+      color: #000;
+    }
+
+    .class-ok-j {
+      background: #388e3c;
+    }
+
+    .class-ok-n {
+      background: #1976d2;
+    }
+
+    .class-kz2 {
+      background: #7b1fa2;
+    }
+
     .action-buttons {
       display: flex;
       gap: 5px;
@@ -876,7 +911,7 @@
             <td>${driver.nationality || '-'}</td>
             <td>${driver.gender || '-'}</td>
             <td>${driver.championship || '-'}</td>
-            <td>${driver.class || '-'}</td>
+            <td>${driver.class ? `<span class="class-badge ${getClassBadgeClass(driver.class)}">${driver.class}</span>` : '-'}</td>
             <td>${driver.race_number || '-'}</td>
             <td>${driver.team_name || '-'}</td>
             <td>${driver.coach_name || '-'}</td>
@@ -905,6 +940,19 @@
       console.log('Setting innerHTML to table');
       table.innerHTML = html;
       console.log('Table innerHTML set successfully');
+    }
+
+    function getClassBadgeClass(className) {
+      if (!className) return '';
+      const classMap = {
+        'CADET': 'class-cadet',
+        'MINI ROK U/10': 'class-mini-rok-u10',
+        'MINI ROK': 'class-mini-rok',
+        'OK-J': 'class-ok-j',
+        'OK-N': 'class-ok-n',
+        'KZ2': 'class-kz2'
+      };
+      return classMap[className] || '';
     }
 
     function openEditModal(driverId) {
