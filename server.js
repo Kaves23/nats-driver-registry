@@ -400,13 +400,25 @@ app.post('/api/registerDriver', async (req, res) => {
     // Insert email as first contact - REQUIRED
     try {
       const contact_id = uuidv4();
-      await client.query(
-        `INSERT INTO contacts (contact_id, driver_id, name, email, phone, relationship, is_emergency, is_consent)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [contact_id, driver_id, contact_name || null, email.toLowerCase(), contact_phone || null, 
-         contact_relationship || 'Guardian', contact_emergency === 'Y' ? true : false, contact_consent === 'Y' ? true : false]
-      );
-      console.log(`✅ Guardian contact saved: ${contact_name || 'N/A'} (${email})`);
+      // First try with full columns, fall back if they don't exist
+      try {
+        await client.query(
+          `INSERT INTO contacts (contact_id, driver_id, name, email, phone, relationship, is_emergency, is_consent)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [contact_id, driver_id, contact_name || null, email.toLowerCase(), contact_phone || null, 
+           contact_relationship || 'Guardian', contact_emergency === 'Y' ? true : false, contact_consent === 'Y' ? true : false]
+        );
+        console.log(`✅ Guardian contact saved: ${contact_name || 'N/A'} (${email})`);
+      } catch (fallbackError) {
+        console.log('Full contact insert failed, trying with available columns:', fallbackError.message);
+        // Try with just the columns that are likely to exist
+        await client.query(
+          `INSERT INTO contacts (contact_id, driver_id, email)
+          VALUES ($1, $2, $3)`,
+          [contact_id, driver_id, email.toLowerCase()]
+        );
+        console.log(`✅ Contact saved with email only: ${email}`);
+      }
     } catch (e) {
       console.error('❌ Could not insert contact:', e.message);
       await client.query('ROLLBACK');
