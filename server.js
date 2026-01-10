@@ -418,13 +418,13 @@ app.post('/api/registerDriver', async (req, res) => {
     // Insert email as first contact - REQUIRED
     try {
       const contact_id = uuidv4();
-      // Just insert the minimal fields we know exist
       await client.query(
-        `INSERT INTO contacts (contact_id, driver_id, email)
-        VALUES ($1, $2, $3)`,
-        [contact_id, driver_id, email.toLowerCase()]
+        `INSERT INTO contacts (contact_id, driver_id, contact_name, email, contact_phone, contact_relationship, contact_emergency, contact_consent)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [contact_id, driver_id, contact_name || null, email.toLowerCase(), contact_phone || null, 
+         contact_relationship || 'Guardian', contact_emergency === 'Y' ? true : false, contact_consent === 'Y' ? true : false]
       );
-      console.log(`✅ Contact saved: ${email}`);
+      console.log(`✅ Guardian contact saved: ${contact_name || 'N/A'} (${email})`);
     } catch (e) {
       console.error('❌ Could not insert contact:', e.message);
       await client.query('ROLLBACK');
@@ -1100,12 +1100,11 @@ app.post('/api/getAllDrivers', async (req, res) => {
       // Add contact information if available
       if (contactMap[d.driver_id]) {
         const contact = contactMap[d.driver_id];
-        // Try to get contact fields - they may not exist in the table yet
-        obj.contact_name = contact.contact_name || contact.name || '';
-        obj.contact_phone = contact.contact_phone || contact.phone || '';
-        obj.contact_relationship = contact.contact_relationship || contact.relationship || '';
-        obj.contact_emergency = contact.contact_emergency || contact.is_emergency || false;
-        obj.contact_consent = contact.contact_consent || contact.is_consent || false;
+        obj.contact_name = contact.contact_name || '';
+        obj.contact_phone = contact.contact_phone || '';
+        obj.contact_relationship = contact.contact_relationship || '';
+        obj.contact_emergency = contact.contact_emergency || false;
+        obj.contact_consent = contact.contact_consent || false;
       }
       
       // Add optional fields if they exist in the returned data
