@@ -387,10 +387,10 @@ app.post('/api/registerDriver', async (req, res) => {
         `UPDATE drivers SET date_of_birth = $1, nationality = $2, gender = $3,
           championship = $4, class = $5, race_number = $6,
           team_name = $7, coach_name = $8, kart_brand = $9, engine_type = $10,
-          transponder_number = $11
-        WHERE driver_id = $12`,
+          transponder_number = $11, license_number = $12
+        WHERE driver_id = $13`,
         [date_of_birth, nationality, gender, championship, klass,
-          race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, driver_id]
+          race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, id_or_passport_number, driver_id]
       );
       console.log(`✅ Driver additional fields updated`);
     } catch (e) {
