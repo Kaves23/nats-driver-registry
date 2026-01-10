@@ -337,6 +337,31 @@ app.get('/api/debug/contacts-schema', async (req, res) => {
   }
 });
 
+// DEBUG: Get sample row from contacts table to see what data exists
+app.get('/api/debug/contacts-sample', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM contacts LIMIT 1`
+    );
+    if (result.rows.length === 0) {
+      return res.json({ 
+        success: true, 
+        message: 'No data in contacts table yet',
+        sampleRow: null
+      });
+    }
+    
+    const sampleRow = result.rows[0];
+    res.json({ 
+      success: true, 
+      sampleRow: sampleRow,
+      columnNames: Object.keys(sampleRow)
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 // Register new driver
 app.post('/api/registerDriver', async (req, res) => {
   const client = await pool.connect();
