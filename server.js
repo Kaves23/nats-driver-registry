@@ -322,18 +322,15 @@ app.post('/api/loginWithPassword', async (req, res) => {
 // DEBUG: Get database schema for contacts table
 app.get('/api/debug/contacts-schema', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_NAME='contacts' AND TABLE_SCHEMA=DATABASE()
-       ORDER BY ORDINAL_POSITION`
-    );
+    // Try SHOW COLUMNS instead (works better with PlanetScale)
+    const result = await pool.query(`SHOW COLUMNS FROM contacts`);
     res.json({ 
       success: true, 
       columns: result.rows,
-      columnNames: result.rows.map(r => r.COLUMN_NAME)
+      columnNames: result.rows.map(r => r.Field)
     });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, error: err.message, hint: 'Try /api/debug/contacts-sample instead' });
   }
 });
 
