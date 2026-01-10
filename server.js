@@ -441,7 +441,7 @@ app.post('/api/registerDriver', async (req, res) => {
     try {
       const contact_id = uuidv4();
       await client.query(
-        `INSERT INTO contacts (contact_id, driver_id, contact_name, email, contact_phone, contact_relationship, contact_emergency, contact_consent)
+        `INSERT INTO contacts (contact_id, driver_id, full_name, email, phone_mobile, relationship, emergency_contact, consent_contact)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [contact_id, driver_id, contact_name || null, email.toLowerCase(), contact_phone || null, 
          contact_relationship || 'Guardian', contact_emergency === 'Y' ? true : false, contact_consent === 'Y' ? true : false]
@@ -1122,11 +1122,11 @@ app.post('/api/getAllDrivers', async (req, res) => {
       // Add contact information if available
       if (contactMap[d.driver_id]) {
         const contact = contactMap[d.driver_id];
-        obj.contact_name = contact.contact_name || '';
-        obj.contact_phone = contact.contact_phone || '';
-        obj.contact_relationship = contact.contact_relationship || '';
-        obj.contact_emergency = contact.contact_emergency || false;
-        obj.contact_consent = contact.contact_consent || false;
+        obj.contact_name = contact.full_name || '';
+        obj.contact_phone = contact.phone_mobile || '';
+        obj.contact_relationship = contact.relationship || '';
+        obj.contact_emergency = contact.emergency_contact || false;
+        obj.contact_consent = contact.consent_contact || false;
       }
       
       // Add optional fields if they exist in the returned data
