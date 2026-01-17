@@ -3044,6 +3044,10 @@
           const teamCode = document.getElementById('teamCodeInput').value;
           const totalPrice = document.getElementById('totalPrice').textContent;
           
+          console.log('🔍 Button clicked - totalPrice element textContent:', totalPrice);
+          console.log('🔍 Driver class:', driverClass);
+          console.log('🔍 Team code:', teamCode);
+          
           // Check if valid team code was entered
           if (teamCode.toLowerCase() === 'k0k0r0') {
             // Free registration with team code
@@ -3066,8 +3070,9 @@
               toast('good', 'Registration confirmed! No payment required.');
               document.getElementById('raceEntryModal').style.display = 'none';
             } else {
-              console.log('PayFast payment for class:', driverClass, 'Amount:', totalPrice);
+              console.log('PayFast payment for class:', driverClass, 'Amount raw:', totalPrice);
               const amount = totalPrice.replace('R', '').replace(',', '').trim();
+              console.log('🔍 Amount after cleaning:', amount);
               toast('info', 'Redirecting to PayFast payment...');
               // Redirect to PayFast payment
               window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount;

@@ -1826,6 +1826,8 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     const sortedKeys = Object.keys(pfData).sort();
     let pfParamString = '';
     
+    console.log(`🔐 All pfData keys being signed:`, sortedKeys);
+    
     for (const key of sortedKeys) {
       const value = pfData[key];
       if (value !== null && value !== '') {
@@ -1835,7 +1837,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     pfParamString += `passphrase=${encodeURIComponent(merchantKey)}`;
 
     console.log(`🔐 Amount to charge: R${numAmount.toFixed(2)}`);
-    console.log(`🔐 PayFast signature string (first 300 chars): ${pfParamString.substring(0, 300)}`);
+    console.log(`🔐 Full signature string: ${pfParamString}`);
 
     const signature = crypto
       .createHash('md5')
