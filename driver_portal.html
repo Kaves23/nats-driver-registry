@@ -2911,7 +2911,7 @@
 
     // Function to populate modal with correct pricing based on driver class
     function openRaceEntryModal() {
-      const driverClass = p_class || 'CADET';
+      const driverClass = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
       const tierConfig = racePricingTiers[driverClass] || racePricingTiers['CADET'];
       
       document.getElementById('modalRaceClass').textContent = driverClass;
@@ -2953,7 +2953,7 @@
 
     // Function to update total price
     function updateRaceTotal() {
-      const driverClass = p_class || 'CADET';
+      const driverClass = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
       const tierConfig = racePricingTiers[driverClass];
       
       let total = tierConfig.entry.price;
@@ -2997,7 +2997,7 @@
       
       if (paymentBtn) {
         paymentBtn.addEventListener('click', function() {
-          const driverClass = p_class || 'CADET';
+          const driverClass = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
           // TODO: Implement payment processing
           console.log('Payment processing for class:', driverClass);
           toast('good', 'Payment feature coming soon!');
