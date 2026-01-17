@@ -2259,9 +2259,15 @@
       return v.includes("@") && v.includes(".");
     }
 
-    // Tab switching
-    document.querySelectorAll(".tab").forEach(btn=>{
-      btn.addEventListener("click", ()=> setMode(btn.dataset.tab));
+    // Tab switching - ensure elements exist before attaching listeners
+    const tabButtons = document.querySelectorAll(".tab");
+    console.log("Found", tabButtons.length, "tab buttons");
+    tabButtons.forEach(btn=>{
+      console.log("Attaching listener to tab button:", btn.dataset.tab);
+      btn.addEventListener("click", function(e) {
+        console.log("Tab clicked:", this.dataset.tab);
+        setMode(this.dataset.tab);
+      });
     });
 
     // Portal sub-tabs
