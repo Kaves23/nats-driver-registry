@@ -2893,6 +2893,36 @@
       }
     };
 
+    // Event selection modal
+    const eventSelectionModal = document.createElement('div');
+    eventSelectionModal.id = 'eventSelectionModal';
+    eventSelectionModal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto; align-items: center; justify-content: center;';
+    eventSelectionModal.innerHTML = `
+      <div style="background: white; max-width: 600px; margin: 40px auto; border-radius: 8px; box-shadow: 0 20px 25px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
+        <!-- Header -->
+        <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #1f2937;">Select Race Event</h2>
+            <div style="font-size: 12px; color: #6b7280;">Choose which race you want to enter</div>
+          </div>
+          <button type="button" onclick="closeEventSelectionModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">×</button>
+        </div>
+        
+        <!-- Events List -->
+        <div style="padding: 20px;">
+          <div id="eventsListContainer" style="display: grid; gap: 12px;">
+            <div style="padding: 20px; text-align: center; color: #6b7280;">Loading available events...</div>
+          </div>
+        </div>
+        
+        <!-- Cancel Button -->
+        <div style="padding: 20px; border-top: 1px solid #e5e7eb;">
+          <button type="button" onclick="closeEventSelectionModal()" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; background: white; color: #374151; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(eventSelectionModal);
+
     const entryModal = document.createElement('div');
     entryModal.id = 'raceEntryModal';
     entryModal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto; align-items: center; justify-content: center;';
@@ -2904,7 +2934,7 @@
             <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #1f2937;">Enter Race</h2>
             <div style="font-size: 12px; color: #6b7280;">Class: <strong id="modalRaceClass">CADET</strong></div>
           </div>
-          <button type="button" onclick="document.getElementById('raceEntryModal').style.display = 'none'" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">×</button>
+          <button type="button" onclick="closeRaceEntryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">×</button>
         </div>
 
         <!-- Error Message -->
@@ -2915,8 +2945,9 @@
         <!-- Race Info -->
         <div style="padding: 20px; background: #f0fdf4; border-bottom: 1px solid #e5e7eb;">
           <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">EVENT</div>
-          <div style="font-size: 18px; font-weight: 700; color: #1f2937;">14 February 2026 - Redstar Regional</div>
-          <div style="font-size: 13px; color: #6b7280; margin-top: 8px;">📍 Redstar Raceway</div>
+          <div style="font-size: 18px; font-weight: 700; color: #1f2937;" id="selectedEventName">Loading...</div>
+          <div style="font-size: 13px; color: #6b7280; margin-top: 8px;" id="selectedEventLocation"></div>
+          <button type="button" onclick="showEventSelectionModal()" style="margin-top: 12px; padding: 6px 12px; background: #e0e7ff; color: #4338ca; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">Change Event</button>
         </div>
 
         <!-- Entry Items -->
@@ -2950,13 +2981,94 @@
 
           <!-- Action Buttons -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <button type="button" onclick="document.getElementById('raceEntryModal').style.display = 'none'" style="padding: 12px; border: 2px solid #e5e7eb; background: white; color: #374151; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
+            <button type="button" onclick="closeRaceEntryModal()" style="padding: 12px; border: 2px solid #e5e7eb; background: white; color: #374151; font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
             <button type="button" id="proceedToPayment" style="padding: 12px; background: #22c55e; color: white; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">Proceed to Payment</button>
           </div>
         </div>
       </div>
     `;
     document.body.appendChild(entryModal);
+
+    // ============= EVENT SELECTION FUNCTIONS =============
+    
+    async function loadAvailableEvents() {
+      try {
+        const response = await fetch('/api/getAvailableEvents');
+        const events = await response.json();
+        
+        const eventsListContainer = document.getElementById('eventsListContainer');
+        eventsListContainer.innerHTML = '';
+        
+        if (events.length === 0) {
+          eventsListContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #6b7280;">No upcoming events available</div>';
+          return;
+        }
+        
+        events.forEach(event => {
+          const eventCard = document.createElement('div');
+          eventCard.style.cssText = 'border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; background: #f9fafb; cursor: pointer; transition: all 0.2s;';
+          eventCard.onmouseover = () => eventCard.style.background = '#f3f4f6';
+          eventCard.onmouseout = () => eventCard.style.background = '#f9fafb';
+          
+          const eventDate = new Date(event.event_date).toLocaleDateString('en-ZA');
+          const deadline = event.registration_deadline ? new Date(event.registration_deadline).toLocaleDateString('en-ZA') : 'N/A';
+          
+          eventCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #1f2937;">${event.event_name}</h3>
+                <div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📅 ${eventDate}</div>
+                <div style="font-size: 13px; color: #6b7280;">📍 ${event.location || 'TBA'}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 18px; font-weight: 700; color: #22c55e;">R${parseFloat(event.entry_fee).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Entry Fee</div>
+              </div>
+            </div>
+            <div style="padding-top: 12px; border-top: 1px solid #e5e7eb;">
+              <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">Deadline: ${deadline}</div>
+              <button type="button" style="width: 100%; padding: 8px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600;">Select Event</button>
+            </div>
+          `;
+          
+          eventCard.addEventListener('click', () => {
+            selectEvent(event.event_id, event.event_name, event.location);
+          });
+          
+          eventsListContainer.appendChild(eventCard);
+        });
+      } catch (error) {
+        console.error('Error loading events:', error);
+        const eventsListContainer = document.getElementById('eventsListContainer');
+        eventsListContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #dc2626;">Failed to load events. Please try again.</div>';
+      }
+    }
+    
+    function showEventSelectionModal() {
+      document.getElementById('eventSelectionModal').style.display = 'flex';
+      loadAvailableEvents();
+    }
+    
+    function closeEventSelectionModal() {
+      document.getElementById('eventSelectionModal').style.display = 'none';
+    }
+    
+    function selectEvent(eventId, eventName, location) {
+      window.selectedEventId = eventId;
+      window.selectedEventName = eventName;
+      window.selectedEventLocation = location;
+      
+      // Update race entry modal with selected event
+      document.getElementById('selectedEventName').textContent = eventName;
+      document.getElementById('selectedEventLocation').textContent = location ? ('📍 ' + location) : '';
+      
+      closeEventSelectionModal();
+      document.getElementById('raceEntryModal').style.display = 'flex';
+    }
+    
+    function closeRaceEntryModal() {
+      document.getElementById('raceEntryModal').style.display = 'none';
+    }
 
     // Function to validate team code
     function validateTeamCode() {
@@ -3074,9 +3186,9 @@
       // Engine rental option handled in openRaceEntryModal()
     }
 
-    // Open entry modal
+    // Open entry modal - show event selection first
     document.getElementById('btnQuickEntry').addEventListener('click', function() {
-      openRaceEntryModal();
+      showEventSelectionModal();
     });
 
     // Setup race entry modal listeners after a brief delay to ensure DOM is ready
@@ -3127,6 +3239,8 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
+                eventId: window.selectedEventId,
+                driverId: window.currentDriverId,
                 raceClass: driverClass,
                 selectedItems: selectedItems,
                 email: currentEmail,
@@ -3168,8 +3282,8 @@
               const amount = totalPrice.replace('R', '').replace(/\s/g, '').replace(',', '.').trim();
               console.log('🔍 Amount after cleaning:', amount);
               toast('info', 'Redirecting to PayFast payment...');
-              // Redirect to PayFast payment with driver email
-              window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount + '&email=' + encodeURIComponent(currentEmail);
+              // Redirect to PayFast payment with driver email, event, and driver ID
+              window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount + '&email=' + encodeURIComponent(currentEmail) + '&eventId=' + encodeURIComponent(window.selectedEventId) + '&driverId=' + encodeURIComponent(window.currentDriverId);
             }
           }
         });

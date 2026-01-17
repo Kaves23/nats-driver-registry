@@ -75,25 +75,47 @@ const initMessagesTable = async () => {
   }
 };
 
+// Initialize events table if it doesn't exist
+const initEventsTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS events (
+        event_id VARCHAR(255) PRIMARY KEY,
+        event_name VARCHAR(255) NOT NULL,
+        event_date DATE NOT NULL,
+        location VARCHAR(255),
+        registration_deadline DATE,
+        entry_fee DECIMAL(10, 2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (err) {
+    console.error('Events table init error:', err.message);
+  }
+};
+
 // Initialize race entries table if it doesn't exist
 const initRaceEntriesTable = async () => {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS race_entries (
         race_entry_id VARCHAR(255) PRIMARY KEY,
-        race_event VARCHAR(255),
-        driver_id VARCHAR(255),
-        driver_email VARCHAR(255),
-        driver_name VARCHAR(255),
-        race_class VARCHAR(100),
+        event_id VARCHAR(255) NOT NULL,
+        driver_id VARCHAR(255) NOT NULL,
         entry_fee DECIMAL(10, 2),
-        entry_items TEXT,
-        total_amount DECIMAL(10, 2),
+        amount_paid DECIMAL(10, 2),
         payment_reference VARCHAR(255) UNIQUE,
         payment_status VARCHAR(100),
+        entry_status VARCHAR(100),
+        transponder_selection VARCHAR(255),
+        tyres_ordered BOOLEAN DEFAULT FALSE,
+        wets_ordered BOOLEAN DEFAULT FALSE,
         team_code VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(event_id),
+        FOREIGN KEY (driver_id) REFERENCES drivers(driver_id)
       )
     `);
   } catch (err) {
@@ -103,6 +125,7 @@ const initRaceEntriesTable = async () => {
 
 initAuditTable();
 initMessagesTable();
+initEventsTable();
 initRaceEntriesTable();
 
 // Log audit event
@@ -1778,10 +1801,14 @@ app.get('/api/debug/payfast', (req, res) => {
 // Initiate Race Entry Payment via PayFast
 app.get('/api/initiateRacePayment', async (req, res) => {
   try {
-    const { class: raceClass, amount, email } = req.query;
+    const { class: raceClass, amount, email, eventId, driverId } = req.query;
     
     if (!raceClass || !amount) {
       throw new Error('Missing class or amount');
+    }
+    
+    if (!eventId || !driverId) {
+      throw new Error('Missing event ID or driver ID');
     }
 
     // Use provided email or fallback to noreply
@@ -1801,7 +1828,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       throw new Error(`Invalid amount: ${amount} (parsed as ${cleanAmount})`);
     }
 
-    console.log(`💳 Initiating PayFast payment: ${raceClass} - R${numAmount.toFixed(2)}`);
+    console.log(`💳 Initiating PayFast payment: ${raceClass} - R${numAmount.toFixed(2)} for event ${eventId}`);
 
     // PayFast Merchant ID and Key (from environment or correct defaults)
     const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
@@ -1810,8 +1837,8 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://nats-driver-registry.onrender.com/payment-cancel.html';
     const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://nats-driver-registry.onrender.com/api/paymentNotify';
 
-    // Generate unique reference
-    const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    // Generate unique reference that includes event and driver info
+    const reference = `RACE-${eventId}-${driverId}-${Date.now()}`;
 
     // Build PayFast parameters for the redirect URL
     // These are the parameters that will be sent to PayFast
@@ -1937,20 +1964,24 @@ app.get('/api/initiateRacePayment', async (req, res) => {
 // Register for free race entry (with team code k0k0r0)
 app.post('/api/registerFreeRaceEntry', async (req, res) => {
   try {
-    const { raceClass, selectedItems, email, firstName, lastName } = req.body;
+    const { eventId, driverId, raceClass, selectedItems, email, firstName, lastName } = req.body;
     
-    if (!raceClass || !email) {
-      throw new Error('Missing race class or email');
+    if (!eventId || !driverId || !email) {
+      throw new Error('Missing event ID, driver ID, or email');
     }
 
-    const race_id = `race_free_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const race_entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const reference = `RACE-FREE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    
+    // Determine equipment selections
+    const tyresOrdered = selectedItems && selectedItems.some(item => item.includes('tyres'));
+    const wetsOrdered = selectedItems && selectedItems.some(item => item.includes('wets'));
     
     // Store the free entry in database
     await pool.query(
-      `INSERT INTO race_entries (race_id, race_class, driver_email, payment_reference, payment_status, total_amount, entry_items, entry_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-      [race_id, raceClass, email, reference, 'Completed', 0, JSON.stringify(selectedItems || [])]
+      `INSERT INTO race_entries (race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, tyres_ordered, wets_ordered)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, tyresOrdered, wetsOrdered]
     );
 
     console.log(`✅ Free race entry recorded: ${reference} - ${raceClass}`);
@@ -2127,16 +2158,22 @@ app.post('/api/paymentNotify', async (req, res) => {
       raceClass = item_name.split('-').pop().trim();
     }
 
-    // Store payment record
-    const race_id = `race_paid_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    // Parse reference to extract event_id and driver_id
+    // Reference format: RACE-{eventId}-{driverId}-{timestamp}
+    const referenceParts = reference.split('-');
+    const eventId = referenceParts[1] || 'unknown';
+    const driverId = referenceParts[2] || 'unknown';
+
+    // Store payment record using new schema
+    const race_entry_id = `race_entry_${pf_payment_id}`;
     await pool.query(
-      `INSERT INTO race_entries (race_id, race_class, payment_reference, payment_status, total_amount, driver_email, entry_date)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $4, driver_email = $6`,
-      [race_id, raceClass, m_payment_id, 'Completed', amount_gross, email_address]
+      `INSERT INTO race_entries (race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5, entry_status = $6, amount_paid = $7`,
+      [race_entry_id, eventId, driverId, m_payment_id, 'Completed', 'confirmed', amount_gross]
     );
 
-    console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross}`);
+    console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross} - Event: ${eventId}, Driver: ${driverId}`);
 
     // Send confirmation emails
     try {
@@ -2247,6 +2284,51 @@ app.post('/api/paymentNotify', async (req, res) => {
 });
 
 // Get driver's race entries
+// Get available events for race entry selection
+app.get('/api/getAvailableEvents', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee
+       FROM events
+       WHERE registration_deadline >= CURRENT_DATE
+       ORDER BY event_date ASC`
+    );
+
+    console.log(`✅ Retrieved ${result.rows.length} available events`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('❌ getAvailableEvents error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get driver's race entries with event details
+app.get('/api/getDriverEntries/:driverId', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    
+    if (!driverId) {
+      throw new Error('Driver ID required');
+    }
+
+    const result = await pool.query(
+      `SELECT r.race_entry_id, r.event_id, e.event_name, e.event_date, e.location,
+              r.payment_status, r.entry_status, r.amount_paid, r.created_at
+       FROM race_entries r
+       JOIN events e ON r.event_id = e.event_id
+       WHERE r.driver_id = $1
+       ORDER BY e.event_date DESC`,
+      [driverId]
+    );
+
+    console.log(`✅ Retrieved ${result.rows.length} race entries for driver ${driverId}`);
+    res.json({ success: true, entries: result.rows });
+  } catch (err) {
+    console.error('❌ getDriverEntries error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/getDriverRaceEntries', async (req, res) => {
   try {
     const { email } = req.body;
