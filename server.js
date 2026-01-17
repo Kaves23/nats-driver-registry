@@ -1783,9 +1783,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // PayFast Merchant ID and Key (from environment or hardcoded)
     const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
     const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'wz69jyr6y9zr2';
-    const returnUrl = process.env.PAYFAST_RETURN_URL || 'http://localhost:3000/payment-success.html';
-    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'http://localhost:3000/payment-cancel.html';
-    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'http://localhost:3000/api/paymentNotify';
+    const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://livenats.co.za/payment-success.html';
+    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://livenats.co.za/payment-cancel.html';
+    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://livenats.co.za/api/paymentNotify';
 
     // Generate unique reference
     const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -1824,12 +1824,24 @@ app.get('/api/initiateRacePayment', async (req, res) => {
 
     console.log(`✅ PayFast payment initiated: ${reference}`);
 
-    // Return payment form HTML that auto-submits
-    const paymentForm = `
+    // Build PayFast URL with query parameters
+    const payFastParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(pfData)) {
+      payFastParams.append(key, value);
+    }
+    payFastParams.append('signature', signature);
+
+    const payFastUrl = `https://www.payfast.co.za/eng/process?${payFastParams.toString()}`;
+
+    console.log(`Redirecting to: ${payFastUrl.substring(0, 100)}...`);
+
+    // Return HTML with simple redirect (no auto-submit form, just redirect)
+    const redirectPage = `
       <!DOCTYPE html>
       <html>
       <head>
         <title>Processing Payment...</title>
+        <meta http-equiv="refresh" content="2; url='${payFastUrl}'">
         <style>
           body { font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f5; }
           .container { text-align: center; }
@@ -1841,25 +1853,16 @@ app.get('/api/initiateRacePayment', async (req, res) => {
         <div class="container">
           <h1>Redirecting to Payment...</h1>
           <div class="spinner"></div>
-          <p>Amount: R${numAmount.toFixed(2)}</p>
-          <p>Class: ${raceClass}</p>
-          <form id="paymentForm" method="post" action="https://www.payfast.co.za/eng/process">
-            ${Object.entries(pfData).map(([key, value]) => `<input type="hidden" name="${key}" value="${value}">`).join('')}
-            <input type="hidden" name="signature" value="${signature}">
-          </form>
-          <script>
-            document.getElementById('paymentForm').submit();
-          </script>
-          <noscript>
-            <p>Please click the button below if you are not automatically redirected to PayFast:</p>
-            <button onclick="document.getElementById('paymentForm').submit()">Continue to Payment</button>
-          </noscript>
+          <p>Amount: <strong>R${numAmount.toFixed(2)}</strong></p>
+          <p>Class: <strong>${raceClass}</strong></p>
+          <p>Reference: <strong>${reference}</strong></p>
+          <p style="margin-top: 30px; color: #666; font-size: 14px;">If you are not automatically redirected, <a href="${payFastUrl}">click here</a> to continue to payment.</p>
         </div>
       </body>
       </html>
     `;
 
-    res.send(paymentForm);
+    res.send(redirectPage);
   } catch (err) {
     console.error('❌ initiateRacePayment error:', err.message);
     res.status(400).send(`<h1>Payment Error</h1><p>${err.message}</p><p><a href="/">Back to Home</a></p>`);
