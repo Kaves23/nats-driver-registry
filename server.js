@@ -1806,9 +1806,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // PayFast Merchant ID and Key (from environment or correct defaults)
     const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
     const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
-    const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://livenats.co.za/payment-success.html';
-    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://livenats.co.za/payment-cancel.html';
-    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://livenats.co.za/api/paymentNotify';
+    const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://nats-driver-registry.onrender.com/payment-success.html';
+    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://nats-driver-registry.onrender.com/payment-cancel.html';
+    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://nats-driver-registry.onrender.com/api/paymentNotify';
 
     // Generate unique reference
     const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -1939,21 +1939,183 @@ app.post('/api/paymentNotify', async (req, res) => {
   try {
     console.log('📨 PayFast IPN received:', req.body);
 
-    const { reference, custom_str1: raceClass, m_payment_id, payment_status, amount_gross } = req.body;
+    const { 
+      m_payment_id, 
+      pf_payment_id,
+      payment_status, 
+      item_description, 
+      item_name,
+      amount_gross,
+      reference,
+      email_address,
+      signature,
+      name_first,
+      name_last
+    } = req.body;
 
-    if (!reference || !raceClass) {
-      throw new Error('Missing reference or race class');
+    if (!m_payment_id || !payment_status) {
+      throw new Error('Missing payment ID or status');
+    }
+
+    // Verify PayFast signature
+    const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
+    const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
+    const passphrase = 'RokCupZA2024';
+
+    // Build signature string in PayFast order (excluding signature field itself)
+    let pfParamString = '';
+    const signatureData = { ...req.body };
+    delete signatureData.signature;
+    
+    // PayFast requires fields in specific order for signature verification
+    const signatureFields = [
+      'm_payment_id', 'pf_payment_id', 'payment_status', 'item_name', 'item_description',
+      'amount_gross', 'amount_fee', 'amount_net', 'custom_int1', 'custom_int2', 'custom_int3',
+      'custom_int4', 'custom_int5', 'custom_str1', 'custom_str2', 'custom_str3', 'custom_str4',
+      'custom_str5', 'name_first', 'name_last', 'email_address', 'cell_number', 'merchant_id'
+    ];
+
+    for (const field of signatureFields) {
+      if (signatureData[field]) {
+        const encoded = encodeURIComponent(signatureData[field]).replace(/%20/g, '+');
+        pfParamString += `${field}=${encoded}&`;
+      }
+    }
+    
+    pfParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`;
+    
+    const calculatedSignature = crypto.createHash('md5').update(pfParamString.trim()).digest('hex');
+    
+    console.log(`✅ IPN Signature verification: ${calculatedSignature === signature ? 'PASSED' : 'FAILED'}`);
+    if (calculatedSignature !== signature) {
+      console.warn('⚠️ Signature mismatch - possible tampering');
+    }
+
+    // Only process COMPLETE payments
+    if (payment_status !== 'COMPLETE') {
+      console.log(`⏭️ Payment not complete (status: ${payment_status}), not recording`);
+      res.json({ success: true });
+      return;
+    }
+
+    // Extract race class from item name or description
+    let raceClass = 'UNKNOWN';
+    if (item_name && item_name.includes('-')) {
+      raceClass = item_name.split('-').pop().trim();
     }
 
     // Store payment record
+    const raceEntryId = uuidv4();
     await pool.query(
-      `INSERT INTO race_entries (race_entry_id, race_event, race_class, payment_reference, payment_status, total_amount)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5`,
-      [uuidv4(), 'Event Pending', raceClass, m_payment_id, payment_status === 'COMPLETE' ? 'Completed' : 'Pending', amount_gross]
+      `INSERT INTO race_entries (race_entry_id, race_event, race_class, payment_reference, payment_status, total_amount, driver_email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5, driver_email = $7`,
+      [raceEntryId, 'Event Pending', raceClass, m_payment_id, 'Completed', amount_gross, email_address]
     );
 
-    console.log(`✅ Payment recorded: ${reference} - Status: ${payment_status}`);
+    console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross}`);
+
+    // Send confirmation emails
+    try {
+      const driverName = `${name_first || 'Driver'} ${name_last || ''}`.trim();
+      
+      // Email HTML template
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payment Confirmation</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #333; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; }
+            .header { border-bottom: 3px solid #22c55e; padding-bottom: 20px; margin-bottom: 30px; }
+            h1 { color: #22c55e; margin: 0; }
+            .content { line-height: 1.6; }
+            .details { background: #f9fafb; padding: 20px; border-radius: 6px; margin: 20px 0; }
+            .detail-row { display: flex; justify-content: space-between; padding: 8px 0; }
+            .detail-label { font-weight: 600; color: #6b7280; }
+            .detail-value { color: #111827; }
+            .amount { font-size: 24px; font-weight: bold; color: #22c55e; }
+            .footer { border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✅ Payment Confirmation</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${driverName},</p>
+              <p>Your race entry payment has been successfully processed. Thank you for registering with the NATS 2026 ROK Cup!</p>
+              
+              <div class="details">
+                <div class="detail-row">
+                  <span class="detail-label">Payment Reference:</span>
+                  <span class="detail-value">${reference}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Race Class:</span>
+                  <span class="detail-value">${raceClass}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Amount Paid:</span>
+                  <span class="detail-value amount">R${parseFloat(amount_gross).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Transaction ID:</span>
+                  <span class="detail-value">${pf_payment_id}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Date:</span>
+                  <span class="detail-value">${new Date().toLocaleDateString('en-ZA')}</span>
+                </div>
+              </div>
+              
+              <p>You will receive further instructions about your race entry shortly. If you have any questions, please contact us.</p>
+              
+              <p>Best regards,<br><strong>NATS 2026 ROK Cup Team</strong></p>
+            </div>
+            <div class="footer">
+              <p>This is an automated confirmation email. Please do not reply to this message.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Send to driver
+      await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+        key: process.env.MAILCHIMP_API_KEY,
+        message: {
+          to: [{ email: email_address, name: driverName }],
+          from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+          subject: `Payment Confirmation - Race Entry ${raceClass}`,
+          html: emailHtml
+        }
+      });
+      
+      console.log(`📧 Confirmation email sent to driver: ${email_address}`);
+
+      // Send to John (CC)
+      await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+        key: process.env.MAILCHIMP_API_KEY,
+        message: {
+          to: [{ email: 'john@rokcup.co.za', name: 'John' }],
+          from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+          subject: `Payment Received - ${driverName} (${raceClass})`,
+          html: emailHtml
+        }
+      });
+      
+      console.log(`📧 Confirmation email sent to john@rokcup.co.za`);
+
+    } catch (emailErr) {
+      console.error('⚠️ Email sending failed (non-critical):', emailErr.message);
+      // Don't fail the IPN response if email fails
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('❌ paymentNotify error:', err.message);
