@@ -3048,27 +3048,73 @@
           console.log('🔍 Driver class:', driverClass);
           console.log('🔍 Team code:', teamCode);
           
+          // Check if engine rental is selected (required)
+          let hasEngineRental = false;
+          const tierConfig = racePricingTiers[driverClass];
+          const selectedItems = [];
+          tierConfig.items.forEach((item, idx) => {
+            const checkbox = document.getElementById(`item_${idx}`);
+            if (checkbox && checkbox.checked) {
+              selectedItems.push(item.name);
+              if (item.name.toLowerCase().includes('engine') || item.name.toLowerCase().includes('rental')) {
+                hasEngineRental = true;
+              }
+            }
+          });
+
+          if (!hasEngineRental) {
+            toast('bad', 'Engine rental is required. Please select an engine rental option.');
+            return;
+          }
+          
           // Check if valid team code was entered
           if (teamCode.toLowerCase() === 'k0k0r0') {
             // Free registration with team code
-            const selectedItems = [];
-            const tierConfig = racePricingTiers[driverClass];
-            tierConfig.items.forEach((item, idx) => {
-              const checkbox = document.getElementById(`item_${idx}`);
-              if (checkbox && checkbox.checked) {
-                selectedItems.push(item.name);
-              }
-            });
-            
             console.log('Free registration with team code for class:', driverClass, 'Items:', selectedItems);
-            toast('good', 'Registration confirmed! You can enter the race for free with the team code.');
-            document.getElementById('raceEntryModal').style.display = 'none';
+            
+            // Submit free entry via API
+            setButtonLoading_(paymentBtn, true, 'Registering...');
+            
+            fetch('/api/registerFreeRaceEntry', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                raceClass: driverClass,
+                selectedItems: selectedItems,
+                email: currentEmail,
+                firstName: currentProfile?.driver?.first_name || 'Driver',
+                lastName: currentProfile?.driver?.last_name || ''
+              })
+            })
+            .then(r => r.json())
+            .then(data => {
+              if (data.success) {
+                toast('good', 'Registration confirmed! Confirmation email sent.');
+                document.getElementById('raceEntryModal').style.display = 'none';
+                // Reload portal to show registered entry
+                setTimeout(() => {
+                  location.reload();
+                }, 1000);
+              } else {
+                toast('bad', data.error || 'Registration failed');
+              }
+            })
+            .catch(err => {
+              console.error('Free entry error:', err);
+              toast('bad', 'Failed to register: ' + err.message);
+            })
+            .finally(() => {
+              setButtonLoading_(paymentBtn, false, 'Proceed to Payment');
+            });
           } else {
             // Proceed to PayFast payment
             if (totalPrice === 'R0.00' || totalPrice === 'R 0.00') {
               console.log('Zero amount for class:', driverClass);
               toast('good', 'Registration confirmed! No payment required.');
               document.getElementById('raceEntryModal').style.display = 'none';
+              setTimeout(() => {
+                location.reload();
+              }, 1000);
             } else {
               console.log('PayFast payment for class:', driverClass, 'Amount raw:', totalPrice);
               const amount = totalPrice.replace('R', '').replace(/\s/g, '').replace(',', '.').trim();

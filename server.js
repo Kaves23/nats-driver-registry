@@ -1934,6 +1934,129 @@ app.get('/api/initiateRacePayment', async (req, res) => {
   }
 });
 
+// Register for free race entry (with team code k0k0r0)
+app.post('/api/registerFreeRaceEntry', async (req, res) => {
+  try {
+    const { raceClass, selectedItems, email, firstName, lastName } = req.body;
+    
+    if (!raceClass || !email) {
+      throw new Error('Missing race class or email');
+    }
+
+    const raceEntryId = uuidv4();
+    const reference = `RACE-FREE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    
+    // Store the free entry in database
+    await pool.query(
+      `INSERT INTO race_entries (race_entry_id, race_event, race_class, driver_email, payment_reference, payment_status, total_amount, entry_items)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [raceEntryId, 'Event Pending', raceClass, email, reference, 'Completed', 0, JSON.stringify(selectedItems || [])]
+    );
+
+    console.log(`✅ Free race entry recorded: ${reference} - ${raceClass}`);
+
+    // Send confirmation emails
+    try {
+      const driverName = `${firstName || 'Driver'} ${lastName || ''}`.trim();
+      
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Race Entry Confirmation</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #333; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; }
+            .header { border-bottom: 3px solid #22c55e; padding-bottom: 20px; margin-bottom: 30px; }
+            h1 { color: #22c55e; margin: 0; }
+            .content { line-height: 1.6; }
+            .details { background: #f9fafb; padding: 20px; border-radius: 6px; margin: 20px 0; }
+            .detail-row { display: flex; justify-content: space-between; padding: 8px 0; }
+            .detail-label { font-weight: 600; color: #6b7280; }
+            .detail-value { color: #111827; }
+            .badge { background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 4px; font-weight: 600; display: inline-block; }
+            .footer { border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✅ Race Entry Confirmed</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${driverName},</p>
+              <p>Your race entry has been successfully registered. Thank you for participating in the NATS 2026 ROK Cup!</p>
+              
+              <div class="details">
+                <div class="detail-row">
+                  <span class="detail-label">Entry Reference:</span>
+                  <span class="detail-value">${reference}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Race Class:</span>
+                  <span class="detail-value">${raceClass}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Status:</span>
+                  <span class="badge">Confirmed</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Date:</span>
+                  <span class="detail-value">${new Date().toLocaleDateString('en-ZA')}</span>
+                </div>
+              </div>
+              
+              <p>You will receive further instructions about your race entry shortly. Please make sure to check your portal regularly for updates.</p>
+              
+              <p>Best regards,<br><strong>NATS 2026 ROK Cup Team</strong></p>
+            </div>
+            <div class="footer">
+              <p>This is an automated confirmation email. Please do not reply to this message.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Send to driver
+      await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+        key: process.env.MAILCHIMP_API_KEY,
+        message: {
+          to: [{ email: email, name: driverName }],
+          from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+          subject: `Race Entry Confirmed - ${raceClass}`,
+          html: emailHtml
+        }
+      });
+      
+      console.log(`📧 Free entry confirmation email sent to driver: ${email}`);
+
+      // Send to John (CC)
+      await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+        key: process.env.MAILCHIMP_API_KEY,
+        message: {
+          to: [{ email: 'john@rokcup.co.za', name: 'John' }],
+          from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+          subject: `Race Entry Confirmed - ${driverName} (${raceClass})`,
+          html: emailHtml
+        }
+      });
+      
+      console.log(`📧 Free entry confirmation email sent to john@rokcup.co.za`);
+
+    } catch (emailErr) {
+      console.error('⚠️ Email sending failed (non-critical):', emailErr.message);
+    }
+
+    res.json({ success: true, message: 'Race entry registered successfully', reference });
+  } catch (err) {
+    console.error('❌ registerFreeRaceEntry error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 // Handle PayFast Payment Notification (IPN)
 app.post('/api/paymentNotify', async (req, res) => {
   try {
@@ -2119,6 +2242,31 @@ app.post('/api/paymentNotify', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('❌ paymentNotify error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get driver's race entries
+app.post('/api/getDriverRaceEntries', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      throw new Error('Email required');
+    }
+
+    const result = await pool.query(
+      `SELECT race_entry_id, race_class, payment_status, total_amount, entry_items, created_at
+       FROM race_entries 
+       WHERE driver_email = $1
+       ORDER BY created_at DESC`,
+      [email.toLowerCase()]
+    );
+
+    console.log(`✅ Retrieved ${result.rows.length} race entries for ${email}`);
+    res.json({ success: true, entries: result.rows });
+  } catch (err) {
+    console.error('❌ getDriverRaceEntries error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 });
