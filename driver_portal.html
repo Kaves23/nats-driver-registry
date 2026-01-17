@@ -2270,6 +2270,26 @@
       return v.includes("@") && v.includes(".");
     }
 
+    function showModalError(message) {
+      const errorDiv = document.getElementById('modalErrorMessage');
+      const errorText = document.getElementById('modalErrorText');
+      if (errorDiv && errorText) {
+        errorText.textContent = message;
+        errorDiv.style.display = 'block';
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          errorDiv.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    function hideModalError() {
+      const errorDiv = document.getElementById('modalErrorMessage');
+      if (errorDiv) {
+        errorDiv.style.display = 'none';
+      }
+    }
+
     // Tab switching - ensure elements exist before attaching listeners
     const tabButtons = document.querySelectorAll(".tab");
     console.log("Found", tabButtons.length, "tab buttons");
@@ -2887,6 +2907,11 @@
           <button type="button" onclick="document.getElementById('raceEntryModal').style.display = 'none'" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">×</button>
         </div>
 
+        <!-- Error Message -->
+        <div id="modalErrorMessage" style="display: none; padding: 16px 20px; background: #fee2e2; border-left: 4px solid #ef4444; margin: 0;">
+          <div style="font-size: 14px; color: #991b1b; font-weight: 600;" id="modalErrorText"></div>
+        </div>
+
         <!-- Race Info -->
         <div style="padding: 20px; background: #f0fdf4; border-bottom: 1px solid #e5e7eb;">
           <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">EVENT</div>
@@ -2967,6 +2992,9 @@
 
     // Function to populate modal with correct pricing based on driver class
     function openRaceEntryModal() {
+      // Clear any previous errors when opening modal
+      hideModalError();
+      
       const driverClass = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
       const tierConfig = racePricingTiers[driverClass] || racePricingTiers['CADET'];
       
@@ -3080,9 +3108,12 @@
           });
 
           if (!hasEngineRental) {
-            toast('bad', 'Engine rental is required. Please select an engine rental option.');
+            showModalError('Engine rental is required. Please select an engine rental option.');
             return;
           }
+          
+          // Clear any previous errors
+          hideModalError();
           
           // Check if valid team code was entered
           if (teamCode.toLowerCase() === 'k0k0r0') {
