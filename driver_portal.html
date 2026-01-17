@@ -2804,6 +2804,58 @@
     // JotForm submission removed — replaced with PayFast race entry system via portal
 
     /* ====== RACE ENTRY MODAL ====== */
+    // Define pricing tiers for each class
+    const racePricingTiers = {
+      'CADET': {
+        entry: { name: 'Race Entry', price: 1950 },
+        items: [
+          { name: 'Rent Transponder', price: 250, optional: true },
+          { name: 'Tyres', price: 0, optional: true, disabled: true, note: 'N/A' },
+          { name: 'Engine Rental', price: 0, optional: true, disabled: true, note: 'N/A' }
+        ]
+      },
+      'MINI ROK U/10': {
+        entry: { name: 'Regional Entry', price: 2950 },
+        items: [
+          { name: 'Tyres (Optional)', price: 3950, optional: true },
+          { name: 'Rent Transponder', price: 250, optional: true },
+          { name: 'Engine Rental', price: 3500, optional: true }
+        ]
+      },
+      'MINI ROK': {
+        entry: { name: 'Regional Entry', price: 2950 },
+        items: [
+          { name: 'Tyres (Optional)', price: 3950, optional: true },
+          { name: 'Rent Transponder', price: 250, optional: true },
+          { name: 'Engine Rental', price: 3500, optional: true }
+        ]
+      },
+      'OK-J': {
+        entry: { name: 'Regional Entry', price: 2950 },
+        items: [
+          { name: 'Tyres (Optional)', price: 4730, optional: true },
+          { name: 'Rent Transponder', price: 250, optional: true },
+          { name: 'Engine Rental', price: 6500, optional: true }
+        ]
+      },
+      'OK-N': {
+        entry: { name: 'Regional Entry', price: 2950 },
+        items: [
+          { name: 'Tyres (Optional)', price: 4730, optional: true },
+          { name: 'Rent Transponder', price: 250, optional: true },
+          { name: 'Engine Rental', price: 6500, optional: true }
+        ]
+      },
+      'KZ2': {
+        entry: { name: 'Regional Entry', price: 2950 },
+        items: [
+          { name: 'Tyres (Required)', price: 4730, optional: false },
+          { name: 'Rent Transponder', price: 250, optional: true },
+          { name: 'Engine Rental', price: 0, optional: true, disabled: true, note: 'N/A' }
+        ]
+      }
+    };
+
     const entryModal = document.createElement('div');
     entryModal.id = 'raceEntryModal';
     entryModal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; padding: 16px; overflow-y: auto; align-items: center; justify-content: center;';
@@ -2811,7 +2863,10 @@
       <div style="background: white; max-width: 500px; margin: 40px auto; border-radius: 8px; box-shadow: 0 20px 25px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
         <!-- Header -->
         <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-          <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #1f2937;">Enter Race</h2>
+          <div>
+            <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #1f2937;">Enter Race</h2>
+            <div style="font-size: 12px; color: #6b7280;">Class: <strong id="modalRaceClass">CADET</strong></div>
+          </div>
           <button type="button" onclick="document.getElementById('raceEntryModal').style.display = 'none'" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">×</button>
         </div>
 
@@ -2826,56 +2881,8 @@
         <div style="padding: 20px;">
           <div style="font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 0.05em;">Entry Details</div>
 
-          <!-- Base Entry -->
-          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <div style="font-weight: 600; color: #1f2937; font-size: 14px;">Race Entry (14 Feb)</div>
-              <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R450</div>
-            </div>
-            <div style="font-size: 12px; color: #6b7280;">Single race entry at Redstar Regional</div>
-          </div>
-
-          <!-- Tyres Option -->
-          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">Add Tyres (Set of 4)</div>
-                <div style="font-size: 12px; color: #6b7280;">Optional tyre set for the race</div>
-              </div>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R250</div>
-                <input type="checkbox" id="addTyres" style="cursor: pointer; width: 18px; height: 18px;">
-              </div>
-            </div>
-          </div>
-
-          <!-- Transponder Option -->
-          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">Rent Transponder</div>
-                <div style="font-size: 12px; color: #6b7280;">Tracking device rental for the race</div>
-              </div>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R100</div>
-                <input type="checkbox" id="addTransponder" style="cursor: pointer; width: 18px; height: 18px;">
-              </div>
-            </div>
-          </div>
-
-          <!-- Engine Rental (Conditional) -->
-          <div id="engineRentalOption" style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb; display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">Engine Rental</div>
-                <div style="font-size: 12px; color: #6b7280;">Engine rental for this race</div>
-              </div>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R150</div>
-                <input type="checkbox" id="addEngineRental" style="cursor: pointer; width: 18px; height: 18px;">
-              </div>
-            </div>
-          </div>
+          <!-- Dynamic Items Container -->
+          <div id="entryItemsContainer"></div>
 
           <!-- Friday Practice Note -->
           <div style="padding: 12px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; margin-bottom: 16px;">
@@ -2885,25 +2892,10 @@
 
           <!-- Total -->
           <div style="padding: 16px; background: #f3f4f6; border-radius: 6px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="color: #6b7280; font-size: 14px;">Base Entry</span>
-              <span style="color: #1f2937; font-weight: 600;">R450</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; display: none;" id="tyresLine">
-              <span style="color: #6b7280; font-size: 14px;">+ Tyres</span>
-              <span style="color: #1f2937; font-weight: 600;">R250</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; display: none;" id="transponderLine">
-              <span style="color: #6b7280; font-size: 14px;">+ Transponder</span>
-              <span style="color: #1f2937; font-weight: 600;">R100</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; display: none;" id="engineLine">
-              <span style="color: #6b7280; font-size: 14px;">+ Engine Rental</span>
-              <span style="color: #1f2937; font-weight: 600;">R150</span>
-            </div>
+            <div id="totalBreakdown"></div>
             <div style="border-top: 2px solid #e5e7eb; padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
               <span style="font-weight: 700; color: #1f2937;">TOTAL</span>
-              <span style="font-size: 18px; font-weight: 700; color: #22c55e;" id="totalPrice">R450</span>
+              <span style="font-size: 18px; font-weight: 700; color: #22c55e;" id="totalPrice">R1,950.00</span>
             </div>
           </div>
 
@@ -2917,6 +2909,78 @@
     `;
     document.body.appendChild(entryModal);
 
+    // Function to populate modal with correct pricing based on driver class
+    function openRaceEntryModal() {
+      const driverClass = p_class || 'CADET';
+      const tierConfig = racePricingTiers[driverClass] || racePricingTiers['CADET'];
+      
+      document.getElementById('modalRaceClass').textContent = driverClass;
+      
+      // Build entry items HTML
+      let itemsHtml = `
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-weight: 600; color: #1f2937; font-size: 14px;">${tierConfig.entry.name}</div>
+            <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R${tierConfig.entry.price.toLocaleString('en-ZA')}</div>
+          </div>
+          <div style="font-size: 12px; color: #6b7280;">Base race entry fee</div>
+        </div>
+      `;
+      
+      tierConfig.items.forEach((item, idx) => {
+        const isDisabled = item.disabled || false;
+        const priceDisplay = item.price === 0 ? (item.note || 'N/A') : `R${item.price.toLocaleString('en-ZA')}`;
+        itemsHtml += `
+          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">${item.name}</div>
+                <div style="font-size: 12px; color: #6b7280;">${item.optional ? 'Optional' : 'Required'}</div>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="font-weight: 700; color: #2563eb; font-size: 14px;">${priceDisplay}</div>
+                <input type="checkbox" id="item_${idx}" ${isDisabled ? 'disabled' : ''} onchange="updateRaceTotal()" style="cursor: pointer; width: 18px; height: 18px; ${isDisabled ? 'opacity: 0.5;' : ''}">
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      document.getElementById('entryItemsContainer').innerHTML = itemsHtml;
+      updateRaceTotal();
+      document.getElementById('raceEntryModal').style.display = 'flex';
+    }
+
+    // Function to update total price
+    function updateRaceTotal() {
+      const driverClass = p_class || 'CADET';
+      const tierConfig = racePricingTiers[driverClass];
+      
+      let total = tierConfig.entry.price;
+      let breakdownHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="color: #6b7280; font-size: 14px;">${tierConfig.entry.name}</span>
+          <span style="color: #1f2937; font-weight: 600;">R${tierConfig.entry.price.toLocaleString('en-ZA')}</span>
+        </div>
+      `;
+      
+      tierConfig.items.forEach((item, idx) => {
+        const checkbox = document.getElementById(`item_${idx}`);
+        if (checkbox && checkbox.checked) {
+          total += item.price;
+          breakdownHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="color: #6b7280; font-size: 14px;">+ ${item.name}</span>
+              <span style="color: #1f2937; font-weight: 600;">R${item.price.toLocaleString('en-ZA')}</span>
+            </div>
+          `;
+        }
+      });
+      
+      document.getElementById('totalBreakdown').innerHTML = breakdownHtml;
+      document.getElementById('totalPrice').textContent = 'R' + total.toLocaleString('en-ZA', {minimumFractionDigits: 2});
+    }
+
     // Show/hide engine rental based on season status
     function updateEngineRentalOption() {
       // Engine rental option handled in openRaceEntryModal()
@@ -2924,49 +2988,19 @@
 
     // Open entry modal
     document.getElementById('btnQuickEntry').addEventListener('click', function() {
-      document.getElementById('raceEntryModal').style.display = 'flex';
+      openRaceEntryModal();
     });
 
     // Setup race entry modal listeners after a brief delay to ensure DOM is ready
     setTimeout(() => {
-      const closeBtn = document.getElementById('closeRaceEntryModal');
-      const promoInput = document.getElementById('promoCodeInput');
       const paymentBtn = document.getElementById('proceedToPayment');
-      
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-          document.getElementById('raceEntryModal').style.display = 'none';
-        });
-      }
-      
-      if (promoInput) {
-        promoInput.addEventListener('input', function() {
-          if (this.value.toLowerCase() === 'k0k0r0') {
-            document.getElementById('totalAmount').textContent = 'R0.00 (Free - Promo Code Applied)';
-            document.getElementById('totalAmount').style.color = '#22c55e';
-            document.getElementById('proceedToPayment').textContent = 'Confirm Entry';
-          } else {
-            updateRaceEntryTotal();
-          }
-        });
-      }
       
       if (paymentBtn) {
         paymentBtn.addEventListener('click', function() {
-          const driverClass = currentClass || document.getElementById('raceEntryClass').textContent;
-          const promoCode = document.getElementById('promoCodeInput').value;
-          
-          // Check if total is R0 (free entry)
-          const totalText = document.getElementById('totalAmount').textContent;
-          const isFree = totalText.includes('R0.00') && promoCode.toLowerCase() === 'k0k0r0';
-          
-          if (isFree) {
-            // Free entry - just register without payment
-            registerRaceEntryFree(driverClass);
-          } else {
-            // Regular payment flow
-            proceedToRaceEntryPayment(driverClass);
-          }
+          const driverClass = p_class || 'CADET';
+          // TODO: Implement payment processing
+          console.log('Payment processing for class:', driverClass);
+          toast('good', 'Payment feature coming soon!');
         });
       }
     }, 100);
