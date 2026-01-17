@@ -732,6 +732,142 @@ app.post('/api/getPaymentHistory', async (req, res) => {
   }
 });
 
+// Store Race Entry Payment Intent
+app.post('/api/storeRaceEntryPayment', async (req, res) => {
+  try {
+    const { driver_id, race_class, amount, reference, has_engine_rental } = req.body;
+    if (!driver_id || !race_class || !amount) throw new Error('Missing required fields');
+
+    console.log(`🏎️ Storing race entry payment: driver=${driver_id}, class=${race_class}, amount=${amount}`);
+    
+    await pool.query(
+      `INSERT INTO payments (driver_id, amount, status, reference, payment_date)
+       VALUES ($1, $2, $3, $4, NOW())`,
+      [driver_id, amount, 'Pending', reference]
+    );
+
+    console.log(`✅ Race entry payment intent stored: ${reference}`);
+    res.json({ success: true, data: { message: 'Payment intent stored', reference } });
+  } catch (err) {
+    console.error('❌ storeRaceEntryPayment error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Register Race Entry (Free - for promo codes)
+app.post('/api/registerRaceEntry', async (req, res) => {
+  try {
+    const { driver_id, race_class, entry_items, total_amount, has_engine_rental, promo_code } = req.body;
+    if (!driver_id || !race_class) throw new Error('Missing required fields');
+
+    console.log(`🏎️ Registering free race entry: driver=${driver_id}, class=${race_class}, items=${JSON.stringify(entry_items)}`);
+
+    // Create race entry record
+    const race_id = `race_${driver_id}_${Date.now()}`;
+    await pool.query(
+      `INSERT INTO race_entries (driver_id, race_id, race_class, entry_items, total_amount, payment_status, entry_date)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [driver_id, race_id, race_class, JSON.stringify(entry_items), total_amount || 0, 'Completed']
+    );
+
+    // Update driver's next race status to "Registered"
+    await pool.query(
+      'UPDATE drivers SET next_race_entry_status = $1 WHERE driver_id = $2',
+      ['Registered', driver_id]
+    );
+
+    // If engine rental was included, update that status too
+    if (has_engine_rental) {
+      await pool.query(
+        'UPDATE drivers SET next_race_engine_rental_status = $1 WHERE driver_id = $2',
+        ['Registered', driver_id]
+      );
+      console.log(`✅ Engine rental status updated for driver ${driver_id}`);
+    }
+
+    // Log the action
+    await logAuditEvent(driver_id, 'driver', 'RACE_ENTRY_REGISTERED', 'race_class', '', race_class);
+
+    console.log(`✅ Free race entry registered successfully: ${race_id}`);
+    res.json({ 
+      success: true, 
+      data: { 
+        message: 'Race entry registered successfully',
+        race_id: race_id
+      } 
+    });
+  } catch (err) {
+    console.error('❌ registerRaceEntry error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Complete Race Entry After Payment (called after PayFast callback)
+app.post('/api/completeRaceEntryPayment', async (req, res) => {
+  try {
+    const { payment_reference, driver_id, race_class, has_engine_rental } = req.body;
+    if (!payment_reference || !driver_id || !race_class) throw new Error('Missing required fields');
+
+    console.log(`✅ Completing race entry payment: payment=${payment_reference}, driver=${driver_id}`);
+
+    // Get payment details
+    const paymentResult = await pool.query(
+      'SELECT * FROM payments WHERE reference = $1 LIMIT 1',
+      [payment_reference]
+    );
+
+    if (paymentResult.rows.length === 0) {
+      throw new Error('Payment not found');
+    }
+
+    const payment = paymentResult.rows[0];
+
+    // Update payment status to Completed
+    await pool.query(
+      'UPDATE payments SET status = $1 WHERE reference = $2',
+      ['Completed', payment_reference]
+    );
+
+    // Create race entry record
+    const race_id = `race_${driver_id}_${Date.now()}`;
+    await pool.query(
+      `INSERT INTO race_entries (driver_id, race_id, race_class, total_amount, payment_reference, payment_status, entry_date)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [driver_id, race_id, race_class, payment.amount, payment_reference, 'Completed']
+    );
+
+    // Update driver's next race status to "Registered"
+    await pool.query(
+      'UPDATE drivers SET next_race_entry_status = $1 WHERE driver_id = $2',
+      ['Registered', driver_id]
+    );
+
+    // If engine rental was included, update that status too
+    if (has_engine_rental) {
+      await pool.query(
+        'UPDATE drivers SET next_race_engine_rental_status = $1 WHERE driver_id = $2',
+        ['Registered', driver_id]
+      );
+      console.log(`✅ Engine rental status updated for driver ${driver_id}`);
+    }
+
+    // Log the action
+    await logAuditEvent(driver_id, 'payfast', 'RACE_ENTRY_PAYMENT_COMPLETED', 'payment_reference', '', payment_reference);
+
+    console.log(`✅ Race entry payment completed and statuses updated: ${race_id}`);
+    res.json({ 
+      success: true, 
+      data: { 
+        message: 'Race entry registered successfully',
+        race_id: race_id
+      } 
+    });
+  } catch (err) {
+    console.error('❌ completeRaceEntryPayment error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // Update Driver Profile
 // Contact Admin
 app.post('/api/contactAdmin', async (req, res) => {
@@ -900,18 +1036,40 @@ app.post('/api/setDriverPassword', async (req, res) => {
 // PayFast ITN webhook
 app.post('/api/payfast-itn', async (req, res) => {
   try {
-    const { m_payment_id, payment_status, custom_str1 } = req.body;
-    // Update payment record if it exists - don't assume column names
+    const { m_payment_id, payment_status, custom_str1, custom_str2, custom_str3 } = req.body;
+    const driver_id = custom_str1;
+    const race_class = custom_str2;
+    const has_engine_rental = custom_str3 === 'YES';
+    
+    console.log(`📬 PayFast ITN Callback: payment=${m_payment_id}, status=${payment_status}, driver=${driver_id}`);
+    
     if (payment_status === 'COMPLETE') {
       try {
-        // Try to update a generic column that might track payment completion
+        // Update payment status
         await pool.query(
-          'UPDATE payments SET updated_at = NOW() WHERE reference = $1',
-          [m_payment_id]
+          'UPDATE payments SET status = $1, updated_at = NOW() WHERE reference = $2',
+          ['Completed', m_payment_id]
         );
+        console.log(`✅ Payment marked complete: ${m_payment_id}`);
+
+        // If this is a race entry payment (has custom_str2), register the race entry
+        if (driver_id && race_class) {
+          await pool.query(
+            'UPDATE drivers SET next_race_entry_status = $1 WHERE driver_id = $2',
+            ['Registered', driver_id]
+          );
+          
+          if (has_engine_rental) {
+            await pool.query(
+              'UPDATE drivers SET next_race_engine_rental_status = $1 WHERE driver_id = $2',
+              ['Registered', driver_id]
+            );
+          }
+          
+          console.log(`✅ Race entry registered for driver ${driver_id}`);
+        }
       } catch (e) {
-        console.log('Could not update payment status:', e.message);
-        // Silently fail - payments table might have different schema
+        console.log('Could not update payment/race entry:', e.message);
       }
     }
 
