@@ -2893,7 +2893,7 @@
           <!-- Team Code -->
           <div style="margin-bottom: 16px;">
             <label style="font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Team Code (Optional)</label>
-            <input type="text" id="teamCodeInput" placeholder="Enter team code" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; box-sizing: border-box;" onchange="validateTeamCode()">
+            <input type="text" id="teamCodeInput" placeholder="Enter team code" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; box-sizing: border-box;" onchange="validateTeamCode()" oninput="validateTeamCode()">
             <div id="codeMessage" style="margin-top: 6px; font-size: 12px; display: none;"></div>
           </div>
 
@@ -2921,20 +2921,30 @@
       const codeInput = document.getElementById('teamCodeInput');
       const codeMessage = document.getElementById('codeMessage');
       const totalPriceEl = document.getElementById('totalPrice');
+      const proceedBtn = document.getElementById('proceedToPayment');
       
       if (codeInput.value.toLowerCase() === 'k0k0r0') {
         codeMessage.style.display = 'block';
         codeMessage.style.color = '#22c55e';
         codeMessage.textContent = '✓ Valid team code - Registration fee waived!';
+        totalPriceEl.textContent = 'R0.00';
         totalPriceEl.style.color = '#22c55e';
+        proceedBtn.textContent = 'Enter Race';
+        proceedBtn.style.background = '#3b82f6';
       } else if (codeInput.value.trim() !== '') {
         codeMessage.style.display = 'block';
         codeMessage.style.color = '#dc2626';
         codeMessage.textContent = '✗ Invalid code';
         totalPriceEl.style.color = '#22c55e';
+        proceedBtn.textContent = 'Proceed to Payment';
+        proceedBtn.style.background = '#22c55e';
+        updateRaceTotal();
       } else {
         codeMessage.style.display = 'none';
         totalPriceEl.style.color = '#22c55e';
+        proceedBtn.textContent = 'Proceed to Payment';
+        proceedBtn.style.background = '#22c55e';
+        updateRaceTotal();
       }
     }
 
@@ -3057,9 +3067,10 @@
               document.getElementById('raceEntryModal').style.display = 'none';
             } else {
               console.log('PayFast payment for class:', driverClass, 'Amount:', totalPrice);
-              toast('info', 'Redirecting to payment (PayFast)...');
-              // TODO: Implement actual PayFast payment redirect
-              // window.location.href = '/api/initiateRacePayment?class=' + driverClass + '&amount=' + totalPrice;
+              const amount = totalPrice.replace('R', '').replace(',', '').trim();
+              toast('info', 'Redirecting to PayFast payment...');
+              // Redirect to PayFast payment
+              window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount;
             }
           }
         });
