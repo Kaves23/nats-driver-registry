@@ -1823,7 +1823,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       email_address: 'noreply@nats.co.za'
     };
 
-    // Build signature string WITH merchant_key (for signature only, not sent to PayFast)
+    // Build signature string WITH merchant_key and correct passphrase
     const pfDataForSignature = {
       merchant_id: merchantId,
       merchant_key: merchantKey,
@@ -1852,8 +1852,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       }
     }
     
-    // Add passphrase at the end
-    const passphraseEncoded = encodeURIComponent(merchantKey).replace(/%20/g, '+');
+    // Add passphrase at the end (your actual PayFast passphrase, not merchant_key)
+    const actualPassphrase = 'RokCupZA2024';
+    const passphraseEncoded = encodeURIComponent(actualPassphrase).replace(/%20/g, '+');
     pfParamString += `passphrase=${passphraseEncoded}`;
     console.log(`  passphrase=${passphraseEncoded}`);
 
@@ -1868,11 +1869,12 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     console.log(`✅ Generated signature: ${signature}`);
     console.log(`💳 Merchant ID: ${merchantId}`);
 
-    // Build PayFast URL with query parameters (merchant_key NOT included here)
+    // Build PayFast URL with query parameters (INCLUDE merchant_key in URL)
     const payFastParams = new URLSearchParams();
     for (const [key, value] of Object.entries(pfDataForPayFast)) {
       payFastParams.append(key, value);
     }
+    payFastParams.append('merchant_key', merchantKey);
     payFastParams.append('signature', signature);
 
     const payFastUrl = `https://www.payfast.co.za/eng/process?${payFastParams.toString()}`;
