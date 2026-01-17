@@ -1810,20 +1810,17 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     // Build PayFast parameters - DO NOT include merchant_key in pfData
+    // Only include parameters that PayFast officially requires for signature
     const pfData = {
       merchant_id: merchantId,
       return_url: returnUrl,
       cancel_url: cancelUrl,
       notify_url: notifyUrl,
-      name_first: 'Race',
-      name_last: 'Entry',
-      email_address: 'noreply@nats.co.za',
+      amount: numAmount.toFixed(2),
       item_name: `Race Entry - ${raceClass}`,
       item_description: `Race Entry for ${raceClass} Class`,
-      custom_int1: Math.round(numAmount * 100), // Store amount in cents
-      custom_str1: raceClass,
-      amount: numAmount.toFixed(2),
-      reference: reference
+      reference: reference,
+      email_address: 'noreply@nats.co.za'
     };
 
     // Create MD5 signature - IMPORTANT: Parameters must be sorted alphabetically
