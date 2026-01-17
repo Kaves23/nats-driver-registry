@@ -1809,9 +1809,22 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // Generate unique reference
     const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-    // Build PayFast parameters in DOCUMENTATION ORDER (critical for signature!)
-    // This is the order PayFast expects parameters
-    const pfDataOrdered = {
+    // Build PayFast parameters in DOCUMENTATION ORDER
+    // These are the parameters that will be sent to PayFast
+    const pfDataForPayFast = {
+      merchant_id: merchantId,
+      return_url: returnUrl,
+      cancel_url: cancelUrl,
+      notify_url: notifyUrl,
+      amount: numAmount.toFixed(2),
+      item_name: `Race Entry - ${raceClass}`,
+      item_description: `Race Entry for ${raceClass} Class`,
+      reference: reference,
+      email_address: 'noreply@nats.co.za'
+    };
+
+    // Build signature string WITH merchant_key (for signature only, not sent to PayFast)
+    const pfDataForSignature = {
       merchant_id: merchantId,
       merchant_key: merchantKey,
       return_url: returnUrl,
@@ -1824,14 +1837,13 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       email_address: 'noreply@nats.co.za'
     };
 
-    // Create MD5 signature - CRITICAL: Use DOCUMENTATION ORDER, not alphabetical
-    // Signature includes merchant_key, URL-encoded values, with passphrase at end
+    // Create MD5 signature using parameters with merchant_key included
     let pfParamString = '';
     
-    console.log(`🔐 Building signature with parameters in order:`);
+    console.log(`🔐 Building signature with parameters in documentation order:`);
     
-    for (const key of Object.keys(pfDataOrdered)) {
-      const value = pfDataOrdered[key];
+    for (const key of Object.keys(pfDataForSignature)) {
+      const value = pfDataForSignature[key];
       if (value !== null && value !== '') {
         // URL encode the value - spaces become +, uppercase encoding
         const encoded = encodeURIComponent(value).replace(/%20/g, '+');
@@ -1856,10 +1868,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     console.log(`✅ Generated signature: ${signature}`);
     console.log(`💳 Merchant ID: ${merchantId}`);
 
-    // Build PayFast URL with query parameters (same order)
-    // merchant_key and signature are added to URL but NOT to pfDataOrdered
+    // Build PayFast URL with query parameters (merchant_key NOT included here)
     const payFastParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(pfDataOrdered)) {
+    for (const [key, value] of Object.entries(pfDataForPayFast)) {
       payFastParams.append(key, value);
     }
     payFastParams.append('signature', signature);
