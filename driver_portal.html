@@ -3074,8 +3074,8 @@
               const amount = totalPrice.replace('R', '').replace(/\s/g, '').replace(',', '.').trim();
               console.log('🔍 Amount after cleaning:', amount);
               toast('info', 'Redirecting to PayFast payment...');
-              // Redirect to PayFast payment
-              window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount;
+              // Redirect to PayFast payment with driver email
+              window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount + '&email=' + encodeURIComponent(currentEmail);
             }
           }
         });

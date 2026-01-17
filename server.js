@@ -1778,11 +1778,15 @@ app.get('/api/debug/payfast', (req, res) => {
 // Initiate Race Entry Payment via PayFast
 app.get('/api/initiateRacePayment', async (req, res) => {
   try {
-    const { class: raceClass, amount } = req.query;
+    const { class: raceClass, amount, email } = req.query;
     
     if (!raceClass || !amount) {
       throw new Error('Missing class or amount');
     }
+
+    // Use provided email or fallback to noreply
+    const driverEmail = email && email.trim() ? email.trim().toLowerCase() : 'noreply@nats.co.za';
+    console.log(`💳 Payment email: ${driverEmail}`);
 
     // Clean and parse amount - remove R, spaces, convert comma to decimal point
     // South African locale: 2 950,00 needs to become 2950.00
@@ -1819,7 +1823,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       notify_url: notifyUrl,
       name_first: 'Race',
       name_last: 'Entry',
-      email_address: 'noreply@nats.co.za',
+      email_address: driverEmail,
       amount: numAmount.toFixed(2),
       item_name: `Race Entry - ${raceClass}`,
       item_description: `Race Entry for ${raceClass} Class`,
@@ -1836,7 +1840,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       ['notify_url', notifyUrl],
       ['name_first', 'Race'],
       ['name_last', 'Entry'],
-      ['email_address', 'noreply@nats.co.za'],
+      ['email_address', driverEmail],
       ['amount', numAmount.toFixed(2)],
       ['item_name', `Race Entry - ${raceClass}`],
       ['item_description', `Race Entry for ${raceClass} Class`]
@@ -1906,7 +1910,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
           <input type="hidden" name="notify_url" value="${notifyUrl}">
           <input type="hidden" name="name_first" value="Race">
           <input type="hidden" name="name_last" value="Entry">
-          <input type="hidden" name="email_address" value="noreply@nats.co.za">
+          <input type="hidden" name="email_address" value="${driverEmail}">
           <input type="hidden" name="amount" value="${numAmount.toFixed(2)}">
           <input type="hidden" name="item_name" value="Race Entry - ${raceClass}">
           <input type="hidden" name="item_description" value="Race Entry for ${raceClass} Class">
