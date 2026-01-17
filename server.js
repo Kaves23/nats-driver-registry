@@ -1764,6 +1764,17 @@ app.post('/api/admin/restoreDriver', async (req, res) => {
   }
 });
 
+// Debug PayFast credentials
+app.get('/api/debug/payfast', (req, res) => {
+  res.json({
+    merchantId: process.env.PAYFAST_MERCHANT_ID || 'NOT SET - using default 18906399',
+    merchantKey: process.env.PAYFAST_MERCHANT_KEY ? '***SET (length: ' + process.env.PAYFAST_MERCHANT_KEY.length + ')***' : 'NOT SET - using default wz69jyr6y9zr2',
+    returnUrl: process.env.PAYFAST_RETURN_URL || 'Using default: https://livenats.co.za/payment-success.html',
+    cancelUrl: process.env.PAYFAST_CANCEL_URL || 'Using default: https://livenats.co.za/payment-cancel.html',
+    notifyUrl: process.env.PAYFAST_NOTIFY_URL || 'Using default: https://livenats.co.za/api/paymentNotify'
+  });
+});
+
 // Initiate Race Entry Payment via PayFast
 app.get('/api/initiateRacePayment', async (req, res) => {
   try {
@@ -1808,19 +1819,29 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       reference: reference
     };
 
-    // Create MD5 signature
+    // Create MD5 signature - IMPORTANT: Parameters must be sorted alphabetically
+    // Build sorted parameter string for signature
+    const sortedKeys = Object.keys(pfData).sort();
     let pfParamString = '';
-    for (const [key, value] of Object.entries(pfData)) {
+    
+    for (const key of sortedKeys) {
+      const value = pfData[key];
       if (value !== null && value !== '') {
         pfParamString += `${key}=${encodeURIComponent(value)}&`;
       }
     }
     pfParamString += `passphrase=${encodeURIComponent(merchantKey)}`;
 
+    console.log(`🔐 PayFast signature string (first 200 chars): ${pfParamString.substring(0, 200)}`);
+
     const signature = crypto
       .createHash('md5')
       .update(pfParamString)
       .digest('hex');
+
+    console.log(`✅ Generated signature: ${signature}`);
+    console.log(`💳 Merchant ID: ${merchantId}, Key exists: ${!!merchantKey}`);
+
 
     console.log(`✅ PayFast payment initiated: ${reference}`);
 
