@@ -2917,37 +2917,9 @@
     `;
     document.body.appendChild(entryModal);
 
-    // Entry form logic
-    function updateEntryTotal() {
-      let total = 450; // Base entry
-      const tyres = document.getElementById('addTyres').checked;
-      const transponder = document.getElementById('addTransponder').checked;
-      const engine = document.getElementById('addEngineRental').checked;
-
-      document.getElementById('tyresLine').style.display = tyres ? 'flex' : 'none';
-      document.getElementById('transponderLine').style.display = transponder ? 'flex' : 'none';
-      document.getElementById('engineLine').style.display = engine ? 'flex' : 'none';
-
-      if (tyres) total += 250;
-      if (transponder) total += 100;
-      if (engine) total += 150;
-
-      document.getElementById('totalPrice').textContent = 'R' + total;
-    }
-
-    document.getElementById('addTyres').addEventListener('change', updateEntryTotal);
-    document.getElementById('addTransponder').addEventListener('change', updateEntryTotal);
-    document.getElementById('addEngineRental').addEventListener('change', updateEntryTotal);
-
     // Show/hide engine rental based on season status
     function updateEngineRentalOption() {
-      const engineFeeEl = document.getElementById('p_engine_fee_status');
-      const hasSeasonEngine = engineFeeEl && engineFeeEl.textContent === 'Registered';
-      document.getElementById('engineRentalOption').style.display = hasSeasonEngine ? 'none' : 'block';
-      if (hasSeasonEngine) {
-        document.getElementById('addEngineRental').checked = false;
-        updateEntryTotal();
-      }
+      // Engine rental option handled in openRaceEntryModal()
     }
 
     // Open entry modal
