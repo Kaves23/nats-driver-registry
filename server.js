@@ -1891,22 +1891,6 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     res.status(400).send(`<h1>Payment Error</h1><p>${err.message}</p><p><a href="/">Back to Home</a></p>`);
   }
 });
-          <div class="spinner"></div>
-          <p>Amount: <strong>R${numAmount.toFixed(2)}</strong></p>
-          <p>Class: <strong>${raceClass}</strong></p>
-          <p>Reference: <strong>${reference}</strong></p>
-          <p style="margin-top: 30px; color: #666; font-size: 14px;">If you are not automatically redirected, <a href="${payFastUrl}">click here</a> to continue to payment.</p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    res.send(redirectPage);
-  } catch (err) {
-    console.error('❌ initiateRacePayment error:', err.message);
-    res.status(400).send(`<h1>Payment Error</h1><p>${err.message}</p><p><a href="/">Back to Home</a></p>`);
-  }
-});
 
 // Handle PayFast Payment Notification (IPN)
 app.post('/api/paymentNotify', async (req, res) => {
