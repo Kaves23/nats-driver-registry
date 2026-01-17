@@ -3071,7 +3071,7 @@
               document.getElementById('raceEntryModal').style.display = 'none';
             } else {
               console.log('PayFast payment for class:', driverClass, 'Amount raw:', totalPrice);
-              const amount = totalPrice.replace('R', '').replace(',', '').trim();
+              const amount = totalPrice.replace('R', '').replace(/\s/g, '').replace(',', '.').trim();
               console.log('🔍 Amount after cleaning:', amount);
               toast('info', 'Redirecting to PayFast payment...');
               // Redirect to PayFast payment

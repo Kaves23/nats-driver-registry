@@ -1784,8 +1784,13 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       throw new Error('Missing class or amount');
     }
 
-    // Clean and parse amount - remove R, commas, spaces
-    let cleanAmount = String(amount).replace(/R/g, '').replace(/,/g, '').trim();
+    // Clean and parse amount - remove R, spaces, convert comma to decimal point
+    // South African locale: 2 950,00 needs to become 2950.00
+    let cleanAmount = String(amount)
+      .replace(/R/g, '')           // Remove R currency symbol
+      .replace(/\s/g, '')          // Remove spaces (SA thousand separator)
+      .replace(/,/g, '.')          // Convert comma to period (SA decimal separator)
+      .trim();
     const numAmount = parseFloat(cleanAmount);
     
     if (isNaN(numAmount) || numAmount <= 0) {
