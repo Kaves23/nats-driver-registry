@@ -75,8 +75,35 @@ const initMessagesTable = async () => {
   }
 };
 
+// Initialize race entries table if it doesn't exist
+const initRaceEntriesTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS race_entries (
+        race_entry_id VARCHAR(255) PRIMARY KEY,
+        race_event VARCHAR(255),
+        driver_id VARCHAR(255),
+        driver_email VARCHAR(255),
+        driver_name VARCHAR(255),
+        race_class VARCHAR(100),
+        entry_fee DECIMAL(10, 2),
+        entry_items TEXT,
+        total_amount DECIMAL(10, 2),
+        payment_reference VARCHAR(255) UNIQUE,
+        payment_status VARCHAR(100),
+        team_code VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (err) {
+    console.error('Race entries table init error:', err.message);
+  }
+};
+
 initAuditTable();
 initMessagesTable();
+initRaceEntriesTable();
 
 // Log audit event
 const logAuditEvent = async (driver_id, driver_email, action, field_name, old_value, new_value, ip_address = 'unknown') => {
@@ -1733,6 +1760,245 @@ app.post('/api/admin/restoreDriver', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ restoreDriver error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Initiate Race Entry Payment via PayFast
+app.get('/api/initiateRacePayment', async (req, res) => {
+  try {
+    const { class: raceClass, amount } = req.query;
+    
+    if (!raceClass || !amount) {
+      throw new Error('Missing class or amount');
+    }
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      throw new Error('Invalid amount');
+    }
+
+    console.log(`💳 Initiating PayFast payment: ${raceClass} - R${numAmount.toFixed(2)}`);
+
+    // PayFast Merchant ID and Key (from environment or hardcoded)
+    const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
+    const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'wz69jyr6y9zr2';
+    const returnUrl = process.env.PAYFAST_RETURN_URL || 'http://localhost:3000/payment-success.html';
+    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'http://localhost:3000/payment-cancel.html';
+    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'http://localhost:3000/api/paymentNotify';
+
+    // Generate unique reference
+    const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    // Build PayFast parameters
+    const pfData = {
+      merchant_id: merchantId,
+      merchant_key: merchantKey,
+      return_url: returnUrl,
+      cancel_url: cancelUrl,
+      notify_url: notifyUrl,
+      name_first: 'Race',
+      name_last: 'Entry',
+      email_address: 'noreply@nats.co.za',
+      item_name: `Race Entry - ${raceClass}`,
+      item_description: `Race Entry for ${raceClass} Class`,
+      custom_int1: numAmount * 100, // Store amount in cents for reference
+      custom_str1: raceClass,
+      amount: numAmount.toFixed(2),
+      reference: reference
+    };
+
+    // Create MD5 signature
+    let pfParamString = '';
+    for (const [key, value] of Object.entries(pfData)) {
+      if (value !== null && value !== '') {
+        pfParamString += `${key}=${encodeURIComponent(value)}&`;
+      }
+    }
+    pfParamString += `passphrase=${encodeURIComponent(merchantKey)}`;
+
+    const signature = crypto
+      .createHash('md5')
+      .update(pfParamString)
+      .digest('hex');
+
+    console.log(`✅ PayFast payment initiated: ${reference}`);
+
+    // Return payment form HTML that auto-submits
+    const paymentForm = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Processing Payment...</title>
+        <style>
+          body { font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f5; }
+          .container { text-align: center; }
+          .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Redirecting to Payment...</h1>
+          <div class="spinner"></div>
+          <p>Amount: R${numAmount.toFixed(2)}</p>
+          <p>Class: ${raceClass}</p>
+          <form id="paymentForm" method="post" action="https://www.payfast.co.za/eng/process">
+            ${Object.entries(pfData).map(([key, value]) => `<input type="hidden" name="${key}" value="${value}">`).join('')}
+            <input type="hidden" name="signature" value="${signature}">
+          </form>
+          <script>
+            document.getElementById('paymentForm').submit();
+          </script>
+          <noscript>
+            <p>Please click the button below if you are not automatically redirected to PayFast:</p>
+            <button onclick="document.getElementById('paymentForm').submit()">Continue to Payment</button>
+          </noscript>
+        </div>
+      </body>
+      </html>
+    `;
+
+    res.send(paymentForm);
+  } catch (err) {
+    console.error('❌ initiateRacePayment error:', err.message);
+    res.status(400).send(`<h1>Payment Error</h1><p>${err.message}</p><p><a href="/">Back to Home</a></p>`);
+  }
+});
+
+// Handle PayFast Payment Notification (IPN)
+app.post('/api/paymentNotify', async (req, res) => {
+  try {
+    console.log('📨 PayFast IPN received:', req.body);
+
+    const { reference, custom_str1: raceClass, m_payment_id, payment_status, amount_gross } = req.body;
+
+    if (!reference || !raceClass) {
+      throw new Error('Missing reference or race class');
+    }
+
+    // Store payment record
+    await pool.query(
+      `INSERT INTO race_entries (race_entry_id, race_event, race_class, payment_reference, payment_status, total_amount)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5`,
+      [uuidv4(), 'Event Pending', raceClass, m_payment_id, payment_status === 'COMPLETE' ? 'Completed' : 'Pending', amount_gross]
+    );
+
+    console.log(`✅ Payment recorded: ${reference} - Status: ${payment_status}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ paymentNotify error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get Race Entries
+app.post('/api/getRaceEntries', async (req, res) => {
+  try {
+    const { race_event } = req.body;
+
+    if (!race_event) {
+      throw new Error('Race event is required');
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM race_entries WHERE race_event = $1 ORDER BY created_at DESC`,
+      [race_event]
+    );
+
+    res.json({
+      success: true,
+      data: { entries: result.rows }
+    });
+  } catch (err) {
+    console.error('❌ getRaceEntries error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Confirm Race Entry (Admin)
+app.post('/api/confirmRaceEntry', async (req, res) => {
+  try {
+    const { race_entry_id } = req.body;
+
+    if (!race_entry_id) {
+      throw new Error('Race entry ID is required');
+    }
+
+    const result = await pool.query(
+      `UPDATE race_entries SET payment_status = 'Confirmed', updated_at = NOW() WHERE race_entry_id = $1 RETURNING *`,
+      [race_entry_id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Race entry not found');
+    }
+
+    console.log(`✅ Race entry confirmed: ${race_entry_id}`);
+
+    res.json({
+      success: true,
+      data: { entry: result.rows[0] }
+    });
+  } catch (err) {
+    console.error('❌ confirmRaceEntry error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Export Race Entries as CSV (Admin)
+app.post('/api/exportRaceEntriesCSV', async (req, res) => {
+  try {
+    const { race_event } = req.body;
+
+    if (!race_event) {
+      throw new Error('Race event is required');
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM race_entries WHERE race_event = $1 ORDER BY created_at DESC`,
+      [race_event]
+    );
+
+    const entries = result.rows;
+
+    if (entries.length === 0) {
+      res.json({ success: false, error: { message: 'No entries found' } });
+      return;
+    }
+
+    // Build CSV
+    const headers = ['Race Event', 'Driver Email', 'Driver Name', 'Race Class', 'Entry Fee', 'Selected Items', 'Total Amount', 'Payment Status', 'Payment Reference', 'Team Code', 'Created At'];
+    const rows = entries.map(entry => {
+      const items = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
+      const itemNames = items.map(i => i.name).join('; ');
+      
+      return [
+        escapeCSV(entry.race_event),
+        escapeCSV(entry.driver_email),
+        escapeCSV(entry.driver_name),
+        escapeCSV(entry.race_class),
+        entry.entry_fee || '0',
+        escapeCSV(itemNames),
+        entry.total_amount || '0',
+        escapeCSV(entry.payment_status),
+        escapeCSV(entry.payment_reference),
+        entry.team_code ? 'Yes' : 'No',
+        entry.created_at
+      ].join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="race-entries-${race_event.replace(/[\/\s]/g, '-')}-${new Date().toISOString().split('T')[0]}.csv"`);
+
+    console.log(`✅ Race entries CSV export ready: ${entries.length} entries`);
+
+    res.send(csv);
+  } catch (err) {
+    console.error('❌ exportRaceEntriesCSV error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
