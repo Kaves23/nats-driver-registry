@@ -1809,57 +1809,62 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // Generate unique reference
     const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-    // Build PayFast parameters in DOCUMENTATION ORDER
+    // Build PayFast parameters for the redirect URL
     // These are the parameters that will be sent to PayFast
     const pfDataForPayFast = {
-      merchant_id: merchantId,
-      return_url: returnUrl,
-      cancel_url: cancelUrl,
-      notify_url: notifyUrl,
-      amount: numAmount.toFixed(2),
-      item_name: `Race Entry - ${raceClass}`,
-      item_description: `Race Entry for ${raceClass} Class`,
-      reference: reference,
-      email_address: 'noreply@nats.co.za'
-    };
-
-    // Build signature string WITH merchant_key and correct passphrase
-    const pfDataForSignature = {
       merchant_id: merchantId,
       merchant_key: merchantKey,
       return_url: returnUrl,
       cancel_url: cancelUrl,
       notify_url: notifyUrl,
+      name_first: 'Race',
+      name_last: 'Entry',
+      email_address: 'noreply@nats.co.za',
       amount: numAmount.toFixed(2),
       item_name: `Race Entry - ${raceClass}`,
       item_description: `Race Entry for ${raceClass} Class`,
-      reference: reference,
-      email_address: 'noreply@nats.co.za'
+      reference: reference
     };
 
-    // Create MD5 signature using parameters with merchant_key included
+    // Build PayFast parameters in EXACT DOCUMENTATION ORDER per PayFast spec
+    // This is the official order PayFast requires (NOT alphabetical)
+    const pfDataOrdered = [
+      ['merchant_id', merchantId],
+      ['merchant_key', merchantKey],
+      ['return_url', returnUrl],
+      ['cancel_url', cancelUrl],
+      ['notify_url', notifyUrl],
+      ['name_first', 'Race'],
+      ['name_last', 'Entry'],
+      ['email_address', 'noreply@nats.co.za'],
+      ['amount', numAmount.toFixed(2)],
+      ['item_name', `Race Entry - ${raceClass}`],
+      ['item_description', `Race Entry for ${raceClass} Class`],
+      ['reference', reference]
+    ];
+
+    // Create MD5 signature in EXACT documentation order
     let pfParamString = '';
     
-    console.log(`🔐 Building signature with parameters in documentation order:`);
+    console.log(`🔐 Building signature in EXACT Documentation Order:`);
     
-    for (const key of Object.keys(pfDataForSignature)) {
-      const value = pfDataForSignature[key];
+    for (const [key, value] of pfDataOrdered) {
       if (value !== null && value !== '') {
-        // URL encode the value - spaces become +, uppercase encoding
+        // URL encode: spaces become +, use UPPERCASE hex encoding
         const encoded = encodeURIComponent(value).replace(/%20/g, '+');
         pfParamString += `${key}=${encoded}&`;
         console.log(`  ${key}=${encoded}`);
       }
     }
     
-    // Add passphrase at the end (your actual PayFast passphrase, not merchant_key)
+    // Append passphrase at the very end (as per PayFast spec)
     const actualPassphrase = 'RokCupZA2024';
     const passphraseEncoded = encodeURIComponent(actualPassphrase).replace(/%20/g, '+');
     pfParamString += `passphrase=${passphraseEncoded}`;
     console.log(`  passphrase=${passphraseEncoded}`);
 
     console.log(`🔐 Amount to charge: R${numAmount.toFixed(2)}`);
-    console.log(`🔐 Full signature string: ${pfParamString}`);
+    console.log(`🔐 Full signature string (Documentation Order): ${pfParamString}`);
 
     const signature = crypto
       .createHash('md5')
