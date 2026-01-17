@@ -2924,7 +2924,7 @@
 
     // Open entry modal
     document.getElementById('btnQuickEntry').addEventListener('click', function() {
-      openRaceEntryModal();
+      document.getElementById('raceEntryModal').style.display = 'inset';
     });
 
     // Setup race entry modal listeners after a brief delay to ensure DOM is ready
@@ -3046,7 +3046,7 @@
       }
     })();
 
-    // Race Entry Modal Functions
+  </script>
     const racePricingTiers = {
       'CADET': {
         class: 'CADET',
