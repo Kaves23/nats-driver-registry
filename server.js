@@ -1839,8 +1839,8 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       ['email_address', 'noreply@nats.co.za'],
       ['amount', numAmount.toFixed(2)],
       ['item_name', `Race Entry - ${raceClass}`],
-      ['item_description', `Race Entry for ${raceClass} Class`],
-      ['reference', reference]
+      ['item_description', `Race Entry for ${raceClass} Class`]
+      // NOTE: reference is NOT in PayFast's official signature list, so it's excluded here
     ];
 
     // Create MD5 signature in EXACT documentation order
