@@ -2538,15 +2538,15 @@ app.post('/api/getDriverRaceEntries', async (req, res) => {
 // Get Race Entries
 app.post('/api/getRaceEntries', async (req, res) => {
   try {
-    const { race_event } = req.body;
+    const { eventId } = req.body;
 
-    if (!race_event) {
-      throw new Error('Race event is required');
+    if (!eventId) {
+      throw new Error('Event ID is required');
     }
 
     const result = await pool.query(
-      `SELECT * FROM race_entries WHERE race_event = $1 ORDER BY created_at DESC`,
-      [race_event]
+      `SELECT * FROM race_entries WHERE event_id = $1 ORDER BY created_at DESC`,
+      [eventId]
     );
 
     res.json({
