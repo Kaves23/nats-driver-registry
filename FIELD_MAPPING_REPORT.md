@@ -31,12 +31,12 @@
 
 | Registration Form Field | Database Table | Database Column | Status | Notes |
 |---|---|---|---|---|
-| Guardian full name | `contacts` | `name` | ❌ NOT SAVED | Field captured but NOT currently saved to database |
-| Relationship | `contacts` | `relationship` | ❌ NOT SAVED | Field captured but NOT currently saved to database |
+| Guardian full name | `contacts` | `full_name` | ✅ WORKING | Saved as contact_name to full_name column |
+| Relationship | `contacts` | `relationship` | ✅ WORKING | Saved with default 'Guardian' if not provided |
 | Email | `contacts` | `email` | ✅ WORKING | Required, saved as primary contact |
-| Mobile phone | `contacts` | `phone` | ❌ NOT SAVED | Field captured but NOT currently saved to database |
-| Emergency contact flag | `contacts` | `is_emergency` | ❌ NOT SAVED | Field captured but NOT currently saved to database |
-| Consent contact flag | `contacts` | `is_consent` | ❌ NOT SAVED | Field captured but NOT currently saved to database |
+| Mobile phone | `contacts` | `phone_mobile` | ✅ WORKING | Saved from contact_phone field |
+| Emergency contact flag | `contacts` | `emergency_contact` | ✅ WORKING | Boolean, converted from 'Y'/'N' string |
+| Consent contact flag | `contacts` | `consent_contact` | ✅ WORKING | Boolean, converted from 'Y'/'N' string |
 
 ---
 
@@ -66,29 +66,22 @@
 ## SUMMARY
 
 ### ✅ FULLY WORKING (Fields being saved correctly)
-- **Driver Identity**: First name, Last name, Date of birth, Nationality, Gender
+- **Driver Identity**: First name, Last name, Date of birth, Nationality, Gender, ID/Passport
 - **Competition**: Championship, Class, Race number, Team name, Coach name, Kart brand, Transponder
-- **Contacts**: Email (as primary contact)
+- **Contacts**: Guardian name, Relationship, Email, Mobile phone, Emergency contact flag, Consent contact flag
 - **Medical**: Allergies, Medical conditions, Medication, Doctor phone, Data processing consent
 - **Security**: Password (hashed)
 
 ### ❌ NOT BEING SAVED (Fields captured but not stored)
-- Guardian name (`c_name`)
-- Relationship (`c_rel`)
-- Mobile phone (`c_phone`)
-- Emergency contact flag (`c_emergency`)
-- Consent contact flag (`c_consent`)
-- Media release (`media_release_signed`)
+- Media release (`media_release_signed`) - Checkbox is captured and form validated but value is NOT persisted to database
 
 ### ⚠️ PARTIALLY WORKING
-- ID/Passport: Captured as `r_id` but saved to `license_number` column (mapping exists but field name mismatch)
-- Profile photo & Driver license: Upload fields exist but currently hidden (display: none)
+- Profile photo & Driver license: Upload fields exist, data is converted to base64 and sent in payload but NOT persisted to database (no storage implementation)
 
 ---
 
 ## RECOMMENDATION
 
-**Contact fields (phone, relationship, emergency, consent flags) are captured but not saved.** Would you like me to:
-1. Add code to save these contact fields to the `contacts` table?
-2. Enable the media_release_signed field to be saved to `medical_consent` table?
-3. Unhide and enable the file upload fields for profile photo and driver license?
+**Media release field is captured but NOT saved to database.** File uploads (profile photo and driver license) are converted to base64 but lack database persistence layer. Would you like me to:
+1. Add code to save media_release_signed to `medical_consent` table?
+2. Implement file storage for profile photo and driver license uploads?

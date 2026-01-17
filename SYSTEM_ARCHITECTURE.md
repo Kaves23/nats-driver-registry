@@ -113,10 +113,12 @@
 | medical_conditions | TEXT | Existing conditions |
 | medication | TEXT | Current medications |
 | doctor_phone | VARCHAR(20) | Doctor contact |
-| consent_signed | BOOLEAN | Data processing consent |
+| consent_signed | BOOLEAN | Data processing consent ✅ SAVED |
 | consent_date | DATETIME | When consent signed |
-| media_release_signed | BOOLEAN | Media release consent |
+| media_release_signed | BOOLEAN | Media release consent ⚠️ NOT PERSISTED |
 | created_at | TIMESTAMP | Auto |
+
+**Note:** `media_release_signed` is sent by frontend but NOT persisted to database (value not used in INSERT statement).
 
 #### TABLE 4: `documents`
 **Purpose:** File uploads (profile photo, license)  
@@ -125,9 +127,11 @@
 |--------|------|-------|
 | document_id | VARCHAR(36) | UUID, Primary Key |
 | driver_id | VARCHAR(36) | FK to drivers.driver_id |
-| license_document | LONGBLOB | Driver license (base64) |
-| profile_photo | LONGBLOB | Profile photo (base64) |
+| license_document | LONGBLOB | Driver license (base64) ⚠️ NOT PERSISTED |
+| profile_photo | LONGBLOB | Profile photo (base64) ⚠️ NOT PERSISTED |
 | created_at | TIMESTAMP | Auto |
+
+**Note:** File fields are captured and converted to base64 in frontend, sent to backend, but database persistence layer is not implemented.
 
 #### TABLE 5: `payments`
 **Purpose:** Payment tracking  

@@ -64,14 +64,14 @@ The driver registration form is organized into 6 main sections:
 
 | Form Field | Form ID | Data Type | Required | Database Table | Database Column | Status |
 |---|---|---|---|---|---|---|
-| Guardian full name | `c_name` | Text | ✅ Yes | `contacts` | `name` | ✅ WORKING** |
+| Guardian full name | `c_name` | Text | ✅ Yes | `contacts` | `full_name` | ✅ WORKING** |
 | Relationship | `c_rel` | Text | ✅ Yes | `contacts` | `relationship` | ✅ WORKING** |
 | Email | `c_email` | Email | ✅ Yes | `contacts` | `email` | ✅ WORKING |
-| Mobile phone | `c_phone` | Phone | ✅ Yes | `contacts` | `phone` | ✅ WORKING** |
-| Emergency contact? | `c_emergency` | Select | ✅ Yes | `contacts` | `is_emergency` | ✅ WORKING** |
-| Consent contact? | `c_consent` | Select | ✅ Yes | `contacts` | `is_consent` | ✅ WORKING** |
+| Mobile phone | `c_phone` | Phone | ✅ Yes | `contacts` | `phone_mobile` | ✅ WORKING** |
+| Emergency contact? | `c_emergency` | Select | ✅ Yes | `contacts` | `emergency_contact` | ✅ WORKING** |
+| Consent contact? | `c_consent` | Select | ✅ Yes | `contacts` | `consent_contact` | ✅ WORKING** |
 
-**Note:** ** Updated January 9, 2026 (commit 28a572d) - These fields were previously captured but not saved. Now fully functional.
+**Note:** ** All contact fields are fully functional and being saved correctly to the database.
 
 **Helper Feature:** Checkbox "Entrant is same as driver" auto-populates guardian name from driver name.
 
@@ -86,9 +86,7 @@ The driver registration form is organized into 6 main sections:
 | Medication | `m_medication` | Text | ❌ No | `medical_consent` | `medication` | ✅ WORKING |
 | Doctor phone | `m_doctor_phone` | Phone | ❌ No | `medical_consent` | `doctor_phone` | ✅ WORKING |
 | Data processing consent | `consent_signed` | Select | ✅ Yes | `medical_consent` | `consent_signed` | ✅ WORKING |
-| Media release | `media_release_signed` | Select | ❌ No | `medical_consent` | `media_release_signed` | ✅ WORKING** |
-
-**Note:** ** Updated January 9, 2026 (commit 28a572d) - Media release field was previously captured but not saved. Now fully functional.
+| Media release | `media_release_signed` | Select | ❌ No | `medical_consent` | `media_release_signed` | ⚠️ SENT NOT SAVED |
 
 ---
 
@@ -107,10 +105,10 @@ The driver registration form is organized into 6 main sections:
 
 | Form Field | Form ID | Data Type | Required | Database Table | Database Column | Status |
 |---|---|---|---|---|---|---|
-| Profile Photo | `r_profilePhoto` | File (Image) | ❌ No | `documents` | `profile_photo` | ⚠️ HIDDEN |
-| Driver License | `r_driverLicense` | File (PDF/Image) | ❌ No | `documents` | `license_document` | ⚠️ HIDDEN |
+| Profile Photo | `r_profilePhoto` | File (Image) | ❌ No | `documents` | `profile_photo` | ⚠️ SENT NOT PERSISTED |
+| Driver License | `r_driverLicense` | File (PDF/Image) | ❌ No | `documents` | `license_document` | ⚠️ SENT NOT PERSISTED |
 
-**Status:** Form fields exist but are hidden with CSS (`display: none`). Files are optional and can be uploaded post-registration via admin portal.
+**Status:** Form fields capture file data and convert to base64, files are sent in payload but database persistence is not implemented.
 
 ---
 

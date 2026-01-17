@@ -1034,8 +1034,8 @@ app.post('/api/getAllDrivers', async (req, res) => {
 
     console.log('getAllDrivers called with filters:', { email, name, status, paid });
 
-    // Just get all drivers - let database return what it has
-    const driverResult = await pool.query('SELECT * FROM drivers LIMIT 1000');
+    // Get all drivers excluding soft-deleted ones
+    const driverResult = await pool.query('SELECT * FROM drivers WHERE is_deleted = FALSE OR is_deleted IS NULL LIMIT 1000');
     console.log('Found', driverResult.rows.length, 'drivers from database');
 
     if (driverResult.rows.length === 0) {
@@ -1501,6 +1501,235 @@ app.post('/api/getDatabaseTable', async (req, res) => {
     });
   } catch (err) {
     console.error('getDatabaseTable error:', err);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Soft Delete Driver (Admin)
+app.post('/api/admin/deleteDriver', async (req, res) => {
+  try {
+    const { driver_id } = req.body;
+    if (!driver_id) throw new Error('Driver ID required');
+
+    // Check if driver exists
+    const checkResult = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driver_id]);
+    if (checkResult.rows.length === 0) throw new Error('Driver not found');
+
+    const driver = checkResult.rows[0];
+
+    // Soft delete: mark as deleted instead of removing
+    await pool.query(
+      'UPDATE drivers SET is_deleted = TRUE, deleted_at = NOW() WHERE driver_id = $1',
+      [driver_id]
+    );
+
+    console.log(`🗑️ Driver soft deleted: ${driver_id} (${driver.first_name} ${driver.last_name})`);
+
+    // Log the deletion to audit trail
+    try {
+      await logAuditEvent(driver_id, 'admin', 'DRIVER_DELETED', 'status', 'active', 'deleted');
+    } catch (auditErr) {
+      console.log('Audit logging failed (non-critical):', auditErr.message);
+    }
+
+    res.json({
+      success: true,
+      data: { message: `Driver ${driver.first_name} ${driver.last_name} has been deleted` }
+    });
+  } catch (err) {
+    console.error('❌ deleteDriver error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Restore Deleted Driver (Admin)
+app.post('/api/admin/restoreDriver', async (req, res) => {
+  try {
+    const { driver_id } = req.body;
+    if (!driver_id) throw new Error('Driver ID required');
+
+    // Check if driver exists and is deleted
+    const checkResult = await pool.query('SELECT * FROM drivers WHERE driver_id = $1 AND is_deleted = TRUE', [driver_id]);
+    if (checkResult.rows.length === 0) throw new Error('Deleted driver not found');
+
+    const driver = checkResult.rows[0];
+
+    // Restore the driver
+    await pool.query(
+      'UPDATE drivers SET is_deleted = FALSE, deleted_at = NULL WHERE driver_id = $1',
+      [driver_id]
+    );
+
+    console.log(`✅ Driver restored: ${driver_id} (${driver.first_name} ${driver.last_name})`);
+
+    // Log the restoration to audit trail
+    try {
+      await logAuditEvent(driver_id, 'admin', 'DRIVER_RESTORED', 'status', 'deleted', 'active');
+    } catch (auditErr) {
+      console.log('Audit logging failed (non-critical):', auditErr.message);
+    }
+
+    res.json({
+      success: true,
+      data: { message: `Driver ${driver.first_name} ${driver.last_name} has been restored` }
+    });
+  } catch (err) {
+    console.error('❌ restoreDriver error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Export Drivers as CSV (Admin)
+app.post('/api/admin/exportDriversCSV', async (req, res) => {
+  try {
+    const { includeDeleted = false } = req.body;
+
+    console.log('📊 Exporting drivers to CSV...');
+
+    // Get all drivers (excluding soft-deleted unless requested)
+    let driversQuery = 'SELECT * FROM drivers';
+    if (!includeDeleted) {
+      driversQuery += ' WHERE is_deleted = FALSE OR is_deleted IS NULL';
+    }
+    driversQuery += ' ORDER BY created_at DESC';
+
+    const driversResult = await pool.query(driversQuery);
+    const drivers = driversResult.rows;
+
+    if (drivers.length === 0) {
+      throw new Error('No drivers to export');
+    }
+
+    console.log(`📋 Found ${drivers.length} drivers to export`);
+
+    // Get driver IDs for contact and medical queries
+    const driverIds = drivers.map(d => d.driver_id);
+
+    // Get all contacts
+    let contactMap = {};
+    try {
+      const contactResult = await pool.query(
+        'SELECT * FROM contacts WHERE driver_id = ANY($1)',
+        [driverIds]
+      );
+      contactResult.rows.forEach(c => {
+        if (!contactMap[c.driver_id]) {
+          contactMap[c.driver_id] = c;
+        }
+      });
+    } catch (e) {
+      console.log('⚠️ Could not fetch contacts:', e.message);
+    }
+
+    // Get all medical info
+    let medicalMap = {};
+    try {
+      const medicalResult = await pool.query(
+        'SELECT * FROM medical_consent WHERE driver_id = ANY($1)',
+        [driverIds]
+      );
+      medicalResult.rows.forEach(m => {
+        medicalMap[m.driver_id] = m;
+      });
+    } catch (e) {
+      console.log('⚠️ Could not fetch medical info:', e.message);
+    }
+
+    // Build CSV content
+    const headers = [
+      'Driver ID',
+      'First Name',
+      'Last Name',
+      'Email',
+      'Phone',
+      'Contact Name',
+      'Contact Phone',
+      'Contact Relationship',
+      'Championship',
+      'Class',
+      'Race Number',
+      'Team Name',
+      'Coach Name',
+      'Kart Brand',
+      'Engine Type',
+      'Transponder Number',
+      'License Number',
+      'Status',
+      'Medical Allergies',
+      'Medical Conditions',
+      'Medical Medication',
+      'Doctor Phone',
+      'Consent Signed',
+      'Media Release Signed',
+      'Date of Birth',
+      'Gender',
+      'Nationality',
+      'Registration Date',
+      'Is Deleted',
+      'Deleted Date'
+    ];
+
+    // Helper function to escape CSV values
+    const escapeCSV = (value) => {
+      if (value === null || value === undefined) return '';
+      const stringValue = String(value);
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    // Build CSV rows
+    const rows = drivers.map(driver => {
+      const contact = contactMap[driver.driver_id] || {};
+      const medical = medicalMap[driver.driver_id] || {};
+
+      return [
+        escapeCSV(driver.driver_id),
+        escapeCSV(driver.first_name),
+        escapeCSV(driver.last_name),
+        escapeCSV(contact.email),
+        escapeCSV(contact.phone_mobile),
+        escapeCSV(contact.full_name),
+        escapeCSV(contact.phone_mobile),
+        escapeCSV(contact.relationship),
+        escapeCSV(driver.championship),
+        escapeCSV(driver.class),
+        escapeCSV(driver.race_number),
+        escapeCSV(driver.team_name),
+        escapeCSV(driver.coach_name),
+        escapeCSV(driver.kart_brand),
+        escapeCSV(driver.engine_type),
+        escapeCSV(driver.transponder_number),
+        escapeCSV(driver.license_number),
+        escapeCSV(driver.status),
+        escapeCSV(medical.allergies),
+        escapeCSV(medical.medical_conditions),
+        escapeCSV(medical.medication),
+        escapeCSV(medical.doctor_phone),
+        escapeCSV(medical.consent_signed ? 'Yes' : 'No'),
+        escapeCSV(medical.media_release_signed ? 'Yes' : 'No'),
+        escapeCSV(driver.date_of_birth),
+        escapeCSV(driver.gender),
+        escapeCSV(driver.nationality),
+        escapeCSV(driver.created_at),
+        escapeCSV(driver.is_deleted ? 'Yes' : 'No'),
+        escapeCSV(driver.deleted_at)
+      ].join(',');
+    });
+
+    // Combine headers and rows
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    // Set response headers for file download
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="drivers-export-${new Date().toISOString().split('T')[0]}.csv"`);
+
+    console.log(`✅ CSV export ready: ${drivers.length} drivers`);
+
+    res.send(csv);
+  } catch (err) {
+    console.error('❌ exportDriversCSV error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
