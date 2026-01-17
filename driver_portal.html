@@ -578,6 +578,17 @@
     .toast.good{ border-left: 4px solid var(--spring); }
     .toast.bad{ border-left: 4px solid #ef4444; }
 
+    /* Toast positioning - fixed to appear over modals */
+    #toast {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      right: auto;
+      z-index: 10000;
+      max-width: 400px;
+      pointer-events: auto;
+    }
+
     /* Portal tabs */
     .portalTabs{
       display:flex;
