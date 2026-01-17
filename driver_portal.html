@@ -2890,6 +2890,13 @@
             <div style="font-size: 12px; color: #92400e; margin-top: 4px;">Please arrange Friday practice fees directly with track administration.</div>
           </div>
 
+          <!-- Team Code -->
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">Team Code (Optional)</label>
+            <input type="text" id="teamCodeInput" placeholder="Enter team code" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; box-sizing: border-box;" onchange="validateTeamCode()">
+            <div id="codeMessage" style="margin-top: 6px; font-size: 12px; display: none;"></div>
+          </div>
+
           <!-- Total -->
           <div style="padding: 16px; background: #f3f4f6; border-radius: 6px; margin-bottom: 16px;">
             <div id="totalBreakdown"></div>
@@ -2909,10 +2916,36 @@
     `;
     document.body.appendChild(entryModal);
 
+    // Function to validate team code
+    function validateTeamCode() {
+      const codeInput = document.getElementById('teamCodeInput');
+      const codeMessage = document.getElementById('codeMessage');
+      const totalPriceEl = document.getElementById('totalPrice');
+      
+      if (codeInput.value.toLowerCase() === 'k0k0r0') {
+        codeMessage.style.display = 'block';
+        codeMessage.style.color = '#22c55e';
+        codeMessage.textContent = '✓ Valid team code - Registration fee waived!';
+        totalPriceEl.style.color = '#22c55e';
+      } else if (codeInput.value.trim() !== '') {
+        codeMessage.style.display = 'block';
+        codeMessage.style.color = '#dc2626';
+        codeMessage.textContent = '✗ Invalid code';
+        totalPriceEl.style.color = '#22c55e';
+      } else {
+        codeMessage.style.display = 'none';
+        totalPriceEl.style.color = '#22c55e';
+      }
+    }
+
     // Function to populate modal with correct pricing based on driver class
     function openRaceEntryModal() {
       const driverClass = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
       const tierConfig = racePricingTiers[driverClass] || racePricingTiers['CADET'];
+      
+      // Reset team code field when opening modal
+      document.getElementById('teamCodeInput').value = '';
+      document.getElementById('codeMessage').style.display = 'none';
       
       document.getElementById('modalRaceClass').textContent = driverClass;
       
@@ -2998,9 +3031,37 @@
       if (paymentBtn) {
         paymentBtn.addEventListener('click', function() {
           const driverClass = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
-          // TODO: Implement payment processing
-          console.log('Payment processing for class:', driverClass);
-          toast('good', 'Payment feature coming soon!');
+          const teamCode = document.getElementById('teamCodeInput').value;
+          const totalPrice = document.getElementById('totalPrice').textContent;
+          
+          // Check if valid team code was entered
+          if (teamCode.toLowerCase() === 'k0k0r0') {
+            // Free registration with team code
+            const selectedItems = [];
+            const tierConfig = racePricingTiers[driverClass];
+            tierConfig.items.forEach((item, idx) => {
+              const checkbox = document.getElementById(`item_${idx}`);
+              if (checkbox && checkbox.checked) {
+                selectedItems.push(item.name);
+              }
+            });
+            
+            console.log('Free registration with team code for class:', driverClass, 'Items:', selectedItems);
+            toast('good', 'Registration confirmed! You can enter the race for free with the team code.');
+            document.getElementById('raceEntryModal').style.display = 'none';
+          } else {
+            // Proceed to PayFast payment
+            if (totalPrice === 'R0.00' || totalPrice === 'R 0.00') {
+              console.log('Zero amount for class:', driverClass);
+              toast('good', 'Registration confirmed! No payment required.');
+              document.getElementById('raceEntryModal').style.display = 'none';
+            } else {
+              console.log('PayFast payment for class:', driverClass, 'Amount:', totalPrice);
+              toast('info', 'Redirecting to payment (PayFast)...');
+              // TODO: Implement actual PayFast payment redirect
+              // window.location.href = '/api/initiateRacePayment?class=' + driverClass + '&amount=' + totalPrice;
+            }
+          }
         });
       }
     }, 100);
