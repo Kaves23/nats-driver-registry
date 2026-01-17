@@ -1825,6 +1825,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
 
     // Create MD5 signature - IMPORTANT: Parameters must be sorted alphabetically
     // Do NOT include merchant_key in signature, only in passphrase
+    // Use RAW values for signature, NOT URL encoded
     const sortedKeys = Object.keys(pfData).sort();
     let pfParamString = '';
     
@@ -1833,10 +1834,11 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     for (const key of sortedKeys) {
       const value = pfData[key];
       if (value !== null && value !== '') {
-        pfParamString += `${key}=${encodeURIComponent(value)}&`;
+        // Use raw value, not URL encoded, for signature calculation
+        pfParamString += `${key}=${value}&`;
       }
     }
-    pfParamString += `passphrase=${encodeURIComponent(merchantKey)}`;
+    pfParamString += `passphrase=${merchantKey}`;
 
     console.log(`🔐 Amount to charge: R${numAmount.toFixed(2)}`);
     console.log(`🔐 Full signature string: ${pfParamString}`);
