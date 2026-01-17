@@ -578,6 +578,7 @@
 
     <div class="admin-tabs">
       <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
+      <button class="tab-btn" onclick="switchTab('raceEntries')">Race Entries</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
     </div>
 
@@ -630,6 +631,44 @@
           </thead>
           <tbody id="driversTable">
             <tr><td colspan="22" class="loading">Loading drivers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Race Entries Tab -->
+    <div id="raceEntriesTab" class="admin-content" style="display: none;">
+      <div class="filters-bar">
+        <select id="filterRace">
+          <option value="">Select Race...</option>
+          <option value="14 February 2026 - Redstar Regional">14 February 2026 - Redstar Regional</option>
+          <option value="20 March 2026 - Summer Championship">20 March 2026 - Summer Championship</option>
+          <option value="21 March 2026 - Northern Region">21 March 2026 - Northern Region</option>
+        </select>
+        <button class="search-btn" onclick="loadRaceEntries()">Load Entries</button>
+        <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Race</th>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th>Entry Fee</th>
+              <th>Tyres</th>
+              <th>Transponder</th>
+              <th>Engine</th>
+              <th>Total Amount</th>
+              <th>Payment Status</th>
+              <th>Team Code</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="raceEntriesTable">
+            <tr><td colspan="12" class="loading">Loading race entries...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1277,6 +1316,138 @@
       }
     }
 
+    // Load race entries for selected race
+    async function loadRaceEntries() {
+      try {
+        const race = document.getElementById('filterRace').value;
+        if (!race) {
+          showToast('Please select a race', 'info');
+          return;
+        }
+
+        const response = await fetch('/api/getRaceEntries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_event: race })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to load race entries');
+        }
+
+        displayRaceEntries(result.data.entries || []);
+      } catch (err) {
+        console.error('Error loading race entries:', err);
+        showToast(err.message, 'error');
+        const table = document.getElementById('raceEntriesTable');
+        if (table) {
+          table.innerHTML = '<tr><td colspan="12" class="loading">Error loading race entries: ' + err.message + '</td></tr>';
+        }
+      }
+    }
+
+    function displayRaceEntries(entries) {
+      const table = document.getElementById('raceEntriesTable');
+      if (!table) return;
+      
+      if (!entries || entries.length === 0) {
+        table.innerHTML = '<tr><td colspan="12" class="loading">No race entries found</td></tr>';
+        return;
+      }
+
+      let html = '';
+      entries.forEach((entry) => {
+        const itemsArray = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
+        const tyres = itemsArray.some(i => i.name === 'Tyres') ? '✓' : '';
+        const transponder = itemsArray.some(i => i.name === 'Rent Transponder' || i.name === 'Transponder') ? '✓' : '';
+        const engine = itemsArray.some(i => i.name === 'Engine Rental' || i.name === 'Engine') ? '✓' : '';
+        
+        html += `
+          <tr>
+            <td>${entry.race_event || '-'}</td>
+            <td>${entry.driver_email || '-'}</td>
+            <td>${entry.driver_name || '-'}</td>
+            <td><span class="class-badge">${entry.race_class || '-'}</span></td>
+            <td>R${parseFloat(entry.entry_fee || 0).toLocaleString('en-ZA')}</td>
+            <td>${tyres}</td>
+            <td>${transponder}</td>
+            <td>${engine}</td>
+            <td><strong>R${parseFloat(entry.total_amount || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</strong></td>
+            <td><span class="status-badge status-${(entry.payment_status || 'pending').toLowerCase()}">${entry.payment_status || 'Pending'}</span></td>
+            <td>${entry.team_code ? '✓ k0k0r0' : '-'}</td>
+            <td>
+              <button class="action-btn edit-btn" onclick="confirmRaceEntry('${entry.race_entry_id}')">Confirm</button>
+            </td>
+          </tr>
+        `;
+      });
+
+      table.innerHTML = html;
+    }
+
+    async function confirmRaceEntry(entryId) {
+      try {
+        const response = await fetch('/api/confirmRaceEntry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_entry_id: entryId })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to confirm entry');
+        }
+
+        showToast('Race entry confirmed!', 'success');
+        loadRaceEntries();
+      } catch (err) {
+        console.error('Error confirming race entry:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function exportRaceEntriesCSV() {
+      try {
+        const race = document.getElementById('filterRace').value;
+        if (!race) {
+          showToast('Please select a race', 'info');
+          return;
+        }
+
+        showToast('Preparing CSV export...', 'info');
+        
+        const response = await fetch('/api/exportRaceEntriesCSV', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_event: race })
+        });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const csvText = await response.text();
+        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `race-entries-${race.replace(/[\/\s]/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast('CSV export downloaded successfully', 'success');
+      } catch (err) {
+        console.error('exportRaceEntriesCSV error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+
     function showToast(message, type) {
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
@@ -1297,19 +1468,32 @@
     // Tab switching
     function switchTab(tabName) {
       const driversTab = document.getElementById('driversTab');
+      const raceEntriesTab = document.getElementById('raceEntriesTab');
       const messagesTab = document.getElementById('messagesTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
       if (tabName === 'drivers') {
         driversTab.style.display = 'block';
+        raceEntriesTab.style.display = 'none';
         messagesTab.style.display = 'none';
         tabs[0].classList.add('active');
         tabs[1].classList.remove('active');
-      } else if (tabName === 'messages') {
+        tabs[2].classList.remove('active');
+      } else if (tabName === 'raceEntries') {
         driversTab.style.display = 'none';
-        messagesTab.style.display = 'block';
+        raceEntriesTab.style.display = 'block';
+        messagesTab.style.display = 'none';
         tabs[0].classList.remove('active');
         tabs[1].classList.add('active');
+        tabs[2].classList.remove('active');
+        loadRaceEntries();
+      } else if (tabName === 'messages') {
+        driversTab.style.display = 'none';
+        raceEntriesTab.style.display = 'none';
+        messagesTab.style.display = 'block';
+        tabs[0].classList.remove('active');
+        tabs[1].classList.remove('active');
+        tabs[2].classList.add('active');
         loadMessages();
       }
     }
