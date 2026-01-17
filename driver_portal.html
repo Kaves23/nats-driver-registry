@@ -1045,10 +1045,7 @@
                     <div>
                       <label>NATS event</label>
                       <select id="race_nat">
-                        <option value="summer" selected>Summer Nats</option>
-                        <option value="autumn">Autumn Nats</option>
-                        <option value="winter">Winter Nats</option>
-                        <option value="spring">Spring Nats</option>
+                        <option value="">Loading events...</option>
                       </select>
                     </div>
                     <div>
@@ -1964,6 +1961,9 @@
       // Load payment history
       loadPaymentHistory();
 
+      // Load events into race entry dropdown
+      loadRaceEntryDropdown();
+
       const rows = (contacts.length ? contacts : [{}]).map(c => `
         <tr>
           <td>${escapeHtml(c.relationship||"")}</td>
@@ -2105,6 +2105,40 @@
         dateDiv.style.color = '#16a34a';
         dateDiv.style.fontWeight = '600';
       }
+    }
+
+    // Load available events into Race Entry dropdown
+    function loadRaceEntryDropdown() {
+      const dropdown = document.getElementById('race_nat');
+      if (!dropdown) return;
+
+      fetch('/api/getAvailableEvents')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.data) {
+            // Clear existing options
+            dropdown.innerHTML = '';
+            
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Select an event...';
+            dropdown.appendChild(defaultOption);
+            
+            // Add events from database
+            data.data.forEach(event => {
+              const option = document.createElement('option');
+              option.value = event.event_id;
+              const eventDate = new Date(event.event_date).toLocaleDateString('en-ZA');
+              option.textContent = `${event.event_name} (${eventDate})`;
+              dropdown.appendChild(option);
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error loading events:', error);
+          dropdown.innerHTML = '<option value="">Error loading events</option>';
+        });
     }
 
     function populatePaymentOptions(driverClass) {

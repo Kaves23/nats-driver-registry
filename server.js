@@ -2488,9 +2488,10 @@ app.get('/api/getEventRegistrations/:eventId', async (req, res) => {
       `SELECT r.entry_id, r.event_id, r.driver_id, r.payment_status, r.entry_status, 
               r.amount_paid, r.created_at,
               d.first_name AS driver_first_name, d.last_name AS driver_last_name, 
-              d.email AS driver_email, d.race_class AS driver_class
+              c.email AS driver_email, d.class AS driver_class
        FROM race_entries r
        JOIN drivers d ON r.driver_id = d.driver_id
+       LEFT JOIN contacts c ON d.driver_id = c.driver_id AND c.email IS NOT NULL
        WHERE r.event_id = $1
        ORDER BY r.created_at DESC`,
       [eventId]
