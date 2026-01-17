@@ -1108,8 +1108,8 @@
               <div class="portalSection" data-psection="payments">
                 <!-- NEXT RACE DETAILS SECTION -->
                 <div class="panel">
-                  <div class="panelTitle"><span class="accentBar" style="background:#ef4444"></span>Next Race</div>
-                  <div style="padding: 20px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 8px; border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);">
+                  <div class="panelTitle"><span class="accentBar" id="nextRaceAccentBar" style="background:#ef4444"></span>Next Race</div>
+                  <div id="nextRaceBox" style="padding: 20px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 8px; border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);">
                     <div style="margin-bottom: 16px;">
                       <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Upcoming Event</div>
                       <div style="font-size: 20px; font-weight: 700; color: #1f2937; text-transform: uppercase;" id="nextRaceTitle">14 FEBRUARY 2026 - REDSTAR RACEWAY (NORTHERN REGIONS CROWN)</div>
@@ -1120,13 +1120,24 @@
                         <div style="font-size: 14px; color: #374151;" id="nextRaceLocation">Redstar Raceway</div>
                       </div>
                       <div>
-                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Status</div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                          <div style="width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);"></div>
-                          <span style="font-size: 14px; color: #374151; font-weight: 600;">Registration Closed</span>
+                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Entry Status</div>
+                        <div id="nextRaceStatusBox" style="display: flex; align-items: center; gap: 8px;">
+                          <div id="nextRaceStatusDot" style="width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);"></div>
+                          <span id="nextRaceStatusText" style="font-size: 14px; color: #374151; font-weight: 600;">Not Registered</span>
                         </div>
                       </div>
                     </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                      <div style="padding: 12px; border: 1px solid #fca5a5; border-radius: 6px; background: white;">
+                        <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">ENTRY</div>
+                        <div style="font-size: 12px; color: #374151; font-weight: 600;" id="nextRaceEntryStatus">Not Registered</div>
+                      </div>
+                      <div style="padding: 12px; border: 1px solid #fca5a5; border-radius: 6px; background: white;">
+                        <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">ENGINE RENTAL</div>
+                        <div style="font-size: 12px; color: #374151; font-weight: 600;" id="nextRaceEngineStatus">No</div>
+                      </div>
+                    </div>
+                    <div id="nextRaceEntryDate" style="font-size: 11px; color: #6b7280; margin-bottom: 12px;"></div>
                     <button class="btn primary" id="btnQuickEntry" type="button" style="width: 100%;">Enter This Race</button>
                   </div>
                 </div>
@@ -2005,6 +2016,95 @@
 
       // Keep buttons enabled - user is still logged in
       // Do NOT disable buttons when switching tabs
+      
+      // Update the Next Race status box
+      updateNextRaceBox(d);
+    }
+
+    // Function to update the "Next Race" status box based on driver profile
+    function updateNextRaceBox(driver) {
+      if (!driver) return;
+      
+      const entryStatus = driver.next_race_entry_status || 'Not Registered';
+      const engineStatus = driver.next_race_engine_rental_status || 'No';
+      
+      // Determine colors and styling
+      let boxBg, boxBorder, accentColor, statusText, statusColor;
+      
+      if (entryStatus === 'Registered' || entryStatus === 'Confirmed') {
+        // Green for registered
+        boxBg = 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+        boxBorder = '#22c55e';
+        accentColor = '#22c55e';
+        statusText = '✓ Registered';
+        statusColor = '#16a34a';
+      } else {
+        // Orange for pending or not registered
+        boxBg = 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%)';
+        boxBorder = '#fb923c';
+        accentColor = '#fb923c';
+        statusText = '⧖ Not Registered';
+        statusColor = '#ea580c';
+      }
+      
+      // Update the Next Race box
+      const nextRaceBox = document.getElementById('nextRaceBox');
+      const statusDot = document.getElementById('nextRaceStatusDot');
+      const statusText_ = document.getElementById('nextRaceStatusText');
+      const entryStatusDiv = document.getElementById('nextRaceEntryStatus');
+      const engineStatusDiv = document.getElementById('nextRaceEngineStatus');
+      const accentBar = document.getElementById('nextRaceAccentBar');
+      const dateDiv = document.getElementById('nextRaceEntryDate');
+      
+      if (nextRaceBox) {
+        nextRaceBox.style.background = boxBg;
+        nextRaceBox.style.borderColor = boxBorder;
+      }
+      
+      if (statusDot) {
+        statusDot.style.background = accentColor;
+        statusDot.style.boxShadow = `0 0 8px rgba(${accentColor === '#22c55e' ? '34, 197, 94' : '251, 146, 60'}, 0.6)`;
+      }
+      
+      if (statusText_) {
+        statusText_.textContent = statusText;
+        statusText_.style.color = statusColor;
+      }
+      
+      if (accentBar) {
+        accentBar.style.background = accentColor;
+      }
+      
+      // Update entry and engine status displays
+      if (entryStatusDiv) {
+        if (entryStatus === 'Registered' || entryStatus === 'Confirmed') {
+          entryStatusDiv.innerHTML = '✓ Registered';
+          entryStatusDiv.style.color = '#16a34a';
+        } else {
+          entryStatusDiv.innerHTML = '○ Not Registered';
+          entryStatusDiv.style.color = '#dc2626';
+        }
+      }
+      
+      if (engineStatusDiv) {
+        if (engineStatus === 'Yes' || engineStatus === 'Registered') {
+          engineStatusDiv.innerHTML = '✓ Yes';
+          engineStatusDiv.style.color = '#16a34a';
+        } else {
+          engineStatusDiv.innerHTML = '○ No';
+          engineStatusDiv.style.color = '#dc2626';
+        }
+      }
+      
+      // Add timestamp if registered
+      if (dateDiv && (entryStatus === 'Registered' || entryStatus === 'Confirmed')) {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-ZA', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        const timeStr = now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+        dateDiv.textContent = `✓ Entered on ${dateStr} at ${timeStr}`;
+        dateDiv.style.color = '#16a34a';
+        dateDiv.style.fontWeight = '600';
+      }
     }
 
     function populatePaymentOptions(driverClass) {
@@ -3324,12 +3424,38 @@
             .then(r => r.json())
             .then(data => {
               if (data.success) {
-                toast('good', 'Registration confirmed! Confirmation email sent.');
+                console.log('✅ Free race entry successful:', data);
+                toast('good', 'Race entry confirmed! Welcome to the event.');
                 document.getElementById('raceEntryModal').style.display = 'none';
-                // Reload portal to show registered entry
+                
+                // Update the driver profile locally
+                if (currentProfile && currentProfile.driver) {
+                  currentProfile.driver.next_race_entry_status = 'Registered';
+                  currentProfile.driver.next_race_engine_rental_status = selectedItems.some(item => item.toLowerCase().includes('engine')) ? 'Yes' : 'No';
+                }
+                
+                // Update the Next Race box immediately with new status
+                updateNextRaceBox(currentProfile?.driver);
+                
+                // Update status card to show registration success
+                setStatusCard_({
+                  chipText: "Entry Confirmed",
+                  chipKind: "good",
+                  driver: currentProfile ? `${currentProfile.driver.first_name || ""} ${currentProfile.driver.last_name || ""}`.trim() : "—",
+                  klass: currentProfile ? (currentProfile.driver.class || "—") : "—",
+                  ident: currentEmail,
+                  status: "Entered for Race",
+                  note: `You are registered for ${window.selectedEventName || 'the event'}. Engine rental: ${currentProfile?.driver?.next_race_engine_rental_status || 'No'}`
+                });
+                
+                // Stay on portal and switch to Entries tab to show updated status
                 setTimeout(() => {
-                  location.reload();
-                }, 1000);
+                  // Click on Entries and Rentals tab to show the updated status
+                  const entriesTab = document.querySelector('[data-tab="entries"]');
+                  if (entriesTab) {
+                    entriesTab.click();
+                  }
+                }, 500);
               } else {
                 toast('bad', data.error || 'Registration failed');
               }

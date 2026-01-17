@@ -1973,17 +1973,28 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     const entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const reference = `RACE-FREE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
-    // Determine equipment selections and build items list
-    const selectedItemsList = selectedItems ? selectedItems.join(', ') : '';
+    // Format selected items as JSON (entry_items column expects JSON format)
+    const selectedItemsJson = selectedItems ? JSON.stringify(selectedItems) : JSON.stringify([]);
     
     // Store the free entry in database
     await pool.query(
       `INSERT INTO race_entries (entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, race_class, entry_items, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
-      [entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, raceClass, selectedItemsList]
+      [entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, raceClass, selectedItemsJson]
+    );
+
+    // Update driver's next race status
+    const hasEngineRental = selectedItems && selectedItems.some(item => item.toLowerCase().includes('engine') || item.toLowerCase().includes('rental'));
+    await pool.query(
+      `UPDATE drivers 
+       SET next_race_entry_status = 'Registered',
+           next_race_engine_rental_status = $1
+       WHERE driver_id = $2`,
+      [hasEngineRental ? 'Yes' : 'No', driverId]
     );
 
     console.log(`✅ Free race entry recorded: ${reference} - ${raceClass}`);
+    console.log(`✅ Updated driver ${driverId} next_race status - Engine Rental: ${hasEngineRental ? 'Yes' : 'No'}`);
 
     // Send confirmation emails
     try {
