@@ -1784,9 +1784,12 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       throw new Error('Missing class or amount');
     }
 
-    const numAmount = parseFloat(amount);
+    // Clean and parse amount - remove R, commas, spaces
+    let cleanAmount = String(amount).replace(/R/g, '').replace(/,/g, '').trim();
+    const numAmount = parseFloat(cleanAmount);
+    
     if (isNaN(numAmount) || numAmount <= 0) {
-      throw new Error('Invalid amount');
+      throw new Error(`Invalid amount: ${amount} (parsed as ${cleanAmount})`);
     }
 
     console.log(`💳 Initiating PayFast payment: ${raceClass} - R${numAmount.toFixed(2)}`);
@@ -1801,10 +1804,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // Generate unique reference
     const reference = `RACE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-    // Build PayFast parameters
+    // Build PayFast parameters - DO NOT include merchant_key in pfData
     const pfData = {
       merchant_id: merchantId,
-      merchant_key: merchantKey,
       return_url: returnUrl,
       cancel_url: cancelUrl,
       notify_url: notifyUrl,
@@ -1813,14 +1815,14 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       email_address: 'noreply@nats.co.za',
       item_name: `Race Entry - ${raceClass}`,
       item_description: `Race Entry for ${raceClass} Class`,
-      custom_int1: numAmount * 100, // Store amount in cents for reference
+      custom_int1: Math.round(numAmount * 100), // Store amount in cents
       custom_str1: raceClass,
       amount: numAmount.toFixed(2),
       reference: reference
     };
 
     // Create MD5 signature - IMPORTANT: Parameters must be sorted alphabetically
-    // Build sorted parameter string for signature
+    // Do NOT include merchant_key in signature, only in passphrase
     const sortedKeys = Object.keys(pfData).sort();
     let pfParamString = '';
     
@@ -1832,7 +1834,8 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     }
     pfParamString += `passphrase=${encodeURIComponent(merchantKey)}`;
 
-    console.log(`🔐 PayFast signature string (first 200 chars): ${pfParamString.substring(0, 200)}`);
+    console.log(`🔐 Amount to charge: R${numAmount.toFixed(2)}`);
+    console.log(`🔐 PayFast signature string (first 300 chars): ${pfParamString.substring(0, 300)}`);
 
     const signature = crypto
       .createHash('md5')
@@ -1840,23 +1843,22 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       .digest('hex');
 
     console.log(`✅ Generated signature: ${signature}`);
-    console.log(`💳 Merchant ID: ${merchantId}, Key exists: ${!!merchantKey}`);
-
-
-    console.log(`✅ PayFast payment initiated: ${reference}`);
+    console.log(`💳 Merchant ID: ${merchantId}`);
 
     // Build PayFast URL with query parameters
+    // Include merchant_key in URL params, NOT in signature
     const payFastParams = new URLSearchParams();
     for (const [key, value] of Object.entries(pfData)) {
       payFastParams.append(key, value);
     }
+    payFastParams.append('merchant_key', merchantKey);
     payFastParams.append('signature', signature);
 
     const payFastUrl = `https://www.payfast.co.za/eng/process?${payFastParams.toString()}`;
 
-    console.log(`Redirecting to: ${payFastUrl.substring(0, 100)}...`);
+    console.log(`Redirecting to PayFast with amount: R${numAmount.toFixed(2)}`);
 
-    // Return HTML with simple redirect (no auto-submit form, just redirect)
+    // Return HTML with simple redirect
     const redirectPage = `
       <!DOCTYPE html>
       <html>
@@ -1873,6 +1875,22 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       <body>
         <div class="container">
           <h1>Redirecting to Payment...</h1>
+          <div class="spinner"></div>
+          <p>Amount: <strong>R${numAmount.toFixed(2)}</strong></p>
+          <p>Class: <strong>${raceClass}</strong></p>
+          <p>Reference: <strong>${reference}</strong></p>
+          <p style="margin-top: 30px; color: #666; font-size: 14px;">If you are not automatically redirected, <a href="${payFastUrl}">click here</a> to continue to payment.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    res.send(redirectPage);
+  } catch (err) {
+    console.error('❌ initiateRacePayment error:', err.message);
+    res.status(400).send(`<h1>Payment Error</h1><p>${err.message}</p><p><a href="/">Back to Home</a></p>`);
+  }
+});
           <div class="spinner"></div>
           <p>Amount: <strong>R${numAmount.toFixed(2)}</strong></p>
           <p>Class: <strong>${raceClass}</strong></p>
