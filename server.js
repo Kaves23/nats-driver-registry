@@ -1791,9 +1791,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
 
     console.log(`💳 Initiating PayFast payment: ${raceClass} - R${numAmount.toFixed(2)}`);
 
-    // PayFast Merchant ID and Key (from environment or hardcoded)
+    // PayFast Merchant ID and Key (from environment or correct defaults)
     const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'wz69jyr6y9zr2';
+    const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
     const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://livenats.co.za/payment-success.html';
     const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://livenats.co.za/payment-cancel.html';
     const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://livenats.co.za/api/paymentNotify';
