@@ -766,7 +766,7 @@ app.post('/api/getPaymentHistory', async (req, res) => {
     console.log(`📊 Retrieving payment history for driver: ${driver_id}`);
     
     const result = await pool.query(
-      'SELECT * FROM payments WHERE driver_id = $1 ORDER BY payment_date DESC',
+      'SELECT * FROM payments WHERE driver_id = $1 ORDER BY created_at DESC',
       [driver_id]
     );
 
@@ -1970,18 +1970,17 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
       throw new Error('Missing event ID, driver ID, or email');
     }
 
-    const race_entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const reference = `RACE-FREE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
-    // Determine equipment selections
-    const tyresOrdered = selectedItems && selectedItems.some(item => item.includes('tyres'));
-    const wetsOrdered = selectedItems && selectedItems.some(item => item.includes('wets'));
+    // Determine equipment selections and build items list
+    const selectedItemsList = selectedItems ? selectedItems.join(', ') : '';
     
     // Store the free entry in database
     await pool.query(
-      `INSERT INTO race_entries (race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, tyres_ordered, wets_ordered)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, tyresOrdered, wetsOrdered]
+      `INSERT INTO race_entries (entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, race_class, entry_items, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+      [entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, raceClass, selectedItemsList]
     );
 
     console.log(`✅ Free race entry recorded: ${reference} - ${raceClass}`);
@@ -2337,7 +2336,7 @@ app.get('/api/getAllEvents', async (req, res) => {
     const result = await pool.query(
       `SELECT e.event_id, e.event_name, e.event_date, e.location, e.entry_fee, 
               e.registration_deadline, e.created_at,
-              COUNT(r.race_entry_id) AS registration_count
+              COUNT(r.entry_id) AS registration_count
        FROM events e
        LEFT JOIN race_entries r ON e.event_id = r.event_id
        GROUP BY e.event_id
@@ -2475,7 +2474,7 @@ app.get('/api/getEventRegistrations/:eventId', async (req, res) => {
     }
 
     const registrationsResult = await pool.query(
-      `SELECT r.race_entry_id, r.event_id, r.driver_id, r.payment_status, r.entry_status, 
+      `SELECT r.entry_id, r.event_id, r.driver_id, r.payment_status, r.entry_status, 
               r.amount_paid, r.created_at,
               d.first_name AS driver_first_name, d.last_name AS driver_last_name, 
               d.email AS driver_email, d.race_class AS driver_class

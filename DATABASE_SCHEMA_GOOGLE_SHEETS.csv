@@ -1,0 +1,187 @@
+TABLE NAME,PRIMARY KEY,ROW COUNT,DESCRIPTION,FOREIGN KEYS
+DRIVERS,driver_id (VARCHAR),19,Driver profiles and personal information,"none"
+CONTACTS,contact_id (VARCHAR),19,Email and contact information linked to drivers,"driver_id → drivers.driver_id"
+EVENTS,event_id (VARCHAR),2,Race event definitions,"none"
+RACE_ENTRIES,entry_id (VARCHAR),0,Driver entries for specific events - MANY-TO-MANY,"driver_id → drivers.driver_id | event_id → events.event_id"
+MEDICAL_CONSENT,driver_id (VARCHAR),6,Medical information and consent forms,"driver_id → drivers.driver_id"
+PAYMENTS,payment_id (VARCHAR),8,Payment transaction records from PayFast,"driver_id → drivers.driver_id"
+POINTS,points_id (VARCHAR),0,Race results and championship points,"driver_id → drivers.driver_id"
+PASSWORD_RESETS,reset_id (VARCHAR),0,Password reset token tracking,"driver_id → drivers.driver_id"
+
+TABLE: DRIVERS
+Column Name,Data Type,Nullable,Default,Important Notes
+driver_id,VARCHAR,NOT NULL,-,Primary Key - UUID format
+first_name,VARCHAR,NULL,-,Driver given name
+last_name,VARCHAR,NULL,-,Driver family name
+preferred_name,VARCHAR,NULL,-,Display name preference
+date_of_birth,DATE,NULL,-,For age verification
+gender,VARCHAR,NULL,-,'M', 'F', 'Other'
+nationality,VARCHAR,NULL,-,Country code
+championship,VARCHAR,NULL,-,2026 ROK Cup
+class,VARCHAR,NULL,-,"CADET, MINI ROK, JUNIOR MAX, SENIOR MAX"
+race_number,VARCHAR,NULL,-,Official race number
+team_name,VARCHAR,NULL,-,Team affiliation
+coach_name,VARCHAR,NULL,-,Coach or guardian
+kart_brand,VARCHAR,NULL,-,Kart manufacturer
+engine_type,VARCHAR,NULL,-,Engine model
+tyre_class,VARCHAR,NULL,-,Tyre specification
+license_number,VARCHAR,NULL,-,Racing license ID
+license_expiry_date,DATE,NULL,-,License expiration
+transponder_number,VARCHAR,NULL,-,Timing transponder ID
+status,VARCHAR,NULL,'Pending',"'Pending', 'Active', 'Suspended', 'Inactive'"
+password_hash,VARCHAR,NULL,-,bcrypt hashed password
+password_salt,VARCHAR,NULL,-,Salt for password
+reset_token,VARCHAR,NULL,-,For password reset
+reset_token_expiry,TIMESTAMP,NULL,-,Token expiry time
+address_line1,VARCHAR,NULL,-,Street address
+suburb,VARCHAR,NULL,-,Suburb/locality
+city,VARCHAR,NULL,-,City name
+province,VARCHAR,NULL,-,State/Province
+postal_code,VARCHAR,NULL,-,ZIP/Postal code
+country,VARCHAR,NULL,-,Country
+id_or_passport_masked,VARCHAR,NULL,-,Last 4 digits only
+profile_photo_drive_file_id,VARCHAR,NULL,-,Google Drive file ID
+profile_photo_filename,VARCHAR,NULL,-,Photo filename
+rookie_flag,VARCHAR,NULL,-,"'Y' or 'N' - first time racer"
+academy_driver,VARCHAR,NULL,-,"'Y' or 'N' - academy participant"
+medical_flag,VARCHAR,NULL,-,"'Y' or 'N' - special medical needs"
+season_engine_rental,VARCHAR,NULL,'N',"'Y' or 'N' - engine rental opt-in"
+notes_internal,TEXT,NULL,-,Internal admin notes
+created_at,TIMESTAMP,NULL,now(),Record creation time
+updated_at,TIMESTAMP,NULL,now(),Record update time
+created_by,VARCHAR,NULL,-,Admin who created
+last_verified_at,TIMESTAMP,NULL,-,Account verification time
+verification_method,VARCHAR,NULL,-,How account verified
+is_deleted,BOOLEAN,NULL,false,Soft delete flag
+deleted_at,TIMESTAMP,NULL,-,When deleted
+
+TABLE: RACE_ENTRIES
+Column Name,Data Type,Nullable,Default,Important Notes
+entry_id,VARCHAR,NOT NULL,-,"Primary Key - FORMAT: race_entry_timestamp_random - DO NOT USE race_entry_id!"
+driver_id,VARCHAR,NOT NULL,-,Foreign Key to drivers table
+event_id,VARCHAR,NULL,-,Foreign Key to events table
+race_name,VARCHAR,NULL,-,Championship name
+race_class,VARCHAR,NULL,-,Driver class at time of entry
+race_number,VARCHAR,NULL,-,Driver's race number
+team_name,VARCHAR,NULL,-,Team affiliation
+class,VARCHAR,NULL,-,Redundant with race_class
+timestamp,TIMESTAMP,NULL,now(),Entry creation timestamp
+status,VARCHAR,NULL,'Submitted',"'Submitted', 'Approved', 'Rejected'"
+payment_status,VARCHAR,NULL,-,"'Completed', 'Pending', 'Failed', NULL"
+entry_status,VARCHAR,NULL,'pending',"'pending', 'confirmed', 'cancelled'"
+amount_paid,NUMERIC,NULL,0,Amount in Rands - 0 for free entries
+payment_reference,VARCHAR,NULL,-,PayFast ID or manual reference
+entry_items,JSON,NULL,-,Selected equipment as JSON or string
+total_amount,NUMERIC,NULL,-,DEPRECATED - use amount_paid
+notes,TEXT,NULL,-,Driver notes about entry
+admin_result,VARCHAR,NULL,-,Admin approval notes
+admin_position,VARCHAR,NULL,-,Final race position
+created_at,TIMESTAMP,NULL,CURRENT_TIMESTAMP,Record creation
+updated_at,TIMESTAMP,NULL,CURRENT_TIMESTAMP,Record update
+
+TABLE: EVENTS
+Column Name,Data Type,Nullable,Default,Important Notes
+event_id,VARCHAR,NOT NULL,-,"Primary Key - e.g., 'event_redstar_001'"
+event_name,VARCHAR,NOT NULL,-,Display name
+event_date,DATE,NOT NULL,-,When event occurs
+location,VARCHAR,NULL,-,Venue location
+registration_deadline,DATE,NULL,-,When registration closes
+entry_fee,NUMERIC,NULL,-,Standard fee in Rands (e.g., 2950.00)
+created_at,TIMESTAMP,NULL,CURRENT_TIMESTAMP,Record creation
+updated_at,TIMESTAMP,NULL,CURRENT_TIMESTAMP,Record update
+
+TABLE: CONTACTS
+Column Name,Data Type,Nullable,Default,Important Notes
+contact_id,VARCHAR,NOT NULL,-,Primary Key
+driver_id,VARCHAR,NOT NULL,-,Foreign Key to drivers - EMAIL MUST BE UNIQUE
+email,VARCHAR,NOT NULL,-,Email address - USED FOR LOGIN
+contact_type,VARCHAR,NULL,-,"'Primary', 'Secondary', 'Guardian'"
+first_name,VARCHAR,NULL,-,Contact first name
+last_name,VARCHAR,NULL,-,Contact last name
+relationship,VARCHAR,NULL,-,"'Self', 'Parent', 'Guardian', 'Coach'"
+phone_number,VARCHAR,NULL,-,Phone number
+cell_number,VARCHAR,NULL,-,Mobile number
+fax_number,VARCHAR,NULL,-,Fax number if applicable
+address_line1,VARCHAR,NULL,-,Street address
+suburb,VARCHAR,NULL,-,Suburb
+city,VARCHAR,NULL,-,City
+province,VARCHAR,NULL,-,Province/State
+postal_code,VARCHAR,NULL,-,ZIP code
+country,VARCHAR,NULL,-,Country
+preferred_contact,VARCHAR,NULL,-,"'Email', 'Phone', 'SMS'"
+medical_contact,BOOLEAN,NULL,-,Is medical emergency contact?
+emergency_contact,BOOLEAN,NULL,-,Is emergency contact?
+billing_contact,VARCHAR,NULL,-,Is billing contact?
+created_at,TIMESTAMP,NULL,now(),Record creation
+updated_at,TIMESTAMP,NULL,now(),Record update
+
+TABLE: MEDICAL_CONSENT
+Column Name,Data Type,Nullable,Default,Important Notes
+driver_id,VARCHAR,NOT NULL,-,Primary Key - Foreign Key to drivers
+blood_type,VARCHAR,NULL,-,Blood type (O+, A+, AB-, etc)
+allergies,TEXT,NULL,-,Known allergies and reactions
+medical_conditions,TEXT,NULL,-,Chronic conditions or disabilities
+medication,TEXT,NULL,-,Current medications
+doctor_name,VARCHAR,NULL,-,Primary care physician
+doctor_phone,VARCHAR,NULL,-,Doctor phone number
+medical_aid_provider,VARCHAR,NULL,-,Insurance provider name
+medical_aid_number,VARCHAR,NULL,-,Insurance policy number
+consent_signed,VARCHAR,NULL,-,"'Y' or 'N'"
+consent_date,DATE,NULL,-,When consent form signed
+indemnity_signed,VARCHAR,NULL,-,"'Y' or 'N' - liability waiver"
+indemnity_date,DATE,NULL,-,When waiver signed
+media_release_signed,VARCHAR,NULL,-,"'Y' or 'N' - media rights"
+media_release_date,DATE,NULL,-,When media release signed
+
+TABLE: PAYMENTS
+Column Name,Data Type,Nullable,Default,Important Notes
+payment_id,VARCHAR,NOT NULL,-,Primary Key - internal ID
+driver_id,VARCHAR,NOT NULL,-,Foreign Key to drivers
+merchant_payment_id,VARCHAR,NULL,-,Our custom reference
+pf_payment_id,VARCHAR,NULL,-,PayFast transaction ID
+item_name,VARCHAR,NULL,-,What was purchased
+item_description,TEXT,NULL,-,Detailed description
+amount_gross,NUMERIC,NULL,-,Total amount in Rands
+amount_fee,NUMERIC,NULL,-,PayFast processing fee
+amount_net,NUMERIC,NULL,-,Amount we received
+payment_status,VARCHAR,NULL,'Pending',"'Completed', 'Failed', 'Pending'"
+payment_method,VARCHAR,NULL,-,"'PayFast', 'EFT', 'Cash'"
+name_first,VARCHAR,NULL,-,Payer first name
+email_address,VARCHAR,NULL,-,Payer email
+created_at,TIMESTAMP,NULL,now(),"IMPORTANT: Use this for queries - NOT payment_date!"
+completed_at,TIMESTAMP,NULL,-,When payment confirmed
+itn_received_at,TIMESTAMP,NULL,-,When IPN webhook received
+custom_str1,VARCHAR,NULL,-,Custom field 1
+custom_str2,VARCHAR,NULL,-,Custom field 2
+custom_str3,VARCHAR,NULL,-,Custom field 3
+raw_response,TEXT,NULL,-,Full PayFast response JSON
+
+TABLE: POINTS
+Column Name,Data Type,Nullable,Default,Important Notes
+points_id,VARCHAR,NOT NULL,-,Primary Key
+driver_id,VARCHAR,NOT NULL,-,Foreign Key to drivers
+season,VARCHAR,NULL,-,Championship year (2026)
+event,VARCHAR,NULL,-,Event name
+round,VARCHAR,NULL,-,Round number
+class,VARCHAR,NULL,-,Racing class
+qualifying_points,INTEGER,NULL,-,Qualifying points
+heat1_points,INTEGER,NULL,-,Heat 1 points
+heat2_points,INTEGER,NULL,-,Heat 2 points
+final_points,INTEGER,NULL,-,Final race points
+penalties_points,INTEGER,NULL,-,Penalty deductions
+total_points,INTEGER,NULL,-,Total event points
+position,VARCHAR,NULL,-,Final position (1st, 2nd, etc)
+notes,TEXT,NULL,-,Admin notes
+created_at,TIMESTAMP,NULL,now(),Record creation
+created_by,VARCHAR,NULL,-,Admin who entered
+
+TABLE: PASSWORD_RESETS
+Column Name,Data Type,Nullable,Default,Important Notes
+reset_id,VARCHAR,NOT NULL,-,Primary Key
+driver_id,VARCHAR,NOT NULL,-,Foreign Key to drivers
+token,VARCHAR,NULL,-,Plain text token for email
+token_hash,VARCHAR,NULL,-,Hashed token for storage
+created_at,TIMESTAMP,NULL,now(),When token generated
+expires_at,TIMESTAMP,NULL,-,Expires after 24 hours
+used_at,TIMESTAMP,NULL,-,When password was reset
+used_by,VARCHAR,NULL,-,IP address or user identifier

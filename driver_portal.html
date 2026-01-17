@@ -1841,6 +1841,7 @@
 
     function clearPortal(){
       currentDriverId = "";
+      window.currentDriverId = "";
       currentPin = "";
       currentProfile = null;
 
@@ -2339,7 +2340,56 @@
 
         // Call new loginWithPassword endpoint
         const profile = await api('loginWithPassword', { email, password });
-        currentDriverId = (profile && profile.driver && profile.driver.driver_id) ? String(profile.driver.driver_id) : "";
+        
+        console.log('🔐 ===== LOGIN RESPONSE ANALYSIS =====');
+        console.log('📦 Full profile object:', profile);
+        console.log('📦 typeof profile:', typeof profile);
+        console.log('📦 profile === null:', profile === null);
+        console.log('📦 profile === undefined:', profile === undefined);
+        console.log('📦 Object.keys(profile):', Object.keys(profile || {}));
+        
+        if (profile && profile.driver) {
+          console.log('\n👤 DRIVER OBJECT FOUND');
+          console.log('   typeof profile.driver:', typeof profile.driver);
+          console.log('   Object.keys(profile.driver):', Object.keys(profile.driver));
+          console.log('   profile.driver (full):', JSON.stringify(profile.driver, null, 2));
+          
+          // Check for all possible ID field names
+          const idCandidates = ['driver_id', 'id', 'driverId', 'driver_ID', 'DriverId'];
+          console.log('\n🔍 Checking for ID fields:');
+          idCandidates.forEach(key => {
+            const value = profile.driver[key];
+            console.log(`   profile.driver.${key}: ${value} (exists: ${value !== undefined})`);
+          });
+        } else {
+          console.log('❌ NO DRIVER OBJECT FOUND IN PROFILE');
+          console.log('   profile.driver:', profile?.driver);
+        }
+        
+        // Try to get driver_id from profile.driver or profile.driver_id or profile.id
+        let driverId = "";
+        if (profile && profile.driver && profile.driver.driver_id) {
+          driverId = String(profile.driver.driver_id);
+          console.log('✅ Found driver_id at profile.driver.driver_id:', driverId);
+        } else if (profile && profile.driver_id) {
+          driverId = String(profile.driver_id);
+          console.log('✅ Found driver_id at profile.driver_id:', driverId);
+        } else if (profile && profile.id) {
+          driverId = String(profile.id);
+          console.log('✅ Found driver_id at profile.id:', driverId);
+        } else {
+          console.log('❌ COULD NOT FIND DRIVER_ID IN PROFILE!');
+          if (profile && profile.driver) {
+            console.log('   Checked: profile.driver.driver_id, profile.driver_id, profile.id');
+            console.log('   All returned undefined');
+            console.log('   Available driver keys:', Object.keys(profile.driver).join(', '));
+          }
+        }
+        
+        window.currentDriverId = driverId;
+        currentDriverId = driverId;  // Keep local scope version too for backwards compatibility
+        console.log('🔐 ===== END LOGIN ANALYSIS =====\n');
+        
         currentEmail = email;
         currentPassword = password;
 
@@ -3020,7 +3070,7 @@
                 <div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📅 ${eventDate}</div>
                 <div style="font-size: 13px; color: #6b7280;">📍 ${event.location || 'TBA'}</div>
               </div>
-              <div style="text-align: right;">
+              <div style="text-align: right; margin-left: 24px;">
                 <div style="font-size: 18px; font-weight: 700; color: #22c55e;">R${parseFloat(event.entry_fee).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Entry Fee</div>
               </div>
@@ -3063,7 +3113,9 @@
       document.getElementById('selectedEventLocation').textContent = location ? ('📍 ' + location) : '';
       
       closeEventSelectionModal();
-      document.getElementById('raceEntryModal').style.display = 'flex';
+      
+      // Open race entry modal with proper class initialization
+      openRaceEntryModal();
     }
     
     function closeRaceEntryModal() {
@@ -3231,6 +3283,27 @@
           if (teamCode.toLowerCase() === 'k0k0r0') {
             // Free registration with team code
             console.log('Free registration with team code for class:', driverClass, 'Items:', selectedItems);
+            console.log('Event ID:', window.selectedEventId);
+            console.log('Driver ID:', window.currentDriverId);
+            console.log('Email:', currentEmail);
+            console.log('Current Profile:', currentProfile);
+            
+            // Validate required fields
+            if (!window.selectedEventId) {
+              showModalError('Missing event ID. Please select an event first.');
+              setButtonLoading_(paymentBtn, false, 'Proceed to Payment');
+              return;
+            }
+            if (!window.currentDriverId) {
+              showModalError('Missing driver ID. Please refresh and login again.');
+              setButtonLoading_(paymentBtn, false, 'Proceed to Payment');
+              return;
+            }
+            if (!currentEmail) {
+              showModalError('Missing email. Please refresh and login again.');
+              setButtonLoading_(paymentBtn, false, 'Proceed to Payment');
+              return;
+            }
             
             // Submit free entry via API
             setButtonLoading_(paymentBtn, true, 'Registering...');
