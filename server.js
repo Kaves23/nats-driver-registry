@@ -2329,6 +2329,178 @@ app.get('/api/getDriverEntries/:driverId', async (req, res) => {
   }
 });
 
+// ============= ADMIN EVENT MANAGEMENT ENDPOINTS =============
+
+// Get all events with registration counts
+app.get('/api/getAllEvents', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT e.event_id, e.event_name, e.event_date, e.location, e.entry_fee, 
+              e.registration_deadline, e.created_at,
+              COUNT(r.race_entry_id) AS registration_count
+       FROM events e
+       LEFT JOIN race_entries r ON e.event_id = r.event_id
+       GROUP BY e.event_id
+       ORDER BY e.event_date DESC`
+    );
+
+    console.log(`✅ Retrieved ${result.rows.length} events with registration counts`);
+    res.json({ success: true, events: result.rows });
+  } catch (err) {
+    console.error('❌ getAllEvents error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get single event details
+app.get('/api/getEvent/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const result = await pool.query(
+      `SELECT * FROM events WHERE event_id = $1`,
+      [eventId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    res.json({ success: true, event: result.rows[0] });
+  } catch (err) {
+    console.error('❌ getEvent error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Create new event
+app.post('/api/createEvent', async (req, res) => {
+  try {
+    const { event_name, event_date, location, entry_fee, registration_deadline } = req.body;
+
+    if (!event_name || !event_date || !location || !entry_fee || !registration_deadline) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    const event_id = `event_${Date.now()}`;
+
+    const result = await pool.query(
+      `INSERT INTO events (event_id, event_name, event_date, location, entry_fee, registration_deadline)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [event_id, event_name, event_date, location, entry_fee, registration_deadline]
+    );
+
+    console.log(`✅ Event created: ${event_name}`);
+    res.json({ success: true, event: result.rows[0] });
+  } catch (err) {
+    console.error('❌ createEvent error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Update event
+app.put('/api/updateEvent/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { event_name, event_date, location, entry_fee, registration_deadline } = req.body;
+
+    const result = await pool.query(
+      `UPDATE events 
+       SET event_name = $1, event_date = $2, location = $3, entry_fee = $4, registration_deadline = $5
+       WHERE event_id = $6
+       RETURNING *`,
+      [event_name, event_date, location, entry_fee, registration_deadline, eventId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    console.log(`✅ Event updated: ${event_name}`);
+    res.json({ success: true, event: result.rows[0] });
+  } catch (err) {
+    console.error('❌ updateEvent error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Delete event
+app.delete('/api/deleteEvent/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    // Check if event has registrations
+    const checkResult = await pool.query(
+      `SELECT COUNT(*) as count FROM race_entries WHERE event_id = $1`,
+      [eventId]
+    );
+
+    if (checkResult.rows[0].count > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot delete event with ${checkResult.rows[0].count} registrations` 
+      });
+    }
+
+    const result = await pool.query(
+      `DELETE FROM events WHERE event_id = $1 RETURNING *`,
+      [eventId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    console.log(`✅ Event deleted: ${eventId}`);
+    res.json({ success: true, message: 'Event deleted successfully' });
+  } catch (err) {
+    console.error('❌ deleteEvent error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get event registrations with driver details
+app.get('/api/getEventRegistrations/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const eventResult = await pool.query(
+      `SELECT * FROM events WHERE event_id = $1`,
+      [eventId]
+    );
+
+    if (eventResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const registrationsResult = await pool.query(
+      `SELECT r.race_entry_id, r.event_id, r.driver_id, r.payment_status, r.entry_status, 
+              r.amount_paid, r.created_at,
+              d.first_name AS driver_first_name, d.last_name AS driver_last_name, 
+              d.email AS driver_email, d.race_class AS driver_class
+       FROM race_entries r
+       JOIN drivers d ON r.driver_id = d.driver_id
+       WHERE r.event_id = $1
+       ORDER BY r.created_at DESC`,
+      [eventId]
+    );
+
+    console.log(`✅ Retrieved ${registrationsResult.rows.length} registrations for event ${eventId}`);
+    res.json({ 
+      success: true, 
+      event: eventResult.rows[0],
+      registrations: registrationsResult.rows 
+    });
+  } catch (err) {
+    console.error('❌ getEventRegistrations error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// ============= END ADMIN EVENT ENDPOINTS =============
+
+
 app.post('/api/getDriverRaceEntries', async (req, res) => {
   try {
     const { email } = req.body;

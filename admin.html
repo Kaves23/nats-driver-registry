@@ -578,6 +578,7 @@
 
     <div class="admin-tabs">
       <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
+      <button class="tab-btn" onclick="switchTab('events')">Events</button>
       <button class="tab-btn" onclick="switchTab('raceEntries')">Race Entries</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
     </div>
@@ -631,6 +632,34 @@
           </thead>
           <tbody id="driversTable">
             <tr><td colspan="22" class="loading">Loading drivers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Events Tab -->
+    <div id="eventsTab" class="admin-content" style="display: none;">
+      <div class="filters-bar">
+        <button class="search-btn" onclick="showCreateEventModal()" style="background: #22c55e; margin-right: 10px;">+ New Event</button>
+        <button class="search-btn" onclick="loadEvents()">Refresh Events</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Event Name</th>
+              <th>Date</th>
+              <th>Location</th>
+              <th>Entry Fee</th>
+              <th>Registration Deadline</th>
+              <th>Registrations</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="eventsTable">
+            <tr><td colspan="8" class="loading">Loading events...</td></tr>
           </tbody>
         </table>
       </div>
@@ -847,6 +876,38 @@
         <button class="cancel-btn" onclick="closeEditModal()">Cancel</button>
         <button class="save-btn" onclick="resendWelcomeEmail()" style="background: #10b981;">Resend Welcome Email</button>
         <button class="save-btn" onclick="saveDriver()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event Modal -->
+  <div class="modal" id="eventModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <h2 id="eventModalTitle">Create Event</h2>
+      <div class="form-group">
+        <label>Event Name</label>
+        <input type="text" id="eventName" placeholder="e.g., Northern Regions Crown">
+      </div>
+      <div class="form-group">
+        <label>Event Date</label>
+        <input type="date" id="eventDate">
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="eventLocation" placeholder="e.g., Redstar Raceway">
+      </div>
+      <div class="form-group">
+        <label>Entry Fee (R)</label>
+        <input type="number" id="eventEntryFee" placeholder="e.g., 2950" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Registration Deadline</label>
+        <input type="date" id="eventDeadline">
+      </div>
+      <div class="modal-buttons">
+        <button class="cancel-btn" onclick="closeEventModal()">Cancel</button>
+        <button id="eventDeleteBtn" class="cancel-btn" style="background: #ef4444; display: none;" onclick="deleteEvent()">Delete</button>
+        <button class="save-btn" onclick="saveEvent()">Save Event</button>
       </div>
     </div>
   </div>
@@ -1468,32 +1529,49 @@
     // Tab switching
     function switchTab(tabName) {
       const driversTab = document.getElementById('driversTab');
+      const eventsTab = document.getElementById('eventsTab');
       const raceEntriesTab = document.getElementById('raceEntriesTab');
       const messagesTab = document.getElementById('messagesTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
       if (tabName === 'drivers') {
         driversTab.style.display = 'block';
+        eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'none';
         messagesTab.style.display = 'none';
         tabs[0].classList.add('active');
         tabs[1].classList.remove('active');
         tabs[2].classList.remove('active');
-      } else if (tabName === 'raceEntries') {
+        tabs[3].classList.remove('active');
+      } else if (tabName === 'events') {
         driversTab.style.display = 'none';
-        raceEntriesTab.style.display = 'block';
+        eventsTab.style.display = 'block';
+        raceEntriesTab.style.display = 'none';
         messagesTab.style.display = 'none';
         tabs[0].classList.remove('active');
         tabs[1].classList.add('active');
         tabs[2].classList.remove('active');
+        tabs[3].classList.remove('active');
+        loadEvents();
+      } else if (tabName === 'raceEntries') {
+        driversTab.style.display = 'none';
+        eventsTab.style.display = 'none';
+        raceEntriesTab.style.display = 'block';
+        messagesTab.style.display = 'none';
+        tabs[0].classList.remove('active');
+        tabs[1].classList.remove('active');
+        tabs[2].classList.add('active');
+        tabs[3].classList.remove('active');
         loadRaceEntries();
       } else if (tabName === 'messages') {
         driversTab.style.display = 'none';
+        eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'none';
         messagesTab.style.display = 'block';
         tabs[0].classList.remove('active');
         tabs[1].classList.remove('active');
-        tabs[2].classList.add('active');
+        tabs[2].classList.remove('active');
+        tabs[3].classList.add('active');
         loadMessages();
       }
     }
@@ -1593,7 +1671,224 @@
       showToast('Feature coming soon', 'error');
     }
 
-    const adminPasswordEl = document.getElementById('adminPassword');
+    // ============= EVENT MANAGEMENT FUNCTIONS =============
+
+    let currentEvent = null;
+
+    async function loadEvents() {
+      try {
+        const response = await fetch('/api/getAllEvents');
+        const data = await response.json();
+        
+        if (!data.success) throw new Error(data.message || 'Failed to load events');
+        
+        displayEvents(data.events || []);
+      } catch (err) {
+        console.error('loadEvents error:', err);
+        document.getElementById('eventsTable').innerHTML = `<tr><td colspan="8" style="color: #ef4444;">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function displayEvents(events) {
+      const tbody = document.getElementById('eventsTable');
+      if (events.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No events found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = events.map(event => {
+        const eventDate = new Date(event.event_date).toLocaleDateString('en-ZA');
+        const deadline = new Date(event.registration_deadline).toLocaleDateString('en-ZA');
+        const created = new Date(event.created_at).toLocaleDateString('en-ZA');
+        const registrationsCount = event.registration_count || 0;
+
+        return `
+          <tr>
+            <td>${event.event_name}</td>
+            <td>${eventDate}</td>
+            <td>${event.location || '-'}</td>
+            <td>R${parseFloat(event.entry_fee).toLocaleString('en-ZA')}</td>
+            <td>${deadline}</td>
+            <td><strong>${registrationsCount}</strong></td>
+            <td>${created}</td>
+            <td>
+              <button class="action-btn" onclick="editEvent('${event.event_id}')" style="margin-right: 5px;">Edit</button>
+              <button class="action-btn" onclick="viewRegistrations('${event.event_id}')" style="background: #3b82f6;">Registrations</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function showCreateEventModal() {
+      currentEvent = null;
+      document.getElementById('eventModalTitle').textContent = 'Create Event';
+      document.getElementById('eventName').value = '';
+      document.getElementById('eventDate').value = '';
+      document.getElementById('eventLocation').value = '';
+      document.getElementById('eventEntryFee').value = '';
+      document.getElementById('eventDeadline').value = '';
+      document.getElementById('eventDeleteBtn').style.display = 'none';
+      document.getElementById('eventModal').style.display = 'flex';
+    }
+
+    async function editEvent(eventId) {
+      try {
+        const response = await fetch(`/api/getEvent/${eventId}`);
+        const data = await response.json();
+
+        if (!data.success) throw new Error(data.message || 'Failed to load event');
+
+        const event = data.event;
+        currentEvent = event;
+
+        document.getElementById('eventModalTitle').textContent = 'Edit Event';
+        document.getElementById('eventName').value = event.event_name;
+        document.getElementById('eventDate').value = event.event_date.split('T')[0];
+        document.getElementById('eventLocation').value = event.location || '';
+        document.getElementById('eventEntryFee').value = event.entry_fee;
+        document.getElementById('eventDeadline').value = event.registration_deadline.split('T')[0];
+        document.getElementById('eventDeleteBtn').style.display = 'block';
+        document.getElementById('eventModal').style.display = 'flex';
+      } catch (err) {
+        console.error('editEvent error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function saveEvent() {
+      const name = document.getElementById('eventName').value.trim();
+      const date = document.getElementById('eventDate').value;
+      const location = document.getElementById('eventLocation').value.trim();
+      const fee = parseFloat(document.getElementById('eventEntryFee').value);
+      const deadline = document.getElementById('eventDeadline').value;
+
+      if (!name || !date || !location || !fee || !deadline) {
+        showToast('Please fill in all fields', 'error');
+        return;
+      }
+
+      try {
+        const url = currentEvent ? `/api/updateEvent/${currentEvent.event_id}` : '/api/createEvent';
+        const method = currentEvent ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_name: name,
+            event_date: date,
+            location,
+            entry_fee: fee,
+            registration_deadline: deadline
+          })
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Failed to save event');
+
+        showToast(currentEvent ? 'Event updated successfully' : 'Event created successfully', 'success');
+        closeEventModal();
+        loadEvents();
+      } catch (err) {
+        console.error('saveEvent error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteEvent() {
+      if (!currentEvent) return;
+      
+      if (!confirm(`Are you sure you want to delete "${currentEvent.event_name}"? This cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/deleteEvent/${currentEvent.event_id}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Failed to delete event');
+
+        showToast('Event deleted successfully', 'success');
+        closeEventModal();
+        loadEvents();
+      } catch (err) {
+        console.error('deleteEvent error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    function closeEventModal() {
+      document.getElementById('eventModal').style.display = 'none';
+      currentEvent = null;
+    }
+
+    async function viewRegistrations(eventId) {
+      try {
+        const response = await fetch(`/api/getEventRegistrations/${eventId}`);
+        const data = await response.json();
+
+        if (!data.success) throw new Error(data.message || 'Failed to load registrations');
+
+        const registrations = data.registrations || [];
+        const event = data.event || {};
+
+        let html = `<h3 style="margin-bottom: 20px;">${event.event_name} - Registrations (${registrations.length})</h3>`;
+        
+        if (registrations.length === 0) {
+          html += '<p style="color: #999;">No registrations for this event yet</p>';
+        } else {
+          html += `
+            <table>
+              <thead>
+                <tr>
+                  <th>Driver Name</th>
+                  <th>Email</th>
+                  <th>Class</th>
+                  <th>Amount Paid</th>
+                  <th>Status</th>
+                  <th>Entry Status</th>
+                  <th>Registered</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${registrations.map(reg => `
+                  <tr>
+                    <td>${reg.driver_first_name} ${reg.driver_last_name}</td>
+                    <td>${reg.driver_email}</td>
+                    <td>${reg.driver_class}</td>
+                    <td>R${parseFloat(reg.amount_paid).toLocaleString('en-ZA')}</td>
+                    <td>${reg.payment_status}</td>
+                    <td>${reg.entry_status}</td>
+                    <td>${new Date(reg.created_at).toLocaleDateString('en-ZA')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        }
+
+        // Create a modal-like view
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+        modal.innerHTML = `
+          <div style="background: #2a2a2a; border-radius: 8px; max-width: 900px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 20px; border: 1px solid #404040;">
+            ${html}
+            <button class="cancel-btn" onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px;">Close</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      } catch (err) {
+        console.error('viewRegistrations error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // ============= END EVENT MANAGEMENT =============
+
+    
     if (adminPasswordEl) {
       adminPasswordEl.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') adminLogin();
