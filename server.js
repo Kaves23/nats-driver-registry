@@ -1864,35 +1864,24 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     console.log(`  passphrase=${passphraseEncoded}`);
 
     console.log(`🔐 Amount to charge: R${numAmount.toFixed(2)}`);
-    console.log(`🔐 Full signature string (Documentation Order): ${pfParamString}`);
+    console.log(`🔐 Full signature string: ${pfParamString}`);
 
     const signature = crypto
       .createHash('md5')
-      .update(pfParamString)
+      .update(pfParamString.trim())  // ✅ TRIM to remove any trailing whitespace
       .digest('hex');
 
     console.log(`✅ Generated signature: ${signature}`);
     console.log(`💳 Merchant ID: ${merchantId}`);
 
-    // Build PayFast URL with query parameters (INCLUDE merchant_key in URL)
-    const payFastParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(pfDataForPayFast)) {
-      payFastParams.append(key, value);
-    }
-    payFastParams.append('merchant_key', merchantKey);
-    payFastParams.append('signature', signature);
-
-    const payFastUrl = `https://www.payfast.co.za/eng/process?${payFastParams.toString()}`;
-
-    console.log(`Redirecting to PayFast with amount: R${numAmount.toFixed(2)}`);
-
-    // Return HTML with simple redirect
-    const redirectPage = `
+    // Return HTML form that POSTs to PayFast
+    // KEY: Form fields contain RAW (unencoded) values
+    // The signature was calculated using ENCODED values, but the form sends RAW values
+    const formHtml = `
       <!DOCTYPE html>
       <html>
       <head>
         <title>Processing Payment...</title>
-        <meta http-equiv="refresh" content="2; url='${payFastUrl}'">
         <style>
           body { font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f5; }
           .container { text-align: center; }
@@ -1907,13 +1896,34 @@ app.get('/api/initiateRacePayment', async (req, res) => {
           <p>Amount: <strong>R${numAmount.toFixed(2)}</strong></p>
           <p>Class: <strong>${raceClass}</strong></p>
           <p>Reference: <strong>${reference}</strong></p>
-          <p style="margin-top: 30px; color: #666; font-size: 14px;">If you are not automatically redirected, <a href="${payFastUrl}">click here</a> to continue to payment.</p>
         </div>
+        <form id="paymentForm" method="POST" action="https://www.payfast.co.za/eng/process">
+          <!-- RAW (unencoded) form values -->
+          <input type="hidden" name="merchant_id" value="${merchantId}">
+          <input type="hidden" name="merchant_key" value="${merchantKey}">
+          <input type="hidden" name="return_url" value="${returnUrl}">
+          <input type="hidden" name="cancel_url" value="${cancelUrl}">
+          <input type="hidden" name="notify_url" value="${notifyUrl}">
+          <input type="hidden" name="name_first" value="Race">
+          <input type="hidden" name="name_last" value="Entry">
+          <input type="hidden" name="email_address" value="noreply@nats.co.za">
+          <input type="hidden" name="amount" value="${numAmount.toFixed(2)}">
+          <input type="hidden" name="item_name" value="Race Entry - ${raceClass}">
+          <input type="hidden" name="item_description" value="Race Entry for ${raceClass} Class">
+          <input type="hidden" name="reference" value="${reference}">
+          <input type="hidden" name="signature" value="${signature}">
+        </form>
+        <script>
+          // Auto-submit form after a short delay
+          setTimeout(function() {
+            document.getElementById('paymentForm').submit();
+          }, 1000);
+        </script>
       </body>
       </html>
     `;
 
-    res.send(redirectPage);
+    res.send(formHtml);
   } catch (err) {
     console.error('❌ initiateRacePayment error:', err.message);
     res.status(400).send(`<h1>Payment Error</h1><p>${err.message}</p><p><a href="/">Back to Home</a></p>`);
