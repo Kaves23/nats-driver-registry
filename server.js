@@ -1943,14 +1943,14 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
       throw new Error('Missing race class or email');
     }
 
-    const raceEntryId = uuidv4();
+    const race_id = `race_free_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const reference = `RACE-FREE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
     // Store the free entry in database
     await pool.query(
-      `INSERT INTO race_entries (race_entry_id, race_event, race_class, driver_email, payment_reference, payment_status, total_amount, entry_items)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [raceEntryId, 'Event Pending', raceClass, email, reference, 'Completed', 0, JSON.stringify(selectedItems || [])]
+      `INSERT INTO race_entries (race_id, race_class, driver_email, payment_reference, payment_status, total_amount, entry_items, entry_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+      [race_id, raceClass, email, reference, 'Completed', 0, JSON.stringify(selectedItems || [])]
     );
 
     console.log(`✅ Free race entry recorded: ${reference} - ${raceClass}`);
@@ -2128,12 +2128,12 @@ app.post('/api/paymentNotify', async (req, res) => {
     }
 
     // Store payment record
-    const raceEntryId = uuidv4();
+    const race_id = `race_paid_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     await pool.query(
-      `INSERT INTO race_entries (race_entry_id, race_event, race_class, payment_reference, payment_status, total_amount, driver_email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5, driver_email = $7`,
-      [raceEntryId, 'Event Pending', raceClass, m_payment_id, 'Completed', amount_gross, email_address]
+      `INSERT INTO race_entries (race_id, race_class, payment_reference, payment_status, total_amount, driver_email, entry_date)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $4, driver_email = $6`,
+      [race_id, raceClass, m_payment_id, 'Completed', amount_gross, email_address]
     );
 
     console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross}`);
@@ -2256,10 +2256,10 @@ app.post('/api/getDriverRaceEntries', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT race_entry_id, race_class, payment_status, total_amount, entry_items, created_at
+      `SELECT race_id, race_class, payment_status, total_amount, entry_items, entry_date
        FROM race_entries 
        WHERE driver_email = $1
-       ORDER BY created_at DESC`,
+       ORDER BY entry_date DESC`,
       [email.toLowerCase()]
     );
 
