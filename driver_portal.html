@@ -578,15 +578,12 @@
     .toast.good{ border-left: 4px solid var(--spring); }
     .toast.bad{ border-left: 4px solid #ef4444; }
 
-    /* Toast positioning - fixed to appear over modals */
+    /* Toast positioning - inside panel container */
     #toast {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      right: auto;
-      z-index: 10000;
-      max-width: 400px;
+      position: static;
+      max-width: 100%;
       pointer-events: auto;
+      margin-bottom: 12px;
     }
 
     /* Portal tabs */
@@ -855,7 +852,6 @@
         </div>
 
         <div id="bodyArea" style="display:none;">
-          <div id="toast"></div>
 
           <!-- Confirmation Modal -->
           <div id="confirmationModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9999; align-items: center; justify-content: center;">
@@ -896,6 +892,7 @@
               <div class="panel">
                 <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Portal Status</div>
                 <div id="portalStatus">
+                  <div id="toast"></div>
                   <div class="statusCard">
                     <div class="statusTop">
                       <div class="statusTitle">Session</div>
@@ -1038,32 +1035,19 @@
 
               <div class="portalSection" data-psection="race">
                 <div class="panel">
-                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Race Entry</div>
-                  <div class="hint">Submit your entry for upcoming NATS events. Your driver information is pre-filled for your convenience.</div>
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>View Entries</div>
+                  <div class="hint">Select an event to view all driver entries for that race.</div>
 
                   <div class="row">
                     <div>
-                      <label>NATS event</label>
-                      <select id="race_nat">
+                      <label>Select Event</label>
+                      <select id="entriesEventSelect">
                         <option value="">Loading events...</option>
                       </select>
                     </div>
-                    <div>
-                      <label>Entry type</label>
-                      <select id="race_entry_type">
-                        <option value="full" selected>Full NAT</option>
-                        <option value="sat">Saturday Only</option>
-                        <option value="sun">Sunday Only</option>
-                      </select>
-                    </div>
                   </div>
 
-                  <label>Notes (optional)</label>
-                  <textarea id="race_notes" placeholder="Add any special notes or requests"></textarea>
-
-                  <div class="btnbar">
-                    <button class="btn primary" id="btnSubmitRace" type="button" disabled>Enter Race</button>
-                  </div>
+                  <div id="entriesTableContainer" style="margin-top: 20px;"></div>
                 </div>
               </div>
 
@@ -1103,6 +1087,38 @@
               </div>
 
               <div class="portalSection" data-psection="payments">
+                <!-- ENTER A RACE BUTTON - BLUE GLOWING CONTAINER -->
+                <div class="panel">
+                  <div id="enterRaceBox" style="padding: 20px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 8px; border: 2px solid #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);">
+                    <button id="btnQuickEntry" type="button" style="width: 100%; padding: 16px 24px; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: none; background: #3b82f6; color: white; border-radius: 6px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); position: relative; overflow: hidden; animation: slideInDown 0.5s ease-out;">
+                      ENTER A RACE
+                    </button>
+                    <style>
+                      @keyframes slideInDown {
+                        from {
+                          opacity: 0;
+                          transform: translateY(-20px);
+                        }
+                        to {
+                          opacity: 1;
+                          transform: translateY(0);
+                        }
+                      }
+                      #btnQuickEntry {
+                        cursor: pointer;
+                      }
+                      #btnQuickEntry:hover {
+                        background: #2563eb !important;
+                        box-shadow: 0 0 25px rgba(59, 130, 246, 0.8) !important;
+                        transform: translateY(-2px);
+                      }
+                      #btnQuickEntry:active {
+                        transform: translateY(0);
+                      }
+                    </style>
+                  </div>
+                </div>
+
                 <!-- NEXT RACE DETAILS SECTION -->
                 <div class="panel">
                   <div class="panelTitle"><span class="accentBar" id="nextRaceAccentBar" style="background:#ef4444"></span>Next Race</div>
@@ -1135,7 +1151,6 @@
                       </div>
                     </div>
                     <div id="nextRaceEntryDate" style="font-size: 11px; color: #6b7280; margin-bottom: 12px;"></div>
-                    <button class="btn primary" id="btnQuickEntry" type="button" style="width: 100%;">Enter This Race</button>
                   </div>
                 </div>
 
@@ -1144,11 +1159,11 @@
                   <div class="panelTitle"><span class="accentBar" style="background:#3b82f6"></span>Payment & Entry Status</div>
                   
                   <div style="padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Engine Rental</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Engine Rental (Pool)</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
                       <div style="font-size: 14px; color: #6b7280;">Status:</div>
-                      <div id="p_engine_fee_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
-                        No
+                      <div id="p_season_engine_rental_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
+                        Not Registered
                       </div>
                     </div>
                   </div>
@@ -1623,6 +1638,7 @@
     let currentEmail = "";
     let currentPassword = "";
     let currentProfile = null;
+    let currentDriverData = {};
 
     function escapeHtml(s){
       return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -1858,7 +1874,6 @@
 
       document.getElementById("btnLogout").disabled = true;
       document.getElementById("btnSaveProfile").disabled = true;
-      document.getElementById("btnSubmitRace").disabled = true;
       document.getElementById("btnSendRequest").disabled = true;
 
       setStatusCard_();
@@ -1875,6 +1890,7 @@
 
     function renderPortal(profile, identShown){
       const d = profile.driver || {};
+      currentDriverData = d;  // Store in global for use in other functions
       const contacts = profile.contacts || [];
       const med = profile.medical || {};
       const points = profile.points || [];
@@ -1895,7 +1911,6 @@
       document.getElementById("portalSections").style.display = "block";
       document.getElementById("btnLogout").disabled = false;
       document.getElementById("btnSaveProfile").disabled = false;
-      document.getElementById("btnSubmitRace").disabled = false;
       document.getElementById("btnSendRequest").disabled = false;
 
       document.getElementById("p_email").value = d.email || identShown || "";
@@ -1909,12 +1924,13 @@
       document.getElementById("p_team_name").value = d.team_name || "";
       document.getElementById("p_coach_name").value = d.coach_name || "";
 
-      // Update engine fee status (Season Engine Rental)
-      const engineFeeEl = document.getElementById("p_engine_fee_status");
-      const engineFeePaid = d.paid_engine_fee === 'Y' ? true : false;
-      if (engineFeeEl) {
-        engineFeeEl.textContent = engineFeePaid ? 'Registered' : 'Not Registered';
-        engineFeeEl.style.background = engineFeePaid ? '#10b981' : '#ef4444';
+      // Update engine rental status based on pool engine rentals
+      // If driver has season engine rental from pool, this is always Registered/Green
+      const seasonEngineRentalEl = document.getElementById("p_season_engine_rental_status");
+      const hasSeasonEngineRental = d.season_engine_rental === 'Y' ? true : false;
+      if (seasonEngineRentalEl) {
+        seasonEngineRentalEl.textContent = hasSeasonEngineRental ? 'Registered' : 'Not Registered';
+        seasonEngineRentalEl.style.background = hasSeasonEngineRental ? '#10b981' : '#ef4444';
       }
 
       // Update season entry status
@@ -1939,10 +1955,10 @@
       }
 
       // Update engine rental status (Next Race Engine Rental)
-      // If Season Engine Rental (paid_engine_fee) is paid, this is always Registered/Green
+      // If Season Engine Rental from pool is paid, this is always Registered/Green
       const engineRentalEl = document.getElementById("p_engine_rental_status");
       if (engineRentalEl) {
-        if (engineFeePaid) {
+        if (hasSeasonEngineRental) {
           // Season engine rental is paid, so next race engine rental is always Registered
           engineRentalEl.textContent = 'Registered';
           engineRentalEl.style.background = '#10b981';
@@ -1956,13 +1972,16 @@
       }
 
       // Populate payment options based on class
-      populatePaymentOptions(d.class);
+      // populatePaymentOptions(d.class);  // Commented out - using pool engine rentals instead
       
       // Load payment history
       loadPaymentHistory();
 
-      // Load events into race entry dropdown
-      loadRaceEntryDropdown();
+      // Load pool engine rental options
+      loadPoolEngineRentals();
+
+      // Load events into View Entries dropdown
+      loadEntriesEventDropdown();
 
       const rows = (contacts.length ? contacts : [{}]).map(c => `
         <tr>
@@ -2107,9 +2126,9 @@
       }
     }
 
-    // Load available events into Race Entry dropdown
-    function loadRaceEntryDropdown() {
-      const dropdown = document.getElementById('race_nat');
+    // Load available events into View Entries dropdown
+    function loadEntriesEventDropdown() {
+      const dropdown = document.getElementById('entriesEventSelect');
       if (!dropdown) return;
 
       fetch('/api/getAvailableEvents')
@@ -2133,11 +2152,90 @@
               option.textContent = `${event.event_name} (${eventDate})`;
               dropdown.appendChild(option);
             });
+
+            // Add event listener for selection
+            dropdown.addEventListener('change', (e) => {
+              if (e.target.value) {
+                loadEventEntries(e.target.value);
+              } else {
+                document.getElementById('entriesTableContainer').innerHTML = '';
+              }
+            });
           }
         })
         .catch(error => {
           console.error('Error loading events:', error);
           dropdown.innerHTML = '<option value="">Error loading events</option>';
+        });
+    }
+
+    // Load and display entries for selected event
+    function loadEventEntries(eventId) {
+      const container = document.getElementById('entriesTableContainer');
+      if (!container) return;
+
+      container.innerHTML = '<p>Loading entries...</p>';
+
+      fetch(`/api/getEventRegistrations/${eventId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.registrations) {
+            const entries = data.registrations;
+            
+            if (entries.length === 0) {
+              container.innerHTML = '<p style="color: #999; text-align: center;">No entries for this event yet.</p>';
+              return;
+            }
+
+            // Create table HTML
+            let tableHTML = `
+              <table class="table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Driver Name</th>
+                    <th>Email</th>
+                    <th>Class</th>
+                    <th>Status</th>
+                    <th>Entry Date</th>
+                    <th>Amount Paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+
+            entries.forEach(entry => {
+              const entryDate = new Date(entry.created_at).toLocaleDateString('en-ZA');
+              const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
+              const email = entry.driver_email || '';
+              const driverClass = entry.driver_class || '—';
+              const status = entry.entry_status || 'Pending';
+              const amountPaid = entry.amount_paid || '0';
+
+              tableHTML += `
+                <tr>
+                  <td>${escapeHtml(driverName)}</td>
+                  <td>${escapeHtml(email)}</td>
+                  <td>${escapeHtml(driverClass)}</td>
+                  <td>${escapeHtml(status)}</td>
+                  <td>${escapeHtml(entryDate)}</td>
+                  <td>R${parseFloat(amountPaid).toFixed(2)}</td>
+                </tr>
+              `;
+            });
+
+            tableHTML += `
+                </tbody>
+              </table>
+            `;
+
+            container.innerHTML = tableHTML;
+          } else {
+            container.innerHTML = '<p style="color: #999; text-align: center;">No entries found.</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading entries:', error);
+          container.innerHTML = '<p style="color: #d32f2f;">Error loading entries. Please try again.</p>';
         });
     }
 
@@ -2398,6 +2496,200 @@
         console.error('Error loading payment history:', err);
         container.innerHTML = '<div style="color: #ef4444; padding: 12px;">Error loading payment history</div>';
       });
+    }
+
+    // ====== POOL ENGINE RENTAL SECTION ======
+    function loadPoolEngineRentals() {
+      const container = document.getElementById('paymentsContainer');
+      if (!container || !currentDriverId) return;
+
+      // Get driver's class - should be available in the portal context
+      const driverClass = currentDriverData?.class || 'MINI ROK';
+      
+      // Pricing structure for pool engine rentals
+      const pricingStructure = {
+        'CADET': [
+          { type: 'Full Season Entry', price: 23800, description: 'Full season championship entry' }
+        ],
+        'MINI ROK': [
+          { type: 'Nationals', price: 23200, description: 'National championship (8 events)' },
+          { type: 'CT Regionals', price: 23200, description: 'CT Regional events' },
+          { type: 'ALL-IN National', price: 75640, description: 'Complete national season package' }
+        ],
+        'OK': [
+          { type: 'Engine Nationals', price: 44000, description: 'Engine rental for nationals' },
+          { type: 'Engine Regionals (CT)', price: 44000, description: 'Engine rental for CT regionals' },
+          { type: 'ALL-IN Nationals', price: 107760, description: 'Complete nationals package' }
+        ]
+      };
+
+      const options = pricingStructure[driverClass] || pricingStructure['MINI ROK'];
+
+      // Fetch existing rentals to show status
+      fetch(`/api/getPoolEngineRentals/${currentDriverId}`)
+        .then(r => r.json())
+        .then(data => {
+          const rentals = data.data || [];
+          const currentRental = rentals.length > 0 ? rentals[0] : null;
+
+          let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">';
+          
+          options.forEach(option => {
+            const isCurrentRental = currentRental && currentRental.rental_type === option.type;
+            const statusStyle = isCurrentRental ? 
+              'background: #ecfdf5; border-left: 4px solid #10b981;' : 
+              'background: #f9fafb; border-left: 4px solid #d1d5db;';
+            
+            const statusText = isCurrentRental ? 
+              `<span style="color: #10b981; font-weight: 600; font-size: 12px;">✓ REGISTERED</span>` : 
+              `<span style="color: #6b7280; font-weight: 600; font-size: 12px;">Not yet registered</span>`;
+
+            html += `
+              <div style="${statusStyle} border-radius: 6px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #1f2937;">${option.type}</div>
+                <div style="color: #6b7280; font-size: 12px; margin-bottom: 12px;">${option.description}</div>
+                <div style="font-size: 18px; font-weight: 700; color: #ef4444; margin-bottom: 12px;">R${option.price.toLocaleString('en-ZA')}</div>
+                <div style="margin-bottom: 12px; font-size: 12px;">
+                  ${statusText}
+                </div>
+                <button type="button" class="poolEngineRentalBtn" data-class="${driverClass}" data-type="${option.type}" data-price="${option.price}" ${isCurrentRental ? 'disabled' : ''} style="width: 100%; padding: 10px; background: ${isCurrentRental ? '#d1d5db' : '#ef4444'}; color: white; border: none; border-radius: 4px; cursor: ${isCurrentRental ? 'default' : 'pointer'}; font-weight: 600; font-size: 13px; transition: background 0.2s;">
+                  ${isCurrentRental ? 'Already Registered' : 'Pay Now'}
+                </button>
+              </div>
+            `;
+          });
+
+          html += '</div>';
+          container.innerHTML = html;
+
+          // Attach click handlers to payment buttons
+          const btns = container.querySelectorAll('.poolEngineRentalBtn:not([disabled])');
+          btns.forEach(btn => {
+            btn.addEventListener('click', async function() {
+              const rentalClass = this.dataset.class;
+              const rentalType = this.dataset.type;
+              const amount = parseFloat(this.dataset.price);
+              
+              // Get email from multiple sources: currentDriverData, form input, or contacts
+              let emailToUse = currentDriverData?.email;
+              
+              if (!emailToUse) {
+                const emailEl = document.getElementById('p_email');
+                if (emailEl && emailEl.value) {
+                  emailToUse = emailEl.value;
+                }
+              }
+              
+              if (!emailToUse) {
+                alert('Email address not found. Please update your profile.');
+                return;
+              }
+
+              try {
+                // Show loading overlay
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  background: rgba(0, 0, 0, 0.7);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  z-index: 9999;
+                  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+                  animation: fadeIn 0.3s ease-in;
+                `;
+                
+                const message = document.createElement('div');
+                message.style.cssText = `
+                  background: white;
+                  padding: 40px;
+                  border-radius: 12px;
+                  text-align: center;
+                  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                  animation: slideInMessage 0.4s ease-out;
+                `;
+                
+                // Add animation styles
+                const styleEl = document.createElement('style');
+                styleEl.textContent = `
+                  @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                  }
+                  @keyframes slideInMessage {
+                    from { opacity: 0; transform: translateY(-20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                  }
+                `;
+                document.head.appendChild(styleEl);
+                
+                message.innerHTML = `
+                  <div style="font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 16px;">Processing Payment</div>
+                  <div style="font-size: 14px; color: #6b7280; margin-bottom: 24px;">Redirecting you to PayFast...</div>
+                  <div style="
+                    width: 40px;
+                    height: 40px;
+                    border: 4px solid #e5e7eb;
+                    border-top-color: #ef4444;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto;
+                  "></div>
+                  <style>
+                    @keyframes spin {
+                      to { transform: rotate(360deg); }
+                    }
+                  </style>
+                `;
+                
+                overlay.appendChild(message);
+                document.body.appendChild(overlay);
+                
+                // Fetch payment form from server
+                const params = new URLSearchParams({
+                  class: rentalClass,
+                  rentalType: rentalType,
+                  amount: amount,
+                  email: emailToUse,
+                  driverId: currentDriverId
+                });
+                
+                const response = await fetch(`/api/initiatePoolEnginePayment?${params}`);
+                const htmlForm = await response.text();
+                
+                // Create a temporary form container and submit
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlForm;
+                document.body.appendChild(tempDiv);
+                
+                const form = tempDiv.querySelector('form');
+                if (form) {
+                  form.submit();
+                  
+                  // Close overlay after form submits
+                  setTimeout(() => {
+                    overlay.remove();
+                  }, 500);
+                } else {
+                  console.error('Form not found in response');
+                  overlay.remove();
+                  alert('Error initiating payment. Please try again.');
+                }
+              } catch (err) {
+                console.error('Error:', err);
+                alert('Error processing payment request');
+              }
+            });
+          });
+        })
+        .catch(err => {
+          console.error('Error loading pool engine rentals:', err);
+          container.innerHTML = '<div style="color: #ef4444; padding: 12px;">Error loading rental options</div>';
+        });
     }
 
     function looksLikeEmail_(s){
@@ -2782,45 +3074,7 @@
       }
     });
 
-    /* SUBMIT RACE ENTRY */
-    document.getElementById("btnSubmitRace").addEventListener("click", async ()=>{
-      const btn = document.getElementById("btnSubmitRace");
-      try {
-        toast("", "");
-        if(!currentEmail || !currentPassword) throw new Error("Not logged in.");
 
-        setButtonLoading_(btn, true, "Enter Race");
-
-        const raceEntry = {
-          driver_id: currentDriverId,
-          email: currentEmail,
-          password: currentPassword,
-          race_name: document.getElementById("race_nat").value || "Summer Nats",
-          entry_type: document.getElementById("race_entry_type").value || "full",
-          notes: document.getElementById("race_notes").value.trim() || ""
-        };
-
-        // Call server to submit race entry
-        const result = await api('submitRaceEntry', raceEntry);
-
-        toast("good", "Race entry submitted successfully!");
-        document.getElementById("race_notes").value = "";
-        
-        setStatusCard_({
-          chipText: "Entry Submitted",
-          chipKind: "ok",
-          driver: currentProfile ? `${currentProfile.driver.first_name || ""} ${currentProfile.driver.last_name || ""}`.trim() : "—",
-          klass: currentProfile ? (currentProfile.driver.class || "—") : "—",
-          ident: currentEmail,
-          status: "Entry Pending",
-          note: `You are entered for ${raceEntry.race_name}. Entry is pending admin review.`
-        });
-      } catch(err) {
-        toast("bad", err.message || "Failed to submit race entry.");
-      } finally {
-        setButtonLoading_(btn, false, "Enter Race");
-      }
-    });
 
     /* Registration */
     document.getElementById("btnRegister").addEventListener("click", async ()=>{
@@ -3030,49 +3284,55 @@
       'CADET': {
         entry: { name: 'Race Entry', price: 1950 },
         items: [
+          { name: 'Engine Rental', price: 0, optional: false, disabled: true, note: 'N/A' },
+          { name: 'Controlled Fuel', price: 0, optional: false, disabled: true, note: 'N/A' },
           { name: 'Rent Transponder', price: 250, optional: true },
-          { name: 'Tyres', price: 0, optional: true, disabled: true, note: 'N/A' },
-          { name: 'Engine Rental', price: 0, optional: true, disabled: true, note: 'N/A' }
+          { name: 'Tyres', price: 0, optional: true, disabled: true, note: 'N/A' }
         ]
       },
       'MINI ROK U/10': {
         entry: { name: 'Regional Entry', price: 2950 },
         items: [
+          { name: 'Engine Rental', price: 3500, optional: false },
+          { name: 'Controlled Fuel', price: 405, optional: false },
           { name: 'Tyres (Optional)', price: 3950, optional: true },
-          { name: 'Rent Transponder', price: 250, optional: true },
-          { name: 'Engine Rental', price: 3500, optional: true }
+          { name: 'Rent Transponder', price: 250, optional: true }
         ]
       },
       'MINI ROK': {
         entry: { name: 'Regional Entry', price: 2950 },
         items: [
+          { name: 'Engine Rental', price: 3500, optional: false },
+          { name: 'Controlled Fuel', price: 405, optional: false },
           { name: 'Tyres (Optional)', price: 3950, optional: true },
-          { name: 'Rent Transponder', price: 250, optional: true },
-          { name: 'Engine Rental', price: 3500, optional: true }
+          { name: 'Rent Transponder', price: 250, optional: true }
         ]
       },
       'OK-J': {
         entry: { name: 'Regional Entry', price: 2950 },
         items: [
+          { name: 'Engine Rental', price: 6500, optional: false },
+          { name: 'Controlled Fuel', price: 720, optional: false },
           { name: 'Tyres (Optional)', price: 4730, optional: true },
-          { name: 'Rent Transponder', price: 250, optional: true },
-          { name: 'Engine Rental', price: 6500, optional: true }
+          { name: 'Rent Transponder', price: 250, optional: true }
         ]
       },
       'OK-N': {
         entry: { name: 'Regional Entry', price: 2950 },
         items: [
+          { name: 'Engine Rental', price: 6500, optional: false },
+          { name: 'Controlled Fuel', price: 720, optional: false },
           { name: 'Tyres (Optional)', price: 4730, optional: true },
-          { name: 'Rent Transponder', price: 250, optional: true },
-          { name: 'Engine Rental', price: 6500, optional: true }
+          { name: 'Rent Transponder', price: 250, optional: true }
         ]
       },
       'KZ2': {
         entry: { name: 'Regional Entry', price: 2950 },
         items: [
+          { name: 'Engine Rental', price: 0, optional: false, disabled: true, note: 'N/A' },
+          { name: 'Controlled Fuel', price: 0, optional: false, disabled: true, note: 'N/A' },
           { name: 'Tyres (Required)', price: 4730, optional: false },
-          { name: 'Rent Transponder', price: 250, optional: true },
-          { name: 'Engine Rental', price: 0, optional: true, disabled: true, note: 'N/A' }
+          { name: 'Rent Transponder', price: 250, optional: true }
         ]
       }
     };
@@ -3178,8 +3438,12 @@
     async function loadAvailableEvents() {
       try {
         const response = await fetch('/api/getAvailableEvents');
-        const events = await response.json();
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
+        const data = await response.json();
+        if (!data.success || !data.data) throw new Error(data.error || 'No events data');
+        
+        const events = data.data;
         const eventsListContainer = document.getElementById('eventsListContainer');
         eventsListContainer.innerHTML = '';
         
@@ -3304,10 +3568,10 @@
       
       // Build entry items HTML
       let itemsHtml = `
-        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
+        <div style="padding: 16px; border: 2px solid #22c55e; border-radius: 6px; margin-bottom: 12px; background: #f0fdf4; box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <div style="font-weight: 600; color: #1f2937; font-size: 14px;">${tierConfig.entry.name}</div>
-            <div style="font-weight: 700; color: #2563eb; font-size: 14px;">R${tierConfig.entry.price.toLocaleString('en-ZA')}</div>
+            <div style="font-weight: 700; color: #22c55e; font-size: 14px;">R${tierConfig.entry.price.toLocaleString('en-ZA')}</div>
           </div>
           <div style="font-size: 12px; color: #6b7280;">Base race entry fee</div>
         </div>
@@ -3316,12 +3580,20 @@
       tierConfig.items.forEach((item, idx) => {
         const isDisabled = item.disabled || false;
         const priceDisplay = item.price === 0 ? (item.note || 'N/A') : `R${item.price.toLocaleString('en-ZA')}`;
+        
+        // Color coding: Blue for required, Red for optional
+        const borderColor = item.optional ? '#ef4444' : '#3b82f6';
+        const bgColor = item.optional ? '#fef2f2' : '#eff6ff';
+        const shadowColor = item.optional ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)';
+        const labelColor = item.optional ? 'Optional' : 'Required';
+        const labelStyle = item.optional ? 'color: #dc2626;' : 'color: #1d4ed8;';
+        
         itemsHtml += `
-          <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; background: #f9fafb;">
+          <div style="padding: 16px; border: 2px solid ${borderColor}; border-radius: 6px; margin-bottom: 12px; background: ${bgColor}; box-shadow: 0 0 12px ${shadowColor};">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
               <div>
                 <div style="font-weight: 600; color: #1f2937; font-size: 14px; margin-bottom: 4px;">${item.name}</div>
-                <div style="font-size: 12px; color: #6b7280;">${item.optional ? 'Optional' : 'Required'}</div>
+                <div style="font-size: 12px; ${labelStyle} font-weight: 600;">${labelColor}</div>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <div style="font-weight: 700; color: #2563eb; font-size: 14px;">${priceDisplay}</div>
@@ -3391,8 +3663,9 @@
           console.log('🔍 Driver class:', driverClass);
           console.log('🔍 Team code:', teamCode);
           
-          // Check if engine rental is selected (required)
+          // Check if required fields are selected
           let hasEngineRental = false;
+          let hasControlledFuel = false;
           const tierConfig = racePricingTiers[driverClass];
           const selectedItems = [];
           tierConfig.items.forEach((item, idx) => {
@@ -3402,11 +3675,25 @@
               if (item.name.toLowerCase().includes('engine') || item.name.toLowerCase().includes('rental')) {
                 hasEngineRental = true;
               }
+              if (item.name.toLowerCase().includes('fuel')) {
+                hasControlledFuel = true;
+              }
             }
           });
 
-          if (!hasEngineRental) {
-            showModalError('Engine rental is required. Please select an engine rental option.');
+          // Check for required fields (Engine Rental and Controlled Fuel for applicable classes)
+          const engineItem = tierConfig.items.find(i => i.name.toLowerCase().includes('engine'));
+          const fuelItem = tierConfig.items.find(i => i.name.toLowerCase().includes('fuel'));
+          
+          // Engine rental required if not disabled
+          if (engineItem && !engineItem.disabled && !hasEngineRental) {
+            showModalError('Engine rental is a required field. Please select engine rental.');
+            return;
+          }
+          
+          // Controlled fuel required if not disabled
+          if (fuelItem && !fuelItem.disabled && !hasControlledFuel) {
+            showModalError('Controlled fuel is a required field. Please select controlled fuel.');
             return;
           }
           
@@ -3452,7 +3739,8 @@
                 selectedItems: selectedItems,
                 email: currentEmail,
                 firstName: currentProfile?.driver?.first_name || 'Driver',
-                lastName: currentProfile?.driver?.last_name || ''
+                lastName: currentProfile?.driver?.last_name || '',
+                teamCode: teamCode
               })
             })
             .then(r => r.json())

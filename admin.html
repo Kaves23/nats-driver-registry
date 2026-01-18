@@ -263,6 +263,42 @@
       line-height: 1.2;
     }
 
+    .editable-cell {
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .editable-cell:hover {
+      background: #2a2a2a;
+      outline: 1px solid #0066cc;
+    }
+
+    .edit-input {
+      width: 100%;
+      padding: 2px 4px;
+      background: #1a1a1a;
+      border: 2px solid #0066cc;
+      color: #e0e0e0;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
+    .edit-input:focus {
+      outline: none;
+      border-color: #00aa00;
+    }
+
+    .edit-select {
+      width: 100%;
+      padding: 2px 4px;
+      background: #1a1a1a;
+      border: 2px solid #0066cc;
+      color: #e0e0e0;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
     tr:hover {
       background: #242424;
     }
@@ -313,6 +349,20 @@
       background: #f57c00;
     }
 
+    .action-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .action-badge {
+      background: #1a3a52;
+      color: #42a5f5;
+    }
+
     .class-mini-rok {
       background: #fbc02d;
       color: #000;
@@ -353,6 +403,16 @@
 
     .edit-btn:hover {
       background: #0052a3;
+    }
+
+    .delete-btn {
+      background: #dc2626;
+      color: white;
+      margin-left: 8px;
+    }
+
+    .delete-btn:hover {
+      background: #b91c1c;
     }
 
     .reset-btn {
@@ -581,6 +641,7 @@
       <button class="tab-btn" onclick="switchTab('events')">Events</button>
       <button class="tab-btn" onclick="switchTab('raceEntries')">Race Entries</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
+      <button class="tab-btn" onclick="switchTab('audit')">Audit Trail</button>
     </div>
 
     <!-- Drivers Tab -->
@@ -669,10 +730,7 @@
     <div id="raceEntriesTab" class="admin-content" style="display: none;">
       <div class="filters-bar">
         <select id="filterRace">
-          <option value="">Select Race...</option>
-          <option value="14 February 2026 - Redstar Regional">14 February 2026 - Redstar Regional</option>
-          <option value="20 March 2026 - Summer Championship">20 March 2026 - Summer Championship</option>
-          <option value="21 March 2026 - Northern Region">21 March 2026 - Northern Region</option>
+          <option value="">Loading events...</option>
         </select>
         <button class="search-btn" onclick="loadRaceEntries()">Load Entries</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
@@ -711,6 +769,43 @@
       </div>
       <div id="messagesList" style="background: #2a2a2a; border-radius: 8px;">
         <div class="loading">Loading messages...</div>
+      </div>
+    </div>
+
+    <!-- Audit Trail Tab -->
+    <div id="auditTab" class="admin-content" style="display: none;">
+      <div class="filters-bar">
+        <input type="text" id="auditSearchDriver" placeholder="Search driver...">
+        <select id="auditActionFilter">
+          <option value="">All Actions</option>
+          <option value="RACE_ENTRY_REGISTERED">Race Entry Registered</option>
+          <option value="RACE_ENTRY_CANCELLED">Race Entry Cancelled</option>
+          <option value="RACE_ENTRY_UPDATED">Race Entry Updated</option>
+          <option value="PASSWORD_SET">Password Set</option>
+          <option value="DRIVER_UPDATED">Driver Updated</option>
+        </select>
+        <button class="search-btn" onclick="loadAuditTrail()">Search</button>
+        <button class="search-btn" onclick="exportAuditCSV()" style="background: #4caf50;">Export CSV</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Action</th>
+              <th>Driver</th>
+              <th>Email</th>
+              <th>Field</th>
+              <th>Old Value</th>
+              <th>New Value</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody id="auditTable">
+            <tr><td colspan="8" class="loading">Loading audit trail...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -939,6 +1034,18 @@
         }
       }
     }
+
+    // Add Enter key handler for password input
+    document.addEventListener('DOMContentLoaded', function() {
+      const pwEl = document.getElementById('adminPassword');
+      if (pwEl) {
+        pwEl.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            adminLogin();
+          }
+        });
+      }
+    });
 
     function adminLogout() {
       const loginWrapper = document.getElementById('loginWrapper');
@@ -1377,19 +1484,43 @@
       }
     }
 
-    // Load race entries for selected race
+    // Load events into Race Entries dropdown
+    async function loadRaceEntriesDropdown() {
+      try {
+        const response = await fetch('/api/getAvailableEvents');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          const dropdown = document.getElementById('filterRace');
+          dropdown.innerHTML = '<option value="">Select an event...</option>';
+          
+          data.data.forEach(event => {
+            const option = document.createElement('option');
+            option.value = event.event_id;
+            const eventDate = new Date(event.event_date).toLocaleDateString('en-ZA');
+            option.textContent = `${event.event_name} (${eventDate})`;
+            dropdown.appendChild(option);
+          });
+        }
+      } catch (err) {
+        console.error('Error loading events:', err);
+        document.getElementById('filterRace').innerHTML = '<option value="">Error loading events</option>';
+      }
+    }
+
+    // Load race entries for selected event
     async function loadRaceEntries() {
       try {
-        const race = document.getElementById('filterRace').value;
-        if (!race) {
-          showToast('Please select a race', 'info');
+        const eventId = document.getElementById('filterRace').value;
+        if (!eventId) {
+          showToast('Please select an event', 'info');
           return;
         }
 
         const response = await fetch('/api/getRaceEntries', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ race_event: race })
+          body: JSON.stringify({ eventId: eventId })
         });
 
         const result = await response.json();
@@ -1398,7 +1529,7 @@
           throw new Error(result.error?.message || 'Failed to load race entries');
         }
 
-        displayRaceEntries(result.data.entries || []);
+        displayRaceEntries(result.data?.entries || []);
       } catch (err) {
         console.error('Error loading race entries:', err);
         showToast(err.message, 'error');
@@ -1414,38 +1545,167 @@
       if (!table) return;
       
       if (!entries || entries.length === 0) {
-        table.innerHTML = '<tr><td colspan="12" class="loading">No race entries found</td></tr>';
+        table.innerHTML = '<tr><td colspan="12" class="loading">No entries found</td></tr>';
         return;
+      }
+
+      console.log('📊 displayRaceEntries - Received entries:', entries);
+      if (entries.length > 0) {
+        console.log('🔍 First entry object keys:', Object.keys(entries[0]));
+        console.log('🔍 First entry data:', entries[0]);
       }
 
       let html = '';
       entries.forEach((entry) => {
         const itemsArray = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
-        const tyres = itemsArray.some(i => i.name === 'Tyres') ? '✓' : '';
-        const transponder = itemsArray.some(i => i.name === 'Rent Transponder' || i.name === 'Transponder') ? '✓' : '';
-        const engine = itemsArray.some(i => i.name === 'Engine Rental' || i.name === 'Engine') ? '✓' : '';
+        
+        // Tyres: Show ✓ if selected, "No" if not selected
+        const tyres = itemsArray.some(i => i.name && i.name.toLowerCase().includes('tyre')) ? '✓' : 'No';
+        
+        // Transponder: Show ✓ if selected, otherwise check driver's transponder_number
+        let transponderDisplay = '';
+        const transponderSelected = itemsArray.some(i => i.name && (i.name.toLowerCase().includes('transponder') || i.name.toLowerCase().includes('rent')));
+        if (transponderSelected) {
+          transponderDisplay = '✓';
+        } else if (entry.transponder_number) {
+          transponderDisplay = entry.transponder_number;
+        } else {
+          transponderDisplay = '<span style="color: red; font-weight: bold;">REQUIRED</span>';
+        }
+        
+        // Check both the entry_items array AND the new engine column
+        const hasEngineFromItems = itemsArray.some(i => i.name && i.name.toLowerCase().includes('engine'));
+        const hasEngineFromColumn = entry.engine === 1 || entry.engine === '1';
+        const engineDisplay = (hasEngineFromItems || hasEngineFromColumn) ? '✓' : '';
+        
+        console.log(`Entry: ${entry.driver_email || 'N/A'} - Engine from items: ${hasEngineFromItems}, Engine column: ${entry.engine}, Display: ${engineDisplay}`);
+        
+        const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
+        const eventDate = entry.event_date ? new Date(entry.event_date).toLocaleDateString('en-ZA') : (entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-ZA') : '-');
+        const entryId = entry.race_entry_id || entry.entry_id;
         
         html += `
-          <tr>
-            <td>${entry.race_event || '-'}</td>
+          <tr data-entry-id="${entryId}">
+            <td>${eventDate}</td>
             <td>${entry.driver_email || '-'}</td>
-            <td>${entry.driver_name || '-'}</td>
-            <td><span class="class-badge">${entry.race_class || '-'}</span></td>
-            <td>R${parseFloat(entry.entry_fee || 0).toLocaleString('en-ZA')}</td>
+            <td>${driverName || '-'}</td>
+            <td><span class="class-badge">${entry.race_class || entry.driver_class || '-'}</span></td>
+            <td class="editable-cell" onclick="editCell(this, '${entryId}', 'amount_paid', ${entry.amount_paid || 0})">R${parseFloat(entry.amount_paid || entry.entry_fee || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</td>
             <td>${tyres}</td>
-            <td>${transponder}</td>
-            <td>${engine}</td>
-            <td><strong>R${parseFloat(entry.total_amount || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</strong></td>
-            <td><span class="status-badge status-${(entry.payment_status || 'pending').toLowerCase()}">${entry.payment_status || 'Pending'}</span></td>
-            <td>${entry.team_code ? '✓ k0k0r0' : '-'}</td>
+            <td class="editable-cell" onclick="editCell(this, '${entryId}', 'transponder_number', '${entry.transponder_number || ''}')">${transponderDisplay}</td>
+            <td class="editable-cell" onclick="editCell(this, '${entryId}', 'engine', ${hasEngineFromColumn ? 1 : 0})">${engineDisplay}</td>
+            <td class="editable-cell" onclick="editCell(this, '${entryId}', 'amount_paid', ${entry.amount_paid || 0})"><strong>R${parseFloat(entry.amount_paid || entry.entry_fee || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</strong></td>
+            <td class="editable-cell" onclick="editCell(this, '${entryId}', 'payment_status', '${entry.payment_status || 'Pending'}')"  data-type="select">
+              <span class="status-badge status-${(entry.payment_status || 'pending').toLowerCase()}">${entry.payment_status || 'Pending'}</span>
+            </td>
+            <td class="editable-cell" onclick="editCell(this, '${entryId}', 'team_code', '${entry.team_code || ''}')">${entry.team_code ? entry.team_code : '-'}</td>
             <td>
-              <button class="action-btn edit-btn" onclick="confirmRaceEntry('${entry.race_entry_id}')">Confirm</button>
+              <button class="action-btn edit-btn" onclick="confirmRaceEntry('${entryId}')">Confirm</button>
+              <button class="action-btn delete-btn" onclick="deleteRaceEntry('${entryId}', '${driverName}')">Delete</button>
             </td>
           </tr>
         `;
       });
 
       table.innerHTML = html;
+    }
+
+    async function editCell(cellElement, entryId, fieldName, currentValue) {
+      // Prevent editing if already in edit mode
+      if (cellElement.querySelector('input, select')) return;
+
+      const originalContent = cellElement.innerHTML;
+      const isCheckbox = fieldName === 'engine';
+      const isSelect = cellElement.getAttribute('data-type') === 'select';
+      
+      let inputElement;
+      
+      if (isCheckbox) {
+        // Toggle checkbox for engine field
+        inputElement = document.createElement('input');
+        inputElement.type = 'checkbox';
+        inputElement.checked = currentValue === 1 || currentValue === true;
+        inputElement.className = 'edit-input';
+      } else if (isSelect) {
+        // Dropdown for payment status
+        inputElement = document.createElement('select');
+        inputElement.className = 'edit-select';
+        const statuses = ['Pending', 'Completed', 'Confirmed', 'Failed'];
+        statuses.forEach(status => {
+          const option = document.createElement('option');
+          option.value = status;
+          option.textContent = status;
+          option.selected = currentValue === status;
+          inputElement.appendChild(option);
+        });
+      } else if (fieldName === 'amount_paid') {
+        // Number input for amounts
+        inputElement = document.createElement('input');
+        inputElement.type = 'number';
+        inputElement.step = '0.01';
+        inputElement.value = parseFloat(currentValue) || 0;
+        inputElement.className = 'edit-input';
+      } else {
+        // Text input for other fields
+        inputElement = document.createElement('input');
+        inputElement.type = 'text';
+        inputElement.value = currentValue || '';
+        inputElement.className = 'edit-input';
+      }
+
+      cellElement.innerHTML = '';
+      cellElement.appendChild(inputElement);
+      inputElement.focus();
+
+      // Save on blur or Enter key
+      const saveEdit = async () => {
+        let newValue = isCheckbox ? inputElement.checked : inputElement.value;
+        
+        if (newValue === currentValue) {
+          cellElement.innerHTML = originalContent;
+          return;
+        }
+
+        try {
+          showToast('Saving...', 'info');
+          
+          const response = await fetch('/api/updateRaceEntry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              race_entry_id: entryId,
+              field: fieldName,
+              value: newValue
+            })
+          });
+
+          const result = await response.json();
+          
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to save');
+          }
+
+          showToast(`${fieldName} updated successfully!`, 'success');
+          
+          // Reload the table to show updated data
+          loadRaceEntries();
+        } catch (err) {
+          console.error('Error saving edit:', err);
+          showToast(err.message, 'error');
+          cellElement.innerHTML = originalContent;
+        }
+      };
+
+      inputElement.addEventListener('blur', saveEdit);
+      inputElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveEdit();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          cellElement.innerHTML = originalContent;
+        }
+      });
     }
 
     async function confirmRaceEntry(entryId) {
@@ -1466,6 +1726,35 @@
         loadRaceEntries();
       } catch (err) {
         console.error('Error confirming race entry:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteRaceEntry(entryId, driverName) {
+      // Confirm deletion
+      if (!confirm(`Are you sure you want to delete the race entry for ${driverName}? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        showToast('Deleting entry...', 'info');
+        
+        const response = await fetch('/api/deleteRaceEntry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entry_id: entryId })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to delete entry');
+        }
+
+        showToast('Race entry deleted successfully!', 'success');
+        loadRaceEntries();
+      } catch (err) {
+        console.error('Error deleting race entry:', err);
         showToast(err.message, 'error');
       }
     }
@@ -1532,6 +1821,7 @@
       const eventsTab = document.getElementById('eventsTab');
       const raceEntriesTab = document.getElementById('raceEntriesTab');
       const messagesTab = document.getElementById('messagesTab');
+      const auditTab = document.getElementById('auditTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
       if (tabName === 'drivers') {
@@ -1539,40 +1829,60 @@
         eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'none';
         messagesTab.style.display = 'none';
+        auditTab.style.display = 'none';
         tabs[0].classList.add('active');
         tabs[1].classList.remove('active');
         tabs[2].classList.remove('active');
         tabs[3].classList.remove('active');
+        tabs[4].classList.remove('active');
       } else if (tabName === 'events') {
         driversTab.style.display = 'none';
         eventsTab.style.display = 'block';
         raceEntriesTab.style.display = 'none';
         messagesTab.style.display = 'none';
+        auditTab.style.display = 'none';
         tabs[0].classList.remove('active');
         tabs[1].classList.add('active');
         tabs[2].classList.remove('active');
         tabs[3].classList.remove('active');
+        tabs[4].classList.remove('active');
         loadEvents();
       } else if (tabName === 'raceEntries') {
         driversTab.style.display = 'none';
         eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'block';
         messagesTab.style.display = 'none';
+        auditTab.style.display = 'none';
         tabs[0].classList.remove('active');
         tabs[1].classList.remove('active');
         tabs[2].classList.add('active');
         tabs[3].classList.remove('active');
-        loadRaceEntries();
+        tabs[4].classList.remove('active');
+        loadRaceEntriesDropdown();
       } else if (tabName === 'messages') {
         driversTab.style.display = 'none';
         eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'none';
         messagesTab.style.display = 'block';
+        auditTab.style.display = 'none';
         tabs[0].classList.remove('active');
         tabs[1].classList.remove('active');
         tabs[2].classList.remove('active');
         tabs[3].classList.add('active');
+        tabs[4].classList.remove('active');
         loadMessages();
+      } else if (tabName === 'audit') {
+        driversTab.style.display = 'none';
+        eventsTab.style.display = 'none';
+        raceEntriesTab.style.display = 'none';
+        messagesTab.style.display = 'none';
+        auditTab.style.display = 'block';
+        tabs[0].classList.remove('active');
+        tabs[1].classList.remove('active');
+        tabs[2].classList.remove('active');
+        tabs[3].classList.remove('active');
+        tabs[4].classList.add('active');
+        loadAuditTrail();
       }
     }
 
@@ -1888,7 +2198,111 @@
 
     // ============= END EVENT MANAGEMENT =============
 
+    // ============= AUDIT TRAIL FUNCTIONS =============
+
+    async function loadAuditTrail() {
+      try {
+        const driver = document.getElementById('auditSearchDriver').value.trim();
+        const action = document.getElementById('auditActionFilter').value;
+
+        const response = await fetch('/api/getAuditLog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver, action, limit: 1000 })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to load audit trail');
+        }
+
+        displayAuditTrail(result.data.logs || []);
+      } catch (err) {
+        console.error('Error loading audit trail:', err);
+        showToast(err.message, 'error');
+        const table = document.getElementById('auditTable');
+        if (table) {
+          table.innerHTML = `<tr><td colspan="8" class="loading">Error: ${err.message}</td></tr>`;
+        }
+      }
+    }
+
+    function displayAuditTrail(logs) {
+      const table = document.getElementById('auditTable');
+      if (!table) return;
+
+      if (!logs || logs.length === 0) {
+        table.innerHTML = '<tr><td colspan="8" class="loading">No audit records found</td></tr>';
+        return;
+      }
+
+      let html = '';
+      logs.forEach(log => {
+        const timestamp = log.created_at ? new Date(log.created_at).toLocaleString('en-ZA') : 'N/A';
+        const action = log.action || 'N/A';
+        const driverName = log.driver_first_name && log.driver_last_name 
+          ? `${log.driver_first_name} ${log.driver_last_name}` 
+          : 'System';
+        const email = log.driver_email || '-';
+        const field = log.field_name || '-';
+        const oldValue = log.old_value || '-';
+        const newValue = log.new_value || '-';
+        const ip = log.ip_address || '-';
+
+        html += `
+          <tr>
+            <td>${timestamp}</td>
+            <td><span class="action-badge">${action}</span></td>
+            <td>${driverName}</td>
+            <td>${email}</td>
+            <td>${field}</td>
+            <td style="color: #ff9999;">${oldValue}</td>
+            <td style="color: #99ff99;">${newValue}</td>
+            <td style="font-size: 10px;">${ip}</td>
+          </tr>
+        `;
+      });
+
+      table.innerHTML = html;
+    }
+
+    async function exportAuditCSV() {
+      try {
+        const driver = document.getElementById('auditSearchDriver').value.trim();
+        const action = document.getElementById('auditActionFilter').value;
+
+        const response = await fetch('/api/exportAuditCSV', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver, action })
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const csvText = await response.text();
+        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `audit-trail-${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast('Audit trail exported successfully!', 'success');
+      } catch (err) {
+        console.error('Export error:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
+    // ============= END AUDIT TRAIL FUNCTIONS =============
+
     
+    const adminPasswordEl = document.getElementById('adminPassword');
     if (adminPasswordEl) {
       adminPasswordEl.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') adminLogin();
