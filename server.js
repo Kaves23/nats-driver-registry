@@ -13,8 +13,8 @@ const app = express();
 const path = require('path');
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Database connection
 const pool = new Pool({
@@ -177,11 +177,59 @@ const initPoolEngineRentalsTable = async () => {
   }
 };
 
+// Initialize Event Documents table
+const initEventDocumentsTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS event_documents (
+        document_id VARCHAR(36) PRIMARY KEY,
+        event_id VARCHAR(255) NOT NULL,
+        uploaded_by_official VARCHAR(255),
+        document_type VARCHAR(100) NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500),
+        file_size INT,
+        upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (event_id) REFERENCES events(event_id)
+      )
+    `);
+
+    console.log('✅ Event documents table initialized');
+  } catch (err) {
+    console.error('Event documents table init error:', err.message);
+  }
+};
+
+const initMSALicensesTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS msa_licenses (
+        document_id VARCHAR(36) PRIMARY KEY,
+        driver_id VARCHAR(255) NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500),
+        file_size INT,
+        file_type VARCHAR(100),
+        upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (driver_id) REFERENCES drivers(driver_id)
+      )
+    `);
+
+    console.log('✅ MSA licenses table initialized');
+  } catch (err) {
+    console.error('MSA licenses table init error:', err.message);
+  }
+};
+
 initAuditTable();
 initMessagesTable();
 initEventsTable();
 initRaceEntriesTable();
 initPoolEngineRentalsTable();
+initEventDocumentsTable();
+initMSALicensesTable();
 
 // Initialize default events if they don't exist
 const initDefaultEvents = async () => {
@@ -258,6 +306,265 @@ app.get('/api/debug-env', (req, res) => {
       all_env_keys: Object.keys(process.env)
     }
   });
+});
+
+// Test admin registration email
+app.post('/api/test-admin-registration-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) throw new Error('Email is required');
+
+    console.log(`📧 Sending test admin registration email to ${email}...`);
+
+    // Sample driver data
+    const testData = {
+      driver_id: 'TEST-' + Date.now(),
+      first_name: 'Lando',
+      last_name: 'Norris',
+      email: 'lando.norris@sectcapital.com',
+      date_of_birth: '2005-06-15',
+      nationality: 'British',
+      gender: 'Male',
+      id_or_passport_number: '1234567890',
+      championship: 'ROK Cup South Africa',
+      class: 'OK-N',
+      race_number: '1010',
+      team_name: 'Sect Capital Racing',
+      coach_name: 'Max Verstappen',
+      kart_brand: 'Tony Kart',
+      engine_type: 'Vortex',
+      transponder_number: '1010101',
+      contact_name: 'John Norris',
+      contact_phone: '0721234567',
+      contact_relationship: 'Father',
+      contact_emergency: 'Y',
+      contact_consent: 'Y',
+      medical_allergies: 'None',
+      medical_conditions: 'None',
+      medical_medication: 'None',
+      medical_doctor_phone: '0721112222',
+      consent_signed: 'Y',
+      media_release_signed: 'Y'
+    };
+
+    const adminEmailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; }
+          .header h1 { margin: 0; font-size: 24px; }
+          .section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #667eea; border-radius: 4px; }
+          .section h3 { margin: 0 0 10px 0; color: #667eea; font-size: 16px; }
+          .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0; }
+          .field { margin: 8px 0; }
+          .field-label { font-weight: bold; color: #555; font-size: 12px; text-transform: uppercase; }
+          .field-value { color: #333; margin-top: 4px; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
+          .badge { display: inline-block; padding: 4px 8px; background: #667eea; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+          .test-badge { background: #f59e0b !important; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📝 New Driver Registration (TEST)</h1>
+            <p style="margin: 5px 0 0 0;">A new driver has registered in the NATS system</p>
+          </div>
+
+          <div class="section">
+            <h3>👤 Driver Information</h3>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Driver Name</div>
+                <div class="field-value">${testData.first_name} ${testData.last_name}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Email</div>
+                <div class="field-value"><a href="mailto:${testData.email}">${testData.email}</a></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Date of Birth</div>
+                <div class="field-value">${new Date(testData.date_of_birth).toLocaleDateString('en-ZA')}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Nationality</div>
+                <div class="field-value">${testData.nationality}</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Gender</div>
+                <div class="field-value">${testData.gender}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">ID/Passport</div>
+                <div class="field-value">****${testData.id_or_passport_number.slice(-4)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>🏎️ Competition Details</h3>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Championship</div>
+                <div class="field-value">${testData.championship}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Class</div>
+                <div class="field-value"><span class="badge">${testData.class}</span></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Race Number</div>
+                <div class="field-value">${testData.race_number}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Team Name</div>
+                <div class="field-value">${testData.team_name}</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Coach/Mentor</div>
+                <div class="field-value">${testData.coach_name}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Transponder Number</div>
+                <div class="field-value">${testData.transponder_number}</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Kart Brand</div>
+                <div class="field-value">${testData.kart_brand}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Engine Type</div>
+                <div class="field-value">${testData.engine_type}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>👨‍👩‍👧 Guardian Information</h3>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Guardian Name</div>
+                <div class="field-value">${testData.contact_name}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Guardian Phone</div>
+                <div class="field-value">${testData.contact_phone}</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Relationship</div>
+                <div class="field-value">${testData.contact_relationship}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Emergency Contact</div>
+                <div class="field-value">${testData.contact_emergency === 'Y' ? '✅ Yes' : '❌ No'}</div>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">Contact Consent</div>
+              <div class="field-value">${testData.contact_consent === 'Y' ? '✅ Approved' : '❌ Not approved'}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>⚕️ Medical Information</h3>
+            <div class="field">
+              <div class="field-label">Allergies</div>
+              <div class="field-value">${testData.medical_allergies}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Medical Conditions</div>
+              <div class="field-value">${testData.medical_conditions}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Medications</div>
+              <div class="field-value">${testData.medical_medication}</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Doctor Phone</div>
+              <div class="field-value">${testData.medical_doctor_phone}</div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Consent Signed</div>
+                <div class="field-value">${testData.consent_signed === 'Y' ? '✅ Yes' : '❌ No'}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Media Release Signed</div>
+                <div class="field-value">${testData.media_release_signed === 'Y' ? '✅ Yes' : '❌ No'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>📋 Registration Status</h3>
+            <div class="row">
+              <div class="field">
+                <div class="field-label">Driver ID</div>
+                <div class="field-value">${testData.driver_id}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Status</div>
+                <div class="field-value"><span class="badge test-badge">Test Email</span></div>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-label">Registered At</div>
+              <div class="field-value">${new Date().toLocaleString('en-ZA')}</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>📧 This is a TEST email showing the format of admin registration notifications.</p>
+            <p><a href="https://rokthenats.co.za/admin.html" style="color: #667eea; text-decoration: none; font-weight: bold;">View in Admin Portal →</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+      key: process.env.MAILCHIMP_API_KEY,
+      message: {
+        to: [{ email: email }],
+        from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+        subject: `[TEST] New Driver Registration - ${testData.first_name} ${testData.last_name} - ${testData.class}`,
+        html: adminEmailHtml
+      }
+    });
+
+    console.log(`✅ Test admin registration email sent to ${email}`);
+    res.json({
+      success: true,
+      data: { 
+        message: `Test registration email sent to ${email}`,
+        testDriver: {
+          name: `${testData.first_name} ${testData.last_name}`,
+          email: testData.email,
+          class: testData.class,
+          race_number: testData.race_number
+        }
+      }
+    });
+  } catch (err) {
+    console.error('❌ Test email error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
 });
 
 // Test email endpoint
@@ -651,6 +958,214 @@ app.post('/api/registerDriver', async (req, res) => {
     } catch (emailErr) {
       console.error('❌ Email error:', emailErr.message);
       // Log but don't block registration
+    }
+
+    // Send admin notification with all registration details
+    try {
+      const adminEmailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #667eea; border-radius: 4px; }
+            .section h3 { margin: 0 0 10px 0; color: #667eea; font-size: 16px; }
+            .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0; }
+            .field { margin: 8px 0; }
+            .field-label { font-weight: bold; color: #555; font-size: 12px; text-transform: uppercase; }
+            .field-value { color: #333; margin-top: 4px; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
+            .badge { display: inline-block; padding: 4px 8px; background: #667eea; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📝 New Driver Registration</h1>
+              <p style="margin: 5px 0 0 0;">A new driver has registered in the NATS system</p>
+            </div>
+
+            <div class="section">
+              <h3>👤 Driver Information</h3>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Driver Name</div>
+                  <div class="field-value">${first_name} ${last_name}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Email</div>
+                  <div class="field-value"><a href="mailto:${email}">${email}</a></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Date of Birth</div>
+                  <div class="field-value">${date_of_birth ? new Date(date_of_birth).toLocaleDateString('en-ZA') : 'Not provided'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Nationality</div>
+                  <div class="field-value">${nationality || 'Not provided'}</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Gender</div>
+                  <div class="field-value">${gender || 'Not provided'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">ID/Passport</div>
+                  <div class="field-value">${id_or_passport_number ? '****' + id_or_passport_number.slice(-4) : 'Not provided'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <h3>🏎️ Competition Details</h3>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Championship</div>
+                  <div class="field-value">${championship || 'Not provided'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Class</div>
+                  <div class="field-value"><span class="badge">${klass || 'Not provided'}</span></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Race Number</div>
+                  <div class="field-value">${race_number || 'Not assigned'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Team Name</div>
+                  <div class="field-value">${team_name || 'No team'}</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Coach/Mentor</div>
+                  <div class="field-value">${coach_name || 'Not provided'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Transponder Number</div>
+                  <div class="field-value">${transponder_number || 'Not provided'}</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Kart Brand</div>
+                  <div class="field-value">${kart_brand || 'Not provided'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Engine Type</div>
+                  <div class="field-value">${engine_type || 'Not provided'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <h3>👨‍👩‍👧 Guardian Information</h3>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Guardian Name</div>
+                  <div class="field-value">${contact_name || 'Not provided'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Guardian Phone</div>
+                  <div class="field-value">${contact_phone || 'Not provided'}</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Relationship</div>
+                  <div class="field-value">${contact_relationship || 'Not specified'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Emergency Contact</div>
+                  <div class="field-value">${contact_emergency === 'Y' ? '✅ Yes' : '❌ No'}</div>
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-label">Contact Consent</div>
+                <div class="field-value">${contact_consent === 'Y' ? '✅ Approved' : '❌ Not approved'}</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <h3>⚕️ Medical Information</h3>
+              <div class="field">
+                <div class="field-label">Allergies</div>
+                <div class="field-value">${medical_allergies || 'None reported'}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Medical Conditions</div>
+                <div class="field-value">${medical_conditions || 'None reported'}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Medications</div>
+                <div class="field-value">${medical_medication || 'None reported'}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Doctor Phone</div>
+                <div class="field-value">${medical_doctor_phone || 'Not provided'}</div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Consent Signed</div>
+                  <div class="field-value">${consent_signed === 'Y' ? '✅ Yes' : '❌ No'}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Media Release Signed</div>
+                  <div class="field-value">${media_release_signed === 'Y' ? '✅ Yes' : '❌ No'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <h3>📋 Registration Status</h3>
+              <div class="row">
+                <div class="field">
+                  <div class="field-label">Driver ID</div>
+                  <div class="field-value">${driver_id}</div>
+                </div>
+                <div class="field">
+                  <div class="field-label">Status</div>
+                  <div class="field-value"><span class="badge" style="background: #f59e0b;">Pending Approval</span></div>
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-label">Registered At</div>
+                <div class="field-value">${new Date().toLocaleString('en-ZA')}</div>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>📧 This is an automated notification from the NATS Driver Registry system.</p>
+              <p><a href="https://rokthenats.co.za/admin.html" style="color: #667eea; text-decoration: none; font-weight: bold;">View in Admin Portal →</a></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+        key: process.env.MAILCHIMP_API_KEY,
+        message: {
+          to: [{ email: 'john@rokcup.co.za', name: 'Admin' }],
+          from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+          subject: `[NEW REGISTRATION] ${first_name} ${last_name} - ${klass || 'Class TBD'}`,
+          html: adminEmailHtml
+        }
+      });
+      
+      console.log(`📧 Admin notification sent to john@rokcup.co.za`);
+    } catch (adminEmailErr) {
+      console.error('⚠️ Admin email sending failed:', adminEmailErr.message);
+      // Don't block registration if admin email fails
     }
     
     res.json({
@@ -2254,6 +2769,18 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     try {
       const driverName = `${firstName || 'Driver'} ${lastName || ''}`.trim();
       
+      // Fetch event details
+      const eventResult = await pool.query(
+        `SELECT event_id, event_name, event_date, location FROM events WHERE event_id = $1`,
+        [eventId]
+      );
+      const eventDetails = eventResult.rows[0];
+      const eventName = eventDetails?.event_name || 'Race Event';
+      const eventDateStr = eventDetails?.event_date 
+        ? new Date(eventDetails.event_date).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+        : 'TBA';
+      const eventLocation = eventDetails?.location || 'TBA';
+      
       // Parse selected items for ticket display
       const selectedItemsArray = Array.isArray(selectedItems) ? selectedItems : [];
       const hasEngineRentalItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('engine'));
@@ -2345,8 +2872,16 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
               
               <div class="details">
                 <div class="detail-row">
-                  <span class="detail-label">Entry Reference</span>
-                  <span class="detail-value">${reference}</span>
+                  <span class="detail-label">Event Name</span>
+                  <span class="detail-value">${eventName}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Event Date</span>
+                  <span class="detail-value">${eventDateStr}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Location</span>
+                  <span class="detail-value">${eventLocation}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Race Class</span>
@@ -2356,6 +2891,10 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
                   <span class="detail-label">Team Code</span>
                   <span class="detail-value">${teamCode}</span>
                 </div>` : ''}
+                <div class="detail-row">
+                  <span class="detail-label">Entry Reference</span>
+                  <span class="detail-value">${reference}</span>
+                </div>
                 <div class="detail-row">
                   <span class="detail-label">Status</span>
                   <span class="badge">Confirmed</span>
@@ -2387,7 +2926,7 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
         message: {
           to: [{ email: email, name: driverName }],
           from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
-          subject: `Race Entry Confirmed - ${raceClass}`,
+          subject: `Race Entry Confirmed - ${eventName} (${raceClass})`,
           html: emailHtml
         }
       });
@@ -2670,6 +3209,30 @@ app.post('/api/paymentNotify', async (req, res) => {
     try {
       const driverName = `${name_first || 'Driver'} ${name_last || ''}`.trim();
       
+      // Fetch event details if not pool engine rental
+      let eventName = 'Race Event';
+      let eventDateStr = 'TBA';
+      let eventLocation = 'TBA';
+      
+      if (!isPoolEngineRental && eventId && eventId !== 'unknown') {
+        try {
+          const eventResult = await pool.query(
+            `SELECT event_id, event_name, event_date, location FROM events WHERE event_id = $1`,
+            [eventId]
+          );
+          const eventDetails = eventResult.rows[0];
+          if (eventDetails) {
+            eventName = eventDetails.event_name || 'Race Event';
+            eventDateStr = eventDetails.event_date 
+              ? new Date(eventDetails.event_date).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+              : 'TBA';
+            eventLocation = eventDetails.location || 'TBA';
+          }
+        } catch (eventErr) {
+          console.warn('⚠️ Could not fetch event details:', eventErr.message);
+        }
+      }
+      
       // Extract rental items from item_description to build ticket HTML
       let ticketsHtml = '';
       const itemDesc = item_description ? item_description.toLowerCase() : '';
@@ -2763,6 +3326,18 @@ app.post('/api/paymentNotify', async (req, res) => {
                 </div>
                 ` : `
                 <div class="detail-row">
+                  <span class="detail-label">Event Name</span>
+                  <span class="detail-value">${eventName}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Event Date</span>
+                  <span class="detail-value">${eventDateStr}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Location</span>
+                  <span class="detail-value">${eventLocation}</span>
+                </div>
+                <div class="detail-row">
                   <span class="detail-label">Race Class</span>
                   <span class="detail-value">${raceClass}</span>
                 </div>
@@ -2812,7 +3387,7 @@ app.post('/api/paymentNotify', async (req, res) => {
         message: {
           to: [{ email: email_address, name: driverName }],
           from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
-          subject: `Payment Confirmation - Race Entry ${raceClass}`,
+          subject: `Payment Confirmation - ${eventName} (${raceClass})`,
           html: emailHtml
         }
       });
@@ -3614,7 +4189,32 @@ app.post('/api/officialLogin', async (req, res) => {
   }
 });
 
-// Get next race drivers for officials
+// Get all upcoming events for race selector
+app.get('/api/getUpcomingEvents', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const result = await pool.query(
+      `SELECT event_id, event_name, event_date, location
+       FROM events 
+       WHERE event_date >= CURRENT_DATE
+       ORDER BY event_date ASC`
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (err) {
+    console.error('❌ getUpcomingEvents error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Get next race drivers for officials (or specific event if event_id provided)
 app.get('/api/getNextRaceDrivers', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -3622,20 +4222,32 @@ app.get('/api/getNextRaceDrivers', async (req, res) => {
       throw new Error('Unauthorized');
     }
 
-    // Get the next race event
-    const eventResult = await pool.query(
-      `SELECT event_id, event_name, event_date, location 
-       FROM events 
-       WHERE event_date >= CURRENT_DATE
-       ORDER BY event_date ASC
-       LIMIT 1`
-    );
+    const { event_id } = req.query;
+    let eventResult;
+
+    // If event_id is provided, get that specific event; otherwise get next race
+    if (event_id) {
+      eventResult = await pool.query(
+        `SELECT event_id, event_name, event_date, location 
+         FROM events 
+         WHERE event_id = $1`,
+        [event_id]
+      );
+    } else {
+      eventResult = await pool.query(
+        `SELECT event_id, event_name, event_date, location 
+         FROM events 
+         WHERE event_date >= CURRENT_DATE
+         ORDER BY event_date ASC
+         LIMIT 1`
+      );
+    }
 
     if (eventResult.rows.length === 0) {
       return res.json({
         success: true,
         data: {
-          event_name: 'No upcoming races',
+          event_name: 'No races found',
           event_date: null,
           drivers: []
         }
@@ -3651,6 +4263,10 @@ app.get('/api/getNextRaceDrivers', async (req, res) => {
         d.first_name,
         d.last_name,
         d.class AS driver_class,
+        d.race_number,
+        d.license_number,
+        d.team_name,
+        d.kart_brand,
         d.date_of_birth,
         d.season_engine_rental,
         d.transponder_number,
@@ -3677,6 +4293,398 @@ app.get('/api/getNextRaceDrivers', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ getNextRaceDrivers error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Upload event document (race results, incident reports, etc.)
+app.post('/api/uploadEventDocument', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { event_id, document_type, file_name, file_content, uploaded_by_official } = req.body;
+    
+    if (!event_id || !document_type || !file_name || !file_content) {
+      throw new Error('Missing required fields: event_id, document_type, file_name, file_content');
+    }
+
+    // Validate event exists
+    const eventCheck = await pool.query('SELECT event_id FROM events WHERE event_id = $1', [event_id]);
+    if (eventCheck.rows.length === 0) {
+      throw new Error('Event not found');
+    }
+
+    const document_id = uuidv4();
+    
+    // Decode base64 file content
+    const buffer = Buffer.from(file_content, 'base64');
+    const file_size = buffer.length;
+    
+    // Create uploads directory if it doesn't exist
+    const uploadDir = path.join(__dirname, 'uploads', 'event-documents', event_id);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Save file locally
+    const file_path = path.join(uploadDir, `${document_id}_${file_name}`);
+    fs.writeFileSync(file_path, buffer);
+
+    // Save metadata to database
+    await pool.query(
+      `INSERT INTO event_documents (document_id, event_id, uploaded_by_official, document_type, file_name, file_path, file_size)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [document_id, event_id, uploaded_by_official || 'Unknown', document_type, file_name, file_path, file_size]
+    );
+
+    console.log(`📄 Document uploaded: ${file_name} (${file_size} bytes) for event ${event_id}`);
+
+    res.json({
+      success: true,
+      data: {
+        document_id: document_id,
+        file_name: file_name,
+        file_size: file_size,
+        upload_date: new Date().toISOString(),
+        message: 'Document uploaded successfully'
+      }
+    });
+  } catch (err) {
+    console.error('❌ Document upload error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Get event documents
+app.get('/api/getEventDocuments', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { event_id } = req.query;
+    if (!event_id) {
+      throw new Error('event_id required');
+    }
+
+    const docsResult = await pool.query(
+      `SELECT 
+        document_id, 
+        event_id, 
+        uploaded_by_official, 
+        document_type, 
+        file_name, 
+        file_size,
+        upload_date
+       FROM event_documents 
+       WHERE event_id = $1 
+       ORDER BY upload_date DESC`,
+      [event_id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        event_id: event_id,
+        documents: docsResult.rows || [],
+        total: docsResult.rows.length
+      }
+    });
+  } catch (err) {
+    console.error('❌ Get documents error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Download event document
+app.get('/api/downloadEventDocument/:document_id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { document_id } = req.params;
+
+    const docResult = await pool.query(
+      'SELECT document_id, file_name, file_path FROM event_documents WHERE document_id = $1',
+      [document_id]
+    );
+
+    if (docResult.rows.length === 0) {
+      throw new Error('Document not found');
+    }
+
+    const doc = docResult.rows[0];
+    
+    // Check if file exists
+    if (!fs.existsSync(doc.file_path)) {
+      throw new Error('File not found on server');
+    }
+
+    // Send file
+    res.download(doc.file_path, doc.file_name);
+    console.log(`📥 Document downloaded: ${doc.file_name}`);
+  } catch (err) {
+    console.error('❌ Download error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Delete event document
+app.post('/api/deleteEventDocument', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { document_id } = req.body;
+    if (!document_id) {
+      throw new Error('document_id required');
+    }
+
+    const docResult = await pool.query(
+      'SELECT file_path FROM event_documents WHERE document_id = $1',
+      [document_id]
+    );
+
+    if (docResult.rows.length === 0) {
+      throw new Error('Document not found');
+    }
+
+    // Delete file from disk
+    const file_path = docResult.rows[0].file_path;
+    if (fs.existsSync(file_path)) {
+      fs.unlinkSync(file_path);
+    }
+
+    // Delete from database
+    await pool.query('DELETE FROM event_documents WHERE document_id = $1', [document_id]);
+
+    console.log(`🗑️ Document deleted: ${document_id}`);
+
+    res.json({
+      success: true,
+      data: { message: 'Document deleted successfully' }
+    });
+  } catch (err) {
+    console.error('❌ Delete error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// MSA License Upload
+app.post('/api/uploadMSALicense', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { driver_id, file_name, file_data, file_type } = req.body;
+
+    if (!driver_id || !file_name || !file_data) {
+      throw new Error('driver_id, file_name, and file_data required');
+    }
+
+    // Create upload directory if it doesn't exist
+    const uploadDir = path.join(__dirname, 'uploads', 'msa-licenses');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Decode base64 and save file
+    const document_id = require('uuid').v4();
+    const buffer = Buffer.from(file_data, 'base64');
+    const file_path = path.join(uploadDir, `${document_id}_${file_name}`);
+    
+    fs.writeFileSync(file_path, buffer);
+    const file_size = buffer.length;
+
+    // Delete any existing license for this driver
+    const existingResult = await pool.query(
+      'SELECT document_id, file_path FROM msa_licenses WHERE driver_id = $1',
+      [driver_id]
+    );
+
+    if (existingResult.rows.length > 0) {
+      const oldDoc = existingResult.rows[0];
+      if (fs.existsSync(oldDoc.file_path)) {
+        fs.unlinkSync(oldDoc.file_path);
+      }
+      await pool.query('DELETE FROM msa_licenses WHERE driver_id = $1', [driver_id]);
+    }
+
+    // Insert into database
+    await pool.query(
+      `INSERT INTO msa_licenses (document_id, driver_id, file_name, file_path, file_size, file_type)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [document_id, driver_id, file_name, file_path, file_size, file_type]
+    );
+
+    console.log(`📄 MSA License uploaded for driver ${driver_id}: ${file_name}`);
+
+    res.json({
+      success: true,
+      data: {
+        document_id: document_id,
+        file_name: file_name,
+        file_size: file_size,
+        message: 'MSA License uploaded successfully'
+      }
+    });
+  } catch (err) {
+    console.error('❌ MSA upload error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Get MSA License
+app.get('/api/getMSALicense/:driver_id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { driver_id } = req.params;
+
+    const result = await pool.query(
+      `SELECT document_id, driver_id, file_name, file_size, file_type, upload_date
+       FROM msa_licenses 
+       WHERE driver_id = $1`,
+      [driver_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({
+        success: true,
+        data: null
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ Get MSA error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Download MSA License
+app.get('/api/downloadMSALicense/:document_id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { document_id } = req.params;
+
+    const result = await pool.query(
+      'SELECT file_path, file_name FROM msa_licenses WHERE document_id = $1',
+      [document_id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Document not found');
+    }
+
+    const { file_path, file_name } = result.rows[0];
+
+    if (!fs.existsSync(file_path)) {
+      throw new Error('File not found on server');
+    }
+
+    res.download(file_path, file_name);
+  } catch (err) {
+    console.error('❌ Download error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Delete MSA License
+app.post('/api/deleteMSALicense', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      throw new Error('Unauthorized');
+    }
+
+    const { document_id } = req.body;
+    if (!document_id) {
+      throw new Error('document_id required');
+    }
+
+    const docResult = await pool.query(
+      'SELECT file_path FROM msa_licenses WHERE document_id = $1',
+      [document_id]
+    );
+
+    if (docResult.rows.length === 0) {
+      throw new Error('Document not found');
+    }
+
+    // Delete file from disk
+    const file_path = docResult.rows[0].file_path;
+    if (fs.existsSync(file_path)) {
+      fs.unlinkSync(file_path);
+    }
+
+    // Delete from database
+    await pool.query('DELETE FROM msa_licenses WHERE document_id = $1', [document_id]);
+
+    console.log(`🗑️ MSA License deleted: ${document_id}`);
+
+    res.json({
+      success: true,
+      data: { message: 'MSA License deleted successfully' }
+    });
+  } catch (err) {
+    console.error('❌ MSA Delete error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Get all MSA licenses for drivers in a specific event
+app.get('/api/getEventDriversMSALicenses/:event_id', async (req, res) => {
+  try {
+    const { event_id } = req.params;
+    if (!event_id) {
+      throw new Error('event_id required');
+    }
+
+    const result = await pool.query(`
+      SELECT 
+        ml.document_id,
+        ml.driver_id,
+        ml.file_name,
+        ml.file_size,
+        ml.upload_date,
+        d.first_name,
+        d.last_name,
+        d.class
+      FROM msa_licenses ml
+      JOIN drivers d ON ml.driver_id = d.driver_id
+      JOIN race_entries re ON d.driver_id = re.driver_id
+      WHERE re.event_id = $1
+      AND re.entry_status IN ('confirmed', 'pending')
+      ORDER BY d.first_name, d.last_name
+    `, [event_id]);
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (err) {
+    console.error('❌ Error getting event MSA licenses:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });

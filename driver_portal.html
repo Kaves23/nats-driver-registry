@@ -929,6 +929,7 @@
               <button class="ptab" data-ptab="medical" data-accent="winter" type="button"><span class="tabBar"></span>Medical & Consent</button>
               <button class="ptab" data-ptab="points" data-accent="spring" type="button"><span class="tabBar"></span>Points</button>
               <button class="ptab" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
+              <button class="ptab" data-ptab="msa" data-accent="spring" type="button"><span class="tabBar"></span>MSA License</button>
               <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
             </div>
 
@@ -1216,6 +1217,35 @@
                   <div class="hint">Track all your payment transactions and statuses.</div>
                   <div id="paymentHistoryContainer" style="margin-top: 16px;">
                     <div style="color: #6b7280; text-align: center; padding: 20px;">Loading payment history...</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="msa">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:#8b5cf6"></span>MSA License Upload</div>
+                  <div class="hint">Upload your Motor Sport Association license document. This helps us verify your racing credentials and maintains compliance records.</div>
+                  
+                  <div style="margin-top: 20px; padding: 20px; border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; text-align: center;">
+                    <input type="file" id="msaFileInput" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;" onchange="handleMSAFileSelect(event)" />
+                    <button class="btn primary" type="button" onclick="document.getElementById('msaFileInput').click()" style="margin-bottom: 12px;">
+                      📁 Choose MSA License File
+                    </button>
+                    <div style="font-size: 12px; color: #6b7280;">PDF, Images, or Documents (Max 10MB)</div>
+                    <div id="selectedFileName" style="margin-top: 12px; font-weight: 600; color: #374151; min-height: 20px;"></div>
+                  </div>
+
+                  <div class="btnbar" style="margin-top: 16px;">
+                    <button class="btn primary" id="btnUploadMSA" type="button" disabled>Upload MSA License</button>
+                  </div>
+
+                  <div id="msaUploadStatus" style="margin-top: 16px; padding: 12px; border-radius: 6px; display: none; font-size: 14px;"></div>
+
+                  <div style="margin-top: 24px;">
+                    <div style="font-weight: 600; margin-bottom: 12px; color: #1f2937;">Current MSA License:</div>
+                    <div id="msaDocumentsList" style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; min-height: 60px;">
+                      <div style="color: #6b7280; text-align: center;">No document uploaded yet</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1639,6 +1669,7 @@
     let currentPassword = "";
     let currentProfile = null;
     let currentDriverData = {};
+    let currentToken = localStorage.getItem('driverToken') || '';
 
     function escapeHtml(s){
       return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -2818,6 +2849,9 @@
         
         currentEmail = email;
         currentPassword = password;
+        // Generate and store driver token
+        currentToken = 'driver-token-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('driverToken', currentToken);
 
         const elapsed = Date.now() - t0;
         if(elapsed < minDwellMs){
@@ -3885,6 +3919,227 @@
         alert('Password reset failed: ' + (err.message || err));
       }
     })();
+
+    /* ====== MSA LICENSE UPLOAD ====== */
+    let selectedMSAFile = null;
+
+    function handleMSAFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        document.getElementById('selectedFileName').textContent = '❌ File too large (max 10MB)';
+        document.getElementById('btnUploadMSA').disabled = true;
+        selectedMSAFile = null;
+        return;
+      }
+
+      selectedMSAFile = file;
+      document.getElementById('selectedFileName').textContent = `✓ ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+      document.getElementById('btnUploadMSA').disabled = false;
+    }
+
+    async function uploadMSALicense() {
+      if (!selectedMSAFile) {
+        toast("warn", "Please select a file first");
+        return;
+      }
+
+      if (!currentDriverId) {
+        toast("error", "Not logged in");
+        return;
+      }
+
+      try {
+        const statusDiv = document.getElementById('msaUploadStatus');
+        statusDiv.style.display = 'block';
+        statusDiv.style.background = '#dbeafe';
+        statusDiv.style.color = '#1e40af';
+        statusDiv.textContent = 'Uploading...';
+        document.getElementById('btnUploadMSA').disabled = true;
+
+        // Read file as base64 using a safer method
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result;
+            const base64 = result.split(',')[1] || result;
+            resolve(base64);
+          };
+          reader.onerror = () => reject(new Error('File read failed'));
+          reader.readAsDataURL(selectedMSAFile);
+        });
+
+        const token = localStorage.getItem('driverToken') || currentToken;
+        const response = await fetch('/api/uploadMSALicense', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            driver_id: currentDriverId,
+            file_name: selectedMSAFile.name,
+            file_data: base64Data,
+            file_type: selectedMSAFile.type
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Upload failed');
+        }
+
+        statusDiv.style.background = '#dcfce7';
+        statusDiv.style.color = '#166534';
+        statusDiv.textContent = '✓ MSA License uploaded successfully!';
+        
+        toast("good", "MSA License uploaded successfully!");
+        
+        // Reset form
+        selectedMSAFile = null;
+        document.getElementById('msaFileInput').value = '';
+        document.getElementById('selectedFileName').textContent = '';
+        document.getElementById('btnUploadMSA').disabled = true;
+
+        // Reload MSA documents
+        await loadMSADocument();
+
+        setTimeout(() => {
+          statusDiv.style.display = 'none';
+        }, 3000);
+      } catch (err) {
+        console.error('MSA upload error:', err);
+        const statusDiv = document.getElementById('msaUploadStatus');
+        statusDiv.style.background = '#fee2e2';
+        statusDiv.style.color = '#991b1b';
+        statusDiv.textContent = `❌ ${err.message}`;
+        document.getElementById('btnUploadMSA').disabled = false;
+        toast("error", err.message);
+      }
+    }
+
+    async function loadMSADocument() {
+      if (!currentDriverId) return;
+
+      try {
+        const token = localStorage.getItem('driverToken') || currentToken;
+        const response = await fetch(`/api/getMSALicense/${currentDriverId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+
+        if (!result.success || !result.data) {
+          document.getElementById('msaDocumentsList').innerHTML = 
+            '<div style="color: #6b7280; text-align: center;">No document uploaded yet</div>';
+          return;
+        }
+
+        const doc = result.data;
+        const uploadDate = new Date(doc.upload_date).toLocaleDateString('en-ZA');
+
+        document.getElementById('msaDocumentsList').innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+            <div>
+              <div style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">📄 ${doc.file_name}</div>
+              <div style="font-size: 12px; color: #6b7280;">Uploaded: ${uploadDate}</div>
+              <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">Size: ${(doc.file_size / 1024).toFixed(2)}KB</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn" onclick="downloadMSALicense('${doc.document_id}', '${doc.file_name}')" style="padding: 8px 12px; font-size: 12px;">
+                ⬇️ Download
+              </button>
+              <button class="btn" onclick="deleteMSALicense('${doc.document_id}')" style="padding: 8px 12px; font-size: 12px; background: #fee2e2; color: #991b1b;">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Error loading MSA document:', err);
+        document.getElementById('msaDocumentsList').innerHTML = 
+          '<div style="color: #991b1b;">Error loading document</div>';
+      }
+    }
+
+    async function downloadMSALicense(documentId, fileName) {
+      try {
+        const token = localStorage.getItem('driverToken') || currentToken;
+        const response = await fetch(`/api/downloadMSALicense/${documentId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Download failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        toast("good", "MSA License downloaded");
+      } catch (err) {
+        console.error('Download error:', err);
+        toast("error", "Download failed");
+      }
+    }
+
+    async function deleteMSALicense(documentId) {
+      if (!confirm('Are you sure you want to delete your MSA License document?')) return;
+
+      try {
+        const token = localStorage.getItem('driverToken') || currentToken;
+        const response = await fetch('/api/deleteMSALicense', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ document_id: documentId })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Delete failed');
+        }
+
+        toast("good", "MSA License deleted");
+        await loadMSADocument();
+      } catch (err) {
+        console.error('Delete error:', err);
+        toast("error", err.message);
+      }
+    }
+
+    // Attach event listener to upload button
+    document.addEventListener('DOMContentLoaded', () => {
+      const uploadBtn = document.getElementById('btnUploadMSA');
+      if (uploadBtn) {
+        uploadBtn.addEventListener('click', uploadMSALicense);
+      }
+
+      // Add listener to MSA tab to load document when clicked
+      const msaSection = document.querySelector('[data-psection="msa"]');
+      if (msaSection) {
+        let lastLoadTime = 0;
+        const observer = new MutationObserver(() => {
+          const now = Date.now();
+          // Only load if 500ms has passed since last load to prevent rapid recursion
+          if (msaSection.classList.contains('active') && currentDriverId && (now - lastLoadTime) > 500) {
+            lastLoadTime = now;
+            loadMSADocument();
+          }
+        });
+        observer.observe(msaSection, { attributes: true, attributeFilter: ['class'] });
+      }
+    });
 
   </script>
 </body>

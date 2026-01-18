@@ -372,10 +372,12 @@
 
     .class-cadet {
       background: #e74c3c;
+      color: white;
     }
 
     .class-mini-rok-u10 {
       background: #f39c12;
+      color: white;
     }
 
     .class-mini-rok {
@@ -385,14 +387,17 @@
 
     .class-ok-j {
       background: #27ae60;
+      color: white;
     }
 
     .class-ok-n {
       background: #3498db;
+      color: white;
     }
 
     .class-kz2 {
       background: #9b59b6;
+      color: white;
     }
 
     .action-buttons {
@@ -669,6 +674,7 @@
       <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
       <button class="tab-btn" onclick="switchTab('events')">Events</button>
       <button class="tab-btn" onclick="switchTab('raceEntries')">Race Entries</button>
+      <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
       <button class="tab-btn" onclick="switchTab('audit')">Audit Trail</button>
     </div>
@@ -787,6 +793,20 @@
             <tr><td colspan="12" class="loading">Loading race entries...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- MSA Licenses Tab -->
+    <div id="msaLicensesTab" class="admin-content" style="display: none;">
+      <div class="filters-bar">
+        <select id="msaFilterRace">
+          <option value="">Select Event/Race...</option>
+        </select>
+        <button class="search-btn" onclick="loadAdminMSALicenses()">Load MSA Licenses</button>
+      </div>
+
+      <div id="msaLicensesList" style="background: #2a2a2a; border-radius: 8px; padding: 20px;">
+        <div class="loading">Select an event to view MSA licenses</div>
       </div>
     </div>
 
@@ -1060,6 +1080,7 @@
         document.getElementById('filterStatus').value = '';
         document.getElementById('filterPaid').value = '';
         loadDrivers();
+        loadAdminMSAEventDropdown();
       } else {
         const errorMsg = document.getElementById('errorMessage');
         if (errorMsg) {
@@ -1854,6 +1875,7 @@
       const driversTab = document.getElementById('driversTab');
       const eventsTab = document.getElementById('eventsTab');
       const raceEntriesTab = document.getElementById('raceEntriesTab');
+      const msaLicensesTab = document.getElementById('msaLicensesTab');
       const messagesTab = document.getElementById('messagesTab');
       const auditTab = document.getElementById('auditTab');
       const tabs = document.querySelectorAll('.tab-btn');
@@ -1862,6 +1884,7 @@
         driversTab.style.display = 'block';
         eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'none';
+        msaLicensesTab.style.display = 'none';
         messagesTab.style.display = 'none';
         auditTab.style.display = 'none';
         tabs[0].classList.add('active');
@@ -1869,10 +1892,12 @@
         tabs[2].classList.remove('active');
         tabs[3].classList.remove('active');
         tabs[4].classList.remove('active');
+        tabs[5].classList.remove('active');
       } else if (tabName === 'events') {
         driversTab.style.display = 'none';
         eventsTab.style.display = 'block';
         raceEntriesTab.style.display = 'none';
+        msaLicensesTab.style.display = 'none';
         messagesTab.style.display = 'none';
         auditTab.style.display = 'none';
         tabs[0].classList.remove('active');
@@ -1880,11 +1905,13 @@
         tabs[2].classList.remove('active');
         tabs[3].classList.remove('active');
         tabs[4].classList.remove('active');
+        tabs[5].classList.remove('active');
         loadEvents();
       } else if (tabName === 'raceEntries') {
         driversTab.style.display = 'none';
         eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'block';
+        msaLicensesTab.style.display = 'none';
         messagesTab.style.display = 'none';
         auditTab.style.display = 'none';
         tabs[0].classList.remove('active');
@@ -1892,30 +1919,49 @@
         tabs[2].classList.add('active');
         tabs[3].classList.remove('active');
         tabs[4].classList.remove('active');
+        tabs[5].classList.remove('active');
         loadRaceEntriesDropdown();
-      } else if (tabName === 'messages') {
+      } else if (tabName === 'msaLicenses') {
         driversTab.style.display = 'none';
         eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'none';
-        messagesTab.style.display = 'block';
+        msaLicensesTab.style.display = 'block';
+        messagesTab.style.display = 'none';
         auditTab.style.display = 'none';
         tabs[0].classList.remove('active');
         tabs[1].classList.remove('active');
         tabs[2].classList.remove('active');
         tabs[3].classList.add('active');
         tabs[4].classList.remove('active');
+        tabs[5].classList.remove('active');
+        loadAdminMSAEventDropdown();
+      } else if (tabName === 'messages') {
+        driversTab.style.display = 'none';
+        eventsTab.style.display = 'none';
+        raceEntriesTab.style.display = 'none';
+        msaLicensesTab.style.display = 'none';
+        messagesTab.style.display = 'block';
+        auditTab.style.display = 'none';
+        tabs[0].classList.remove('active');
+        tabs[1].classList.remove('active');
+        tabs[2].classList.remove('active');
+        tabs[3].classList.remove('active');
+        tabs[4].classList.add('active');
+        tabs[5].classList.remove('active');
         loadMessages();
       } else if (tabName === 'audit') {
         driversTab.style.display = 'none';
         eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'none';
+        msaLicensesTab.style.display = 'none';
         messagesTab.style.display = 'none';
         auditTab.style.display = 'block';
         tabs[0].classList.remove('active');
         tabs[1].classList.remove('active');
         tabs[2].classList.remove('active');
         tabs[3].classList.remove('active');
-        tabs[4].classList.add('active');
+        tabs[4].classList.remove('active');
+        tabs[5].classList.add('active');
         loadAuditTrail();
       }
     }
@@ -2335,12 +2381,156 @@
 
     // ============= END AUDIT TRAIL FUNCTIONS =============
 
+    // ============= CLASS COLOR FUNCTION =============
+    function getClassColor(className) {
+      if (!className) return '';
+      const classLower = className.toLowerCase();
+      if (classLower.includes('cadet')) return 'class-cadet';
+      if (classLower.includes('mini-rok') && classLower.includes('u10')) return 'class-mini-rok-u10';
+      if (classLower.includes('mini-rok')) return 'class-mini-rok';
+      if (classLower.includes('ok-j')) return 'class-ok-j';
+      if (classLower.includes('ok-n')) return 'class-ok-n';
+      if (classLower.includes('kz2')) return 'class-kz2';
+      return '';
+    }
+    // ============= END CLASS COLOR FUNCTION =============
+
+    // ============= MSA LICENSES FUNCTIONS =============
+
+    async function loadAdminMSAEventDropdown() {
+      try {
+        const response = await fetch('/api/getAllEvents');
+        
+        if (!response.ok) throw new Error('Failed to load events');
+        
+        const result = await response.json();
+        console.log('Admin MSA Events loaded:', result.events.length);
+        const select = document.getElementById('msaFilterRace');
+        select.innerHTML = '<option value="">Select Event/Race...</option>';
+        
+        result.events.forEach(event => {
+          const option = document.createElement('option');
+          option.value = event.event_id;
+          option.textContent = event.event_name + ' - ' + new Date(event.event_date).toLocaleDateString();
+          select.appendChild(option);
+          console.log('  Added option:', event.event_id);
+        });
+      } catch (err) {
+        console.error('Error loading events:', err);
+        showToast('Failed to load events', 'error');
+      }
+    }
+
+    async function loadAdminMSALicenses() {
+      try {
+        const eventId = document.getElementById('msaFilterRace').value;
+        console.log('Selected event ID:', eventId);
+        if (!eventId) {
+          showToast('Please select an event', 'error');
+          return;
+        }
+
+        const response = await fetch(`/api/getEventDriversMSALicenses/${eventId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) throw new Error('Failed to load MSA licenses');
+
+        const result = await response.json();
+        console.log('API response:', result);
+        console.log('Licenses to display:', result.data);
+        displayAdminMSALicenses(result.data || []);
+      } catch (err) {
+        console.error('Error loading MSA licenses:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
+    function displayAdminMSALicenses(licenses) {
+      const container = document.getElementById('msaLicensesList');
+      console.log('displayAdminMSALicenses called with:', licenses);
+      console.log('  Type:', typeof licenses);
+      console.log('  Is array:', Array.isArray(licenses));
+      console.log('  Length:', licenses ? licenses.length : 'undefined');
+      
+      if (!licenses || licenses.length === 0) {
+        console.log('No licenses - showing empty message');
+        container.innerHTML = '<div style="padding: 20px; color: #999;">No drivers have uploaded MSA licenses for this event.</div>';
+        return;
+      }
+
+      let html = '<div style="color: #999; margin-bottom: 15px; font-size: 14px;">Total Licenses: ' + licenses.length + '</div>';
+      html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px;">';
+
+      licenses.forEach(license => {
+        const uploadDate = new Date(license.upload_date).toLocaleDateString();
+        const fileSize = (license.file_size / 1024).toFixed(2) + ' KB';
+        const classColor = getClassColor(license.class);
+        
+        html += `
+          <div style="border: 1px solid #444; border-radius: 6px; padding: 15px; background: #333;">
+            <div style="margin-bottom: 8px;">
+              <strong style="font-size: 14px;">Driver: ${license.first_name} ${license.last_name}</strong>
+            </div>
+            <div style="margin-bottom: 8px; font-size: 12px; color: #aaa;">
+              <span class="class-badge ${classColor}">${license.class}</span>
+            </div>
+            <div style="margin-bottom: 8px; font-size: 12px; color: #ccc;">
+              <strong>File:</strong> ${license.file_name}
+            </div>
+            <div style="margin-bottom: 8px; font-size: 12px; color: #999;">
+              <strong>Uploaded:</strong> ${uploadDate} | <strong>Size:</strong> ${fileSize}
+            </div>
+            <button style="background: #4caf50; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;" onclick="downloadAdminMSALicense('${license.document_id}', '${license.file_name}')">Download</button>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      console.log('Generated HTML length:', html.length);
+      container.innerHTML = html;
+      console.log('Licenses displayed successfully');
+    }
+
+    async function downloadAdminMSALicense(documentId, fileName) {
+      try {
+        const response = await fetch(`/api/downloadMSALicense/${documentId}`, {
+          method: 'GET'
+        });
+
+        if (!response.ok) throw new Error('Failed to download license');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Download error:', err);
+        showToast('Failed to download license', 'error');
+      }
+    }
+
+    // ============= END MSA LICENSES FUNCTIONS =============
+
     
     const adminPasswordEl = document.getElementById('adminPassword');
     if (adminPasswordEl) {
       adminPasswordEl.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') adminLogin();
       });
+      
+      // Load MSA race dropdown after admin login
+      setTimeout(() => {
+        if (document.getElementById('adminWrapper').style.display !== 'none') {
+          loadAdminMSAEventDropdown();
+        }
+      }, 500);
     }
   </script>
 </body>
