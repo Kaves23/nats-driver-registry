@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NATS Officials Portal</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f5f7fa;
+      color: #2c3e50;
+    }
+
+    .login-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      border: none;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .login-box h1 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .login-box p {
+      color: #7f8c8d;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #2c3e50;
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      color: #2c3e50;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .error-message {
+      color: #c0392b;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: #fadbd8;
+      border-radius: 6px;
+      border: 1px solid #c0392b;
+      font-size: 13px;
+    }
+
+    /* Dashboard Styles */
+    .dashboard-wrapper {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #f5f7fa;
+    }
+
+    .header {
+      background: white;
+      padding: 20px 30px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .header h1 {
+      color: #2c3e50;
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .logout-btn {
+      padding: 8px 16px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background: #c0392b;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+
+    .content {
+      flex: 1;
+      padding: 30px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .controls-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .controls-bar button {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .controls-bar button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .controls-bar button.secondary {
+      background: #27ae60;
+    }
+
+    .controls-bar button.secondary:hover {
+      background: #229954;
+      box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+
+    .info-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 24px;
+      color: #2c3e50;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .info-box > div {
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+
+    .info-box > div:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-box strong {
+      color: #2c3e50;
+      font-weight: 700;
+    }
+
+    .table-wrapper {
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 700px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 1200px;
+    }
+
+    th {
+      background: #f8f9fa;
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 700;
+      color: #2c3e50;
+      border-bottom: 2px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+      height: 44px;
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #2c3e50;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+      height: 44px;
+    }
+
+    tr:hover {
+      background: #f8f9fa;
+    }
+
+    .class-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .class-cadet {
+      background: #e74c3c;
+    }
+
+    .class-mini-rok-u10 {
+      background: #f39c12;
+    }
+
+    .class-mini-rok {
+      background: #f1c40f;
+      color: #2c3e50;
+    }
+
+    .class-ok-j {
+      background: #27ae60;
+    }
+
+    .class-ok-n {
+      background: #3498db;
+    }
+
+    .class-kz2 {
+      background: #9b59b6;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-yes {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-no {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #95a5a6;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 16px 20px;
+      background: white;
+      border-radius: 8px;
+      color: #2c3e50;
+      z-index: 10000;
+      animation: slideIn 0.3s ease-out;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-size: 14px;
+    }
+
+    .toast.success {
+      border-left: 4px solid #27ae60;
+    }
+
+    .toast.error {
+      border-left: 4px solid #e74c3c;
+    }
+
+    .toast.info {
+      border-left: 4px solid #667eea;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login View -->
+  <div id="loginView" class="login-wrapper">
+    <div class="login-box">
+      <h1>Officials Portal</h1>
+      <p>NATS Race Management System</p>
+      <div id="loginError" class="error-message" style="display: none;"></div>
+      <div class="form-group">
+        <label for="officialPassword">Password</label>
+        <input type="password" id="officialPassword" placeholder="Enter password" autofocus onkeypress="handlePasswordKeypress(event)">
+      </div>
+      <button class="login-btn" onclick="loginOfficial()">Login</button>
+    </div>
+  </div>
+
+  <!-- Dashboard View -->
+  <div id="dashboardView" class="dashboard-wrapper">
+    <div class="header">
+      <h1>Officials Portal - Race Entry Management</h1>
+      <button class="logout-btn" onclick="logoutOfficial()">Logout</button>
+    </div>
+
+    <div class="content">
+      <div class="info-box">
+        <div><strong>Next Race:</strong> <span id="nextRaceName">Loading...</span></div>
+        <div><strong>Date:</strong> <span id="nextRaceDate">Loading...</span></div>
+        <div><strong>Total Entries:</strong> <span id="totalEntries">0</span></div>
+      </div>
+
+      <div class="controls-bar">
+        <button onclick="loadRaceDrivers()">Refresh Data</button>
+        <button class="secondary" onclick="exportDriversCSV()">📥 Export CSV - Drivers</button>
+        <button class="secondary" onclick="exportSignOnCSV()">📥 Export CSV - Sign-On Sheet</button>
+        <button class="secondary" onclick="exportTimingCSV()">📥 Export CSV - Timing System</button>
+        <button class="secondary" onclick="exportDriversPDF()" style="background: #e74c3c;">📄 Export PDF - Drivers</button>
+        <button class="secondary" onclick="exportSignOnPDF()" style="background: #e74c3c;">📄 Export PDF - Sign-On Sheet</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Driver Name</th>
+              <th>Class</th>
+              <th>Team</th>
+              <th>Transponder</th>
+              <th>Race #</th>
+              <th>License #</th>
+              <th>Kart Brand</th>
+            </tr>
+          </thead>
+          <tbody id="driversTable">
+            <tr><td colspan="7" class="loading">Loading race drivers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('officialToken');
+      if (token) {
+        showDashboard();
+        loadRaceDrivers();
+      } else {
+        showLogin();
+      }
+    });
+
+    function showLogin() {
+      document.getElementById('loginView').style.display = 'flex';
+      document.getElementById('dashboardView').style.display = 'none';
+      setTimeout(() => document.getElementById('officialPassword').focus(), 100);
+    }
+
+    function handlePasswordKeypress(event) {
+      if (event.key === 'Enter') {
+        loginOfficial();
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('loginView').style.display = 'none';
+      document.getElementById('dashboardView').style.display = 'flex';
+    }
+
+    async function loginOfficial() {
+      try {
+        const password = document.getElementById('officialPassword').value.trim();
+
+        if (!password) {
+          showError('Please enter password');
+          return;
+        }
+
+        // Check password against hardcoded value
+        if (password !== 'natsadmin2026') {
+          showError('Invalid password');
+          return;
+        }
+
+        // Set session token
+        localStorage.setItem('officialToken', 'nats-admin-' + Date.now());
+        
+        showToast('Login successful!', 'success');
+        showDashboard();
+        loadRaceDrivers();
+      } catch (err) {
+        console.error('Login error:', err);
+        showError(err.message);
+      }
+    }
+
+    function logoutOfficial() {
+      localStorage.removeItem('officialToken');
+      localStorage.removeItem('officialName');
+      showLogin();
+      document.getElementById('officialPassword').value = '';
+      document.getElementById('loginError').style.display = 'none';
+    }
+
+    async function loadRaceDrivers() {
+      try {
+        const token = localStorage.getItem('officialToken');
+        if (!token) {
+          showLogin();
+          return;
+        }
+
+        const response = await fetch('/api/getNextRaceDrivers', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to load drivers');
+        }
+
+        const data = result.data || {};
+        document.getElementById('nextRaceName').textContent = data.event_name || 'N/A';
+        document.getElementById('nextRaceDate').textContent = data.event_date ? new Date(data.event_date).toLocaleDateString('en-ZA') : 'N/A';
+        document.getElementById('totalEntries').textContent = (data.drivers || []).length;
+
+        displayDrivers(data.drivers || []);
+      } catch (err) {
+        console.error('Error loading drivers:', err);
+        showToast(err.message, 'error');
+        const table = document.getElementById('driversTable');
+        table.innerHTML = `<tr><td colspan="9" class="loading">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function displayDrivers(drivers) {
+      const table = document.getElementById('driversTable');
+      
+      if (!drivers || drivers.length === 0) {
+        table.innerHTML = '<tr><td colspan="7" class="loading">No drivers registered for next race</td></tr>';
+        return;
+      }
+
+      let html = '';
+      drivers.forEach(driver => {
+        const driverName = `${driver.first_name || ''} ${driver.last_name || ''}`.trim();
+        const driverClass = driver.championship_class || driver.driver_class || '-';
+        const classColor = getClassColor(driverClass);
+
+        html += `
+          <tr>
+            <td>${driverName || '-'}</td>
+            <td><span class="class-badge ${classColor}">${driverClass}</span></td>
+            <td>${driver.team_name || '-'}</td>
+            <td>${driver.transponder_number || '-'}</td>
+            <td>${driver.race_number || '-'}</td>
+            <td>${driver.license_number || '-'}</td>
+            <td>${driver.kart_brand || '-'}</td>
+          </tr>
+        `;
+      });
+
+      table.innerHTML = html;
+    }
+
+    function getClassColor(className) {
+      if (!className) return '';
+      const classLower = className.toLowerCase();
+      if (classLower.includes('cadet')) return 'class-cadet';
+      if (classLower.includes('mini-rok') && classLower.includes('u10')) return 'class-mini-rok-u10';
+      if (classLower.includes('mini-rok')) return 'class-mini-rok';
+      if (classLower.includes('ok-j')) return 'class-ok-j';
+      if (classLower.includes('ok-n')) return 'class-ok-n';
+      if (classLower.includes('kz2')) return 'class-kz2';
+      return '';
+    }
+
+    async function exportDriversCSV() {
+      try {
+        const token = localStorage.getItem('officialToken');
+        
+        const response = await fetch('/api/exportOfficialsCSV', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ format: 'drivers' })
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const csvText = await response.text();
+        downloadCSV(csvText, 'drivers-list.csv');
+        showToast('CSV exported successfully!', 'success');
+      } catch (err) {
+        console.error('Export error:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function exportSignOnCSV() {
+      try {
+        const token = localStorage.getItem('officialToken');
+        
+        const response = await fetch('/api/exportOfficialsCSV', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ format: 'signon' })
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const csvText = await response.text();
+        downloadCSV(csvText, 'entry-sign-on.csv');
+        showToast('CSV exported successfully!', 'success');
+      } catch (err) {
+        console.error('Export error:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function exportTimingCSV() {
+      try {
+        const token = localStorage.getItem('officialToken');
+        
+        const response = await fetch('/api/exportOfficialsCSV', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ format: 'timing' })
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const csvText = await response.text();
+        downloadCSV(csvText, 'timing-system.csv');
+        showToast('CSV exported successfully!', 'success');
+      } catch (err) {
+        console.error('Export error:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
+    function downloadCSV(csvText, filename) {
+      const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('loginError');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 4000);
+    }
+
+    async function exportDriversPDF() {
+      try {
+        const raceName = document.getElementById('nextRaceName').textContent;
+        const raceDate = document.getElementById('nextRaceDate').textContent;
+
+        // Create PDF container
+        const element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.backgroundColor = 'white';
+        element.style.fontFamily = 'Arial, sans-serif';
+        
+        // Header with ROK graphic
+        const headerHTML = `
+          <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #e74c3c; padding-bottom: 20px;">
+            <div style="font-size: 32px; font-weight: bold; color: #e74c3c; margin-bottom: 5px;">ROK CUP</div>
+            <div style="font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">NATS Driver List</div>
+            <div style="font-size: 14px; color: #7f8c8d;">
+              <div>Event: ${raceName}</div>
+              <div>Date: ${raceDate}</div>
+            </div>
+          </div>
+        `;
+
+        // Table HTML
+        const table = document.getElementById('driversTable');
+        const tableHTML = `
+          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
+              <tr style="background-color: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Driver Name</th>
+                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Class</th>
+                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Team</th>
+                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Transponder</th>
+                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Race #</th>
+                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">License #</th>
+                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Kart Brand</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from(table.querySelectorAll('tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 0) return '';
+                return `
+                  <tr style="border-bottom: 1px solid #e0e0e0;">
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[0].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[1].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[2].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[3].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[4].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[5].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[6].textContent}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+
+        // Footer
+        const footerHTML = `
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #7f8c8d; font-size: 12px;">
+            <div>Generated on ${new Date().toLocaleDateString('en-ZA')} at ${new Date().toLocaleTimeString('en-ZA')}</div>
+            <div>NATS Driver Registry System</div>
+          </div>
+        `;
+
+        element.innerHTML = headerHTML + tableHTML + footerHTML;
+
+        // Generate PDF
+        const opt = {
+          margin: 10,
+          filename: `drivers-list-${new Date().toISOString().slice(0,10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+        };
+
+        html2pdf().set(opt).from(element).save();
+        showToast('PDF exported successfully!', 'success');
+      } catch (err) {
+        console.error('PDF export error:', err);
+        showToast('Error generating PDF: ' + err.message, 'error');
+      }
+    }
+
+    async function exportSignOnPDF() {
+      try {
+        const raceName = document.getElementById('nextRaceName').textContent;
+        const raceDate = document.getElementById('nextRaceDate').textContent;
+
+        // Create PDF container
+        const element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.backgroundColor = 'white';
+        element.style.fontFamily = 'Arial, sans-serif';
+        
+        // Header with ROK graphic
+        const headerHTML = `
+          <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #e74c3c; padding-bottom: 20px;">
+            <div style="font-size: 32px; font-weight: bold; color: #e74c3c; margin-bottom: 5px;">ROK CUP</div>
+            <div style="font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Sign-On Sheet</div>
+            <div style="font-size: 14px; color: #7f8c8d;">
+              <div>Event: ${raceName}</div>
+              <div>Date: ${raceDate}</div>
+            </div>
+          </div>
+        `;
+
+        // Sign-on table (simplified for signing)
+        const table = document.getElementById('driversTable');
+        const signOnHTML = `
+          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
+              <tr style="background-color: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: left; font-weight: bold; width: 30%;">Driver Name</th>
+                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: left; font-weight: bold; width: 20%;">Class</th>
+                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: left; font-weight: bold; width: 15%;">Team Code</th>
+                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: center; font-weight: bold; width: 35%;">Signature / Initials</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from(table.querySelectorAll('tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length === 0) return '';
+                return `
+                  <tr style="border-bottom: 1px solid #e0e0e0; height: 40px;">
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[0].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[2].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[3].textContent}</td>
+                    <td style="border: 1px solid #e0e0e0; padding: 8px;"></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+
+        // Footer
+        const footerHTML = `
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #7f8c8d; font-size: 12px;">
+            <div>Generated on ${new Date().toLocaleDateString('en-ZA')} at ${new Date().toLocaleTimeString('en-ZA')}</div>
+            <div>NATS Driver Registry System</div>
+          </div>
+        `;
+
+        element.innerHTML = headerHTML + signOnHTML + footerHTML;
+
+        // Generate PDF
+        const opt = {
+          margin: 10,
+          filename: `sign-on-sheet-${new Date().toISOString().slice(0,10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        };
+
+        html2pdf().set(opt).from(element).save();
+        showToast('PDF exported successfully!', 'success');
+      } catch (err) {
+        console.error('PDF export error:', err);
+        showToast('Error generating PDF: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
