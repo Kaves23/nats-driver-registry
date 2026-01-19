@@ -41,6 +41,52 @@
       min-height: 100vh;
     }
 
+    /* Mobile optimizations */
+    @media (max-width: 768px){
+      body{
+        padding: 16px 12px;
+      }
+
+      .shell{
+        padding: 16px 16px 14px;
+      }
+
+      .tabs{
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .header{
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .header-right{
+        width: 100%;
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 480px){
+      body{
+        padding: 12px 10px;
+      }
+
+      .shell{
+        padding: 12px 12px 10px;
+        box-shadow: 0 8px 16px rgba(15,23,42,0.12);
+      }
+
+      .title{
+        font-size: 16px;
+      }
+
+      .sub{
+        font-size: 14px;
+      }
+    }
+
     .wrap{ width:min(1180px, 100%); margin: 0 auto; position:relative; }
 
     .shell{
@@ -158,6 +204,168 @@
     .tab.active{
       border-color: rgba(15,23,42,0.55);
       box-shadow: 0 18px 40px rgba(15,23,42,0.12);
+    }
+
+    /* Mobile: 3D Flip Carousel */
+    @media (max-width: 480px){
+      .tabs{
+        display: flex;
+      }
+
+      .tabs-carousel-container{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+        perspective: 1200px;
+      }
+
+      .tabs-carousel{
+        width: 100%;
+        height: 160px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        display: flex;
+        gap: 12px;
+        padding: 0 12px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+
+      .tabs-carousel::-webkit-scrollbar{
+        display: none;
+      }
+
+      .carousel-option{
+        min-width: calc(100% - 24px);
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        perspective: 1000px;
+        flex-shrink: 0;
+      }
+
+      .carousel-card{
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border: 2px solid var(--border-soft);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+      }
+
+      .carousel-card::before{
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.4) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+
+      .carousel-option:hover .carousel-card{
+        border-color: var(--border-strong);
+        box-shadow: 0 16px 32px rgba(15,23,42,0.15);
+        transform: translateY(-4px) scale(1.02);
+      }
+
+      .carousel-option:hover .carousel-card::before{
+        opacity: 1;
+      }
+
+      .carousel-icon{
+        font-size: 48px;
+        line-height: 1;
+        animation: floatIcon 3s ease-in-out infinite;
+      }
+
+      .carousel-option[data-tab="portal"] .carousel-icon{
+        animation-delay: 0s;
+      }
+
+      .carousel-option[data-tab="register"] .carousel-icon{
+        animation-delay: 0.5s;
+      }
+
+      @keyframes floatIcon{
+        0%, 100%{ transform: translateY(0px); }
+        50%{ transform: translateY(-8px); }
+      }
+
+      .carousel-label{
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink);
+        position: relative;
+        z-index: 1;
+      }
+
+      .carousel-option.active .carousel-card{
+        border-color: transparent;
+        box-shadow: 0 20px 40px rgba(15,23,42,0.2);
+        transform: translateY(-6px) scale(1.05);
+      }
+
+      .carousel-option[data-tab="portal"].active .carousel-card{
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        box-shadow: 0 20px 40px rgba(14, 165, 233, 0.35);
+      }
+
+      .carousel-option[data-tab="register"].active .carousel-card{
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        box-shadow: 0 20px 40px rgba(34, 197, 94, 0.35);
+      }
+
+      .carousel-option.active .carousel-label{
+        color: #fff;
+      }
+
+      .carousel-option.active .carousel-icon{
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+      }
+
+      .carousel-indicator{
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .carousel-dot{
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(15,23,42,0.2);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .carousel-dot.active{
+        background: var(--ink);
+        width: 24px;
+      }
+
+      .carousel-dot[data-tab="portal"].active{
+        background: #0ea5e9;
+      }
+
+      .carousel-dot[data-tab="register"].active{
+        background: #4ade80;
+      }
     }
 
     .grid{
@@ -569,6 +777,7 @@
 
     } /* end prefers-reduced-motion */
 
+    .toast{
       border: 1px solid var(--border-soft);
       background: #fff;
       padding: 10px 12px;
@@ -640,6 +849,254 @@
     .ptab.active[data-accent="winter"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(14,165,233,0.35); }
     .ptab.active[data-accent="spring"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(34,197,94,0.35); }
 
+    /* Mobile Portal Menu - FAB + Expandable Accordion */
+    @media (max-width: 768px){
+      .portalTabs{
+        display: none !important;
+      }
+
+      #portalTabsCarousel{
+        display: flex !important;
+        flex-direction: column;
+        gap: 0;
+        margin-top: 14px;
+      }
+
+      .portalTab-current{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 8px 10px;
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border: 2px solid var(--border-soft);
+        border-radius: 0;
+        transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        z-index: 20;
+        gap: 8px;
+      }
+
+      .portalTab-current-label{
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink);
+        flex: 1;
+      }
+
+      .portalTab-fab{
+        padding: 6px 10px;
+        border-radius: 0;
+        background: var(--ink);
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 6px 16px rgba(15,23,42,0.2);
+        flex-shrink: 0;
+        animation: fabFlash 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 3;
+      }
+
+      @keyframes fabFlash{
+        0%, 100%{
+          box-shadow: 0 6px 16px rgba(15,23,42,0.2);
+          transform: scale(1);
+        }
+        50%{
+          box-shadow: 0 10px 26px rgba(15,23,42,0.35), 0 0 20px rgba(15,23,42,0.15);
+          transform: scale(1.05);
+        }
+      }
+
+      .portalTab-fab:hover{
+        transform: scale(1.08);
+        box-shadow: 0 10px 24px rgba(15,23,42,0.25);
+      }
+
+      .portalTab-fab-icon{
+        font-size: 12px;
+        color: #fff;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* Menu when expanded */
+      .portalTab-menu{
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+        z-index: 15;
+        opacity: 0;
+      }
+
+      .portalTab-menu.expanded{
+        max-height: 600px;
+        opacity: 1;
+      }
+
+      .portalTab-menu-backdrop{
+        position: absolute;
+        inset: 0;
+        background: rgba(15,23,42,0.02);
+        border-radius: 12px;
+        z-index: -1;
+      }
+
+      .portalTab-menu-grid{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        background: rgba(255,255,255,0.5);
+        border: 1px solid var(--border-soft);
+        border-top: none;
+        border-radius: 0;
+      }
+
+      .portalTab-option{
+        padding: 4px 5px;
+        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+        border: 2px solid var(--border-soft);
+        border-radius: 0;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(30px) scale(0.75) rotateX(-10deg);
+        animation: slideInOption 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      .portalTab-option:nth-child(1){ animation-delay: 0.1s; }
+      .portalTab-option:nth-child(2){ animation-delay: 0.16s; }
+      .portalTab-option:nth-child(3){ animation-delay: 0.22s; }
+      .portalTab-option:nth-child(4){ animation-delay: 0.28s; }
+      .portalTab-option:nth-child(5){ animation-delay: 0.34s; }
+      .portalTab-option:nth-child(6){ animation-delay: 0.4s; }
+      .portalTab-option:nth-child(7){ animation-delay: 0.46s; }
+
+      @keyframes slideInOption{
+        0%{
+          opacity: 0;
+          transform: translateY(30px) scale(0.75) rotateX(-10deg);
+        }
+        50%{
+          opacity: 1;
+        }
+        to{
+          opacity: 1;
+          transform: translateY(0) scale(1) rotateX(0deg);
+        }
+      }
+
+      .portalTab-option::before{
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.5) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .portalTab-option:hover{
+        border-color: var(--border-strong);
+        box-shadow: 0 6px 12px rgba(15,23,42,0.1);
+        transform: translateY(-2px);
+      }
+
+      .portalTab-option:hover::before{
+        opacity: 1;
+      }
+
+      .portalTab-option-label{
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink);
+        position: relative;
+        z-index: 1;
+        display: block;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        line-height: 1.1;
+      }
+
+      /* Active option styling */
+      .portalTab-option.active{
+        border-color: transparent;
+        box-shadow: 0 8px 16px rgba(15,23,42,0.12);
+      }
+
+      .portalTab-option[data-ptab="driver"].active{
+        background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);
+        box-shadow: 0 8px 16px rgba(250, 204, 21, 0.45);
+      }
+
+      .portalTab-option[data-ptab="contacts"].active{
+        background: linear-gradient(135deg, #fed7aa 0%, #fb923c 100%);
+        box-shadow: 0 8px 16px rgba(251, 146, 60, 0.45);
+      }
+
+      .portalTab-option[data-ptab="medical"].active{
+        background: linear-gradient(135deg, #a5f3fc 0%, #22d3ee 100%);
+        box-shadow: 0 8px 16px rgba(34, 211, 238, 0.45);
+      }
+
+      .portalTab-option[data-ptab="points"].active{
+        background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
+        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.45);
+      }
+
+      .portalTab-option[data-ptab="payments"].active{
+        background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
+        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.45);
+      }
+
+      .portalTab-option[data-ptab="msa"].active{
+        background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
+        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.45);
+      }
+
+      .portalTab-option[data-ptab="requests"].active{
+        background: linear-gradient(135deg, #fed7aa 0%, #fb923c 100%);
+        box-shadow: 0 8px 16px rgba(251, 146, 60, 0.45);
+      }
+
+      .portalTab-option.active .portalTab-option-label{
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+
+      /* Mobile responsive table fix */
+      .table{
+        font-size: 11px;
+      }
+      
+      .table th, .table td{
+        padding: 6px 4px;
+        font-size: 10px;
+      }
+
+      .panel{
+        padding: 10px 10px 8px;
+      }
+
+      .panelTitle{
+        font-size: 11px;
+      }
+    }
+
     .portalSection{ display:none; }
     .portalSection.active{ display:block; }
 
@@ -647,11 +1104,25 @@
       width:100%;
       border-collapse: collapse;
       border: 1px solid var(--border-soft);
+      max-width: 100%;
     }
     .table th, .table td{
       padding: 8px 8px;
       border-bottom: 1px solid var(--border-soft);
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    /* Mobile table container with scroll */
+    @media (max-width: 768px){
+      .table-wrapper, #p_contactsTable, #p_pointsTable, #entriesTableContainer{
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+      }
+    }
+
+    .table tbody tr{
       text-align:left;
       vertical-align: top;
     }
@@ -931,6 +1402,45 @@
               <button class="ptab" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
               <button class="ptab" data-ptab="msa" data-accent="spring" type="button"><span class="tabBar"></span>MSA License</button>
               <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
+            </div>
+
+            <!-- Portal tabs - Mobile 3D carousel -->
+            <div id="portalTabsCarousel" class="portalTabs-carousel-container" style="display:none;">
+              <!-- Current tab display -->
+              <div class="portalTab-current">
+                <span class="portalTab-current-label">Driver</span>
+                <button class="portalTab-fab" aria-label="Options">
+                  <span class="portalTab-fab-icon">Options</span>
+                </button>
+              </div>
+
+              <!-- Expandable menu -->
+              <div class="portalTab-menu">
+                <div class="portalTab-menu-backdrop"></div>
+                <div class="portalTab-menu-grid">
+                  <button class="portalTab-option active" data-ptab="driver">
+                    <span class="portalTab-option-label">Driver Profile</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="contacts">
+                    <span class="portalTab-option-label">Entrant Details</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="medical">
+                    <span class="portalTab-option-label">Medical & Consent</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="points">
+                    <span class="portalTab-option-label">Points</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="payments">
+                    <span class="portalTab-option-label">Entries & Rentals</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="msa">
+                    <span class="portalTab-option-label">MSA License</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="requests">
+                    <span class="portalTab-option-label">Contact Admin</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Portal sections -->
@@ -1773,11 +2283,27 @@
       document.querySelectorAll(".tab").forEach(b => {
         b.classList.remove("active");
       });
+
+      // Update carousel indicators
+      document.querySelectorAll(".carousel-option").forEach(b => {
+        b.classList.remove("active");
+      });
+      document.querySelectorAll(".carousel-dot").forEach(b => {
+        b.classList.remove("active");
+      });
       
       if (mode) {
         const activeBtn = document.querySelector(`.tab[data-tab="${mode}"]`);
         if (activeBtn) {
           activeBtn.classList.add("active");
+        }
+        const activeOption = document.querySelector(`.carousel-option[data-tab="${mode}"]`);
+        if (activeOption) {
+          activeOption.classList.add("active");
+        }
+        const activeDot = document.querySelector(`.carousel-dot[data-tab="${mode}"]`);
+        if (activeDot) {
+          activeDot.classList.add("active");
         }
       }
 
@@ -1816,6 +2342,32 @@
       document.querySelectorAll(".ptab").forEach(b=>b.classList.remove("active"));
       const btn = document.querySelector(`.ptab[data-ptab="${key}"]`);
       if(btn) btn.classList.add("active");
+
+      // Update mobile menu
+      document.querySelectorAll(".portalTab-option").forEach(b=>b.classList.remove("active"));
+      const mobileOption = document.querySelector(`.portalTab-option[data-ptab="${key}"]`);
+      if(mobileOption) {
+        mobileOption.classList.add("active");
+      }
+
+      // Update current tab display
+      const currentLabel = document.querySelector(".portalTab-current-label");
+      if(currentLabel) {
+        const labels = {
+          'driver': 'Driver',
+          'contacts': 'Entrant',
+          'medical': 'Medical',
+          'points': 'Points',
+          'payments': 'Entries',
+          'msa': 'License',
+          'requests': 'Admin'
+        };
+        currentLabel.textContent = labels[key] || 'Driver';
+      }
+
+      // Close menu after selection
+      const menu = document.querySelector(".portalTab-menu");
+      if(menu) menu.classList.remove("expanded");
 
       document.querySelectorAll(".portalSection").forEach(s=>s.classList.remove("active"));
       const sec = document.querySelector(`.portalSection[data-psection="${key}"]`);
@@ -2759,11 +3311,92 @@
       });
     });
 
+    // Mobile carousel scroll handling
+    const carousel = document.querySelector(".tabs-carousel");
+    const carouselOptions = document.querySelectorAll(".carousel-option");
+    const carouselDots = document.querySelectorAll(".carousel-dot");
+
+    if (carousel) {
+      // Snap carousel to options on scroll end
+      carousel.addEventListener("scroll", debounce(function() {
+        const scrollLeft = carousel.scrollLeft;
+        const optionWidth = carouselOptions[0].offsetWidth;
+        const index = Math.round(scrollLeft / optionWidth);
+        const selectedOption = carouselOptions[Math.min(index, carouselOptions.length - 1)];
+        
+        if (selectedOption) {
+          const mode = selectedOption.dataset.tab;
+          setMode(mode);
+        }
+      }, 200));
+
+      // Carousel option click
+      carouselOptions.forEach(option => {
+        option.addEventListener("click", function() {
+          const mode = this.dataset.tab;
+          setMode(mode);
+          scrollCarouselToOption(mode);
+        });
+      });
+
+      // Carousel dot click
+      carouselDots.forEach(dot => {
+        dot.addEventListener("click", function() {
+          const mode = this.dataset.tab;
+          setMode(mode);
+          scrollCarouselToOption(mode);
+        });
+      });
+    }
+
+    function scrollCarouselToOption(mode) {
+      if (!carousel) return;
+      const option = document.querySelector(`.carousel-option[data-tab="${mode}"]`);
+      if (option) {
+        option.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
     // Portal sub-tabs
     document.addEventListener("click", (e)=>{
       const p = e.target.closest(".ptab");
-      if(!p) return;
-      setPortalTab(p.dataset.ptab);
+      if(p) {
+        setPortalTab(p.dataset.ptab);
+        return;
+      }
+      
+      const fab = e.target.closest(".portalTab-fab");
+      if(fab) {
+        const menu = document.querySelector(".portalTab-menu");
+        if(menu) menu.classList.toggle("expanded");
+        return;
+      }
+
+      const option = e.target.closest(".portalTab-option");
+      if(option) {
+        setPortalTab(option.dataset.ptab);
+        return;
+      }
+
+      // Close menu if clicking backdrop
+      const backdrop = e.target.closest(".portalTab-menu-backdrop");
+      if(backdrop) {
+        const menu = document.querySelector(".portalTab-menu");
+        if(menu) menu.classList.remove("expanded");
+        return;
+      }
     });
 
     /* LOGIN (Email + Password) */
