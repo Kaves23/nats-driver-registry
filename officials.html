@@ -1134,50 +1134,74 @@
 
         // Create PDF container
         const element = document.createElement('div');
-        element.style.padding = '20px';
+        element.style.padding = '0';
         element.style.backgroundColor = 'white';
         element.style.fontFamily = 'Arial, sans-serif';
+        element.style.fontSize = '9px';
+        element.style.lineHeight = '1.2';
         
-        // Header with ROK graphic
+        // Professional header with ROK and NATS branding
         const headerHTML = `
-          <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #e74c3c; padding-bottom: 20px;">
-            <div style="font-size: 32px; font-weight: bold; color: #e74c3c; margin-bottom: 5px;">ROK CUP</div>
-            <div style="font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">NATS Driver List</div>
-            <div style="font-size: 14px; color: #7f8c8d;">
-              <div>Event: ${raceName}</div>
-              <div>Date: ${raceDate}</div>
+          <div style="margin-bottom: 8px;">
+            <!-- Header bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 2px solid #e74c3c;">
+              <!-- ROK Logo area -->
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 4px 10px; border-radius: 3px;">
+                  <span style="font-size: 18px; font-weight: 900; letter-spacing: -1px;">ROK</span>
+                  <span style="font-size: 10px; font-weight: 600; margin-left: 2px;">CUP</span>
+                </div>
+                <div style="font-size: 7px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Official Document</div>
+              </div>
+              <!-- NATS Logo area -->
+              <div style="text-align: right;">
+                <div style="font-size: 14px; font-weight: 800; color: #1a1a2e; letter-spacing: 1px;">NATS</div>
+                <div style="font-size: 6px; color: #666; text-transform: uppercase;">National Series</div>
+              </div>
+            </div>
+            <!-- Document title and event info -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; padding-bottom: 6px; border-bottom: 1px solid #eee;">
+              <div>
+                <div style="font-size: 14px; font-weight: 700; color: #1a1a2e;">ENTRY LIST</div>
+                <div style="font-size: 8px; color: #666; margin-top: 2px;">${raceName}</div>
+              </div>
+              <div style="text-align: right; font-size: 8px; color: #666;">
+                <div><strong>Date:</strong> ${raceDate}</div>
+                <div><strong>Issued:</strong> ${new Date().toLocaleDateString('en-ZA')} ${new Date().toLocaleTimeString('en-ZA', {hour: '2-digit', minute: '2-digit'})}</div>
+              </div>
             </div>
           </div>
         `;
 
-        // Table HTML
+        // Compact table
         const table = document.getElementById('driversTable');
         const tableHTML = `
-          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
             <thead>
-              <tr style="background-color: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
-                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Driver Name</th>
-                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Class</th>
-                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Team</th>
-                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Transponder</th>
-                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Race #</th>
-                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">License #</th>
-                <th style="border: 1px solid #e0e0e0; padding: 8px; text-align: left; font-weight: bold;">Kart Brand</th>
+              <tr style="background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);">
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; color: #495057;">Driver</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; color: #495057;">Class</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; color: #495057;">Team</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; color: #495057;">Trans#</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; color: #495057;">Race#</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; color: #495057;">License</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; color: #495057;">Kart</th>
               </tr>
             </thead>
             <tbody>
-              ${Array.from(table.querySelectorAll('tr')).map(row => {
+              ${Array.from(table.querySelectorAll('tr')).map((row, idx) => {
                 const cells = row.querySelectorAll('td');
                 if (cells.length === 0) return '';
+                const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
                 return `
-                  <tr style="border-bottom: 1px solid #e0e0e0;">
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[0].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[1].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[2].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[3].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[4].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[5].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[6].textContent}</td>
+                  <tr style="background-color: ${bgColor};">
+                    <td style="border: 1px solid #dee2e6; padding: 3px 6px; font-weight: 600;">${cells[0].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 3px 6px;"><span style="background: #e74c3c; color: white; padding: 1px 4px; border-radius: 2px; font-size: 7px; font-weight: 600;">${cells[1].textContent}</span></td>
+                    <td style="border: 1px solid #dee2e6; padding: 3px 6px;">${cells[2].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 3px 6px; text-align: center; font-family: monospace;">${cells[3].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 3px 6px; text-align: center; font-weight: 700;">${cells[4].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 3px 6px; font-family: monospace; font-size: 7px;">${cells[5].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 3px 6px;">${cells[6].textContent}</td>
                   </tr>
                 `;
               }).join('')}
@@ -1185,22 +1209,24 @@
           </table>
         `;
 
-        // Footer
+        // Compact footer
         const footerHTML = `
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #7f8c8d; font-size: 12px;">
-            <div>Generated on ${new Date().toLocaleDateString('en-ZA')} at ${new Date().toLocaleTimeString('en-ZA')}</div>
-            <div>NATS Driver Registry System</div>
+          <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; font-size: 7px; color: #6c757d;">
+            <div>ROK Cup NATS • www.rokthenats.co.za</div>
+            <div style="text-align: right;">
+              Page 1 • Total Entries: ${table.querySelectorAll('tr').length}
+            </div>
           </div>
         `;
 
         element.innerHTML = headerHTML + tableHTML + footerHTML;
 
-        // Generate PDF
+        // Generate PDF with tighter margins
         const opt = {
-          margin: 10,
-          filename: `drivers-list-${new Date().toISOString().slice(0,10)}.pdf`,
+          margin: [8, 8, 8, 8],
+          filename: `NATS_Entry_List_${new Date().toISOString().slice(0,10)}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
+          html2canvas: { scale: 2, useCORS: true },
           jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
         };
 
@@ -1219,44 +1245,72 @@
 
         // Create PDF container
         const element = document.createElement('div');
-        element.style.padding = '20px';
+        element.style.padding = '0';
         element.style.backgroundColor = 'white';
         element.style.fontFamily = 'Arial, sans-serif';
+        element.style.fontSize = '9px';
+        element.style.lineHeight = '1.2';
         
-        // Header with ROK graphic
+        // Professional header with ROK and NATS branding
         const headerHTML = `
-          <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #e74c3c; padding-bottom: 20px;">
-            <div style="font-size: 32px; font-weight: bold; color: #e74c3c; margin-bottom: 5px;">ROK CUP</div>
-            <div style="font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Sign-On Sheet</div>
-            <div style="font-size: 14px; color: #7f8c8d;">
-              <div>Event: ${raceName}</div>
-              <div>Date: ${raceDate}</div>
+          <div style="margin-bottom: 10px;">
+            <!-- Header bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 3px solid #e74c3c;">
+              <!-- ROK Logo area -->
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 6px 14px; border-radius: 4px;">
+                  <span style="font-size: 22px; font-weight: 900; letter-spacing: -1px;">ROK</span>
+                  <span style="font-size: 12px; font-weight: 600; margin-left: 3px;">CUP</span>
+                </div>
+                <div style="font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Official Document</div>
+              </div>
+              <!-- NATS Logo area -->
+              <div style="text-align: right;">
+                <div style="font-size: 18px; font-weight: 800; color: #1a1a2e; letter-spacing: 2px;">NATS</div>
+                <div style="font-size: 7px; color: #666; text-transform: uppercase;">National Series</div>
+              </div>
+            </div>
+            <!-- Document title and event info -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
+              <div>
+                <div style="font-size: 18px; font-weight: 700; color: #1a1a2e;">SIGN-ON SHEET</div>
+                <div style="font-size: 10px; color: #666; margin-top: 2px;">${raceName}</div>
+              </div>
+              <div style="text-align: right; font-size: 9px; color: #666;">
+                <div><strong>Event Date:</strong> ${raceDate}</div>
+                <div><strong>Issued:</strong> ${new Date().toLocaleDateString('en-ZA')}</div>
+              </div>
             </div>
           </div>
         `;
 
-        // Sign-on table (simplified for signing)
+        // Sign-on table with signature boxes
         const table = document.getElementById('driversTable');
         const signOnHTML = `
-          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
             <thead>
-              <tr style="background-color: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
-                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: left; font-weight: bold; width: 30%;">Driver Name</th>
-                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: left; font-weight: bold; width: 20%;">Class</th>
-                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: left; font-weight: bold; width: 15%;">Team Code</th>
-                <th style="border: 1px solid #e0e0e0; padding: 10px; text-align: center; font-weight: bold; width: 35%;">Signature / Initials</th>
+              <tr style="background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);">
+                <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: left; font-weight: 700; font-size: 8px; text-transform: uppercase; color: #495057; width: 25%;">Driver Name</th>
+                <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: left; font-weight: 700; font-size: 8px; text-transform: uppercase; color: #495057; width: 15%;">Class</th>
+                <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; color: #495057; width: 10%;">Race #</th>
+                <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; color: #495057; width: 10%;">Team</th>
+                <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; color: #495057; width: 25%;">Signature</th>
+                <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; color: #495057; width: 15%;">Time</th>
               </tr>
             </thead>
             <tbody>
-              ${Array.from(table.querySelectorAll('tr')).map(row => {
+              ${Array.from(table.querySelectorAll('tr')).map((row, idx) => {
                 const cells = row.querySelectorAll('td');
                 if (cells.length === 0) return '';
+                const bgColor = idx % 2 === 0 ? '#ffffff' : '#fafafa';
                 return `
-                  <tr style="border-bottom: 1px solid #e0e0e0; height: 40px;">
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[0].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[2].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;">${cells[3].textContent}</td>
-                    <td style="border: 1px solid #e0e0e0; padding: 8px;"></td>
+                  <tr style="background-color: ${bgColor}; height: 28px;">
+                    <td style="border: 1px solid #dee2e6; padding: 4px 8px; font-weight: 600;">${cells[0].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 4px 8px;"><span style="background: #e74c3c; color: white; padding: 2px 6px; border-radius: 2px; font-size: 8px; font-weight: 600;">${cells[1].textContent}</span></td>
+                    <td style="border: 1px solid #dee2e6; padding: 4px 8px; text-align: center; font-weight: 700; font-size: 11px;">${cells[4].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 4px 8px; text-align: center;">${cells[2].textContent}</td>
+                    <td style="border: 1px solid #dee2e6; padding: 4px 8px; background: #fff;"></td>
+                    <td style="border: 1px solid #dee2e6; padding: 4px 8px; background: #fff;"></td>
                   </tr>
                 `;
               }).join('')}
@@ -1264,11 +1318,16 @@
           </table>
         `;
 
-        // Footer
+        // Footer with official notice
         const footerHTML = `
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; color: #7f8c8d; font-size: 12px;">
-            <div>Generated on ${new Date().toLocaleDateString('en-ZA')} at ${new Date().toLocaleTimeString('en-ZA')}</div>
-            <div>NATS Driver Registry System</div>
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #dee2e6;">
+            <div style="font-size: 7px; color: #6c757d; margin-bottom: 6px;">
+              <strong>DECLARATION:</strong> By signing above, I confirm that I have attended the drivers briefing and understand all safety regulations for this event.
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7px; color: #6c757d;">
+              <div>ROK Cup NATS • www.rokthenats.co.za</div>
+              <div>Total Drivers: ${table.querySelectorAll('tr').length}</div>
+            </div>
           </div>
         `;
 
@@ -1276,10 +1335,10 @@
 
         // Generate PDF
         const opt = {
-          margin: 10,
-          filename: `sign-on-sheet-${new Date().toISOString().slice(0,10)}.pdf`,
+          margin: [10, 10, 10, 10],
+          filename: `NATS_Sign_On_Sheet_${new Date().toISOString().slice(0,10)}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
+          html2canvas: { scale: 2, useCORS: true },
           jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
         };
 
