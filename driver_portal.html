@@ -795,6 +795,69 @@
       margin-bottom: 12px;
     }
 
+    /* Centered error overlay */
+    .error-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .error-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .error-box {
+      background: white;
+      padding: 28px 36px;
+      border: 3px solid #ef4444;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      animation: errorPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .error-box-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    .error-box-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #991b1b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .error-box-message {
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    @keyframes errorPop {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
     /* Portal tabs */
     .portalTabs{
       display:flex;
@@ -2190,10 +2253,42 @@
       if(!el) return;
       el.innerHTML = msg ? `<div class="toast ${type}">${escapeHtml(msg)}</div>` : "";
       
-      // Trigger border flash on success
-      if (type === 'good' && msg) {
-        // Just show the toast message, no visual flash
+      // For errors, also show centered overlay briefly
+      if (type === 'bad' && msg) {
+        showCenteredError(msg);
       }
+    }
+
+    function showCenteredError(message) {
+      // Create overlay if it doesn't exist
+      let overlay = document.getElementById('errorOverlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'errorOverlay';
+        overlay.className = 'error-overlay';
+        overlay.innerHTML = `
+          <div class="error-box">
+            <div class="error-box-icon">⚠</div>
+            <div class="error-box-title">Error</div>
+            <div class="error-box-message" id="errorMessage"></div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        
+        // Click to dismiss
+        overlay.addEventListener('click', () => {
+          overlay.classList.remove('show');
+        });
+      }
+
+      // Set message and show
+      document.getElementById('errorMessage').textContent = message;
+      overlay.classList.add('show');
+
+      // Auto-hide after 2.5 seconds
+      setTimeout(() => {
+        overlay.classList.remove('show');
+      }, 2500);
     }
 
     function showConfirmation(title, message, icon = "✓") {
@@ -2514,6 +2609,7 @@
       if (seasonEngineRentalEl) {
         seasonEngineRentalEl.textContent = hasSeasonEngineRental ? 'Registered' : 'Not Registered';
         seasonEngineRentalEl.style.background = hasSeasonEngineRental ? '#10b981' : '#ef4444';
+        seasonEngineRentalEl.style.boxShadow = hasSeasonEngineRental ? '0 0 12px 3px rgba(16, 185, 129, 0.6)' : 'none';
       }
 
       // Update season entry status
@@ -2523,6 +2619,7 @@
         const displayStatus = (status === 'Registered' || status === 'Confirmed') ? 'Registered' : 'Not Registered';
         seasonEntryEl.textContent = displayStatus;
         seasonEntryEl.style.background = displayStatus === 'Registered' ? '#10b981' : '#ef4444';
+        seasonEntryEl.style.boxShadow = displayStatus === 'Registered' ? '0 0 12px 3px rgba(16, 185, 129, 0.6)' : 'none';
       }
 
       // Update next race entry status with dynamic date
@@ -2533,6 +2630,7 @@
         const displayStatus = (status === 'Registered' || status === 'Confirmed') ? 'Registered' : 'Not Registered';
         nextRaceEl.textContent = displayStatus;
         nextRaceEl.style.background = displayStatus === 'Registered' ? '#10b981' : '#ef4444';
+        nextRaceEl.style.boxShadow = displayStatus === 'Registered' ? '0 0 12px 3px rgba(16, 185, 129, 0.6)' : 'none';
         // Update label with next race date (14 Feb at Redstar)
         nextRaceLabel.textContent = 'Next Race Entry (14 Feb - Redstar)';
       }
@@ -2545,12 +2643,14 @@
           // Season engine rental is paid, so next race engine rental is always Registered
           engineRentalEl.textContent = 'Registered';
           engineRentalEl.style.background = '#10b981';
+          engineRentalEl.style.boxShadow = '0 0 12px 3px rgba(16, 185, 129, 0.6)';
         } else {
           // No season rental, check if next race only rental is paid
           const nextRaceRentalStatus = d.next_race_engine_rental_status || 'No';
           const displayStatus = (nextRaceRentalStatus === 'Yes' || nextRaceRentalStatus === 'Paid') ? 'Registered' : 'Not Registered';
           engineRentalEl.textContent = displayStatus;
           engineRentalEl.style.background = displayStatus === 'Registered' ? '#10b981' : '#ef4444';
+          engineRentalEl.style.boxShadow = displayStatus === 'Registered' ? '0 0 12px 3px rgba(16, 185, 129, 0.6)' : 'none';
         }
       }
 
@@ -3099,10 +3199,23 @@
           { type: 'CT Regionals', price: 23200, description: 'CT Regional events' },
           { type: 'ALL-IN National', price: 75640, description: 'Complete national season package' }
         ],
-        'OK': [
+        'MINI ROK U/10': [
+          { type: 'Nationals', price: 23200, description: 'National championship (8 events)' },
+          { type: 'CT Regionals', price: 23200, description: 'CT Regional events' },
+          { type: 'ALL-IN National', price: 75640, description: 'Complete national season package' }
+        ],
+        'OK-J': [
           { type: 'Engine Nationals', price: 44000, description: 'Engine rental for nationals' },
           { type: 'Engine Regionals (CT)', price: 44000, description: 'Engine rental for CT regionals' },
           { type: 'ALL-IN Nationals', price: 107760, description: 'Complete nationals package' }
+        ],
+        'OK-N': [
+          { type: 'Engine Nationals', price: 44000, description: 'Engine rental for nationals' },
+          { type: 'Engine Regionals (CT)', price: 44000, description: 'Engine rental for CT regionals' },
+          { type: 'ALL-IN Nationals', price: 107760, description: 'Complete nationals package' }
+        ],
+        'KZ2': [
+          { type: 'Full Season Entry', price: 23800, description: 'Full season championship entry' }
         ]
       };
 

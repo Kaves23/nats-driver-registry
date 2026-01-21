@@ -288,9 +288,597 @@ const loadEmailTemplate = (templateName, variables = {}) => {
   }
 };
 
+// =========================================================
+// RACE TICKET GENERATOR - Server-side HTML ticket with barcode
+// =========================================================
+
+// Code 39 character patterns for barcode generation
+const CODE39_PATTERNS = {
+  "0":"nnnwwnwnn","1":"wnnwnnnnw","2":"nnwwnnnnw","3":"wnwwnnnnn","4":"nnnwwnnnw",
+  "5":"wnnwwnnnn","6":"nnwwwnnnn","7":"nnnwnnwnw","8":"wnnwnnwnn","9":"nnwwnnwnn",
+  "A":"wnnnnwnnw","B":"nnwnnwnnw","C":"wnwnnwnnn","D":"nnnnwwnnw","E":"wnnnwwnnn",
+  "F":"nnwnwwnnn","G":"nnnnnwwnw","H":"wnnnnwwnn","I":"nnwnnwwnn","J":"nnnnwwwnn",
+  "K":"wnnnnnnww","L":"nnwnnnnww","M":"wnwnnnnwn","N":"nnnnwnnww","O":"wnnnwnnwn",
+  "P":"nnwnwnnwn","Q":"nnnnnnwww","R":"wnnnnnwwn","S":"nnwnnnwwn","T":"nnnnwnwwn",
+  "U":"wwnnnnnnw","V":"nwwnnnnnw","W":"wwwnnnnnn","X":"nwnnwnnnw","Y":"wwnnwnnnn",
+  "Z":"nwwnwnnnn","-":"nwnnnnwnw",".":"wwnnnnwnn"," ":"nwwnnnwnn","$":"nwnwnwnnn",
+  "/":"nwnwnnnwn","+":"nwnnnwnwn","%":"nnnwnwnwn","*":"nwnnwnwnn"
+};
+
+// Generate SVG barcode for Code 39
+function generateCode39SVG(text, options = {}) {
+  const { narrow = 2, wide = 6, height = 60, gap = 2 } = options;
+  
+  // Ensure uppercase and valid characters - use shorter code for barcode
+  const safeText = (text || '').toUpperCase().replace(/[^0-9A-Z \-.$/+%]/g, '-');
+  const value = `*${safeText}*`; // Add start/stop characters
+  
+  let bars = '';
+  let x = 8; // Quiet zone
+  
+  for (const ch of value) {
+    const pattern = CODE39_PATTERNS[ch] || CODE39_PATTERNS['-'];
+    for (let i = 0; i < pattern.length; i++) {
+      const isBar = i % 2 === 0;
+      const w = pattern[i] === 'w' ? wide : narrow;
+      if (isBar) {
+        bars += `<rect x="${x}" y="6" width="${w}" height="${height}" fill="#000"/>`;
+      }
+      x += w;
+    }
+    x += gap;
+  }
+  
+  const totalWidth = x + 8; // Add quiet zone
+  const totalHeight = height + 24;
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" style="width:100%;max-width:280px;height:auto;display:block;margin:0 auto;">
+    <rect x="0" y="0" width="${totalWidth}" height="${totalHeight}" fill="#fff" rx="4"/>
+    ${bars}
+    <text x="${totalWidth/2}" y="${height + 18}" text-anchor="middle" font-family="'Courier New',monospace" font-size="11" font-weight="bold" fill="#000">${safeText}</text>
+  </svg>`;
+}
+
+// Generate race entry ticket HTML for email - PORTRAIT MODE for mobile
+function generateRaceTicketHTML(ticketData) {
+  const {
+    reference,
+    eventName,
+    eventDate,
+    eventLocation,
+    raceClass,
+    driverName,
+    teamCode,
+    gatesTime = '07:00',
+    practiceTime = '08:00',
+    racingTime = '10:30'
+  } = ticketData;
+  
+  // Format date for display
+  const dateObj = eventDate ? new Date(eventDate) : new Date();
+  const dayName = dateObj.toLocaleDateString('en-ZA', { weekday: 'short' }).toUpperCase();
+  const dayNum = dateObj.getDate();
+  const monthName = dateObj.toLocaleDateString('en-ZA', { month: 'short' }).toUpperCase();
+  const year = dateObj.getFullYear();
+  const formattedDate = `${dayName} ${dayNum} ${monthName} ${year}`;
+  
+  // Generate short barcode reference (last 12 chars for cleaner barcode)
+  const barcodeRef = reference.slice(-12).toUpperCase();
+  
+  // Generate barcode SVG
+  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 50, gap: 2 });
+  
+  // Issue timestamp
+  const issueStamp = new Date().toLocaleString('en-ZA', { 
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+  }).toUpperCase();
+  
+  // Venue display
+  const venueDisplay = (eventLocation || 'TBA').toUpperCase();
+  
+  return `
+    <!-- RACE ENTRY TICKET - PORTRAIT MODE -->
+    <div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+      <div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">🎟️ Your Race Entry Ticket</div>
+      
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; max-width: 380px; margin: 0 auto; border-collapse: collapse;">
+        <tr>
+          <td>
+            <!-- Main Ticket Card -->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #0b2e55; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.25);">
+              
+              <!-- Header with Logo Area -->
+              <tr>
+                <td style="padding: 24px 20px 16px 20px; text-align: center; background-color: #0b2e55;">
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 13px; letter-spacing: 3px; color: rgba(255,255,255,0.7); margin-bottom: 8px;">ROK CUP SOUTH AFRICA</div>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.5);">PRESENTS</div>
+                </td>
+              </tr>
+              
+              <!-- Event Name -->
+              <tr>
+                <td style="padding: 0 20px 20px 20px; text-align: center; background-color: #0b2e55;">
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 22px; letter-spacing: 2px; color: #fff; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${(eventName || 'RACE EVENT').toUpperCase()}</div>
+                </td>
+              </tr>
+              
+              <!-- Date Banner -->
+              <tr>
+                <td style="padding: 0 20px 20px 20px; text-align: center; background-color: #0b2e55;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto; background-color: rgba(255,255,255,0.15); border-radius: 8px;">
+                    <tr>
+                      <td style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; text-align: center; padding: 10px 16px;">${formattedDate}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+              <!-- Venue & Times -->
+              <tr>
+                <td style="padding: 0 20px 24px 20px; text-align: center; background-color: #0b2e55;">
+                  <div style="font-family: 'Courier New', monospace; font-weight: 800; font-size: 12px; color: rgba(255,255,255,0.9); letter-spacing: 1px; margin-bottom: 8px;">${venueDisplay}</div>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 700; font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.5px;">
+                    GATES ${gatesTime} · PRACTICE ${practiceTime} · RACING ${racingTime}
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- White Content Area -->
+              <tr>
+                <td>
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background: #fff; border-radius: 12px 12px 0 0;">
+                    
+                    <!-- Perforation Line -->
+                    <tr>
+                      <td style="padding: 0; height: 12px; background: #fff; position: relative;">
+                        <div style="border-top: 2px dashed #ccc; margin: 0 16px;"></div>
+                      </td>
+                    </tr>
+                    
+                    <!-- Driver & Class Info -->
+                    <tr>
+                      <td style="padding: 16px 20px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                          <tr>
+                            <td style="width: 50%; vertical-align: top;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #888; letter-spacing: 1px; text-transform: uppercase;">DRIVER</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 14px; font-weight: 800; color: #111; margin-top: 4px;">${(driverName || 'DRIVER').toUpperCase()}</div>
+                            </td>
+                            <td style="width: 50%; vertical-align: top; text-align: right;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #888; letter-spacing: 1px; text-transform: uppercase;">CLASS</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 14px; font-weight: 800; color: #111; margin-top: 4px;">${(raceClass || 'TBA').toUpperCase()}</div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    
+                    <!-- Team & Pass Type -->
+                    <tr>
+                      <td style="padding: 0 20px 16px 20px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                          <tr>
+                            <td style="width: 50%; vertical-align: top;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #888; letter-spacing: 1px; text-transform: uppercase;">${teamCode ? 'TEAM' : 'SERIES'}</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #333; margin-top: 4px;">${teamCode ? teamCode.toUpperCase() : 'NATS 2026'}</div>
+                            </td>
+                            <td style="width: 50%; vertical-align: top; text-align: right;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #888; letter-spacing: 1px; text-transform: uppercase;">PASS TYPE</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #333; margin-top: 4px;">PADDOCK</div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    
+                    <!-- Barcode Section -->
+                    <tr>
+                      <td style="padding: 16px 20px 12px 20px; border-top: 1px solid #eee;">
+                        <div style="text-align: center;">
+                          ${barcodeSVG}
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    <!-- Reference Number -->
+                    <tr>
+                      <td style="padding: 0 20px 16px 20px; text-align: center;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: 0.5px;">
+                          REF: <strong style="color: #111;">${reference}</strong>
+                        </div>
+                      </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                      <td style="padding: 12px 20px 16px 20px; background: #f8f9fa; border-top: 1px solid #eee;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                          <tr>
+                            <td style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-transform: uppercase;">
+                              ISSUED: ${issueStamp}
+                            </td>
+                            <td style="text-align: right; font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-transform: uppercase;">
+                              BARCODED ENTRY
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    
+                  </table>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+      
+      <div style="text-align: center; margin-top: 16px; font-size: 12px; color: #6b7280;">
+        Present this ticket at the gate for entry.
+      </div>
+    </div>
+  `;
+}
+
+// Generate ENGINE RENTAL ticket HTML - Vortex Engines
+function generateEngineRentalTicketHTML(ticketData) {
+  const {
+    reference,
+    eventName,
+    eventDate,
+    eventLocation,
+    raceClass,
+    driverName
+  } = ticketData;
+  
+  const dateObj = eventDate ? new Date(eventDate) : new Date();
+  const formattedDate = dateObj.toLocaleDateString('en-ZA', { 
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
+  }).toUpperCase();
+  
+  const barcodeRef = reference.slice(-12).toUpperCase();
+  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
+  
+  // Vortex logo URL (hosted) - using text fallback for email compatibility
+  const vortexLogoUrl = 'https://www.vortex-rok.com/wp-content/uploads/2020/01/vortex-logo.png';
+  
+  return `
+    <!-- ENGINE RENTAL TICKET - PORTRAIT -->
+    <div style="margin: 24px 0;">
+      <div style="font-weight: 700; color: #111827; margin-bottom: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">🏎️ Engine Rental Voucher</div>
+      
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; max-width: 380px; margin: 0 auto;">
+        <tr>
+          <td>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #1e3a5f; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(30,58,95,0.3);">
+              
+              <!-- Header with Logo -->
+              <tr>
+                <td style="padding: 20px 20px 16px 20px; text-align: center; background-color: #1e3a5f;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto 12px auto;">
+                    <tr>
+                      <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #f59e0b; text-align: center; vertical-align: middle;">
+                        <span style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 900; color: #1e3a5f; letter-spacing: 1px;">VORTEX</span>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #f59e0b; text-transform: uppercase;">Rental Engine</div>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">VORTEX ROK</div>
+                </td>
+              </tr>
+              
+              <!-- White Content Section -->
+              <tr>
+                <td>
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background: #fff; border-radius: 8px 8px 0 0;">
+                    <tr>
+                      <td style="padding: 16px 20px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                          <tr>
+                            <td style="width: 50%;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">CLASS</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #111; margin-top: 2px;">${(raceClass || 'TBA').toUpperCase()}</div>
+                            </td>
+                            <td style="width: 50%; text-align: right;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 20px 16px 20px;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">DRIVER</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: #111; margin-top: 2px;">${(driverName || 'DRIVER').toUpperCase()}</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
+                        ${barcodeSVG}
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
+                          REF: <strong>${reference}</strong>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 20px 14px 20px; background: #fef3c7; border-top: 1px solid #fcd34d;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #92400e; line-height: 1.4;">
+                          ⚠️ Engine must be collected at paddock on practice day. Present this voucher.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+// Generate TYRE RENTAL ticket HTML - LeVanto Kart Tires
+function generateTyreRentalTicketHTML(ticketData) {
+  const {
+    reference,
+    eventName,
+    eventDate,
+    eventLocation,
+    raceClass,
+    driverName
+  } = ticketData;
+  
+  const dateObj = eventDate ? new Date(eventDate) : new Date();
+  const formattedDate = dateObj.toLocaleDateString('en-ZA', { 
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
+  }).toUpperCase();
+  
+  const barcodeRef = reference.slice(-12).toUpperCase();
+  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
+  
+  // LeVanto logo URL (hosted) - using text fallback for email compatibility
+  const levantoLogoUrl = 'https://levfriction.com/wp-content/uploads/2023/03/levanto-logo.png';
+  
+  return `
+    <!-- TYRE RENTAL TICKET - PORTRAIT -->
+    <div style="margin: 24px 0;">
+      <div style="font-weight: 700; color: #111827; margin-bottom: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">🛞 Race Tyres Voucher</div>
+      
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; max-width: 380px; margin: 0 auto;">
+        <tr>
+          <td>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #1a1a2e; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(26,26,46,0.3);">
+              
+              <!-- Header with Logo -->
+              <tr>
+                <td style="padding: 20px 20px 16px 20px; text-align: center; background-color: #1a1a2e;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto 12px auto;">
+                    <tr>
+                      <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #0ea5e9; text-align: center; vertical-align: middle;">
+                        <span style="font-family: Arial, sans-serif; font-size: 9px; font-weight: 900; color: #0ea5e9; letter-spacing: 0.5px;">LeVANTO</span>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #0ea5e9; text-transform: uppercase;">Complete Set</div>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">RACE TYRES</div>
+                </td>
+              </tr>
+              
+              <!-- White Content Section -->
+              <tr>
+                <td>
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background: #fff; border-radius: 8px 8px 0 0;">
+                    <tr>
+                      <td style="padding: 16px 20px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                          <tr>
+                            <td style="width: 50%;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">CLASS</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #111; margin-top: 2px;">${(raceClass || 'TBA').toUpperCase()}</div>
+                            </td>
+                            <td style="width: 50%; text-align: right;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 20px 16px 20px;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">DRIVER</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: #111; margin-top: 2px;">${(driverName || 'DRIVER').toUpperCase()}</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
+                        ${barcodeSVG}
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
+                          REF: <strong>${reference}</strong>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 20px 14px 20px; background: #ecfeff; border-top: 1px solid #a5f3fc;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #0e7490; line-height: 1.4;">
+                          🛞 Present voucher at paddock on practice day to collect your race tyres.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+// Generate TRANSPONDER RENTAL ticket HTML - MyLaps X2
+function generateTransponderRentalTicketHTML(ticketData) {
+  const {
+    reference,
+    eventName,
+    eventDate,
+    eventLocation,
+    raceClass,
+    driverName
+  } = ticketData;
+  
+  const dateObj = eventDate ? new Date(eventDate) : new Date();
+  const formattedDate = dateObj.toLocaleDateString('en-ZA', { 
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
+  }).toUpperCase();
+  
+  const barcodeRef = reference.slice(-12).toUpperCase();
+  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
+  
+  return `
+    <!-- TRANSPONDER RENTAL TICKET - PORTRAIT -->
+    <div style="margin: 24px 0;">
+      <div style="font-weight: 700; color: #111827; margin-bottom: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">📡 Transponder Rental Voucher</div>
+      
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; max-width: 380px; margin: 0 auto;">
+        <tr>
+          <td>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #4c1d95; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(76,29,149,0.3);">
+              
+              <!-- Header with Logo -->
+              <tr>
+                <td style="padding: 20px 20px 16px 20px; text-align: center; background-color: #4c1d95;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto 12px auto;">
+                    <tr>
+                      <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #a78bfa; text-align: center; vertical-align: middle;">
+                        <span style="font-family: Arial, sans-serif; font-size: 9px; font-weight: 900; color: #4c1d95; letter-spacing: 0.5px;">MYLAPS</span>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #a78bfa; text-transform: uppercase;">Race Timing</div>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">TRANSPONDER</div>
+                </td>
+              </tr>
+              
+              <!-- White Content Section -->
+              <tr>
+                <td>
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background: #fff; border-radius: 8px 8px 0 0;">
+                    <tr>
+                      <td style="padding: 16px 20px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                          <tr>
+                            <td style="width: 50%;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">CLASS</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #111; margin-top: 2px;">${(raceClass || 'TBA').toUpperCase()}</div>
+                            </td>
+                            <td style="width: 50%; text-align: right;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 20px 16px 20px;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">DRIVER</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: #111; margin-top: 2px;">${(driverName || 'DRIVER').toUpperCase()}</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
+                        ${barcodeSVG}
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
+                          REF: <strong>${reference}</strong>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 20px 14px 20px; background: #f3e8ff; border-top: 1px solid #d8b4fe;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #6b21a8; line-height: 1.4;">
+                          📡 Collect transponder from timing office. Driver's license required as deposit. Return after final race.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
 // Health check
 app.all('/api/ping', (req, res) => {
   res.json({ success: true, data: { status: 'ok' } });
+});
+
+// TEST: Preview race ticket HTML (for testing only - remove in production)
+app.get('/api/preview-ticket', (req, res) => {
+  const ticketData = {
+    reference: 'RACE-FREE-1737450000-abc123',
+    eventName: 'Northern Regions Crown Race',
+    eventDate: '2026-02-14',
+    eventLocation: 'Red Star Raceway, Mpumalanga',
+    raceClass: 'OK-J',
+    driverName: 'Max Verstappen',
+    teamCode: 'RSR'
+  };
+  
+  const raceTicketHtml = generateRaceTicketHTML(ticketData);
+  const engineTicketHtml = generateEngineRentalTicketHTML(ticketData);
+  const tyreTicketHtml = generateTyreRentalTicketHTML(ticketData);
+  const transponderTicketHtml = generateTransponderRentalTicketHTML(ticketData);
+  
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Ticket Preview</title>
+      <style>
+        body { font-family: system-ui, sans-serif; background: #1a1a2e; padding: 20px; margin: 0; }
+        .preview-container { max-width: 500px; margin: 0 auto 30px auto; background: white; padding: 30px; border-radius: 12px; }
+        h1 { color: white; text-align: center; margin-bottom: 30px; }
+        h2 { color: white; text-align: center; margin: 40px 0 20px 0; font-size: 18px; }
+      </style>
+    </head>
+    <body>
+      <h1>🎟️ Race Ticket Preview</h1>
+      
+      <h2>RACE ENTRY TICKET</h2>
+      <div class="preview-container">
+        ${raceTicketHtml}
+      </div>
+      
+      <h2>ENGINE RENTAL TICKET</h2>
+      <div class="preview-container">
+        ${engineTicketHtml}
+      </div>
+      
+      <h2>TYRE RENTAL TICKET</h2>
+      <div class="preview-container">
+        ${tyreTicketHtml}
+      </div>
+      
+      <h2>TRANSPONDER RENTAL TICKET</h2>
+      <div class="preview-container">
+        ${transponderTicketHtml}
+      </div>
+    </body>
+    </html>
+  `);
 });
 
 // Debug endpoint to check environment variables
@@ -1383,6 +1971,82 @@ app.post('/api/getPaymentHistory', async (req, res) => {
   }
 });
 
+// Get ALL payments for admin (Payment Log tab)
+app.post('/api/getAllPayments', async (req, res) => {
+  try {
+    console.log(`📊 Admin retrieving all payments`);
+    
+    // Get all race entries with payment info, joined with driver and event details
+    // Email is in contacts table, not drivers table
+    const result = await pool.query(`
+      SELECT 
+        re.entry_id,
+        re.event_id,
+        re.driver_id,
+        re.payment_reference,
+        re.payment_status,
+        re.entry_status,
+        re.amount_paid,
+        re.race_class,
+        re.entry_items,
+        re.team_code,
+        re.created_at,
+        d.first_name,
+        d.last_name,
+        c.email,
+        e.event_name,
+        e.event_date
+      FROM race_entries re
+      LEFT JOIN drivers d ON re.driver_id = d.driver_id
+      LEFT JOIN contacts c ON re.driver_id = c.driver_id
+      LEFT JOIN events e ON re.event_id = e.event_id
+      WHERE re.payment_reference IS NOT NULL
+      ORDER BY re.created_at DESC
+      LIMIT 500
+    `);
+    
+    // Also get pool engine rentals
+    let poolRentals = [];
+    try {
+      const poolResult = await pool.query(`
+        SELECT 
+          per.rental_id,
+          per.driver_id,
+          per.championship_class,
+          per.rental_type,
+          per.amount_paid,
+          per.payment_status,
+          per.payment_reference,
+          per.season_year,
+          per.created_at,
+          d.first_name,
+          d.last_name,
+          d.email
+        FROM pool_engine_rentals per
+        LEFT JOIN drivers d ON per.driver_id = d.driver_id
+        ORDER BY per.created_at DESC
+        LIMIT 100
+      `);
+      poolRentals = poolResult.rows;
+    } catch (poolErr) {
+      console.log('Pool engine rentals table may not exist:', poolErr.message);
+    }
+
+    console.log(`✅ Retrieved ${result.rows.length} payment records, ${poolRentals.length} pool rentals`);
+    
+    res.json({
+      success: true,
+      data: { 
+        payments: result.rows,
+        poolRentals: poolRentals
+      }
+    });
+  } catch (err) {
+    console.error('❌ getAllPayments error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // Store Race Entry Payment Intent
 app.post('/api/storeRaceEntryPayment', async (req, res) => {
   try {
@@ -1983,11 +2647,13 @@ app.post('/api/updateDriver', async (req, res) => {
     const { 
       driver_id, first_name, last_name, race_number, team_name, coach_name, kart_brand, 
       class: klass, email, status, paid_status, license_number, transponder_number, 
-      paid_engine_fee, next_race_entry_status, next_race_engine_rental_status 
+      season_engine_rental, season_entry_status, next_race_entry_status, next_race_engine_rental_status,
+      admin_override 
     } = req.body;
     
     console.log('updateDriver request received');
     console.log('driver_id:', driver_id);
+    if (admin_override) console.log('Admin override flag set - logging will show ADMIN_OVERRIDE action');
     
     if (!driver_id) throw new Error('Driver ID required');
 
@@ -2044,6 +2710,24 @@ app.post('/api/updateDriver', async (req, res) => {
       updates.push(`status = $${paramCount++}`);
       values.push(status);
     }
+    
+    // Payment & Entry Status fields (Admin Override)
+    if (season_engine_rental !== undefined && season_engine_rental !== null) {
+      updates.push(`season_engine_rental = $${paramCount++}`);
+      values.push(season_engine_rental);
+    }
+    if (season_entry_status !== undefined && season_entry_status !== null) {
+      updates.push(`season_entry_status = $${paramCount++}`);
+      values.push(season_entry_status);
+    }
+    if (next_race_entry_status !== undefined && next_race_entry_status !== null) {
+      updates.push(`next_race_entry_status = $${paramCount++}`);
+      values.push(next_race_entry_status);
+    }
+    if (next_race_engine_rental_status !== undefined && next_race_engine_rental_status !== null) {
+      updates.push(`next_race_engine_rental_status = $${paramCount++}`);
+      values.push(next_race_engine_rental_status);
+    }
 
     // Add driver_id as final parameter
     values.push(driver_id);
@@ -2093,9 +2777,25 @@ app.post('/api/updateDriver', async (req, res) => {
       if (oldDriver.status !== status) fieldsChanged.push({ field: 'status', old: oldDriver.status, new: status });
       if (oldDriver.license_number !== license_number) fieldsChanged.push({ field: 'license_number', old: oldDriver.license_number, new: license_number });
       if (oldDriver.transponder_number !== transponder_number) fieldsChanged.push({ field: 'transponder_number', old: oldDriver.transponder_number, new: transponder_number });
+      
+      // Track payment/entry status changes (Admin Override)
+      if (oldDriver.season_engine_rental !== season_engine_rental && season_engine_rental !== undefined) {
+        fieldsChanged.push({ field: 'season_engine_rental', old: oldDriver.season_engine_rental, new: season_engine_rental, isAdminOverride: true });
+      }
+      if (oldDriver.season_entry_status !== season_entry_status && season_entry_status !== undefined) {
+        fieldsChanged.push({ field: 'season_entry_status', old: oldDriver.season_entry_status, new: season_entry_status, isAdminOverride: true });
+      }
+      if (oldDriver.next_race_entry_status !== next_race_entry_status && next_race_entry_status !== undefined) {
+        fieldsChanged.push({ field: 'next_race_entry_status', old: oldDriver.next_race_entry_status, new: next_race_entry_status, isAdminOverride: true });
+      }
+      if (oldDriver.next_race_engine_rental_status !== next_race_engine_rental_status && next_race_engine_rental_status !== undefined) {
+        fieldsChanged.push({ field: 'next_race_engine_rental_status', old: oldDriver.next_race_engine_rental_status, new: next_race_engine_rental_status, isAdminOverride: true });
+      }
 
       for (const change of fieldsChanged) {
-        await logAuditEvent(driver_id, email || 'system', 'UPDATE_PROFILE', change.field, String(change.old || ''), String(change.new || ''));
+        // Use ADMIN_OVERRIDE action for payment/entry status changes made by admin
+        const action = (change.isAdminOverride && admin_override) ? 'ADMIN_OVERRIDE' : 'UPDATE_PROFILE';
+        await logAuditEvent(driver_id, email || 'admin', action, change.field, String(change.old || ''), String(change.new || ''));
       }
     } catch (auditErr) {
       console.log('Audit logging failed (non-critical):', auditErr.message);
@@ -2665,7 +3365,7 @@ const createTrelloCard = async (driverName, email, raceClass, teamCode, entryRef
   try {
     const TRELLO_API_KEY = process.env.TRELLO_API_KEY || '4ca7d039fde110d7a6733fac928a6f0f';
     const TRELLO_TOKEN = process.env.TRELLO_TOKEN || '363e5ac5fe8f9a940a7b6fe08b245afb6cf7066205396fd77145eebed1d1af9f';
-    const TRELLO_BOARD_ID = 'b/696cc6dc4a6f89d0cf0a2b7b';
+    const TRELLO_BOARD_ID = process.env.TRELLO_BOARD_ID || '696cc6dc4a6f89d0cf0a2b7b';
     
     // First, get the board to find the "New Entries" list
     const boardResponse = await axios.get(
@@ -2787,45 +3487,25 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
       const hasTyresItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('tyre'));
       const hasTransponderItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('transponder'));
       
-      // Build ticket HTML for rentals
-      let ticketsHtml = '';
-      if (hasEngineRentalItem || hasTyresItem || hasTransponderItem) {
-        ticketsHtml = '<div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;"><div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Rental Items</div>';
-        
-        if (hasEngineRentalItem) {
-          ticketsHtml += `<div class="ticket" style="border-left: 6px solid #f97316;">
-            <div class="ticket-left">
-              <div class="ticket-type" style="color: #f97316;">Engine Rental</div>
-              <div class="ticket-title">Pool Engine Reserved</div>
-              <div class="ticket-info">Your competition engine is assigned for this event. Technical inspection required before practice.</div>
-              <div class="ticket-code">${reference}</div>
-            </div>
-          </div>`;
-        }
-        
-        if (hasTyresItem) {
-          ticketsHtml += `<div class="ticket" style="border-left: 6px solid #8b5cf6;">
-            <div class="ticket-left">
-              <div class="ticket-type" style="color: #8b5cf6;">Tyre Rental</div>
-              <div class="ticket-title">Complete Tyre Set</div>
-              <div class="ticket-info">Tyres included with your entry. Available for collection at race practice day.</div>
-              <div class="ticket-code">${reference}</div>
-            </div>
-          </div>`;
-        }
-        
-        if (hasTransponderItem) {
-          ticketsHtml += `<div class="ticket" style="border-left: 6px solid #0ea5e9;">
-            <div class="ticket-left">
-              <div class="ticket-type" style="color: #0ea5e9;">Transponder Rental</div>
-              <div class="ticket-title">Timing Transponder</div>
-              <div class="ticket-info">Transponder issued at race control. Must be installed before technical inspection.</div>
-              <div class="ticket-code">${reference}</div>
-            </div>
-          </div>`;
-        }
-        
-        ticketsHtml += '</div>';
+      // Build rental ticket HTML using new ticket generators
+      const ticketGeneratorData = {
+        reference,
+        eventName,
+        eventDate: eventDetails?.event_date,
+        eventLocation,
+        raceClass,
+        driverName
+      };
+      
+      let rentalTicketsHtml = '';
+      if (hasEngineRentalItem) {
+        rentalTicketsHtml += generateEngineRentalTicketHTML(ticketGeneratorData);
+      }
+      if (hasTyresItem) {
+        rentalTicketsHtml += generateTyreRentalTicketHTML(ticketGeneratorData);
+      }
+      if (hasTransponderItem) {
+        rentalTicketsHtml += generateTransponderRentalTicketHTML(ticketGeneratorData);
       }
       
       const emailHtml = `
@@ -2905,7 +3585,17 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
                 </div>
               </div>
               
-              ${ticketsHtml}
+              ${generateRaceTicketHTML({
+                reference,
+                eventName,
+                eventDate: eventDetails?.event_date,
+                eventLocation,
+                raceClass,
+                driverName,
+                teamCode
+              })}
+              
+              ${rentalTicketsHtml}
               
               <p style="margin: 20px 0; font-size: 14px; color: #374151;">You will receive further instructions about your race entry shortly. Please make sure to check your driver portal regularly for updates and important announcements.</p>
               
@@ -3213,6 +3903,7 @@ app.post('/api/paymentNotify', async (req, res) => {
       let eventName = 'Race Event';
       let eventDateStr = 'TBA';
       let eventLocation = 'TBA';
+      let eventDate = null;
       
       if (!isPoolEngineRental && eventId && eventId !== 'unknown') {
         try {
@@ -3223,6 +3914,7 @@ app.post('/api/paymentNotify', async (req, res) => {
           const eventDetails = eventResult.rows[0];
           if (eventDetails) {
             eventName = eventDetails.event_name || 'Race Event';
+            eventDate = eventDetails.event_date;
             eventDateStr = eventDetails.event_date 
               ? new Date(eventDetails.event_date).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
               : 'TBA';
@@ -3367,6 +4059,16 @@ app.post('/api/paymentNotify', async (req, res) => {
                 </div>
               </div>
               ` : ticketsHtml}
+              
+              ${!isPoolEngineRental ? generateRaceTicketHTML({
+                reference,
+                eventName,
+                eventDate,
+                eventLocation,
+                raceClass,
+                driverName,
+                teamCode: null
+              }) : ''}
               
               <p style="margin: 20px 0; font-size: 14px; color: #374151;">${isPoolEngineRental ? 'You can now enter races without additional engine charges for the remainder of the season. Thank you for your commitment to NATS!' : 'You will receive further instructions about your race entry shortly. If you have any questions, please contact us.'}</p>
               
@@ -4581,11 +5283,6 @@ app.get('/api/getMSALicense/:driver_id', async (req, res) => {
 // Download MSA License
 app.get('/api/downloadMSALicense/:document_id', async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      throw new Error('Unauthorized');
-    }
-
     const { document_id } = req.params;
 
     const result = await pool.query(

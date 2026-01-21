@@ -258,13 +258,13 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
-      min-width: 2000px;
+      font-size: 11px;
+      min-width: 1200px;
     }
 
     th {
       background: #f8f9fa;
-      padding: 12px 14px;
+      padding: 8px 6px;
       text-align: left;
       font-weight: 700;
       color: #2c3e50;
@@ -272,20 +272,23 @@
       position: sticky;
       top: 0;
       white-space: nowrap;
-      height: 44px;
-      line-height: 1.4;
+      height: 36px;
+      line-height: 1.3;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
     }
 
     td {
-      padding: 12px 14px;
+      padding: 6px 6px;
       border-bottom: 1px solid #f0f0f0;
       color: #2c3e50;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 150px;
-      height: 44px;
-      line-height: 1.4;
+      max-width: 100px;
+      height: 36px;
+      line-height: 1.3;
     }
 
     .editable-cell {
@@ -333,9 +336,9 @@
 
     .status-badge {
       display: inline-block;
-      padding: 6px 10px;
-      border-radius: 20px;
-      font-size: 12px;
+      padding: 3px 6px;
+      border-radius: 3px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
     }
@@ -402,18 +405,18 @@
 
     .action-buttons {
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      gap: 3px;
+      flex-wrap: nowrap;
     }
 
     .action-btn {
-      padding: 6px 12px;
-      font-size: 12px;
+      padding: 4px 8px;
+      font-size: 10px;
       border: none;
-      border-radius: 4px;
+      border-radius: 3px;
       cursor: pointer;
       font-weight: 600;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
     }
 
     .edit-btn {
@@ -674,6 +677,7 @@
       <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
       <button class="tab-btn" onclick="switchTab('events')">Events</button>
       <button class="tab-btn" onclick="switchTab('raceEntries')">Race Entries</button>
+      <button class="tab-btn" onclick="switchTab('payments')">Payments</button>
       <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
       <button class="tab-btn" onclick="switchTab('audit')">Audit Trail</button>
@@ -704,30 +708,19 @@
             <tr>
               <th>Email</th>
               <th>Name</th>
-              <th>DOB</th>
-              <th>Nationality</th>
-              <th>Gender</th>
-              <th>Championship</th>
               <th>Class</th>
               <th>Race #</th>
               <th>Team</th>
-              <th>Coach</th>
-              <th>Kart Brand</th>
               <th>Transponder</th>
               <th>License #</th>
-              <th>Guardian Name</th>
-              <th>Contact Phone</th>
-              <th>Allergies</th>
-              <th>Medical Conditions</th>
-              <th>Medication</th>
-              <th>Doctor Phone</th>
+              <th>Phone</th>
               <th>Status</th>
               <th>Paid</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="driversTable">
-            <tr><td colspan="22" class="loading">Loading drivers...</td></tr>
+            <tr><td colspan="11" class="loading">Loading drivers...</td></tr>
           </tbody>
         </table>
       </div>
@@ -857,6 +850,56 @@
         </table>
       </div>
     </div>
+
+    <!-- Payments Tab -->
+    <div id="paymentsTab" class="admin-content" style="display: none;">
+      <div class="filters-bar">
+        <select id="paymentStatusFilter">
+          <option value="">All Statuses</option>
+          <option value="Completed">Completed</option>
+          <option value="Pending">Pending</option>
+          <option value="Failed">Failed</option>
+        </select>
+        <input type="text" id="paymentSearchDriver" placeholder="Search driver name...">
+        <button class="search-btn" onclick="loadPayments()">Refresh</button>
+        <button class="search-btn" onclick="exportPaymentsCSV()" style="background: #4caf50;">Export CSV</button>
+      </div>
+      
+      <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div style="background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; min-width: 140px;">
+          <div style="font-size: 11px; opacity: 0.9;">TOTAL RECEIVED</div>
+          <div id="totalPayments" style="font-size: 22px; font-weight: 700;">R0.00</div>
+        </div>
+        <div style="background: #3b82f6; color: white; padding: 12px 20px; border-radius: 8px; min-width: 140px;">
+          <div style="font-size: 11px; opacity: 0.9;">COMPLETED</div>
+          <div id="completedCount" style="font-size: 22px; font-weight: 700;">0</div>
+        </div>
+        <div style="background: #f59e0b; color: white; padding: 12px 20px; border-radius: 8px; min-width: 140px;">
+          <div style="font-size: 11px; opacity: 0.9;">PENDING</div>
+          <div id="pendingCount" style="font-size: 22px; font-weight: 700;">0</div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Reference</th>
+              <th>Driver</th>
+              <th>Event</th>
+              <th>Class</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="paymentsTable">
+            <tr><td colspan="8" class="loading">Loading payments...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- Edit Modal -->
@@ -910,6 +953,15 @@
           <option value="Y">Paid</option>
         </select>
         <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">For cash payments: Set to "Paid" if driver has paid season engine rental fee</small>
+      </div>
+      <div class="form-group">
+        <label>Season Entry Status (ALL-IN Package)</label>
+        <select id="editSeasonEntryStatus">
+          <option value="Not Registered">Not Registered</option>
+          <option value="Registered">Registered</option>
+          <option value="Confirmed">Confirmed</option>
+        </select>
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">For ALL-IN season package: Set to "Registered" if driver paid for full season</small>
       </div>
       <div class="form-group">
         <label>Next Race Entry Status</label>
@@ -1147,7 +1199,7 @@
         showToast(err.message, 'error');
         const table = document.getElementById('driversTable');
         if (table) {
-          table.innerHTML = '<tr><td colspan="10" class="loading">Error loading drivers: ' + err.message + '</td></tr>';
+          table.innerHTML = '<tr><td colspan="11" class="loading">Error loading drivers: ' + err.message + '</td></tr>';
         }
       }
     }
@@ -1163,7 +1215,7 @@
       
       if (!drivers || drivers.length === 0) {
         console.log('No drivers to display');
-        table.innerHTML = '<tr><td colspan="22" class="loading">No drivers found</td></tr>';
+        table.innerHTML = '<tr><td colspan="11" class="loading">No drivers found</td></tr>';
         return;
       }
 
@@ -1177,32 +1229,21 @@
 
         html += `
           <tr>
-            <td>${email}</td>
-            <td>${name}</td>
-            <td>${driver.date_of_birth || '-'}</td>
-            <td>${driver.nationality || '-'}</td>
-            <td>${driver.gender || '-'}</td>
-            <td>${driver.championship || '-'}</td>
+            <td title="${email}">${email}</td>
+            <td title="${name}">${name}</td>
             <td>${driver.class ? `<span class="class-badge ${getClassBadgeClass(driver.class)}">${driver.class}</span>` : '-'}</td>
             <td>${driver.race_number || '-'}</td>
-            <td>${driver.team_name || '-'}</td>
-            <td>${driver.coach_name || '-'}</td>
-            <td>${driver.kart_brand || '-'}</td>
+            <td title="${driver.team_name || '-'}">${driver.team_name || '-'}</td>
             <td>${driver.transponder_number || '-'}</td>
             <td>${driver.license_number || '-'}</td>
-            <td>${driver.contact_name || '-'}</td>
             <td>${driver.contact_phone || '-'}</td>
-            <td>${driver.medical_allergies || '-'}</td>
-            <td>${driver.medical_conditions || '-'}</td>
-            <td>${driver.medical_medication || '-'}</td>
-            <td>${driver.medical_doctor_phone || '-'}</td>
             <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
             <td>${paidStatus}</td>
             <td>
               <div class="action-buttons">
                 <button class="action-btn edit-btn" onclick="openEditModal('${driver.driver_id}')">Edit</button>
-                <button class="action-btn reset-btn" onclick="resetPassword('${driver.driver_id}')">Reset PW</button>
-                <button class="action-btn delete-btn" onclick="deleteDriver('${driver.driver_id}', '${driver.first_name} ${driver.last_name}')">Delete</button>
+                <button class="action-btn reset-btn" onclick="resetPassword('${driver.driver_id}')">PW</button>
+                <button class="action-btn delete-btn" onclick="deleteDriver('${driver.driver_id}', '${driver.first_name} ${driver.last_name}')">Del</button>
               </div>
             </td>
           </tr>
@@ -1258,6 +1299,7 @@
       setVal('editCoachName', driver.coach_name);
       setVal('editKartBrand', driver.kart_brand);
       setVal('editEngineRentalStatus', driver.paid_engine_fee || 'N');
+      setVal('editSeasonEntryStatus', driver.season_entry_status || 'Not Registered');
       setVal('editNextRaceEntry', driver.next_race_entry_status || 'Not Registered');
       setVal('editNextRaceEngineRental', driver.next_race_engine_rental_status || 'No');
       setVal('editStatus', driver.status || 'Pending');
@@ -1376,11 +1418,13 @@
           team_name: getVal('editTeamName'),
           coach_name: getVal('editCoachName'),
           kart_brand: getVal('editKartBrand'),
-          paid_engine_fee: getVal('editEngineRentalStatus'),
+          season_engine_rental: getVal('editEngineRentalStatus'),
+          season_entry_status: getVal('editSeasonEntryStatus'),
           next_race_entry_status: getVal('editNextRaceEntry'),
           next_race_engine_rental_status: getVal('editNextRaceEngineRental'),
           status: getVal('editStatus'),
-          paid_status: getVal('editPaid')
+          paid_status: getVal('editPaid'),
+          admin_override: true  // Flag to indicate this is an admin override
         };
         
         console.log('Saving with payload:', payload);
@@ -1875,93 +1919,50 @@
       const driversTab = document.getElementById('driversTab');
       const eventsTab = document.getElementById('eventsTab');
       const raceEntriesTab = document.getElementById('raceEntriesTab');
+      const paymentsTab = document.getElementById('paymentsTab');
       const msaLicensesTab = document.getElementById('msaLicensesTab');
       const messagesTab = document.getElementById('messagesTab');
       const auditTab = document.getElementById('auditTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
+      // Hide all tabs
+      driversTab.style.display = 'none';
+      eventsTab.style.display = 'none';
+      raceEntriesTab.style.display = 'none';
+      paymentsTab.style.display = 'none';
+      msaLicensesTab.style.display = 'none';
+      messagesTab.style.display = 'none';
+      auditTab.style.display = 'none';
+      
+      // Remove active from all tab buttons
+      tabs.forEach(t => t.classList.remove('active'));
+
       if (tabName === 'drivers') {
         driversTab.style.display = 'block';
-        eventsTab.style.display = 'none';
-        raceEntriesTab.style.display = 'none';
-        msaLicensesTab.style.display = 'none';
-        messagesTab.style.display = 'none';
-        auditTab.style.display = 'none';
         tabs[0].classList.add('active');
-        tabs[1].classList.remove('active');
-        tabs[2].classList.remove('active');
-        tabs[3].classList.remove('active');
-        tabs[4].classList.remove('active');
-        tabs[5].classList.remove('active');
       } else if (tabName === 'events') {
-        driversTab.style.display = 'none';
         eventsTab.style.display = 'block';
-        raceEntriesTab.style.display = 'none';
-        msaLicensesTab.style.display = 'none';
-        messagesTab.style.display = 'none';
-        auditTab.style.display = 'none';
-        tabs[0].classList.remove('active');
         tabs[1].classList.add('active');
-        tabs[2].classList.remove('active');
-        tabs[3].classList.remove('active');
-        tabs[4].classList.remove('active');
-        tabs[5].classList.remove('active');
         loadEvents();
       } else if (tabName === 'raceEntries') {
-        driversTab.style.display = 'none';
-        eventsTab.style.display = 'none';
         raceEntriesTab.style.display = 'block';
-        msaLicensesTab.style.display = 'none';
-        messagesTab.style.display = 'none';
-        auditTab.style.display = 'none';
-        tabs[0].classList.remove('active');
-        tabs[1].classList.remove('active');
         tabs[2].classList.add('active');
-        tabs[3].classList.remove('active');
-        tabs[4].classList.remove('active');
-        tabs[5].classList.remove('active');
         loadRaceEntriesDropdown();
-      } else if (tabName === 'msaLicenses') {
-        driversTab.style.display = 'none';
-        eventsTab.style.display = 'none';
-        raceEntriesTab.style.display = 'none';
-        msaLicensesTab.style.display = 'block';
-        messagesTab.style.display = 'none';
-        auditTab.style.display = 'none';
-        tabs[0].classList.remove('active');
-        tabs[1].classList.remove('active');
-        tabs[2].classList.remove('active');
+      } else if (tabName === 'payments') {
+        paymentsTab.style.display = 'block';
         tabs[3].classList.add('active');
-        tabs[4].classList.remove('active');
-        tabs[5].classList.remove('active');
+        loadPayments();
+      } else if (tabName === 'msaLicenses') {
+        msaLicensesTab.style.display = 'block';
+        tabs[4].classList.add('active');
         loadAdminMSAEventDropdown();
       } else if (tabName === 'messages') {
-        driversTab.style.display = 'none';
-        eventsTab.style.display = 'none';
-        raceEntriesTab.style.display = 'none';
-        msaLicensesTab.style.display = 'none';
         messagesTab.style.display = 'block';
-        auditTab.style.display = 'none';
-        tabs[0].classList.remove('active');
-        tabs[1].classList.remove('active');
-        tabs[2].classList.remove('active');
-        tabs[3].classList.remove('active');
-        tabs[4].classList.add('active');
-        tabs[5].classList.remove('active');
+        tabs[5].classList.add('active');
         loadMessages();
       } else if (tabName === 'audit') {
-        driversTab.style.display = 'none';
-        eventsTab.style.display = 'none';
-        raceEntriesTab.style.display = 'none';
-        msaLicensesTab.style.display = 'none';
-        messagesTab.style.display = 'none';
         auditTab.style.display = 'block';
-        tabs[0].classList.remove('active');
-        tabs[1].classList.remove('active');
-        tabs[2].classList.remove('active');
-        tabs[3].classList.remove('active');
-        tabs[4].classList.remove('active');
-        tabs[5].classList.add('active');
+        tabs[6].classList.add('active');
         loadAuditTrail();
       }
     }
@@ -2277,6 +2278,138 @@
     }
 
     // ============= END EVENT MANAGEMENT =============
+
+    // ============= PAYMENT LOG FUNCTIONS =============
+
+    let allPaymentsData = [];
+
+    async function loadPayments() {
+      try {
+        const tbody = document.getElementById('paymentsTable');
+        tbody.innerHTML = '<tr><td colspan="8" class="loading">Loading payments...</td></tr>';
+
+        const response = await fetch('/api/getAllPayments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error?.message || 'Failed to load payments');
+
+        const payments = result.data.payments || [];
+        const poolRentals = result.data.poolRentals || [];
+        
+        // Combine and mark type
+        const combined = [
+          ...payments.map(p => ({ ...p, type: 'Race Entry' })),
+          ...poolRentals.map(p => ({ 
+            ...p, 
+            type: 'Pool Engine',
+            event_name: `${p.championship_class} - ${p.rental_type}`,
+            race_class: p.championship_class,
+            payment_reference: p.payment_reference
+          }))
+        ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        allPaymentsData = combined;
+        displayPayments(combined);
+      } catch (err) {
+        console.error('loadPayments error:', err);
+        document.getElementById('paymentsTable').innerHTML = `<tr><td colspan="8" style="color: #ef4444;">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function displayPayments(payments) {
+      const tbody = document.getElementById('paymentsTable');
+      const statusFilter = document.getElementById('paymentStatusFilter').value;
+      const searchTerm = document.getElementById('paymentSearchDriver').value.toLowerCase();
+      
+      // Apply filters
+      let filtered = payments;
+      if (statusFilter) {
+        filtered = filtered.filter(p => p.payment_status === statusFilter);
+      }
+      if (searchTerm) {
+        filtered = filtered.filter(p => {
+          const name = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase();
+          return name.includes(searchTerm) || (p.email || '').toLowerCase().includes(searchTerm);
+        });
+      }
+      
+      // Calculate totals
+      const completed = filtered.filter(p => p.payment_status === 'Completed');
+      const pending = filtered.filter(p => p.payment_status === 'Pending');
+      const totalAmount = completed.reduce((sum, p) => sum + parseFloat(p.amount_paid || 0), 0);
+      
+      document.getElementById('totalPayments').textContent = `R${totalAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
+      document.getElementById('completedCount').textContent = completed.length;
+      document.getElementById('pendingCount').textContent = pending.length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No payments found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(payment => {
+        const date = payment.created_at ? new Date(payment.created_at).toLocaleString('en-ZA') : '-';
+        const driverName = `${payment.first_name || ''} ${payment.last_name || ''}`.trim() || 'Unknown';
+        const eventName = payment.event_name || '-';
+        const amount = payment.amount_paid ? `R${parseFloat(payment.amount_paid).toFixed(2)}` : '-';
+        const statusColor = payment.payment_status === 'Completed' ? '#10b981' : 
+                           payment.payment_status === 'Pending' ? '#f59e0b' : '#ef4444';
+        const typeColor = payment.type === 'Race Entry' ? '#3b82f6' : '#8b5cf6';
+        
+        return `
+          <tr>
+            <td style="font-size: 11px;">${date}</td>
+            <td style="font-size: 10px; font-family: monospace; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${payment.payment_reference || ''}">${payment.payment_reference || '-'}</td>
+            <td>${driverName}<br><span style="font-size: 10px; color: #666;">${payment.email || ''}</span></td>
+            <td style="font-size: 11px;">${eventName}</td>
+            <td>${payment.race_class || '-'}</td>
+            <td style="font-weight: 600;">${amount}</td>
+            <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${payment.payment_status || 'Unknown'}</span></td>
+            <td><span style="background: ${typeColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${payment.type}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function exportPaymentsCSV() {
+      if (!allPaymentsData || allPaymentsData.length === 0) {
+        showToast('No payment data to export', 'error');
+        return;
+      }
+
+      const headers = ['Date', 'Reference', 'Driver Name', 'Email', 'Event', 'Class', 'Amount', 'Status', 'Type'];
+      const rows = allPaymentsData.map(p => [
+        p.created_at ? new Date(p.created_at).toISOString() : '',
+        p.payment_reference || '',
+        `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+        p.email || '',
+        p.event_name || '',
+        p.race_class || '',
+        p.amount_paid || '',
+        p.payment_status || '',
+        p.type || ''
+      ]);
+
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `payments-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showToast('CSV exported successfully', 'success');
+    }
+
+    // ============= END PAYMENT LOG =============
 
     // ============= AUDIT TRAIL FUNCTIONS =============
 
