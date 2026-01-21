@@ -1658,12 +1658,18 @@
       entries.forEach((entry) => {
         const itemsArray = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
         
+        // Helper function to check if item contains text (handles both string arrays and object arrays)
+        const itemContains = (searchText) => itemsArray.some(i => {
+          const itemName = typeof i === 'string' ? i : (i.name || '');
+          return itemName.toLowerCase().includes(searchText.toLowerCase());
+        });
+        
         // Tyres: Show ✓ if selected, "No" if not selected
-        const tyres = itemsArray.some(i => i.name && i.name.toLowerCase().includes('tyre')) ? '✓' : 'No';
+        const tyres = itemContains('tyre') ? '✓' : 'No';
         
         // Transponder: Show ✓ if selected, otherwise check driver's transponder_number
         let transponderDisplay = '';
-        const transponderSelected = itemsArray.some(i => i.name && (i.name.toLowerCase().includes('transponder') || i.name.toLowerCase().includes('rent')));
+        const transponderSelected = itemContains('transponder') || itemContains('rent transponder');
         if (transponderSelected) {
           transponderDisplay = '✓';
         } else if (entry.transponder_number) {
@@ -1673,7 +1679,7 @@
         }
         
         // Check both the entry_items array AND the new engine column
-        const hasEngineFromItems = itemsArray.some(i => i.name && i.name.toLowerCase().includes('engine'));
+        const hasEngineFromItems = itemContains('engine');
         const hasEngineFromColumn = entry.engine === 1 || entry.engine === '1';
         const engineDisplay = (hasEngineFromItems || hasEngineFromColumn) ? '✓' : '';
         
@@ -1682,13 +1688,14 @@
         const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
         const eventDate = entry.event_date ? new Date(entry.event_date).toLocaleDateString('en-ZA') : (entry.created_at ? new Date(entry.created_at).toLocaleDateString('en-ZA') : '-');
         const entryId = entry.race_entry_id || entry.entry_id;
+        const raceClass = entry.race_class || entry.driver_class || '-';
         
         html += `
           <tr data-entry-id="${entryId}">
             <td>${eventDate}</td>
             <td>${entry.driver_email || '-'}</td>
             <td>${driverName || '-'}</td>
-            <td><span class="class-badge">${entry.race_class || entry.driver_class || '-'}</span></td>
+            <td><span class="class-badge ${getClassBadgeClass(raceClass)}">${raceClass}</span></td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'amount_paid', ${entry.amount_paid || 0})">R${parseFloat(entry.amount_paid || entry.entry_fee || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</td>
             <td>${tyres}</td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'transponder_number', '${entry.transponder_number || ''}')">${transponderDisplay}</td>
