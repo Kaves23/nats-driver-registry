@@ -680,6 +680,7 @@
       <button class="tab-btn" onclick="switchTab('payments')">Payments</button>
       <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
+      <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notifications</button>
       <button class="tab-btn" onclick="switchTab('audit')">Audit Trail</button>
     </div>
 
@@ -848,6 +849,143 @@
             <tr><td colspan="8" class="loading">Loading audit trail...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Notifications Tab -->
+    <div id="notificationsTab" class="admin-content" style="display: none;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <!-- Send Notification Form -->
+        <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <h3 style="margin: 0 0 20px 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 24px;">📢</span> Send Push Notification
+          </h3>
+          
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Notification Title *</label>
+            <input type="text" id="pushTitle" placeholder="e.g. Race Starting Soon!" 
+                   style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+          </div>
+          
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Message Body *</label>
+            <textarea id="pushBody" rows="3" placeholder="e.g. Heat 1 starts in 30 minutes. Please proceed to the grid area."
+                      style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Link URL (optional)</label>
+            <input type="url" id="pushUrl" placeholder="e.g. /driver_portal.html#schedule" 
+                   style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+            <small style="color: #6b7280; margin-top: 4px; display: block;">Where to take drivers when they tap the notification</small>
+          </div>
+          
+          <!-- Target Selection -->
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Send To</label>
+            <select id="pushTargetType" onchange="updateTargetOptions()" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+              <option value="all">📢 All Subscribed Drivers</option>
+              <option value="class">🏎️ Specific Class</option>
+              <option value="event">📅 Registered for Event</option>
+              <option value="driver">👤 Individual Driver</option>
+            </select>
+          </div>
+          
+          <!-- Class Selection (hidden by default) -->
+          <div id="classSelectContainer" style="margin-bottom: 16px; display: none;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Select Class</label>
+            <select id="pushClassSelect" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+              <option value="">Loading classes...</option>
+            </select>
+          </div>
+          
+          <!-- Event Selection (hidden by default) -->
+          <div id="eventSelectContainer" style="margin-bottom: 16px; display: none;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Select Event</label>
+            <select id="pushEventSelect" onchange="loadEventClasses()" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+              <option value="">Loading events...</option>
+            </select>
+            <div id="eventClassFilter" style="margin-top: 10px; display: none;">
+              <label style="display: block; font-weight: 500; margin-bottom: 6px; color: #6b7280; font-size: 13px;">Filter by class (optional)</label>
+              <select id="pushEventClassSelect" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                <option value="">All classes in this event</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Driver Selection (hidden by default) -->
+          <div id="driverSelectContainer" style="margin-bottom: 16px; display: none;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Select Driver</label>
+            <input type="text" id="driverSearchInput" placeholder="Search driver by name..." 
+                   onkeyup="filterDriverList()" 
+                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; margin-bottom: 10px;">
+            <div id="driverListContainer" style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <div style="padding: 20px; text-align: center; color: #6b7280;">Loading drivers...</div>
+            </div>
+          </div>
+          
+          <!-- Selected Target Display -->
+          <div id="selectedTargetDisplay" style="margin-bottom: 16px; padding: 12px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; display: none;">
+            <div style="font-size: 13px; color: #166534;">
+              <strong>Sending to:</strong> <span id="targetDescription">All subscribed drivers</span>
+            </div>
+          </div>
+          
+          <button onclick="sendPushNotification()" id="sendNotificationBtn"
+                  style="width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 18px;">🔔</span> Send Notification
+          </button>
+        </div>
+        
+        <!-- Stats & Quick Actions -->
+        <div>
+          <!-- Stats Cards -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px;">
+              <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">SUBSCRIBED DRIVERS</div>
+              <div id="subscribedCount" style="font-size: 32px; font-weight: 700;">-</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; border-radius: 12px;">
+              <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">TOTAL SENT</div>
+              <div id="notificationsSent" style="font-size: 32px; font-weight: 700;">-</div>
+            </div>
+          </div>
+          
+          <!-- Quick Templates -->
+          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h4 style="margin: 0 0 16px 0; color: #1e293b;">⚡ Quick Templates</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <button onclick="useTemplate('Race Starting', 'Your heat is starting in 30 minutes. Please proceed to the grid area.')" 
+                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
+                🏁 Race Starting Soon
+              </button>
+              <button onclick="useTemplate('Schedule Change', 'The race schedule has been updated. Please check the latest times on your driver portal.')" 
+                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
+                📋 Schedule Update
+              </button>
+              <button onclick="useTemplate('Weather Alert', 'Due to weather conditions, racing is temporarily paused. Please standby for further announcements.')" 
+                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
+                🌧️ Weather Alert
+              </button>
+              <button onclick="useTemplate('Results Posted', 'Race results are now available! Check your driver portal to see your times and positions.')" 
+                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
+                🏆 Results Posted
+              </button>
+              <button onclick="useTemplate('Briefing Reminder', 'Drivers briefing in 15 minutes at the main tent. Attendance is mandatory.')" 
+                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
+                📣 Briefing Reminder
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recent Notifications Log -->
+      <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 24px;">
+        <h4 style="margin: 0 0 16px 0; color: #1e293b;">📜 Recent Notifications</h4>
+        <div id="notificationLog" style="max-height: 200px; overflow-y: auto;">
+          <p style="color: #6b7280; text-align: center; padding: 20px;">No notifications sent yet</p>
+        </div>
       </div>
     </div>
 
@@ -1929,6 +2067,7 @@
       const paymentsTab = document.getElementById('paymentsTab');
       const msaLicensesTab = document.getElementById('msaLicensesTab');
       const messagesTab = document.getElementById('messagesTab');
+      const notificationsTab = document.getElementById('notificationsTab');
       const auditTab = document.getElementById('auditTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
@@ -1939,6 +2078,7 @@
       paymentsTab.style.display = 'none';
       msaLicensesTab.style.display = 'none';
       messagesTab.style.display = 'none';
+      notificationsTab.style.display = 'none';
       auditTab.style.display = 'none';
       
       // Remove active from all tab buttons
@@ -1967,9 +2107,13 @@
         messagesTab.style.display = 'block';
         tabs[5].classList.add('active');
         loadMessages();
+      } else if (tabName === 'notifications') {
+        notificationsTab.style.display = 'block';
+        tabs[6].classList.add('active');
+        loadPushStats();
       } else if (tabName === 'audit') {
         auditTab.style.display = 'block';
-        tabs[6].classList.add('active');
+        tabs[7].classList.add('active');
         loadAuditTrail();
       }
     }
@@ -2657,6 +2801,327 @@
     }
 
     // ============= END MSA LICENSES FUNCTIONS =============
+
+    // ============= PUSH NOTIFICATIONS FUNCTIONS =============
+    
+    let notificationLog = [];
+    let notificationDrivers = [];
+    let notificationClasses = [];
+    let notificationEvents = [];
+    let selectedDriverId = null;
+    
+    async function loadPushStats() {
+      try {
+        const response = await fetch('/api/push/stats');
+        const stats = await response.json();
+        
+        document.getElementById('subscribedCount').textContent = stats.subscribedCount || 0;
+        document.getElementById('notificationsSent').textContent = stats.totalSent || 0;
+        
+        // Also load drivers, classes, and events for targeting
+        await loadNotificationTargets();
+      } catch (error) {
+        console.error('Error loading push stats:', error);
+        document.getElementById('subscribedCount').textContent = '?';
+        document.getElementById('notificationsSent').textContent = '?';
+      }
+    }
+    
+    async function loadNotificationTargets() {
+      try {
+        console.log('Loading notification targets...');
+        
+        // Load drivers using POST /api/getAllDrivers
+        const driversRes = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const driversData = await driversRes.json();
+        console.log('Drivers response:', driversData);
+        
+        // The API returns { success: true, data: { drivers: [...] } }
+        notificationDrivers = driversData.data?.drivers || driversData.drivers || [];
+        console.log('Loaded', notificationDrivers.length, 'drivers');
+        
+        // Extract unique classes
+        notificationClasses = [...new Set(notificationDrivers.map(d => d.class).filter(c => c))].sort();
+        console.log('Classes found:', notificationClasses);
+        
+        // Populate class dropdown
+        const classSelect = document.getElementById('pushClassSelect');
+        if (classSelect) {
+          classSelect.innerHTML = '<option value="">Select a class...</option>' +
+            notificationClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+        
+        // Load events using GET /api/getAllEvents
+        const eventsRes = await fetch('/api/getAllEvents');
+        const eventsData = await eventsRes.json();
+        console.log('Events response:', eventsData);
+        notificationEvents = eventsData.events || [];
+        console.log('Loaded', notificationEvents.length, 'events');
+        
+        // Populate event dropdown
+        const eventSelect = document.getElementById('pushEventSelect');
+        if (eventSelect) {
+          eventSelect.innerHTML = '<option value="">Select an event...</option>' +
+            notificationEvents.map(e => `<option value="${e.event_id}">${e.event_name} (${new Date(e.event_date).toLocaleDateString()})</option>`).join('');
+        }
+        
+        // Populate driver list
+        updateDriverList();
+      } catch (error) {
+        console.error('Error loading notification targets:', error);
+      }
+    }
+    
+    function updateDriverList() {
+      const container = document.getElementById('driverListContainer');
+      const searchTerm = (document.getElementById('driverSearchInput')?.value || '').toLowerCase();
+      
+      // Group drivers by class
+      const grouped = {};
+      notificationDrivers.forEach(d => {
+        const className = d.class || 'No Class';
+        if (!grouped[className]) grouped[className] = [];
+        grouped[className].push(d);
+      });
+      
+      let html = '';
+      Object.keys(grouped).sort().forEach(className => {
+        const classDrivers = grouped[className].filter(d => {
+          const fullName = `${d.first_name} ${d.last_name}`.toLowerCase();
+          const email = (d.driver_email || d.email || '').toLowerCase();
+          return fullName.includes(searchTerm) || email.includes(searchTerm);
+        });
+        
+        if (classDrivers.length === 0) return;
+        
+        html += `<div style="background: #f1f5f9; padding: 8px 12px; font-weight: 600; color: #374151; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0;">
+          🏎️ ${className} (${classDrivers.length})
+        </div>`;
+        
+        classDrivers.forEach(d => {
+          const isSelected = selectedDriverId === d.driver_id;
+          const email = d.driver_email || d.email || 'No email';
+          html += `<div onclick="selectDriver('${d.driver_id}', '${d.first_name} ${d.last_name}', '${className}')" 
+                       style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; ${isSelected ? 'background: #dbeafe;' : ''}"
+                       onmouseover="this.style.background='${isSelected ? '#dbeafe' : '#f8fafc'}'" 
+                       onmouseout="this.style.background='${isSelected ? '#dbeafe' : ''}'">
+            <div>
+              <div style="font-weight: 500; color: #1e293b;">${d.first_name} ${d.last_name}</div>
+              <div style="font-size: 12px; color: #6b7280;">#${d.race_number || '?'} • ${d.team_name || 'No team'}</div>
+              <div style="font-size: 11px; color: #9ca3af;">📧 ${email}</div>
+            </div>
+            ${isSelected ? '<span style="color: #2563eb; font-weight: 600;">✓</span>' : ''}
+          </div>`;
+        });
+      });
+      
+      container.innerHTML = html || '<div style="padding: 20px; text-align: center; color: #6b7280;">No drivers found</div>';
+    }
+    
+    function filterDriverList() {
+      updateDriverList();
+    }
+    
+    function selectDriver(driverId, driverName, className) {
+      selectedDriverId = driverId;
+      updateDriverList();
+      updateTargetDisplay(`${driverName} (${className})`);
+    }
+    
+    function updateTargetOptions() {
+      const targetType = document.getElementById('pushTargetType').value;
+      
+      // Hide all optional containers
+      document.getElementById('classSelectContainer').style.display = 'none';
+      document.getElementById('eventSelectContainer').style.display = 'none';
+      document.getElementById('driverSelectContainer').style.display = 'none';
+      document.getElementById('selectedTargetDisplay').style.display = 'none';
+      
+      selectedDriverId = null;
+      
+      if (targetType === 'class') {
+        document.getElementById('classSelectContainer').style.display = 'block';
+        document.getElementById('pushClassSelect').value = '';
+      } else if (targetType === 'event') {
+        document.getElementById('eventSelectContainer').style.display = 'block';
+        document.getElementById('pushEventSelect').value = '';
+        document.getElementById('eventClassFilter').style.display = 'none';
+      } else if (targetType === 'driver') {
+        document.getElementById('driverSelectContainer').style.display = 'block';
+        document.getElementById('driverSearchInput').value = '';
+        updateDriverList();
+      } else {
+        updateTargetDisplay('All subscribed drivers');
+      }
+    }
+    
+    function updateTargetDisplay(description) {
+      document.getElementById('targetDescription').textContent = description;
+      document.getElementById('selectedTargetDisplay').style.display = 'block';
+    }
+    
+    async function loadEventClasses() {
+      const eventId = document.getElementById('pushEventSelect').value;
+      if (!eventId) {
+        document.getElementById('eventClassFilter').style.display = 'none';
+        return;
+      }
+      
+      try {
+        // Get entries for this event to find classes
+        const response = await fetch(`/api/race-entries?event_id=${eventId}`);
+        const data = await response.json();
+        const entries = data.entries || [];
+        
+        const classes = [...new Set(entries.map(e => e.class).filter(c => c))].sort();
+        
+        const classSelect = document.getElementById('pushEventClassSelect');
+        classSelect.innerHTML = '<option value="">All classes in this event</option>' +
+          classes.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        document.getElementById('eventClassFilter').style.display = classes.length > 0 ? 'block' : 'none';
+        
+        const eventName = document.getElementById('pushEventSelect').selectedOptions[0]?.text || 'Event';
+        updateTargetDisplay(`All drivers registered for ${eventName}`);
+      } catch (error) {
+        console.error('Error loading event classes:', error);
+      }
+    }
+    
+    function useTemplate(title, body) {
+      document.getElementById('pushTitle').value = title;
+      document.getElementById('pushBody').value = body;
+    }
+    
+    async function sendPushNotification() {
+      const title = document.getElementById('pushTitle').value.trim();
+      const body = document.getElementById('pushBody').value.trim();
+      const url = document.getElementById('pushUrl').value.trim();
+      const targetType = document.getElementById('pushTargetType').value;
+      
+      if (!title || !body) {
+        alert('Please enter both a title and message body.');
+        return;
+      }
+      
+      // Build target parameters
+      let targetParams = {};
+      let targetDescription = 'all subscribers';
+      
+      if (targetType === 'class') {
+        const selectedClass = document.getElementById('pushClassSelect').value;
+        if (!selectedClass) {
+          alert('Please select a class.');
+          return;
+        }
+        targetParams.raceClass = selectedClass;
+        targetDescription = `${selectedClass} class`;
+      } else if (targetType === 'event') {
+        const selectedEvent = document.getElementById('pushEventSelect').value;
+        if (!selectedEvent) {
+          alert('Please select an event.');
+          return;
+        }
+        targetParams.eventId = selectedEvent;
+        const eventClass = document.getElementById('pushEventClassSelect').value;
+        if (eventClass) {
+          targetParams.raceClass = eventClass;
+          targetDescription = `${eventClass} in event`;
+        } else {
+          targetDescription = 'event registrants';
+        }
+      } else if (targetType === 'driver') {
+        if (!selectedDriverId) {
+          alert('Please select a driver.');
+          return;
+        }
+        targetParams.driverId = selectedDriverId;
+        targetDescription = 'individual driver';
+      }
+      
+      const button = document.getElementById('sendNotificationBtn');
+      const originalText = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = '<span style="font-size: 18px;">⏳</span> Sending...';
+      
+      try {
+        const response = await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            title, 
+            body, 
+            url: url || '/driver_portal.html',
+            ...targetParams
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          // Add to log
+          const logEntry = {
+            time: new Date().toLocaleString(),
+            title,
+            body,
+            target: targetDescription,
+            sent: result.sent,
+            failed: result.failed
+          };
+          notificationLog.unshift(logEntry);
+          updateNotificationLog();
+          
+          // Clear form
+          document.getElementById('pushTitle').value = '';
+          document.getElementById('pushBody').value = '';
+          document.getElementById('pushUrl').value = '';
+          document.getElementById('pushTargetType').value = 'all';
+          updateTargetOptions();
+          
+          // Refresh stats
+          loadPushStats();
+          
+          alert(`✅ Notification sent successfully!\n\nTarget: ${targetDescription}\nSent: ${result.sent}\nFailed: ${result.failed}`);
+        } else {
+          alert('❌ Failed to send notification: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error sending notification:', error);
+        alert('❌ Error sending notification. Please check your connection.');
+      } finally {
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    }
+    
+    function updateNotificationLog() {
+      const logContainer = document.getElementById('notificationLog');
+      
+      if (notificationLog.length === 0) {
+        logContainer.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No notifications sent yet</p>';
+        return;
+      }
+      
+      logContainer.innerHTML = notificationLog.map(entry => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px;">
+          <div>
+            <div style="font-weight: 600; color: #1e293b;">${entry.title}</div>
+            <div style="font-size: 13px; color: #64748b;">${entry.body.substring(0, 50)}${entry.body.length > 50 ? '...' : ''}</div>
+            <div style="font-size: 11px; color: #3b82f6; margin-top: 2px;">→ ${entry.target || 'all'}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 12px; color: #10b981; font-weight: 600;">${entry.sent} sent</div>
+            <div style="font-size: 11px; color: #6b7280;">${entry.time}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // ============= END PUSH NOTIFICATIONS FUNCTIONS =============
 
     
     const adminPasswordEl = document.getElementById('adminPassword');

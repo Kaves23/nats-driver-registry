@@ -8,22 +8,57 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const axios = require('axios');
 const fs = require('fs');
+const webpush = require('web-push');
 
 const app = express();
 const path = require('path');
+
+// Configure web push
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:admin@rokcup.co.za',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Database connection
+// =========================================================
+// GLOBAL ERROR HANDLERS - Prevent server crashes
+// =========================================================
+process.on('uncaughtException', (err) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', err.message);
+  console.error(err.stack);
+  // Don't exit - keep server running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION at:', promise);
+  console.error('Reason:', reason);
+  // Don't exit - keep server running
+});
+
+// Database connection with error handling
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   database: process.env.DB_DATABASE,
   user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  // Connection pool settings for stability
+  max: 20,                    // Maximum connections
+  idleTimeoutMillis: 30000,   // Close idle connections after 30s
+  connectionTimeoutMillis: 5000  // Fail fast if can't connect in 5s
+});
+
+// Handle pool errors to prevent crashes
+pool.on('error', (err, client) => {
+  console.error('❌ PostgreSQL pool error:', err.message);
+  // Don't crash - pool will try to reconnect
 });
 
 // Initialize audit log table if it doesn't exist
@@ -87,6 +122,29 @@ const initMessagesTable = async () => {
     `);
   } catch (err) {
     console.error('Messages table init error:', err.message);
+  }
+};
+
+// Initialize notification history table if it doesn't exist
+const initNotificationHistoryTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notification_history (
+        id SERIAL PRIMARY KEY,
+        driver_id VARCHAR(255),
+        event_id VARCHAR(255),
+        event_name VARCHAR(255),
+        title VARCHAR(500) NOT NULL,
+        body TEXT,
+        url VARCHAR(500),
+        notification_type VARCHAR(50) DEFAULT 'general',
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Notification history table initialized');
+  } catch (err) {
+    console.error('Notification history table init error:', err.message);
   }
 };
 
@@ -225,6 +283,7 @@ const initMSALicensesTable = async () => {
 
 initAuditTable();
 initMessagesTable();
+initNotificationHistoryTable();
 initEventsTable();
 initRaceEntriesTable();
 initPoolEngineRentalsTable();
@@ -3872,6 +3931,61 @@ app.post('/api/paymentNotify', async (req, res) => {
         );
         
         console.log(`✅ Pool engine rental saved and driver flag updated: ${rentalId}`);
+        
+        // *** SEND ADMIN NOTIFICATION EMAIL FOR POOL ENGINE PURCHASE ***
+        try {
+          const driverName = `${name_first || 'Unknown'} ${name_last || 'Driver'}`.trim();
+          const adminNotificationHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
+              <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 24px; text-align: center;">
+                  <h1 style="color: white; margin: 0; font-size: 20px;">🏎️ POOL ENGINE PURCHASE RECEIVED!</h1>
+                </div>
+                <div style="padding: 24px;">
+                  <p style="margin: 0 0 16px 0; font-size: 16px; color: #111827;"><strong>A driver has purchased a seasonal pool engine rental!</strong></p>
+                  
+                  <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Driver Name:</td><td style="padding: 8px 0; color: #111827;">${driverName}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Email:</td><td style="padding: 8px 0; color: #111827;">${email_address}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Championship Class:</td><td style="padding: 8px 0; color: #111827; font-weight: 700;">${rentalClass}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Rental Type:</td><td style="padding: 8px 0; color: #111827; font-weight: 700;">${rentalType}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Amount Paid:</td><td style="padding: 8px 0; color: #16a34a; font-weight: 700; font-size: 18px;">R${parseFloat(amount_gross).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Payment Reference:</td><td style="padding: 8px 0; color: #111827; font-family: monospace;">${reference}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">PayFast Transaction:</td><td style="padding: 8px 0; color: #111827; font-family: monospace;">${pf_payment_id}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Season Year:</td><td style="padding: 8px 0; color: #111827;">${new Date().getFullYear()}</td></tr>
+                      <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Date/Time:</td><td style="padding: 8px 0; color: #111827;">${new Date().toLocaleString('en-ZA')}</td></tr>
+                    </table>
+                  </div>
+                  
+                  <p style="margin: 16px 0 0 0; font-size: 14px; color: #6b7280;">This driver now has seasonal engine access and can enter races without additional engine charges.</p>
+                </div>
+                <div style="background: #f9fafb; padding: 16px; text-align: center; border-top: 1px solid #e5e7eb;">
+                  <p style="margin: 0; font-size: 12px; color: #6b7280;">NATS 2026 ROK Cup - Automated Payment Notification</p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `;
+          
+          await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+            key: process.env.MAILCHIMP_API_KEY,
+            message: {
+              to: [{ email: 'john@rokcup.co.za', name: 'John' }],
+              from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+              subject: `🏎️ POOL ENGINE PURCHASE: ${driverName} - ${rentalClass} ${rentalType} - R${amount_gross}`,
+              html: adminNotificationHtml
+            }
+          });
+          
+          console.log(`📧 Admin notification email sent for pool engine purchase: ${driverName}`);
+        } catch (adminEmailErr) {
+          console.error('⚠️ Admin notification email failed:', adminEmailErr.message);
+        }
+        
       } catch (poolErr) {
         console.error('❌ Error saving pool engine rental:', poolErr.message);
       }
@@ -4173,6 +4287,32 @@ app.get('/api/getPoolEngineRentals/:driverId', async (req, res) => {
   } catch (err) {
     console.error('❌ getPoolEngineRentals error:', err.message);
     res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// =========================================================
+// ADMIN: Get ALL pool engine rentals (for admin dashboard)
+// =========================================================
+app.get('/api/admin/getAllPoolEngineRentals', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        per.*,
+        d.first_name,
+        d.last_name,
+        c.email,
+        c.phone
+      FROM pool_engine_rentals per
+      LEFT JOIN drivers d ON per.driver_id = d.driver_id
+      LEFT JOIN contacts c ON per.driver_id = c.driver_id
+      ORDER BY per.created_at DESC
+    `);
+
+    console.log(`✅ Admin: Retrieved ${result.rows.length} total pool engine rentals`);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('❌ getAllPoolEngineRentals error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -5598,11 +5738,331 @@ app.post('/api/exportAuditCSV', async (req, res) => {
   }
 });
 
+// ==================== PUSH NOTIFICATIONS ====================
+
+// Initialize push subscriptions table
+const initPushSubscriptionsTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER,
+        endpoint TEXT NOT NULL UNIQUE,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Push subscriptions table initialized');
+  } catch (err) {
+    console.error('Error creating push_subscriptions table:', err.message);
+  }
+};
+initPushSubscriptionsTable();
+
+// Get VAPID public key
+app.get('/api/push/vapid-public-key', (req, res) => {
+  res.json({ 
+    success: true, 
+    publicKey: process.env.VAPID_PUBLIC_KEY 
+  });
+});
+
+// Subscribe to push notifications
+app.post('/api/push/subscribe', async (req, res) => {
+  try {
+    const { subscription, driverId } = req.body;
+    
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ success: false, error: 'Invalid subscription' });
+    }
+
+    const keys = subscription.keys || {};
+    
+    // Upsert subscription
+    await pool.query(`
+      INSERT INTO push_subscriptions (driver_id, endpoint, p256dh, auth)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (endpoint) 
+      DO UPDATE SET driver_id = $1, p256dh = $3, auth = $4, last_used = CURRENT_TIMESTAMP
+    `, [driverId || null, subscription.endpoint, keys.p256dh || '', keys.auth || '']);
+
+    res.json({ success: true, message: 'Subscribed to notifications' });
+  } catch (err) {
+    console.error('Push subscribe error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Unsubscribe from push notifications
+app.post('/api/push/unsubscribe', async (req, res) => {
+  try {
+    const { endpoint } = req.body;
+    
+    await pool.query('DELETE FROM push_subscriptions WHERE endpoint = $1', [endpoint]);
+    
+    res.json({ success: true, message: 'Unsubscribed from notifications' });
+  } catch (err) {
+    console.error('Push unsubscribe error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Send push notification (admin only)
+app.post('/api/push/send', async (req, res) => {
+  try {
+    const { title, body, url, driverId, raceClass, eventId } = req.body;
+    
+    if (!title || !body) {
+      return res.status(400).json({ success: false, error: 'Title and body required' });
+    }
+
+    let targetDriverIds = null;
+    
+    // If filtering by class, get driver IDs for that class
+    if (raceClass && !driverId) {
+      const classDrivers = await pool.query(
+        'SELECT driver_id FROM drivers WHERE class = $1 AND is_deleted = false',
+        [raceClass]
+      );
+      targetDriverIds = classDrivers.rows.map(r => r.driver_id);
+      console.log(`Push targeting class ${raceClass}: ${targetDriverIds.length} drivers`);
+    }
+    
+    // If filtering by event, get driver IDs for that event
+    if (eventId && !driverId) {
+      let eventQuery = `
+        SELECT DISTINCT re.driver_id 
+        FROM race_entries re 
+        WHERE re.event_id = $1::text 
+          AND (re.status IS NULL OR re.status != 'Cancelled')
+      `;
+      const params = [eventId];
+      
+      // If also filtering by class within event
+      if (raceClass) {
+        eventQuery += ' AND (re.race_class = $2 OR re.class = $2)';
+        params.push(raceClass);
+      }
+      
+      const eventDrivers = await pool.query(eventQuery, params);
+      targetDriverIds = eventDrivers.rows.map(r => r.driver_id);
+      console.log(`Push targeting event ${eventId}${raceClass ? ' class ' + raceClass : ''}: ${targetDriverIds.length} drivers`);
+    }
+
+    // Get subscriptions
+    let query = 'SELECT * FROM push_subscriptions';
+    let params = [];
+    
+    if (driverId) {
+      // Single driver
+      query += ' WHERE driver_id = $1';
+      params = [driverId];
+    } else if (targetDriverIds && targetDriverIds.length > 0) {
+      // Multiple drivers by class or event
+      query += ' WHERE driver_id = ANY($1)';
+      params = [targetDriverIds];
+    }
+    // else: send to all subscriptions
+    
+    const result = await pool.query(query, params);
+    console.log(`Found ${result.rows.length} push subscriptions to notify`);
+    
+    const payload = JSON.stringify({
+      title,
+      body,
+      url: url || '/driver_portal.html'
+    });
+
+    // Determine notification type based on content
+    let notificationType = 'general';
+    if (eventId) notificationType = 'event';
+    else if (title.toLowerCase().includes('registration') || body.toLowerCase().includes('registration')) notificationType = 'registration';
+    else if (title.toLowerCase().includes('payment') || body.toLowerCase().includes('payment')) notificationType = 'payment';
+
+    // Get event name if eventId provided
+    let eventName = null;
+    if (eventId) {
+      try {
+        const eventResult = await pool.query('SELECT event_name FROM events WHERE event_id = $1', [eventId]);
+        if (eventResult.rows.length > 0) {
+          eventName = eventResult.rows[0].event_name;
+        }
+      } catch (e) {
+        console.log('Could not get event name:', e.message);
+      }
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+    const failedEndpoints = [];
+    const notifiedDriverIds = new Set();
+
+    for (const sub of result.rows) {
+      try {
+        await webpush.sendNotification({
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth
+          }
+        }, payload);
+        successCount++;
+        
+        // Track driver ID for notification history
+        if (sub.driver_id) {
+          notifiedDriverIds.add(sub.driver_id);
+        }
+        
+        // Update last_used
+        await pool.query('UPDATE push_subscriptions SET last_used = CURRENT_TIMESTAMP WHERE id = $1', [sub.id]);
+      } catch (err) {
+        failCount++;
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          // Subscription expired or invalid - remove it
+          failedEndpoints.push(sub.endpoint);
+          await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);
+        }
+      }
+    }
+
+    // Record notification history for each driver who received it
+    for (const dId of notifiedDriverIds) {
+      try {
+        await pool.query(
+          `INSERT INTO notification_history (driver_id, event_id, event_name, title, body, url, notification_type)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [dId, eventId || null, eventName, title, body, url || '/driver_portal.html', notificationType]
+        );
+      } catch (histErr) {
+        console.log('Could not save notification history:', histErr.message);
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      sent: successCount, 
+      failed: failCount,
+      removed: failedEndpoints.length
+    });
+  } catch (err) {
+    console.error('Push send error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get push notification stats (admin)
+app.get('/api/push/stats', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT COUNT(*) as total,
+             COUNT(driver_id) as with_driver,
+             COUNT(*) - COUNT(driver_id) as anonymous
+      FROM push_subscriptions
+    `);
+    
+    res.json({ 
+      success: true, 
+      subscribedCount: parseInt(result.rows[0].total) || 0,
+      totalSent: 0, // We could track this in a separate table
+      stats: result.rows[0] 
+    });
+  } catch (err) {
+    console.error('Push stats error:', err.message);
+    res.status(500).json({ success: false, subscribedCount: 0, totalSent: 0, error: err.message });
+  }
+});
+
+// Get notification history for a driver
+app.get('/api/notifications/history', async (req, res) => {
+  try {
+    const { driverId, type, eventId } = req.query;
+    
+    if (!driverId) {
+      return res.status(400).json({ success: false, error: 'Driver ID required' });
+    }
+    
+    let query = `
+      SELECT id, driver_id, event_id, event_name, title, body, url, notification_type, created_at
+      FROM notification_history
+      WHERE driver_id = $1
+    `;
+    const params = [driverId];
+    let paramIndex = 2;
+    
+    if (type) {
+      query += ` AND notification_type = $${paramIndex}`;
+      params.push(type);
+      paramIndex++;
+    }
+    
+    if (eventId) {
+      query += ` AND event_id = $${paramIndex}`;
+      params.push(eventId);
+      paramIndex++;
+    }
+    
+    query += ' ORDER BY created_at DESC LIMIT 100';
+    
+    const result = await pool.query(query, params);
+    
+    res.json({
+      success: true,
+      notifications: result.rows
+    });
+  } catch (err) {
+    console.error('Notification history error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Serve static files from the project root (AFTER all API routes)
 app.use(express.static(path.join(__dirname, '.')));
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`NATS Driver Registry server running on port ${PORT}`);
+// =========================================================
+// EXPRESS ERROR HANDLING MIDDLEWARE - Catch all route errors
+// =========================================================
+app.use((err, req, res, next) => {
+  console.error('❌ Express error:', err.message);
+  console.error('Stack:', err.stack);
+  res.status(500).json({ 
+    success: false, 
+    error: 'Internal server error', 
+    message: err.message 
+  });
 });
 
+// Handle 404 for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ success: false, error: 'API endpoint not found' });
+});
+
+const PORT = process.env.PORT || 3000;
+const server = app.listen(PORT, () => {
+  console.log(`✅ NATS Driver Registry server running on port ${PORT}`);
+  console.log('🛡️ Global error handlers installed');
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    pool.end().then(() => {
+      console.log('Database pool closed');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    pool.end().then(() => {
+      console.log('Database pool closed');
+      process.exit(0);
+    });
+  });
+});

@@ -14,3 +14,21 @@ temp_*.html
 docs/
 LIVE_DEPLOYMENT_GUIDE.md
 server_log.txt
+
+# Backups folder with potentially sensitive data
+backups/
+
+# Test scripts with hardcoded credentials
+check_drivers_email.js
+check_login_user.js
+check_medical_data.js
+check_medical_from_api.js
+check_schema.js
+check_driver_schema.js
+check_medical.js
+audit_all_tables.js
+fix_payments.js
+insert_test_event.js
+update_test_event.js
+test_emails_direct.js
+test-email.js

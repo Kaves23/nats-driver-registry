@@ -1140,9 +1140,9 @@
   flex: 1;
   appearance: none;
   -webkit-appearance: none;
-  border: 1.5px solid rgba(0,0,0,.85);
+  border: 1.5px solid rgba(255,255,255,.85);
   background: transparent;
-  color: #111827;
+  color: #fff;
   border-radius: 0;
   padding: 12px 12px;
   font-weight: 900;
@@ -1150,6 +1150,11 @@
   letter-spacing: .01em;
   text-transform: none;
 }
+    /* Summer Nats uses black text for contrast with yellow background */
+    body[data-season="summer"] .mobile-season-nav .mobile-nav-btn{
+      color: #111827;
+      border-color: rgba(0,0,0,.85);
+    }
     .mobile-season-nav .mobile-nav-btn:active{
       transform: translateY(1px);
     }
@@ -5480,26 +5485,24 @@ the paddock quickly and consistently.
  <script>
 (function () {
     const seasons = [
-      { id: 'summer', name: 'SUMMER NATS', rounds: '1&2', track: 'REDSTAR RACEWAY',      dates: '20–22 MAR 2026' },
-      { id: 'autumn', name: 'AUTUMN NATS', rounds: '3&4', track: 'IDUBE RACEWAY',        dates: '08–10 MAY 2026' },
-      { id: 'winter', name: 'WINTER NATS', rounds: '5&6', track: 'FORMULA K',            dates: '10–12 JULY 2026' },
-      { id: 'spring', name: 'SPRING NATS', rounds: '7&8', track: 'KILLARNEY RACEWAY',    dates: '10–12 SEP 2026' },
-      { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'MULTIPLE VENUES', dates: '14 FEB – REDSTAR|21 MAR – REDSTAR|22 MAR – REDSTAR|11 APR – VKC|11 JUL – FORMULA K|12 JUL – FORMULA K|07 NOV – REDSTAR' }
+      { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'REDSTAR RACEWAY',   dates: '14 FEB 2026' },
+      { id: 'summer',   name: 'SUMMER NATS',            rounds: '1&2',      track: 'REDSTAR RACEWAY',   dates: '20–22 MAR 2026' },
+      { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'VKC',               dates: '11 APR 2026' },
+      { id: 'autumn',   name: 'AUTUMN NATS',            rounds: '3&4',      track: 'IDUBE RACEWAY',     dates: '08–10 MAY 2026' },
+      { id: 'winter',   name: 'WINTER NATS',            rounds: '5&6',      track: 'FORMULA K',         dates: '10–12 JULY 2026' },
+      { id: 'spring',   name: 'SPRING NATS',            rounds: '7&8',      track: 'KILLARNEY RACEWAY', dates: '10–12 SEP 2026' },
+      { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'REDSTAR RACEWAY',   dates: '07 NOV 2026' }
     ];
 
-    // All races with dates for "next race" logic
+    // All races with dates for "next race" logic - pageIndex matches the seasons array index
     const allRaces = [
-      { seasonId: 'northern', date: new Date(2026, 1, 14), displayDate: '14 FEB – REDSTAR' },
-      { seasonId: 'summer', date: new Date(2026, 2, 20), displayDate: '20–22 MAR' },
-      { seasonId: 'northern', date: new Date(2026, 2, 21), displayDate: '21 MAR – REDSTAR' },
-      { seasonId: 'northern', date: new Date(2026, 2, 22), displayDate: '22 MAR – REDSTAR' },
-      { seasonId: 'northern', date: new Date(2026, 3, 11), displayDate: '11 APR – VKC' },
-      { seasonId: 'autumn', date: new Date(2026, 4, 8), displayDate: '08–10 MAY' },
-      { seasonId: 'northern', date: new Date(2026, 6, 11), displayDate: '11 JUL – FORMULA K' },
-      { seasonId: 'winter', date: new Date(2026, 6, 10), displayDate: '10–12 JULY' },
-      { seasonId: 'northern', date: new Date(2026, 6, 12), displayDate: '12 JUL – FORMULA K' },
-      { seasonId: 'spring', date: new Date(2026, 8, 10), displayDate: '10–12 SEP' },
-      { seasonId: 'northern', date: new Date(2026, 10, 7), displayDate: '07 NOV – REDSTAR' }
+      { pageIndex: 0, date: new Date(2026, 1, 14), displayDate: '14 FEB – REDSTAR' },
+      { pageIndex: 1, date: new Date(2026, 2, 20), displayDate: '20–22 MAR' },
+      { pageIndex: 2, date: new Date(2026, 3, 11), displayDate: '11 APR – VKC' },
+      { pageIndex: 3, date: new Date(2026, 4, 8),  displayDate: '08–10 MAY' },
+      { pageIndex: 4, date: new Date(2026, 6, 10), displayDate: '10–12 JULY' },
+      { pageIndex: 5, date: new Date(2026, 8, 10), displayDate: '10–12 SEP' },
+      { pageIndex: 6, date: new Date(2026, 10, 7), displayDate: '07 NOV – REDSTAR' }
     ];
 
     function getNextRace() {
@@ -5660,12 +5663,10 @@ the paddock quickly and consistently.
 
       if (season.id === 'northern') {
         kickerText.textContent = `ROK CUP SOUTH AFRICA PROUDLY PRESENT THE`;
-        eventDatesMain.innerHTML = season.dates.split('|').map(date => `<div>${date}</div>`).join('');
         eventDatesMain.classList.add('northern-dates');
       } else {
         kickerText.textContent =
           `ROK CUP SOUTH AFRICA NATIONAL ROUND ${season.rounds} PROUDLY PRESENT THE`;
-        eventDatesMain.textContent = season.dates;
         eventDatesMain.classList.remove('northern-dates');
       }
       titleText.textContent       = season.name;
@@ -5863,9 +5864,8 @@ function closeModals() {
 
     btnNextRace.addEventListener('click', () => {
       const nextRace = getNextRace();
-      const seasonIndex = seasons.findIndex(s => s.id === nextRace.seasonId);
-      if (seasonIndex !== -1) {
-        currentIndex = seasonIndex;
+      if (nextRace.pageIndex >= 0 && nextRace.pageIndex < seasons.length) {
+        currentIndex = nextRace.pageIndex;
         applySeason(currentIndex);
         
         // Highlight the specific date

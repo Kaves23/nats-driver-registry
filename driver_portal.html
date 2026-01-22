@@ -4,6 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>NATS Driver Registry</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#e74c3c">
+  <meta name="description" content="ROK Cup South Africa - Driver Registration & Event Management">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROK Cup SA">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
   <style>
     :root{
@@ -899,6 +908,17 @@
     .ptab[data-accent="winter"] .tabBar{ background: var(--winter); }
     .ptab[data-accent="spring"] .tabBar{ background: var(--spring); }
 
+    /* Action tabs (Logout, Home) - distinct styling */
+    .ptab-action {
+      background: var(--ink) !important;
+      color: #fff !important;
+      border-color: var(--ink) !important;
+      min-width: 80px !important;
+    }
+    .ptab-action:hover {
+      background: #1e293b !important;
+    }
+
     /* Glow accents on active portal tabs */
     .ptab.active{
       border-color: rgba(15,23,42,0.55);
@@ -1209,9 +1229,10 @@
     }
     .statusTop{
       display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
+      align-items:center;
+      justify-content:flex-start;
       gap: 10px;
+      flex-wrap: wrap;
     }
     .statusTitle{
       font-size: 10px;
@@ -1224,6 +1245,7 @@
       font-size: 10px;
       letter-spacing: 0.16em;
       text-transform: uppercase;
+      margin-left: auto;
       font-weight: 900;
       border: 1px solid var(--border-soft);
       padding: 8px 10px 7px;
@@ -1276,6 +1298,118 @@
       font-size: 12px;
       color: var(--muted);
       line-height: 1.7;
+    }
+    
+    /* Notification History Styles */
+    .notification-history-container {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .notification-item {
+      background: #fff;
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+    .notification-item:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    }
+    .notification-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .notification-item-title {
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 14px;
+    }
+    .notification-item-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .notification-item-badge.event { background: #dbeafe; color: #1d4ed8; }
+    .notification-item-badge.registration { background: #d1fae5; color: #059669; }
+    .notification-item-badge.payment { background: #fef3c7; color: #d97706; }
+    .notification-item-badge.general { background: #e5e7eb; color: #374151; }
+    .notification-item-body {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+    .notification-item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .notification-item-event {
+      background: #f3f4f6;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .notification-group-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 0;
+      margin-top: 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .notification-group-header:first-child {
+      margin-top: 0;
+    }
+    .notification-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .notification-empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    
+    /* Portal Status Buttons - HIDDEN, using inline buttons instead */
+    .portal-status-buttons {
+      display: none !important;
+    }
+    
+    /* Inline status buttons in header - shown on both desktop and mobile when logged in */
+    .status-inline-buttons {
+      display: none;
+      flex-direction: row;
+      gap: 8px;
+      align-items: center;
+    }
+    .status-inline-buttons .btn {
+      padding: 6px 12px;
+      font-size: 10px;
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .status-inline-buttons .btn:hover {
+      background: #0f172a;
+      border-color: #0f172a;
+    }
+    
+    /* ROK logo - hidden on desktop by default, shown on mobile when logged in */
+    .mobile-rok-logo {
+      display: none;
     }
 
     /* Payment Cards */
@@ -1336,15 +1470,143 @@
       .ptab{ min-width: 0; width: 100%; }
       .statusBody{ grid-template-columns: 1fr; }
       
+      /* Reduce sizes on mobile for better fit on larger phones */
+      .shell{ padding: 12px !important; }
+      .panel{ padding: 16px !important; }
+      .panelTitle{ font-size: 14px !important; }
+      label{ font-size: 12px !important; }
+      input, select, textarea{ font-size: 14px !important; padding: 8px 10px !important; }
+      .btn{ font-size: 13px !important; padding: 10px 14px !important; }
+      .statusCard{ padding: 14px !important; }
+      .statusTitle{ font-size: 13px !important; }
+      .statusChip{ font-size: 11px !important; padding: 4px 10px !important; }
+      .kv .k{ font-size: 11px !important; }
+      .kv .v{ font-size: 13px !important; }
+      .statusNote{ font-size: 12px !important; }
+      .hint{ font-size: 12px !important; }
+      
       /* Hide championship buttons on mobile, show dropdown */
       #champ-buttons-container{ display: none !important; }
       #champ-select{ display: block !important; }
       
-      /* Position HOME button at bottom on mobile */
-      .back-link-wrap{ position: fixed; bottom: 20px; right: 20px; margin-top: 0; z-index: 999; }
+      /* Hide desktop back-link-wrap on mobile */
+      .back-link-wrap{ 
+        display: none !important;
+      }
+      
+      /* Smaller inline buttons on mobile */
+      .status-inline-buttons .btn {
+        padding: 6px 10px !important;
+        font-size: 9px !important;
+      }
       
       /* Single column registration form on mobile */
       #tab-register.show{ grid-template-columns: 1fr !important; }
+      
+      /* Green glow on panels when logged in */
+      body.logged-in .panel {
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.35), var(--shadow) !important;
+        border-color: rgba(34, 197, 94, 0.4) !important;
+      }
+    }
+
+    /* Mobile logged-in enhancements */
+    @media (max-width: 980px) {
+      /* Hide login/register tabs when logged in */
+      body.logged-in .tabs {
+        display: none !important;
+      }
+      
+      /* Hide mode gate when logged in */
+      body.logged-in #modeGate {
+        display: none !important;
+      }
+      
+      /* Make tab-portal a flex container for reordering */
+      body.logged-in #tab-portal {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      
+      /* Hide login panel completely when logged in */
+      body.logged-in #loginPanel {
+        display: none !important;
+      }
+      
+      /* Hide the grid wrapper containing login/status - we'll show status separately */
+      body.logged-in #tab-portal > .grid {
+        display: contents !important;
+      }
+      
+      /* Portal tabs carousel (Options button) at very top */
+      body.logged-in #portalTabsCarousel {
+        order: 1 !important;
+        margin-top: 0 !important;
+      }
+      
+      /* Portal sections (content) second */
+      body.logged-in #portalSections {
+        order: 2 !important;
+        margin-top: 14px !important;
+      }
+      
+      /* Portal status at the very bottom */
+      body.logged-in #portalStatusPanel {
+        order: 99 !important;
+        margin-top: 16px !important;
+      }
+      
+      /* Green glow on statusCard when logged in */
+      body.logged-in .statusCard {
+        box-shadow: 0 0 25px rgba(34, 197, 94, 0.5) !important;
+        border-color: rgba(34, 197, 94, 0.5) !important;
+      }
+      
+      /* Green glow on portal tabs when logged in */
+      body.logged-in .portalTabs,
+      body.logged-in .portalTabs-carousel-container {
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.3) !important;
+      }
+      
+      /* Green glow on active tab content */
+      body.logged-in #portalSections .panel {
+        box-shadow: 0 0 18px rgba(34, 197, 94, 0.3), var(--shadow) !important;
+        border-color: rgba(34, 197, 94, 0.35) !important;
+      }
+      
+      /* Style portal status buttons - match primary button style */
+      .portal-status-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+      }
+      
+      .portal-status-buttons .btn {
+        flex: 1;
+        background: var(--ink) !important;
+        color: #fff !important;
+        border-color: var(--ink) !important;
+        font-weight: 600;
+      }
+      
+      /* Mobile ROK logo in top right */
+      .mobile-rok-logo {
+        display: none;
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 100;
+        width: 45px;
+        height: auto;
+        object-fit: contain;
+        opacity: 0.9;
+      }
+      
+      body.logged-in .mobile-rok-logo {
+        display: block !important;
+      }
     }
 
     @media (max-width: 768px){
@@ -1367,7 +1629,9 @@
             <div class="sub">Driver Portal and Registration</div>
           </div>
           <div class="header-right">
+            <img src="icons/rok-logo-original.png" alt="ROK" class="mobile-rok-logo" />
             <div class="back-link-wrap">
+              <button class="btn" id="headerLogoutBtn" onclick="document.getElementById('btnLogout').click()" type="button" style="display:none;">Logout</button>
               <button class="btn" onclick="window.location.href='index.html'" type="button">Home</button>
             </div>
           </div>
@@ -1400,7 +1664,7 @@
           <!-- LOGIN / PORTAL -->
           <div id="tab-portal">
             <div class="grid">
-              <div class="panel">
+              <div class="panel" id="loginPanel">
                 <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Driver Login</div>
 
                 <div class="row">
@@ -1423,13 +1687,17 @@
                 <div class="hint">Enter your email and password to access your driver portal.</div>
               </div>
 
-              <div class="panel">
+              <div class="panel" id="portalStatusPanel">
                 <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Portal Status</div>
                 <div id="portalStatus">
                   <div id="toast"></div>
                   <div class="statusCard">
                     <div class="statusTop">
                       <div class="statusTitle">Session</div>
+                      <div class="status-inline-buttons" id="statusInlineButtons" style="display: none;">
+                        <button class="btn" onclick="document.getElementById('btnLogout').click()" type="button">Logout</button>
+                        <button class="btn" onclick="window.location.href='index.html'" type="button">Home</button>
+                      </div>
                       <div class="statusChip wait">Not logged in</div>
                     </div>
                     <div class="statusBody">
@@ -1452,6 +1720,12 @@
                     </div>
                     <div class="statusNote">Log in to load your portal. You will see your profile, entrant details, and NAT entry controls.</div>
                   </div>
+                  
+                  <!-- Action Buttons (visible when logged in) -->
+                  <div class="portal-status-buttons" id="portalStatusButtons" style="display: none;">
+                    <button class="btn" id="btnStatusLogout" type="button">Logout</button>
+                    <button class="btn" onclick="window.location.href='index.html'" type="button">Home</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1464,6 +1738,10 @@
               <button class="ptab" data-ptab="points" data-accent="spring" type="button"><span class="tabBar"></span>Points</button>
               <button class="ptab" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
               <button class="ptab" data-ptab="msa" data-accent="spring" type="button"><span class="tabBar"></span>MSA License</button>
+              <button class="ptab" data-ptab="notifications" data-accent="winter" type="button"><span class="tabBar"></span>Notifications</button>
+              <!-- Logout and Home in portal tabs (always visible when tabs show) -->
+              <button class="ptab ptab-action" onclick="document.getElementById('btnLogout').click()" type="button"><span class="tabBar" style="background:#ef4444"></span>Logout</button>
+              <button class="ptab ptab-action" onclick="window.location.href='index.html'" type="button"><span class="tabBar" style="background:#3b82f6"></span>Home</button>
               <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
             </div>
 
@@ -1498,6 +1776,9 @@
                   </button>
                   <button class="portalTab-option" data-ptab="msa">
                     <span class="portalTab-option-label">MSA License</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="notifications">
+                    <span class="portalTab-option-label">Notifications</span>
                   </button>
                   <button class="portalTab-option" data-ptab="requests">
                     <span class="portalTab-option-label">Contact Admin</span>
@@ -1583,6 +1864,17 @@
                   <div class="btnbar">
                     <button class="btn primary" id="btnSaveProfile" type="button" disabled>Save Changes</button>
                   </div>
+                  
+                  <!-- Push Notifications Toggle -->
+                  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                      <div>
+                        <div style="font-weight: 600; color: #111827; margin-bottom: 4px;">🔔 Push Notifications</div>
+                        <div id="notificationStatus" style="font-size: 13px; color: #6b7280;">Checking status...</div>
+                      </div>
+                      <button id="notificationToggleBtn" class="btn" style="min-width: 100px;" onclick="togglePushNotifications()">Enable</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1622,6 +1914,35 @@
                   </div>
 
                   <div id="entriesTableContainer" style="margin-top: 20px;"></div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="notifications">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Notification History</div>
+                  <div class="hint">View your past notifications from ROK Cup SA. Notifications are grouped by type and event.</div>
+                  
+                  <!-- Filter options -->
+                  <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <select id="notifFilterType" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                      <option value="">All Types</option>
+                      <option value="event">Event Updates</option>
+                      <option value="registration">Registration</option>
+                      <option value="payment">Payment</option>
+                      <option value="general">General</option>
+                    </select>
+                    <select id="notifFilterEvent" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px;">
+                      <option value="">All Events</option>
+                    </select>
+                    <button class="btn" onclick="loadNotificationHistory()" style="padding: 8px 16px; font-size: 13px;">Refresh</button>
+                  </div>
+                  
+                  <div id="notificationHistoryList" class="notification-history-container">
+                    <div class="hint" style="text-align: center; padding: 30px;">
+                      <div style="font-size: 40px; margin-bottom: 10px;">🔔</div>
+                      <div>Loading your notifications...</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2546,6 +2867,13 @@
       window.currentDriverId = "";
       currentPin = "";
       currentProfile = null;
+      currentEmail = "";
+      currentPassword = "";
+      // Clear saved session
+      localStorage.removeItem('driverEmail');
+      localStorage.removeItem('driverPassword');
+      localStorage.removeItem('driverToken');
+      document.body.classList.remove('logged-in'); // Hide mobile logged-in state
 
       document.getElementById("portalTabs").style.display = "none";
       document.getElementById("portalSections").style.display = "none";
@@ -2553,6 +2881,10 @@
       document.getElementById("btnLogout").disabled = true;
       document.getElementById("btnSaveProfile").disabled = true;
       document.getElementById("btnSendRequest").disabled = true;
+      
+      // Hide inline status buttons
+      const inlineBtns = document.getElementById("statusInlineButtons");
+      if (inlineBtns) inlineBtns.style.display = "none";
 
       setStatusCard_();
 
@@ -2590,6 +2922,13 @@
       document.getElementById("btnLogout").disabled = false;
       document.getElementById("btnSaveProfile").disabled = false;
       document.getElementById("btnSendRequest").disabled = false;
+      
+      // Show inline status buttons (Logout/Home in status card header)
+      const inlineBtns = document.getElementById("statusInlineButtons");
+      if (inlineBtns) inlineBtns.style.display = "flex";
+      
+      // Load notification history when logged in
+      loadNotificationHistory();
 
       document.getElementById("p_email").value = d.email || identShown || "";
       document.getElementById("p_first_name").value = d.first_name || "";
@@ -3598,6 +3937,9 @@
         // Generate and store driver token
         currentToken = 'driver-token-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('driverToken', currentToken);
+        // Save login credentials for session persistence
+        localStorage.setItem('driverEmail', email);
+        localStorage.setItem('driverPassword', password);
 
         const elapsed = Date.now() - t0;
         if(elapsed < minDwellMs){
@@ -3606,6 +3948,7 @@
 
         currentProfile = profile;
         renderPortal(profile, email);
+        document.body.classList.add('logged-in'); // Show mobile logged-in state
         toast("good", "Login successful. Portal loaded.");
       }catch(err){
         setStatusCard_({
@@ -3719,6 +4062,11 @@
       document.getElementById("login_password").value = "";
       clearPortal();
       toast("good", "Logged out.");
+    });
+    
+    // Portal Status logout button (moved from bottom action buttons)
+    document.getElementById("btnStatusLogout").addEventListener("click", ()=>{
+      document.getElementById("btnLogout").click();
     });
 
     /* SAVE PROFILE */
@@ -4884,6 +5232,625 @@
           }
         });
         observer.observe(msaSection, { attributes: true, attributeFilter: ['class'] });
+      }
+    });
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/service-worker.js');
+          console.log('✅ ServiceWorker registered:', registration.scope);
+          
+          // Subscribe to push notifications after service worker is ready
+          await subscribeToPushNotifications(registration);
+          
+          // Check for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version available - show update banner
+                showUpdateBanner(newWorker);
+              }
+            });
+          });
+          
+          // Also check for waiting service worker on page load
+          if (registration.waiting) {
+            showUpdateBanner(registration.waiting);
+          }
+        } catch (err) {
+          console.log('ServiceWorker registration failed:', err);
+        }
+      });
+      
+      // Listen for messages from service worker
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SW_UPDATED') {
+          console.log('Service Worker updated to:', event.data.version);
+          // Reload to get the latest version
+          window.location.reload();
+        }
+      });
+    }
+    
+    // Show update banner
+    function showUpdateBanner(newWorker) {
+      const banner = document.createElement('div');
+      banner.id = 'updateBanner';
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#2563eb;color:white;padding:16px;text-align:center;z-index:10000;display:flex;justify-content:center;align-items:center;gap:16px;';
+      banner.innerHTML = `
+        <span>🔄 A new version is available!</span>
+        <button onclick="applyUpdate()" style="background:white;color:#2563eb;border:none;padding:8px 16px;border-radius:4px;font-weight:bold;cursor:pointer;">Update Now</button>
+        <button onclick="this.parentElement.remove()" style="background:transparent;color:white;border:1px solid white;padding:8px 16px;border-radius:4px;cursor:pointer;">Later</button>
+      `;
+      document.body.appendChild(banner);
+      window.pendingWorker = newWorker;
+    }
+    
+    // Apply the update
+    function applyUpdate() {
+      if (window.pendingWorker) {
+        window.pendingWorker.postMessage({ type: 'SKIP_WAITING' });
+      }
+      window.location.reload();
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('PWA: Install prompt available');
+      
+      // Show install button in header
+      showInstallButton();
+      
+      // Also show banner after a delay
+      setTimeout(() => {
+        showInstallPrompt();
+      }, 5000); // Show after 5 seconds
+    });
+    
+    function showInstallButton() {
+      // Add install button to header if not already there
+      if (document.getElementById('pwa-install-btn')) return;
+      
+      const header = document.querySelector('.header-content') || document.querySelector('header');
+      if (header) {
+        const btn = document.createElement('button');
+        btn.id = 'pwa-install-btn';
+        btn.innerHTML = '📲 Install';
+        btn.style.cssText = 'background: white; color: #e74c3c; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 14px;';
+        btn.onclick = installPWA;
+        header.appendChild(btn);
+      }
+    }
+
+    function showInstallPrompt() {
+      if (!deferredPrompt) return;
+      
+      // Create install banner
+      const banner = document.createElement('div');
+      banner.id = 'pwa-install-banner';
+      banner.innerHTML = `
+        <div style="position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; color: #333; padding: 20px; border-radius: 0; box-shadow: 0 18px 40px rgba(15,23,42,0.15), 0 0 0 1px rgba(15,23,42,0.12); z-index: 10000; border: 1px solid rgba(15,23,42,0.35);">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <img src="/icons/icon-192.png" style="width: 60px; height: 60px; border-radius: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div>
+              <div style="font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #6b7280;">ROK Cup South Africa</div>
+              <div style="font-size: 16px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #111827; margin-top: 4px;">Install App</div>
+              <div style="font-size: 12px; color: #6b7280; margin-top: 4px; letter-spacing: 0.05em;">Add to your home screen for quick access</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button onclick="dismissInstall()" style="flex: 1; background: #fff; border: 1px solid rgba(15,23,42,0.12); color: #111827; padding: 10px 12px; border-radius: 0; cursor: pointer; font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 14px 30px rgba(15,23,42,0.09);">Not Now</button>
+            <button onclick="installPWA()" style="flex: 1; background: #0ea5e9; border: 1px solid rgba(15,23,42,0.35); color: white; padding: 10px 12px; border-radius: 0; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; box-shadow: 0 18px 40px rgba(15,23,42,0.12);">Install</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(banner);
+    }
+
+    async function installPWA() {
+      console.log('🔧 Install button clicked, deferredPrompt:', deferredPrompt);
+      
+      if (!deferredPrompt) {
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+          alert('✅ App is already installed!\n\nLook for the ROK Cup app on your home screen.');
+          dismissInstall();
+          return;
+        }
+        
+        // Detect platform and show appropriate instructions
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        
+        let instructions = '';
+        if (isIOS || isSafari) {
+          instructions = '📱 On iPhone/iPad Safari:\n\n' +
+            '1. Tap the Share button (📤) at the bottom\n' +
+            '2. Scroll down and tap "Add to Home Screen"\n' +
+            '3. Tap "Add" to confirm';
+        } else if (isAndroid) {
+          instructions = '📱 On Android:\n\n' +
+            '1. Tap the menu button (⋮) in the top right\n' +
+            '2. Tap "Add to Home Screen" or "Install App"\n' +
+            '3. Tap "Add" or "Install" to confirm';
+        } else {
+          instructions = '💻 On Desktop Chrome/Edge:\n\n' +
+            '1. Look for the install icon (⊕) in the address bar\n' +
+            '2. Click it and select "Install"\n\n' +
+            'Or use the browser menu → "Install ROK Cup..."';
+        }
+        
+        alert('To install this app:\n\n' + instructions);
+        return;
+      }
+      
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('PWA install outcome:', outcome);
+        
+        if (outcome === 'accepted') {
+          console.log('✅ PWA installed successfully');
+        }
+        
+        deferredPrompt = null;
+        dismissInstall();
+      } catch (err) {
+        console.error('Install error:', err);
+        alert('Installation failed. Please try using the browser menu to install.');
+      }
+    }
+
+    function dismissInstall() {
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.remove();
+    }
+
+    // ==================== PUSH NOTIFICATIONS ====================
+    
+    async function subscribeToPushNotifications(registration) {
+      try {
+        // Check if push is supported
+        if (!('PushManager' in window)) {
+          console.log('Push notifications not supported');
+          return;
+        }
+        
+        // Get VAPID public key from server
+        const keyResponse = await fetch('/api/push/vapid-public-key');
+        const keyData = await keyResponse.json();
+        
+        if (!keyData.success || !keyData.publicKey) {
+          console.log('No VAPID key available');
+          return;
+        }
+        
+        // Check existing subscription
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (!subscription) {
+          // Check permission
+          const permission = await Notification.requestPermission();
+          
+          if (permission !== 'granted') {
+            console.log('Push notification permission denied');
+            return;
+          }
+          
+          // Subscribe
+          const applicationServerKey = urlBase64ToUint8Array(keyData.publicKey);
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey
+          });
+          
+          console.log('🔔 Push subscription created');
+        } else {
+          console.log('🔔 Existing push subscription found');
+        }
+        
+        // Send subscription to server
+        const driverId = localStorage.getItem('loggedInDriverId');
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription,
+            driverId: driverId ? parseInt(driverId) : null
+          })
+        });
+        
+        console.log('✅ Push notifications enabled');
+      } catch (err) {
+        console.error('Push subscription error:', err);
+      }
+    }
+    
+    // Helper function to convert base64 to Uint8Array
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+    
+    // Check and update notification UI status
+    async function updateNotificationUI() {
+      const statusEl = document.getElementById('notificationStatus');
+      const btnEl = document.getElementById('notificationToggleBtn');
+      
+      if (!statusEl || !btnEl) return;
+      
+      try {
+        // Detect iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
+                                   window.navigator.standalone === true;
+        const isSecureContext = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
+        
+        // Debug logging
+        console.log('Notification check:', {
+          isIOS,
+          isInStandaloneMode,
+          isSecureContext,
+          protocol: location.protocol,
+          hostname: location.hostname,
+          hasServiceWorker: 'serviceWorker' in navigator,
+          hasPushManager: 'PushManager' in window,
+          hasNotification: 'Notification' in window
+        });
+        
+        // Check if we're in a secure context (HTTPS or localhost)
+        if (!isSecureContext) {
+          statusEl.innerHTML = '<strong>HTTPS Required</strong><br>Push notifications require a secure connection. Access via HTTPS or localhost.';
+          statusEl.style.color = '#ef4444';
+          btnEl.style.display = 'none';
+          return;
+        }
+        
+        // Check if basic requirements are met
+        if (!('serviceWorker' in navigator)) {
+          statusEl.textContent = 'Service Worker not supported on this browser';
+          statusEl.style.color = '#ef4444';
+          btnEl.style.display = 'none';
+          return;
+        }
+        
+        // For iOS, we need to wait for SW to be ready before checking PushManager
+        if (isIOS && isInStandaloneMode) {
+          // Check Notification API first (iOS 16.4+ requirement)
+          if (!('Notification' in window)) {
+            statusEl.textContent = 'Update to iOS 16.4 or later for notifications';
+            statusEl.style.color = '#ef4444';
+            btnEl.style.display = 'none';
+            return;
+          }
+        }
+        
+        // Check if push is supported
+        if (!('PushManager' in window)) {
+          if (isIOS && !isInStandaloneMode) {
+            // iOS user not in PWA mode
+            statusEl.innerHTML = '<strong>iOS Instructions:</strong><br>1. Tap the Share button (square with arrow)<br>2. Select "Add to Home Screen"<br>3. Open the app from your home screen<br>4. Then enable notifications here';
+            statusEl.style.color = '#f59e0b';
+            btnEl.textContent = 'Not Available';
+            btnEl.disabled = true;
+            btnEl.style.background = '#9ca3af';
+          } else if (isIOS) {
+            // iOS in PWA mode but PushManager not available
+            statusEl.textContent = 'Tap Enable to request permission';
+            statusEl.style.color = '#6b7280';
+            btnEl.textContent = 'Enable';
+            btnEl.disabled = false;
+            btnEl.onclick = requestIOSNotificationPermission;
+          } else {
+            statusEl.textContent = 'Not supported on this browser';
+            btnEl.style.display = 'none';
+          }
+          return;
+        }
+        
+        // Check permission
+        const permission = Notification.permission;
+        
+        if (permission === 'denied') {
+          statusEl.textContent = 'Blocked - enable in browser settings';
+          statusEl.style.color = '#ef4444';
+          btnEl.textContent = 'Blocked';
+          btnEl.disabled = true;
+          btnEl.style.background = '#9ca3af';
+          return;
+        }
+        
+        // Check subscription
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+          statusEl.textContent = 'Enabled - you will receive race updates';
+          statusEl.style.color = '#10b981';
+          btnEl.textContent = 'Disable';
+          btnEl.classList.remove('primary');
+          btnEl.style.background = '#ef4444';
+        } else {
+          statusEl.textContent = 'Disabled - tap to enable';
+          statusEl.style.color = '#6b7280';
+          btnEl.textContent = 'Enable';
+          btnEl.classList.add('primary');
+          btnEl.style.background = '';
+        }
+      } catch (err) {
+        console.error('Error checking notification status:', err);
+        statusEl.textContent = 'Unable to check status';
+      }
+    }
+    
+    // iOS-specific notification permission request
+    async function requestIOSNotificationPermission() {
+      const statusEl = document.getElementById('notificationStatus');
+      const btnEl = document.getElementById('notificationToggleBtn');
+      
+      try {
+        btnEl.disabled = true;
+        btnEl.textContent = 'Requesting...';
+        
+        // On iOS, we must request Notification permission first
+        const permission = await Notification.requestPermission();
+        console.log('iOS Notification permission:', permission);
+        
+        if (permission === 'granted') {
+          statusEl.textContent = 'Permission granted! Setting up...';
+          statusEl.style.color = '#10b981';
+          // Now try to subscribe to push
+          await togglePushNotifications();
+        } else if (permission === 'denied') {
+          statusEl.textContent = 'Permission denied. Check Settings > Safari > Notifications';
+          statusEl.style.color = '#ef4444';
+          btnEl.textContent = 'Blocked';
+          btnEl.disabled = true;
+        } else {
+          statusEl.textContent = 'Permission not granted';
+          btnEl.textContent = 'Enable';
+          btnEl.disabled = false;
+        }
+      } catch (err) {
+        console.error('iOS permission error:', err);
+        statusEl.textContent = 'Error: ' + err.message;
+        btnEl.textContent = 'Try Again';
+        btnEl.disabled = false;
+      }
+    }
+    
+    // Load notification history for the current driver
+    async function loadNotificationHistory() {
+      const container = document.getElementById('notificationHistoryList');
+      const filterType = document.getElementById('notifFilterType');
+      const filterEvent = document.getElementById('notifFilterEvent');
+      
+      if (!currentDriverId) {
+        container.innerHTML = `
+          <div class="notification-empty">
+            <div class="notification-empty-icon">🔐</div>
+            <div>Please log in to view your notifications.</div>
+          </div>
+        `;
+        return;
+      }
+      
+      try {
+        // Get notification history from server
+        const response = await fetch(`/api/notifications/history?driverId=${currentDriverId}&type=${filterType?.value || ''}&eventId=${filterEvent?.value || ''}`);
+        const data = await response.json();
+        
+        if (!data.success || !data.notifications || data.notifications.length === 0) {
+          container.innerHTML = `
+            <div class="notification-empty">
+              <div class="notification-empty-icon">📭</div>
+              <div>No notifications yet.</div>
+              <div style="font-size: 12px; margin-top: 8px; color: #9ca3af;">
+                Push notifications will appear here when you receive them.
+              </div>
+            </div>
+          `;
+          return;
+        }
+        
+        // Populate event filter dropdown if not already done
+        if (filterEvent && filterEvent.options.length <= 1) {
+          const events = [...new Set(data.notifications.filter(n => n.event_name).map(n => JSON.stringify({ id: n.event_id, name: n.event_name })))];
+          events.forEach(e => {
+            const ev = JSON.parse(e);
+            const opt = document.createElement('option');
+            opt.value = ev.id;
+            opt.textContent = ev.name;
+            filterEvent.appendChild(opt);
+          });
+        }
+        
+        // Group notifications by date
+        const grouped = {};
+        data.notifications.forEach(n => {
+          const date = new Date(n.created_at);
+          const dateKey = date.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+          if (!grouped[dateKey]) grouped[dateKey] = [];
+          grouped[dateKey].push(n);
+        });
+        
+        let html = '';
+        Object.keys(grouped).forEach(dateKey => {
+          html += `<div class="notification-group-header">${dateKey}</div>`;
+          grouped[dateKey].forEach(n => {
+            const time = new Date(n.created_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+            const typeClass = n.notification_type || 'general';
+            const typeLabel = {
+              'event': 'Event Update',
+              'registration': 'Registration',
+              'payment': 'Payment',
+              'general': 'General'
+            }[typeClass] || 'General';
+            
+            html += `
+              <div class="notification-item">
+                <div class="notification-item-header">
+                  <div class="notification-item-title">${escapeHtml(n.title)}</div>
+                  <span class="notification-item-badge ${typeClass}">${typeLabel}</span>
+                </div>
+                <div class="notification-item-body">${escapeHtml(n.body)}</div>
+                <div class="notification-item-footer">
+                  <span>${time}</span>
+                  ${n.event_name ? `<span class="notification-item-event">${escapeHtml(n.event_name)}</span>` : ''}
+                </div>
+              </div>
+            `;
+          });
+        });
+        
+        container.innerHTML = html;
+      } catch (err) {
+        console.error('Error loading notifications:', err);
+        container.innerHTML = `
+          <div class="notification-empty">
+            <div class="notification-empty-icon">⚠️</div>
+            <div>Could not load notifications.</div>
+          </div>
+        `;
+      }
+    }
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Add filter change listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterType = document.getElementById('notifFilterType');
+      const filterEvent = document.getElementById('notifFilterEvent');
+      if (filterType) filterType.addEventListener('change', loadNotificationHistory);
+      if (filterEvent) filterEvent.addEventListener('change', loadNotificationHistory);
+    });
+    
+    // Toggle push notifications
+    async function togglePushNotifications() {
+      const statusEl = document.getElementById('notificationStatus');
+      const btnEl = document.getElementById('notificationToggleBtn');
+      
+      try {
+        btnEl.disabled = true;
+        btnEl.textContent = '...';
+        
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+          // Unsubscribe
+          await subscription.unsubscribe();
+          
+          // Tell server
+          await fetch('/api/push/unsubscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+          });
+          
+          statusEl.textContent = 'Notifications disabled';
+          statusEl.style.color = '#6b7280';
+        } else {
+          // Request permission
+          const permission = await Notification.requestPermission();
+          
+          if (permission !== 'granted') {
+            statusEl.textContent = 'Permission denied - enable in browser settings';
+            statusEl.style.color = '#ef4444';
+            btnEl.disabled = false;
+            updateNotificationUI();
+            return;
+          }
+          
+          // Get VAPID key
+          const keyResponse = await fetch('/api/push/vapid-public-key');
+          const keyData = await keyResponse.json();
+          
+          if (!keyData.success || !keyData.publicKey) {
+            statusEl.textContent = 'Server not configured for notifications';
+            btnEl.disabled = false;
+            return;
+          }
+          
+          // Subscribe
+          const applicationServerKey = urlBase64ToUint8Array(keyData.publicKey);
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey
+          });
+          
+          // Send to server
+          const driverId = localStorage.getItem('loggedInDriverId');
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription,
+              driverId: driverId || null
+            })
+          });
+          
+          statusEl.textContent = 'Notifications enabled!';
+          statusEl.style.color = '#10b981';
+        }
+        
+        btnEl.disabled = false;
+        updateNotificationUI();
+      } catch (err) {
+        console.error('Toggle notification error:', err);
+        statusEl.textContent = 'Error: ' + err.message;
+        statusEl.style.color = '#ef4444';
+        btnEl.disabled = false;
+      }
+    }
+    
+    // Update notification UI when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(updateNotificationUI, 1000);
+      
+      // Auto-login if saved session exists
+      const savedEmail = localStorage.getItem('driverEmail');
+      const savedPassword = localStorage.getItem('driverPassword');
+      if (savedEmail && savedPassword) {
+        console.log('🔐 Found saved session, attempting auto-login...');
+        // Fill in the login fields
+        const emailField = document.getElementById('login_identifier');
+        const passField = document.getElementById('login_password');
+        if (emailField && passField) {
+          emailField.value = savedEmail;
+          passField.value = savedPassword;
+          // Trigger login after a short delay to let page initialize
+          setTimeout(() => {
+            const loginBtn = document.getElementById('btnLogin');
+            if (loginBtn) {
+              loginBtn.click();
+            }
+          }, 500);
+        }
       }
     });
 
