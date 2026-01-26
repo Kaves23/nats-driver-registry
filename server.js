@@ -4489,7 +4489,7 @@ app.get('/api/admin/getAllPoolEngineRentals', async (req, res) => {
 app.get('/api/getAvailableEvents', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee
+      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open
        FROM events
        WHERE registration_deadline >= CURRENT_DATE
        ORDER BY event_date ASC`
