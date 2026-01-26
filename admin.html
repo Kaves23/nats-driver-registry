@@ -1832,18 +1832,26 @@
     // Load events into Race Entries dropdown
     async function loadRaceEntriesDropdown() {
       try {
-        const response = await fetch('/api/getAvailableEvents');
+        const response = await fetch('/api/getAllEvents');
         const data = await response.json();
         
-        if (data.success && data.data) {
+        if (data.success && data.events) {
           const dropdown = document.getElementById('filterRace');
           dropdown.innerHTML = '<option value="">Select an event...</option>';
           
-          data.data.forEach(event => {
+          data.events.forEach(event => {
             const option = document.createElement('option');
             option.value = event.event_id;
-            const eventDate = new Date(event.event_date).toLocaleDateString('en-ZA');
-            option.textContent = `${event.event_name} (${eventDate})`;
+            // Show date range if available, otherwise show event_date
+            let dateDisplay;
+            if (event.start_date && event.end_date) {
+              const startDate = new Date(event.start_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
+              const endDate = new Date(event.end_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+              dateDisplay = `${startDate} - ${endDate}`;
+            } else {
+              dateDisplay = new Date(event.event_date).toLocaleDateString('en-ZA');
+            }
+            option.textContent = `${event.event_name} (${dateDisplay})`;
             dropdown.appendChild(option);
           });
         }
