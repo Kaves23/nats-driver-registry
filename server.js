@@ -5017,7 +5017,7 @@ app.get('/api/getEvent/:eventId', async (req, res) => {
 // Create new event
 app.post('/api/createEvent', async (req, res) => {
   try {
-    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open } = req.body;
 
     if (!event_name || !location || !entry_fee || !registration_deadline) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -5031,12 +5031,15 @@ app.post('/api/createEvent', async (req, res) => {
     }
 
     const event_id = `event_${Date.now()}`;
+    
+    // Default registration_open to false if not provided
+    const regOpen = registration_open === true || registration_open === 'true' ? true : false;
 
     const result = await pool.query(
-      `INSERT INTO events (event_id, event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO events (event_id, event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [event_id, event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline]
+      [event_id, event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen]
     );
 
     console.log(`✅ Event created: ${event_name} (${start_date && end_date ? `${start_date} to ${end_date}` : mainEventDate})`);
@@ -5051,17 +5054,20 @@ app.post('/api/createEvent', async (req, res) => {
 app.put('/api/updateEvent/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
-    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open } = req.body;
     
     // Use start_date as event_date if provided, otherwise use event_date for backwards compatibility
     const mainEventDate = start_date || event_date;
+    
+    // Convert registration_open to boolean
+    const regOpen = registration_open === true || registration_open === 'true' ? true : false;
 
     const result = await pool.query(
       `UPDATE events 
-       SET event_name = $1, event_date = $2, start_date = $3, end_date = $4, location = $5, entry_fee = $6, registration_deadline = $7, updated_at = NOW()
-       WHERE event_id = $8
+       SET event_name = $1, event_date = $2, start_date = $3, end_date = $4, location = $5, entry_fee = $6, registration_deadline = $7, registration_open = $8, updated_at = NOW()
+       WHERE event_id = $9
        RETURNING *`,
-      [event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, eventId]
+      [event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, eventId]
     );
 
     if (result.rows.length === 0) {

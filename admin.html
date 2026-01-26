@@ -746,13 +746,14 @@
               <th>Location</th>
               <th>Entry Fee</th>
               <th>Registration Deadline</th>
+              <th>Reg Status</th>
               <th>Registrations</th>
               <th>Created</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="eventsTable">
-            <tr><td colspan="8" class="loading">Loading events...</td></tr>
+            <tr><td colspan="9" class="loading">Loading events...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1337,6 +1338,13 @@
       <div class="form-group">
         <label>Registration Deadline</label>
         <input type="date" id="eventDeadline">
+      </div>
+      <div class="form-group">
+        <label>Registration Status</label>
+        <select id="eventRegStatus" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+          <option value="false">CLOSED</option>
+          <option value="true">OPEN</option>
+        </select>
       </div>
       <div class="modal-buttons">
         <button class="cancel-btn" onclick="closeEventModal()">Cancel</button>
@@ -2355,7 +2363,7 @@
     function displayEvents(events) {
       const tbody = document.getElementById('eventsTable');
       if (events.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No events found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">No events found</td></tr>';
         return;
       }
 
@@ -2373,6 +2381,10 @@
         const deadline = new Date(event.registration_deadline).toLocaleDateString('en-ZA');
         const created = new Date(event.created_at).toLocaleDateString('en-ZA');
         const registrationsCount = event.registration_count || 0;
+        const regStatus = event.registration_open === true || event.registration_open === 'true';
+        const statusBadge = regStatus 
+          ? '<span style="background: #22c55e; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700;">OPEN</span>'
+          : '<span style="background: #6b7280; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700;">CLOSED</span>';
 
         return `
           <tr>
@@ -2381,6 +2393,7 @@
             <td>${event.location || '-'}</td>
             <td>R${parseFloat(event.entry_fee).toLocaleString('en-ZA')}</td>
             <td>${deadline}</td>
+            <td>${statusBadge}</td>
             <td><strong>${registrationsCount}</strong></td>
             <td>${created}</td>
             <td>
@@ -2401,6 +2414,7 @@
       document.getElementById('eventLocation').value = '';
       document.getElementById('eventEntryFee').value = '';
       document.getElementById('eventDeadline').value = '';
+      document.getElementById('eventRegStatus').value = 'false';
       document.getElementById('eventDeleteBtn').style.display = 'none';
       document.getElementById('eventModal').style.display = 'flex';
     }
@@ -2427,6 +2441,7 @@
         document.getElementById('eventLocation').value = event.location || '';
         document.getElementById('eventEntryFee').value = event.entry_fee;
         document.getElementById('eventDeadline').value = event.registration_deadline.split('T')[0];
+        document.getElementById('eventRegStatus').value = (event.registration_open === true || event.registration_open === 'true') ? 'true' : 'false';
         document.getElementById('eventDeleteBtn').style.display = 'block';
         document.getElementById('eventModal').style.display = 'flex';
       } catch (err) {
@@ -2458,6 +2473,8 @@
         const url = currentEvent ? `/api/updateEvent/${currentEvent.event_id}` : '/api/createEvent';
         const method = currentEvent ? 'PUT' : 'POST';
 
+        const regStatus = document.getElementById('eventRegStatus').value === 'true';
+        
         const response = await fetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
@@ -2468,7 +2485,8 @@
             end_date: endDate,
             location,
             entry_fee: fee,
-            registration_deadline: deadline
+            registration_deadline: deadline,
+            registration_open: regStatus
           })
         });
 
