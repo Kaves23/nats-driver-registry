@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Titan Command</title>
+  <link rel="icon" type="image/png" href="/rok-cup-favicon.png" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary: #00ff88;
+      --primary-dark: #00cc6a;
+      --secondary: #3498db;
+      --success: #27ae60;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --dark: #2c3e50;
+      --darker: #1a252f;
+      --light: #ecf0f1;
+      --gray: #95a5a6;
+      --border: #34495e;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--darker);
+      color: var(--light);
+      height: 100vh;
+      overflow: hidden;
+      font-size: 14px;
+    }
+
+    /* Login Screen */
+    #loginScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+    }
+
+    #loginScreen h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    #loginScreen p {
+      font-size: 14px;
+      color: var(--gray);
+      margin-bottom: 30px;
+    }
+
+    .login-form {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-form input {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: var(--dark);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--light);
+      font-size: 16px;
+    }
+
+    .login-form input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .login-btn:active {
+      background: var(--primary-dark);
+      transform: scale(0.98);
+    }
+
+    /* Main App */
+    #app {
+      display: none;
+      height: 100vh;
+      height: 100dvh; /* Dynamic viewport height for mobile */
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      background: var(--dark);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--primary);
+      flex-shrink: 0;
+      order: 1;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .logout-btn {
+      background: var(--danger);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Tab Navigation */
+    .tab-nav {
+      display: flex;
+      background: var(--dark);
+      border-top: 2px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
+      order: 3;
+      min-height: 60px;
+      position: sticky;
+      bottom: 0;
+      z-index: 100;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 14px 8px;
+      background: transparent;
+      border: none;
+      border-top: 3px solid transparent;
+      color: var(--gray);
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-top-color: var(--primary);
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      order: 2;
+      min-height: 0; /* Important for flex children with scroll */
+    }
+
+    .tab-content {
+      display: none;
+      padding: 16px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Driver List */
+    .search-box {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--dark);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--light);
+      font-size: 14px;
+    }
+
+    .driver-item {
+      background: var(--dark);
+      padding: 14px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .driver-item:active {
+      background: var(--border);
+    }
+
+    .driver-info {
+      flex: 1;
+    }
+
+    .driver-name {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--light);
+      margin-bottom: 4px;
+    }
+
+    .driver-meta {
+      font-size: 12px;
+      color: var(--gray);
+    }
+
+    .driver-number {
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--primary);
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* Driver Detail Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--darker);
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: block;
+    }
+
+    .modal-header {
+      background: var(--dark);
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--primary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .close-btn {
+      background: var(--danger);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .modal-content {
+      padding: 16px;
+    }
+
+    .detail-section {
+      background: var(--dark);
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border-left: 4px solid var(--secondary);
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--light);
+      text-align: right;
+    }
+
+    /* Race Entries */
+    .race-selector {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--dark);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--light);
+      font-size: 14px;
+    }
+
+    .entry-card {
+      background: var(--dark);
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border-left: 4px solid var(--success);
+    }
+
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .entry-driver {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--light);
+    }
+
+    .entry-status {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .status-confirmed { background: var(--success); color: white; }
+    .status-pending { background: var(--warning); color: white; }
+    .status-cancelled { background: var(--danger); color: white; }
+
+    .entry-field {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+
+    .entry-field label {
+      color: var(--gray);
+    }
+
+    .entry-field input, .entry-field select {
+      background: var(--border);
+      border: 1px solid var(--gray);
+      padding: 6px 10px;
+      border-radius: 4px;
+      color: var(--light);
+      font-size: 12px;
+      max-width: 150px;
+    }
+
+    .save-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--success);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+
+    .save-btn:active {
+      background: #229954;
+    }
+
+    /* Notifications */
+    .notif-item {
+      background: var(--dark);
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border-left: 4px solid var(--warning);
+    }
+
+    .notif-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .notif-action {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--warning);
+    }
+
+    .notif-time {
+      font-size: 11px;
+      color: var(--gray);
+    }
+
+    .notif-body {
+      font-size: 12px;
+      color: var(--light);
+      line-height: 1.4;
+    }
+
+    /* Audit Trail */
+    .audit-item {
+      background: var(--dark);
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border-left: 4px solid var(--secondary);
+    }
+
+    .audit-header {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--secondary);
+      margin-bottom: 6px;
+    }
+
+    .audit-details {
+      font-size: 11px;
+      color: var(--gray);
+      line-height: 1.5;
+    }
+
+    /* Payments */
+    .payment-card {
+      background: var(--dark);
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border-left: 4px solid var(--success);
+    }
+
+    .payment-amount {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--success);
+      margin-bottom: 8px;
+    }
+
+    .payment-info {
+      font-size: 12px;
+      color: var(--gray);
+      margin-bottom: 4px;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray);
+    }
+
+    .spinner {
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--gray);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    /* Edit Button */
+    .edit-btn {
+      padding: 8px 16px;
+      background: var(--primary);
+      border: none;
+      border-radius: 6px;
+      color: var(--dark);
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      margin-top: 12px;
+    }
+
+    .edit-btn:active {
+      background: var(--primary-dark);
+    }
+
+    /* Edit Form Styles */
+    .edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-input {
+      padding: 12px;
+      background: var(--dark);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      color: var(--light);
+      font-size: 14px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .form-select {
+      padding: 12px;
+      background: var(--dark);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      color: var(--light);
+      font-size: 14px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .save-btn-modal {
+      flex: 1;
+      padding: 14px;
+      background: var(--primary);
+      border: none;
+      border-radius: 6px;
+      color: var(--dark);
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .cancel-btn-modal {
+      flex: 1;
+      padding: 14px;
+      background: var(--border);
+      border: none;
+      border-radius: 6px;
+      color: var(--light);
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen">
+    <h1>TITAN COMMAND</h1>
+    <p>Race Control Center</p>
+    <div class="login-form">
+      <input type="password" id="passwordInput" placeholder="Enter Access Code" autocomplete="off">
+      <button class="login-btn" onclick="login()">ACCESS</button>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app">
+    <!-- Header -->
+    <div class="header">
+      <h1>TITAN COMMAND</h1>
+      <button class="logout-btn" onclick="logout()">EXIT</button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('drivers')">DRIVERS</button>
+      <button class="tab-btn" onclick="switchTab('entries')">ENTRIES</button>
+      <button class="tab-btn" onclick="switchTab('alerts')">ALERTS</button>
+      <button class="tab-btn" onclick="switchTab('audit')">AUDIT</button>
+      <button class="tab-btn" onclick="switchTab('payments')">PAYMENTS</button>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content">
+      <!-- Drivers Tab -->
+      <div id="driversTab" class="tab-content active">
+        <input type="text" class="search-box" id="driverSearch" placeholder="Search drivers..." oninput="filterDrivers()">
+        <div id="driversList"></div>
+      </div>
+
+      <!-- Race Entries Tab -->
+      <div id="entriesTab" class="tab-content">
+        <select class="race-selector" id="raceSelect" onchange="loadEntries()">
+          <option value="">Select Race...</option>
+        </select>
+        <div id="entriesList"></div>
+      </div>
+
+      <!-- Alerts Tab -->
+      <div id="alertsTab" class="tab-content">
+        <div class="alert-form">
+          <select class="race-selector" id="alertType" style="margin-bottom: 12px;">
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="urgent">Urgent</option>
+          </select>
+          <input type="text" class="search-box" id="alertSubject" placeholder="Subject..." style="margin-bottom: 12px;">
+          <textarea class="search-box" id="alertMessage" placeholder="Message..." rows="4" style="margin-bottom: 12px; resize: vertical;"></textarea>
+          <button class="save-btn" onclick="sendAlert()">SEND ALERT</button>
+        </div>
+        <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
+          <h3 style="margin-bottom: 12px; color: var(--primary);">RECENT ALERTS</h3>
+          <div id="alertsList"></div>
+        </div>
+      </div>
+
+      <!-- Audit Trail Tab -->
+      <div id="auditTab" class="tab-content">
+        <div id="auditList"></div>
+      </div>
+
+      <!-- Payments Tab -->
+      <div id="paymentsTab" class="tab-content">
+        <div id="paymentsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Driver Detail Modal -->
+  <div id="driverModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalDriverName"></div>
+      <button class="close-btn" onclick="closeDriverModal()">CLOSE</button>
+    </div>
+    <div class="modal-content" id="modalDriverDetails"></div>
+    <button class="edit-btn" onclick="openDriverEditModal()" style="margin: 16px;">EDIT DRIVER</button>
+  </div>
+
+  <!-- Driver Edit Modal -->
+  <div id="driverEditModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Driver</div>
+      <button class="close-btn" onclick="closeDriverEditModal()">CLOSE</button>
+    </div>
+    <div class="modal-content">
+      <div class="edit-form">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" class="form-input" id="edit_first_name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" class="form-input" id="edit_last_name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Race Number</label>
+          <input type="text" class="form-input" id="edit_race_number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Class</label>
+          <select class="form-select" id="edit_class">
+            <option value="">Select Class</option>
+            <option value="CADET">CADET</option>
+            <option value="MINI ROK U/10">MINI ROK U/10</option>
+            <option value="MINI ROK">MINI ROK</option>
+            <option value="OK-J">OK-J</option>
+            <option value="OK-N">OK-N</option>
+            <option value="KZ2">KZ2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Team Name</label>
+          <input type="text" class="form-input" id="edit_team_name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Coach Name</label>
+          <input type="text" class="form-input" id="edit_coach_name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kart Brand</label>
+          <input type="text" class="form-input" id="edit_kart_brand">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transponder</label>
+          <input type="text" class="form-input" id="edit_transponder_number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">License Number</label>
+          <input type="text" class="form-input" id="edit_license_number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="edit_status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <button class="save-btn-modal" onclick="saveDriverEdit()">SAVE</button>
+          <button class="cancel-btn-modal" onclick="closeDriverEditModal()">CANCEL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry Edit Modal -->
+  <div id="entryEditModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Entry</div>
+      <button class="close-btn" onclick="closeEntryEditModal()">CLOSE</button>
+    </div>
+    <div class="modal-content">
+      <div class="edit-form">
+        <div class="form-group">
+          <label class="form-label">Driver Name (Read Only)</label>
+          <input type="text" class="form-input" id="entry_driver_name" readonly style="opacity: 0.6;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Race Class</label>
+          <select class="form-select" id="entry_race_class">
+            <option value="CADET">CADET</option>
+            <option value="MINI ROK U/10">MINI ROK U/10</option>
+            <option value="MINI ROK">MINI ROK</option>
+            <option value="OK-J">OK-J</option>
+            <option value="OK-N">OK-N</option>
+            <option value="KZ2">KZ2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Race Number</label>
+          <input type="text" class="form-input" id="entry_race_number">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Entry Status</label>
+          <select class="form-select" id="entry_status">
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Status</label>
+          <select class="form-select" id="entry_payment_status">
+            <option value="Pending">Pending</option>
+            <option value="Paid">Paid</option>
+            <option value="Partial">Partial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amount Paid (R)</label>
+          <input type="number" class="form-input" id="entry_amount_paid">
+        </div>
+        <div class="btn-group">
+          <button class="save-btn-modal" onclick="saveEntryEdit()">SAVE</button>
+          <button class="cancel-btn-modal" onclick="closeEntryEditModal()">CANCEL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Titan Command Access Code (Change this to your preferred password)
+    const TITAN_PASSWORD = 'titan2026';
+    
+    let allDrivers = [];
+    let allEvents = [];
+    let selectedDriver = null;
+    let selectedEntry = null;
+
+    // Login
+    function login() {
+      const password = document.getElementById('passwordInput').value;
+      if (password === TITAN_PASSWORD) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        loadAllData();
+      } else {
+        alert('❌ Invalid Access Code');
+        document.getElementById('passwordInput').value = '';
+      }
+    }
+
+    // Logout
+    function logout() {
+      if (confirm('Exit Titan Command?')) {
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('passwordInput').value = '';
+      }
+    }
+
+    // Switch Tabs
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(tabName + 'Tab').classList.add('active');
+
+      // Load data for specific tabs
+      if (tabName === 'entries' && allEvents.length === 0) loadEvents();
+      if (tabName === 'alerts') loadAlerts();
+      if (tabName === 'audit') loadAuditTrail();
+      if (tabName === 'payments') loadPayments();
+    }
+
+    // Load All Initial Data
+    async function loadAllData() {
+      await loadDrivers();
+      await loadEvents();
+    }
+
+    // Load Drivers
+    async function loadDrivers() {
+      const list = document.getElementById('driversList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading drivers...</div>';
+      
+      try {
+        const response = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: '', name: '', status: '', paid: '' })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          allDrivers = data.data.drivers || [];
+          displayDrivers(allDrivers);
+        } else {
+          throw new Error('Failed to load drivers');
+        }
+      } catch (error) {
+        console.error('Error loading drivers:', error);
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">WARNING</div>Failed to load drivers</div>';
+      }
+    }
+
+    // Display Drivers
+    function displayDrivers(drivers) {
+      const list = document.getElementById('driversList');
+      
+      if (drivers.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No drivers found</div>';
+        return;
+      }
+
+      list.innerHTML = drivers.map(driver => `
+        <div class="driver-item" onclick='openDriverModal(${JSON.stringify(driver).replace(/'/g, "&#39;")})'>
+          <div class="driver-info">
+            <div class="driver-name">${driver.first_name} ${driver.last_name}</div>
+            <div class="driver-meta">${driver.class || 'No Class'} | ${driver.team_name || 'No Team'}</div>
+          </div>
+          <div class="driver-number">#${driver.race_number || '?'}</div>
+        </div>
+      `).join('');
+    }
+
+    // Filter Drivers
+    function filterDrivers() {
+      const search = document.getElementById('driverSearch').value.toLowerCase();
+      const filtered = allDrivers.filter(d => 
+        (d.first_name + ' ' + d.last_name).toLowerCase().includes(search) ||
+        (d.race_number || '').toString().includes(search) ||
+        (d.class || '').toLowerCase().includes(search)
+      );
+      displayDrivers(filtered);
+    }
+
+    // Open Driver Modal
+    function openDriverModal(driver) {
+      selectedDriver = driver;
+      document.getElementById('modalDriverName').textContent = `${driver.first_name} ${driver.last_name} #${driver.race_number}`;
+      
+      const details = document.getElementById('modalDriverDetails');
+      details.innerHTML = `
+        <div class="detail-section">
+          <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span class="detail-value">${driver.status || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Class</span>
+            <span class="detail-value">${driver.class || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Race Number</span>
+            <span class="detail-value">${driver.race_number || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Transponder</span>
+            <span class="detail-value">${driver.transponder_number || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-row">
+            <span class="detail-label">Team</span>
+            <span class="detail-value">${driver.team_name || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Coach</span>
+            <span class="detail-value">${driver.coach_name || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Kart Brand</span>
+            <span class="detail-value">${driver.kart_brand || 'N/A'}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-row">
+            <span class="detail-label">Email</span>
+            <span class="detail-value">${driver.email || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">License</span>
+            <span class="detail-value">${driver.license_number || 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Next Race</span>
+            <span class="detail-value">${driver.next_race_entry_status || 'Not Registered'}</span>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('driverModal').classList.add('active');
+    }
+
+    // Close Driver Modal
+    function closeDriverModal() {
+      document.getElementById('driverModal').classList.remove('active');
+    }
+
+    // Load Events
+    async function loadEvents() {
+      try {
+        const response = await fetch('/api/getAllEvents');
+        const data = await response.json();
+        allEvents = data.events || [];
+        
+        const select = document.getElementById('raceSelect');
+        select.innerHTML = '<option value="">Select Race...</option>' + 
+          allEvents.map(event => `<option value="${event.event_id}">${event.event_name}</option>`).join('');
+      } catch (error) {
+        console.error('Failed to load events:', error);
+      }
+    }
+
+    // Load Race Entries
+    async function loadEntries() {
+      const eventId = document.getElementById('raceSelect').value;
+      const list = document.getElementById('entriesList');
+      
+      if (!eventId) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>Select a race to view entries</div>';
+        return;
+      }
+
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading entries...</div>';
+      
+      try {
+        const response = await fetch('/api/getRaceEntries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId: eventId })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          const entries = data.data.entries || [];
+          
+          if (entries.length === 0) {
+            list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No entries for this race</div>';
+            return;
+          }
+
+          list.innerHTML = entries.map(entry => `
+            <div class="entry-card">
+              <div class="entry-header">
+                <div class="entry-driver">${entry.driver_first_name} ${entry.driver_last_name}</div>
+                <span class="entry-status status-${entry.entry_status || 'pending'}">${entry.entry_status || 'pending'}</span>
+              </div>
+              <div class="entry-field">
+                <label>Class:</label>
+                <span>${entry.race_class || 'N/A'}</span>
+              </div>
+              <div class="entry-field">
+                <label>Number:</label>
+                <span>#${entry.race_number || 'N/A'}</span>
+              </div>
+              <div class="entry-field">
+                <label>Payment:</label>
+                <span>${entry.payment_status || 'Pending'}</span>
+              </div>
+              <div class="entry-field">
+                <label>Amount:</label>
+                <span>R${entry.amount_paid || '0'}</span>
+              </div>
+              <button class="edit-btn" onclick='openEntryEditModal(${JSON.stringify(entry).replace(/'/g, "&#39;")})'>EDIT</button>
+            </div>
+          `).join('');
+        } else {
+          throw new Error('Failed to load entries');
+        }
+      } catch (error) {
+        console.error('Error loading entries:', error);
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">WARNING</div>Failed to load entries</div>';
+      }
+    }
+
+    // Send Alert
+    async function sendAlert() {
+      const type = document.getElementById('alertType').value;
+      const subject = document.getElementById('alertSubject').value.trim();
+      const message = document.getElementById('alertMessage').value.trim();
+      
+      if (!subject || !message) {
+        alert('Please enter both subject and message');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/notifications/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `[${type.toUpperCase()}] ${subject}`,
+            body: message,
+            notificationType: type
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('Alert sent successfully!');
+          document.getElementById('alertSubject').value = '';
+          document.getElementById('alertMessage').value = '';
+          loadAlerts();
+        } else {
+          throw new Error('Failed to send alert');
+        }
+      } catch (error) {
+        console.error('Error sending alert:', error);
+        alert('Failed to send alert');
+      }
+    }
+
+    // Load Alerts
+    async function loadAlerts() {
+      const list = document.getElementById('alertsList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading alerts...</div>';
+      
+      try {
+        // Use audit log to get admin notifications instead
+        const response = await fetch('/api/getAuditLog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit: 50 })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          const logs = data.data.logs || [];
+          
+          if (logs.length === 0) {
+            list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No alerts</div>';
+            return;
+          }
+
+          list.innerHTML = logs.map(log => `
+            <div class="notif-item">
+              <div class="notif-header">
+                <div class="notif-action">${log.action_type || log.action || 'System Event'}</div>
+                <div class="notif-time">${formatDate(log.timestamp || log.created_at)}</div>
+              </div>
+              <div class="notif-body">
+                ${log.details || log.message || 'No details'}<br>
+                <small>By: ${log.performed_by || 'System'}</small>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          throw new Error('Failed to load alerts');
+        }
+      } catch (error) {
+        console.error('Error loading alerts:', error);
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">WARNING</div>Failed to load alerts</div>';
+      }
+    }
+
+    // Load Audit Trail
+    async function loadAuditTrail() {
+      const list = document.getElementById('auditList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading audit trail...</div>';
+      
+      try {
+        const response = await fetch('/api/getAuditLog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          const logs = data.data.logs || [];
+          
+          if (logs.length === 0) {
+            list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No audit logs</div>';
+            return;
+          }
+
+          list.innerHTML = logs.slice(0, 100).map(log => `
+            <div class="audit-item">
+              <div class="audit-header">${log.action_type || 'System Action'}</div>
+              <div class="audit-details">
+                User: ${log.performed_by || 'System'}<br>
+                Table: ${log.table_name || 'N/A'}<br>
+                Time: ${formatDate(log.timestamp)}<br>
+                ${log.details || ''}
+              </div>
+            </div>
+          `).join('');
+        } else {
+          throw new Error('Failed to load audit trail');
+        }
+      } catch (error) {
+        console.error('Error loading audit trail:', error);
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">WARNING</div>Failed to load audit trail</div>';
+      }
+    }
+
+    // Load Payments
+    async function loadPayments() {
+      const list = document.getElementById('paymentsList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading payments...</div>';
+      
+      try {
+        const response = await fetch('/api/getAllPayments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          const payments = data.payments || [];
+          
+          if (payments.length === 0) {
+            list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No payments</div>';
+            return;
+          }
+
+          list.innerHTML = payments.slice(0, 50).map(payment => `
+            <div class="payment-card">
+              <div class="payment-amount">R${payment.amount || '0.00'}</div>
+              <div class="payment-info"><strong>${payment.first_name} ${payment.last_name}</strong></div>
+              <div class="payment-info">Ref: ${payment.payment_reference || 'N/A'}</div>
+              <div class="payment-info">Status: ${payment.payment_status || 'Pending'}</div>
+              <div class="payment-info">${formatDate(payment.payment_date)}</div>
+            </div>
+          `).join('');
+        } else {
+          throw new Error('Failed to load payments');
+        }
+      } catch (error) {
+        console.error('Error loading payments:', error);
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">WARNING</div>Failed to load payments</div>';
+      }
+    }
+
+    // Format Date
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleString('en-ZA', { 
+        day: '2-digit', 
+        month: 'short', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    }
+
+    // ========== DRIVER EDIT FUNCTIONS ==========
+    
+    // Open Driver Edit Modal
+    function openDriverEditModal() {
+      if (!selectedDriver) return;
+      
+      // Populate form fields
+      document.getElementById('edit_first_name').value = selectedDriver.first_name || '';
+      document.getElementById('edit_last_name').value = selectedDriver.last_name || '';
+      document.getElementById('edit_race_number').value = selectedDriver.race_number || '';
+      document.getElementById('edit_class').value = selectedDriver.class || '';
+      document.getElementById('edit_team_name').value = selectedDriver.team_name || '';
+      document.getElementById('edit_coach_name').value = selectedDriver.coach_name || '';
+      document.getElementById('edit_kart_brand').value = selectedDriver.kart_brand || '';
+      document.getElementById('edit_transponder_number').value = selectedDriver.transponder_number || '';
+      document.getElementById('edit_license_number').value = selectedDriver.license_number || '';
+      document.getElementById('edit_status').value = selectedDriver.status || 'Pending';
+      
+      // Show edit modal
+      document.getElementById('driverEditModal').classList.add('active');
+    }
+
+    // Close Driver Edit Modal
+    function closeDriverEditModal() {
+      document.getElementById('driverEditModal').classList.remove('active');
+    }
+
+    // Save Driver Edit
+    async function saveDriverEdit() {
+      if (!selectedDriver) return;
+      
+      const updatedData = {
+        driver_id: selectedDriver.driver_id,
+        first_name: document.getElementById('edit_first_name').value,
+        last_name: document.getElementById('edit_last_name').value,
+        race_number: document.getElementById('edit_race_number').value,
+        class: document.getElementById('edit_class').value,
+        team_name: document.getElementById('edit_team_name').value,
+        coach_name: document.getElementById('edit_coach_name').value,
+        kart_brand: document.getElementById('edit_kart_brand').value,
+        transponder_number: document.getElementById('edit_transponder_number').value,
+        license_number: document.getElementById('edit_license_number').value,
+        status: document.getElementById('edit_status').value,
+        email: selectedDriver.driver_email || selectedDriver.email || 'TITAN',
+        admin_override: true  // Flag to log as TITAN_EDIT
+      };
+
+      try {
+        const response = await fetch('/api/updateDriver', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('Driver updated successfully!');
+          closeDriverEditModal();
+          closeDriverModal();
+          await loadDrivers(); // Refresh driver list
+        } else {
+          throw new Error(data.error?.message || 'Failed to update driver');
+        }
+      } catch (error) {
+        console.error('Error updating driver:', error);
+        alert('Failed to update driver: ' + error.message);
+      }
+    }
+
+    // ========== ENTRY EDIT FUNCTIONS ==========
+    
+    // Open Entry Edit Modal
+    function openEntryEditModal(entry) {
+      selectedEntry = entry;
+      
+      console.log('Opening entry edit modal with:', entry);
+      console.log('Entry ID fields:', {
+        race_entry_id: entry.race_entry_id,
+        entry_id: entry.entry_id
+      });
+      
+      // Populate form fields
+      document.getElementById('entry_driver_name').value = `${entry.driver_first_name} ${entry.driver_last_name}`;
+      document.getElementById('entry_race_class').value = entry.race_class || '';
+      document.getElementById('entry_race_number').value = entry.race_number || '';
+      document.getElementById('entry_status').value = entry.entry_status || 'pending';
+      document.getElementById('entry_payment_status').value = entry.payment_status || 'Pending';
+      document.getElementById('entry_amount_paid').value = entry.amount_paid || 0;
+      
+      // Show edit modal
+      document.getElementById('entryEditModal').classList.add('active');
+    }
+
+    // Close Entry Edit Modal
+    function closeEntryEditModal() {
+      document.getElementById('entryEditModal').classList.remove('active');
+      selectedEntry = null;
+    }
+
+    // Save Entry Edit
+    async function saveEntryEdit() {
+      if (!selectedEntry) return;
+      
+      // The database uses entry_id, not race_entry_id
+      const entryId = selectedEntry.entry_id;
+      
+      if (!entryId) {
+        alert('Error: Entry ID not found');
+        console.error('Entry object:', selectedEntry);
+        return;
+      }
+      
+      const updatedData = {
+        entry_id: entryId,
+        race_class: document.getElementById('entry_race_class').value,
+        race_number: document.getElementById('entry_race_number').value,
+        entry_status: document.getElementById('entry_status').value,
+        payment_status: document.getElementById('entry_payment_status').value,
+        amount_paid: document.getElementById('entry_amount_paid').value,
+        performed_by: 'TITAN'  // Log as TITAN
+      };
+
+      try {
+        const response = await fetch('/api/updateRaceEntry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('Entry updated successfully!');
+          closeEntryEditModal();
+          await loadEntries(); // Refresh entry list
+        } else {
+          throw new Error(data.error?.message || 'Failed to update entry');
+        }
+      } catch (error) {
+        console.error('Error updating entry:', error);
+        alert('Failed to update entry: ' + error.message);
+      }
+    }
+
+    // Enter key login
+    document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>

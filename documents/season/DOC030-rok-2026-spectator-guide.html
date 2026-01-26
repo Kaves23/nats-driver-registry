@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROK Cup South Africa - 2026 Spectator Information</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap');
+        
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: white;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            page-break-after: always;
+        }
+        
+        .header {
+            background: #1e40af;
+            padding: 30px 40px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.2));
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .rok-logo-img {
+            height: 70px;
+            width: auto;
+        }
+        
+        .rok-logo {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .season-badge {
+            background: #1e40af;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 2px solid white;
+        }
+        
+        .doc-title {
+            font-size: 36px;
+            font-weight: 900;
+            margin: 20px 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+            background: #1e40af;
+            padding: 15px 25px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .doc-subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+            font-weight: 300;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .intro-section {
+            background: #f0f7ff;
+            border-left: 4px solid #1e40af;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+
+        .intro-section p {
+            font-size: 13px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #1e40af;
+            margin: 40px 0 20px 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .info-list {
+            margin: 15px 0;
+            list-style: none;
+        }
+        
+        .info-list li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        
+        .info-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #1e40af;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box p {
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .warning-box {
+            background: #fff9e6;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box p {
+            font-size: 12px;
+            line-height: 1.8;
+            color: #92400e;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .info-card {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #1e40af;
+        }
+
+        .info-card.summer {
+            background: #fff8f0;
+            border-left: 4px solid #f97316;
+        }
+
+        .info-card.autumn {
+            background: #fff4ed;
+            border-left: 4px solid #ea580c;
+        }
+
+        .info-card.winter {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .info-card.spring {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+        }
+
+        .info-card h4 {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .info-card p {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .info-card ul {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .info-card ul li {
+            font-size: 11px;
+            padding: 4px 0;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .info-card ul li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #1e40af;
+            font-weight: 700;
+        }
+
+        .venue-card {
+            background: #fafafa;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .venue-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 8px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .venue-details {
+            font-size: 12px;
+            line-height: 1.7;
+            color: #555;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e40af;
+            color: white;
+            padding: 15px 40px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-left {
+            opacity: 0.7;
+        }
+        
+        .footer-right {
+            font-weight: 700;
+        }
+        
+        .page-number {
+            background: #1e40af;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 2px;
+            margin-left: 10px;
+            border: 2px solid white;
+        }
+        
+        @media print {
+            .page {
+                margin: 0;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-left">
+                        <img src="https://rokcup.co.za/wp-content/uploads/2024/01/ROK-CUP-NAZIONI-sud-africa.png" alt="ROK Cup South Africa Logo" class="rok-logo-img">
+                        <div class="rok-logo">ROK CUP SA</div>
+                    </div>
+                    <div class="season-badge">2026 SEASON</div>
+                </div>
+                <div class="doc-title">Spectator Information</div>
+                <div class="doc-subtitle">Everything You Need to Know — Attending ROK Cup South Africa Events</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="intro-section">
+                <p><strong>Welcome to ROK Cup South Africa spectator events!</strong> Whether you're a parent, family member, friend, or karting enthusiast, our National and Regional events offer an exciting day out watching some of South Africa's best young racing talent.</p>
+                <p>This guide provides all the information you need to plan your visit, including gate times, parking, facilities, viewing areas, and what to expect on race day.</p>
+            </div>
+
+            <div class="section-title">General Information</div>
+
+            <div class="info-grid">
+                <div class="info-card summer">
+                    <h4>Entry & Ticketing</h4>
+                    <p><strong>Admission:</strong> Spectator entry is typically FREE for National events (venue-dependent)</p>
+                    <ul>
+                        <li>No advance booking required</li>
+                        <li>Pay at gate if entry fee applies</li>
+                        <li>Children under 12 usually free</li>
+                        <li>Check venue-specific details</li>
+                    </ul>
+                </div>
+
+                <div class="info-card autumn">
+                    <h4>Gate Times</h4>
+                    <p><strong>Typical Schedule:</strong></p>
+                    <ul>
+                        <li>Friday Practice: 08:00 - 17:00</li>
+                        <li>Saturday Racing: 07:00 - 18:00</li>
+                        <li>Sunday Racing: 07:00 - 17:00</li>
+                        <li>Times vary by venue - check event bulletin</li>
+                    </ul>
+                </div>
+
+                <div class="info-card winter">
+                    <h4>Parking</h4>
+                    <p>Most venues offer dedicated spectator parking:</p>
+                    <ul>
+                        <li>Free parking at most venues</li>
+                        <li>Designated spectator areas</li>
+                        <li>Separate from competitor parking</li>
+                        <li>Arrive early for best spots</li>
+                    </ul>
+                </div>
+
+                <div class="info-card spring">
+                    <h4>Weather Considerations</h4>
+                    <p>Events run in all weather conditions:</p>
+                    <ul>
+                        <li>Bring sun protection (hat, sunscreen)</li>
+                        <li>Carry rain gear/umbrella</li>
+                        <li>Dress in layers for temperature changes</li>
+                        <li>Comfortable walking shoes recommended</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section-title">Facilities & Amenities</div>
+
+            <ul class="info-list">
+                <li><strong>Viewing Areas:</strong> Most circuits offer multiple vantage points around the track with good visibility of racing action. Grandstands may be available at select venues.</li>
+                <li><strong>Food & Beverage:</strong> On-site catering typically available serving breakfast, lunch, snacks, and refreshments. Quality and options vary by venue.</li>
+                <li><strong>Restroom Facilities:</strong> Clean restroom facilities available at all venues. Location varies - check venue maps or ask officials.</li>
+                <li><strong>Medical Services:</strong> Qualified medical personnel and ambulance services are present at all events for competitor and spectator safety.</li>
+                <li><strong>Accessibility:</strong> Most venues offer reasonable accessibility for guests with mobility challenges. Contact venue directly for specific requirements.</li>
+            </ul>
+
+            <div class="section-title">What to Bring</div>
+
+            <div class="info-grid">
+                <div class="info-card summer">
+                    <h4>Essential Items</h4>
+                    <ul>
+                        <li>Valid ID (for entry/security)</li>
+                        <li>Cash & card (for food/parking)</li>
+                        <li>Sun protection (hat, sunscreen, sunglasses)</li>
+                        <li>Water bottle (stay hydrated)</li>
+                    </ul>
+                </div>
+
+                <div class="info-card autumn">
+                    <h4>Comfort Items</h4>
+                    <ul>
+                        <li>Folding chair/blanket for grass viewing</li>
+                        <li>Binoculars for better viewing</li>
+                        <li>Ear protection (optional - karts are loud)</li>
+                        <li>Camera/phone for photos</li>
+                    </ul>
+                </div>
+
+                <div class="info-card winter">
+                    <h4>Weather Protection</h4>
+                    <ul>
+                        <li>Umbrella or rain jacket</li>
+                        <li>Warm layers for cooler months</li>
+                        <li>Extra clothing for temperature changes</li>
+                        <li>Portable sunshade/gazebo (if permitted)</li>
+                    </ul>
+                </div>
+
+                <div class="info-card spring">
+                    <h4>Children & Families</h4>
+                    <ul>
+                        <li>Snacks and entertainment for kids</li>
+                        <li>Ear protection for young children</li>
+                        <li>Stroller (most venues accessible)</li>
+                        <li>First aid kit (minor incidents)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section-title">Race Day Schedule</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>National NATS Weekends</strong> operate as double-header events with racing on both Saturday and Sunday. Each day features practice sessions, qualifying, and multiple heats across different classes. The action typically starts early morning (around 08:00) and continues through to late afternoon.</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Timetables</strong> are published on the ROK Cup South Africa website approximately one week before each event. These show the exact session times for each class, prizegivings, and any special activities.</p>
+
+            <div class="info-box">
+                <p><strong>Tip:</strong> Arrive early in the morning to see practice and qualifying sessions. This is when drivers are pushing for their fastest laps and the racing is often most intense. Finals typically happen in the afternoon.</p>
+            </div>
+
+            <div class="section-title">Safety & Regulations</div>
+
+            <div class="warning-box">
+                <p><strong>Important Safety Information:</strong> For your safety, please stay in designated spectator areas at all times. Do not enter the track, pit lane, or parc fermé areas unless authorized. Follow all instructions from marshals and officials. Children must be supervised at all times.</p>
+            </div>
+
+            <ul class="info-list">
+                <li><strong>Track Access:</strong> Spectators are not permitted on the racing circuit or in the pit lane during any session. Viewing must be from designated areas.</li>
+                <li><strong>Photography:</strong> Personal photography is permitted from spectator areas. Professional/commercial photography requires organizer approval.</li>
+                <li><strong>Drones:</strong> Drone operation is strictly prohibited at all events without prior written authorization from event organizers and venue management.</li>
+                <li><strong>Alcohol:</strong> Consumption of alcohol in spectator areas is at the discretion of the venue. Check venue-specific policies.</li>
+                <li><strong>Pets:</strong> Pets are generally not permitted at racing events for safety and noise reasons. Service animals are permitted.</li>
+            </ul>
+
+            <div class="section-title">Venue Information</div>
+
+            <div class="venue-card">
+                <div class="venue-name">Red Star Raceway — Summer NATS</div>
+                <div class="venue-details">
+                    <strong>Location:</strong> Delmas, Mpumalanga<br>
+                    <strong>Address:</strong> N12 Zonderfout Farm I226, Portion 5, Delmas, 2210<br>
+                    <strong>Features:</strong> Multiple viewing areas, on-site catering, ample parking, modern facilities
+                </div>
+            </div>
+
+            <div class="venue-card">
+                <div class="venue-name">iDube Raceway — Autumn NATS</div>
+                <div class="venue-details">
+                    <strong>Location:</strong> Cato Ridge, KwaZulu-Natal<br>
+                    <strong>Features:</strong> Spectacular elevation changes, excellent viewing opportunities, scenic venue, on-site facilities
+                </div>
+            </div>
+
+            <div class="venue-card">
+                <div class="venue-name">Formula K Raceway — Winter NATS</div>
+                <div class="venue-details">
+                    <strong>Location:</strong> Benoni, Gauteng<br>
+                    <strong>Address:</strong> 7 Golden Dr, Morehill, Benoni, 1501<br>
+                    <strong>Features:</strong> Modern purpose-built facility, great spectator viewing, food and beverage options, convenient parking
+                </div>
+            </div>
+
+            <div class="venue-card">
+                <div class="venue-name">Killarney Raceway — Spring NATS</div>
+                <div class="venue-details">
+                    <strong>Location:</strong> Table View, Cape Town<br>
+                    <strong>Address:</strong> 6 Potsdam Rd, Table View, Cape Town, 7441<br>
+                    <strong>Features:</strong> Iconic coastal facility, excellent spectator facilities, grandstand viewing, full amenities
+                </div>
+            </div>
+
+            <div class="section-title">Understanding the Racing</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Classes:</strong> ROK Cup South Africa features multiple classes from Cadet (5-8 years) through to OK-N (senior direct drive). Each class races separately with their own schedule.</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Session Types:</strong> Practice (drivers learning the track), Qualifying (setting grid positions), Heats (short races determining final grid), Finals (main championship races).</p>
+
+            <p style="font-size: 13px; line-height: 1.8;"><strong>Flags:</strong> Green = racing, Yellow = caution/incident, Red = stop, Black = penalty/disqualification, Checkered = finish.</p>
+
+            <div class="section-title">Contact & Updates</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Website:</strong> rokthenats.co.za — Event schedules, timetables, results, and venue information</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>WhatsApp Updates:</strong> Join the official ROK Cup South Africa spectator information group for real-time updates, schedule changes, and race-day announcements. Links available on the website.</p>
+
+            <p style="font-size: 13px; line-height: 1.8;"><strong>Social Media:</strong> Follow ROK Cup South Africa on social media for photos, videos, highlights, and event coverage.</p>
+
+        </div>
+
+        <div class="footer">
+            <div class="footer-left">ROK Cup South Africa | Spectator Information Guide 2026 | Version 1.0</div>
+            <div class="footer-right">OFFICIAL DOCUMENT <span class="page-number">DOC030</span></div>
+        </div>
+    </div>
+</body>
+</html>

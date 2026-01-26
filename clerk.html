@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>NATS Race Control</title>
+  <link rel="icon" type="image/png" href="/rok-cup-favicon.png" />
+  <link rel="apple-touch-icon" href="/rok-cup-favicon.png" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: white;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-x: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .header-info {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: right;
+    }
+    
+    .main-content {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    /* Quick Picker Section */
+    .section-title {
+      font-size: 13px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+    
+    /* Class/Event Picker */
+    .picker-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .picker-select {
+      flex: 1;
+      padding: 14px 16px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      appearance: none;
+      cursor: pointer;
+    }
+    
+    .picker-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    
+    /* Flag Buttons Grid */
+    .flag-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .flag-btn {
+      padding: 24px 16px;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .flag-btn:active {
+      transform: scale(0.96);
+    }
+    
+    .flag-btn .flag-icon {
+      font-size: 36px;
+    }
+    
+    .flag-btn .flag-label {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    /* Flag Colors */
+    .flag-red {
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      color: white;
+      box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+    }
+    
+    .flag-yellow {
+      background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+      color: #1a1a1a;
+      box-shadow: 0 4px 20px rgba(234, 179, 8, 0.4);
+    }
+    
+    .flag-green {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+    }
+    
+    .flag-checkered {
+      background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+      color: white;
+      box-shadow: 0 4px 20px rgba(55, 65, 81, 0.4);
+      position: relative;
+    }
+    
+    .flag-checkered::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-conic-gradient(#fff 0% 25%, #000 0% 50%) 50% / 20px 20px;
+      opacity: 0.1;
+    }
+    
+    .flag-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    .flag-orange {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: white;
+      box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+    }
+    
+    .flag-white {
+      background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+      color: #1e293b;
+      box-shadow: 0 4px 20px rgba(241, 245, 249, 0.3);
+    }
+    
+    .flag-black {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      color: white;
+      border: 2px solid #374151;
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    
+    .quick-btn {
+      padding: 18px 20px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.15s ease;
+    }
+    
+    .quick-btn:active {
+      transform: scale(0.98);
+      background: #334155;
+    }
+    
+    .quick-btn .quick-icon {
+      font-size: 24px;
+      width: 40px;
+      text-align: center;
+    }
+    
+    /* Custom Message Section */
+    .custom-section {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .custom-section h3 {
+      font-size: 15px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .custom-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      color: white;
+      font-size: 15px;
+      margin-bottom: 12px;
+      resize: none;
+    }
+    
+    .custom-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    
+    .custom-input::placeholder {
+      color: #64748b;
+    }
+    
+    .send-custom-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .send-custom-btn:active {
+      transform: scale(0.98);
+    }
+    
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #22c55e;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 15px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    
+    .toast.error {
+      background: #dc2626;
+    }
+    
+    /* Confirmation Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    
+    .modal-overlay.show {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: #1e293b;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+    
+    .modal-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    
+    .modal-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .modal-message {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .modal-btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    
+    .modal-btn-cancel {
+      background: #334155;
+      color: white;
+    }
+    
+    .modal-btn-confirm {
+      background: #dc2626;
+      color: white;
+    }
+    
+    .modal-btn-confirm.green {
+      background: #22c55e;
+    }
+    
+    /* Recent Log */
+    .recent-log {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 100px;
+    }
+    
+    .recent-log h3 {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .log-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .log-icon {
+      font-size: 20px;
+    }
+    
+    .log-details {
+      flex: 1;
+    }
+    
+    .log-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .log-time {
+      font-size: 11px;
+      color: #64748b;
+    }
+    
+    .log-empty {
+      color: #64748b;
+      font-size: 13px;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    /* Auth Screen */
+    .auth-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    
+    .auth-screen.hidden {
+      display: none;
+    }
+    
+    .auth-box {
+      text-align: center;
+      padding: 24px;
+      width: 100%;
+      max-width: 320px;
+    }
+    
+    .auth-box h2 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .auth-box p {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    
+    .pin-input {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .pin-digit {
+      width: 50px;
+      height: 60px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+    }
+    
+    .pin-digit:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    
+    .auth-error {
+      color: #ef4444;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    
+    /* Driver List Styles */
+    .driver-class-group {
+      border-bottom: 1px solid #334155;
+    }
+    
+    .driver-class-header {
+      padding: 10px 14px;
+      background: #1e293b;
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    
+    .driver-item {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-bottom: 1px solid #1e293b;
+    }
+    
+    .driver-item:active {
+      background: #334155;
+    }
+    
+    .driver-item.selected {
+      background: #1d4ed8;
+    }
+    
+    .driver-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    
+    .driver-details {
+      flex: 1;
+    }
+    
+    .driver-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+    }
+    
+    .driver-info {
+      font-size: 11px;
+      color: #64748b;
+    }
+    
+    .driver-race-num {
+      background: #334155;
+      color: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <!-- Auth Screen -->
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-box">
+      <h2>🏁 Race Control</h2>
+      <p>Enter PIN to access</p>
+      <div class="pin-input">
+        <input type="tel" class="pin-digit" maxlength="1" id="pin1" oninput="handlePinInput(this, 'pin2')" autofocus>
+        <input type="tel" class="pin-digit" maxlength="1" id="pin2" oninput="handlePinInput(this, 'pin3')" onkeydown="handlePinBackspace(event, 'pin1')">
+        <input type="tel" class="pin-digit" maxlength="1" id="pin3" oninput="handlePinInput(this, 'pin4')" onkeydown="handlePinBackspace(event, 'pin2')">
+        <input type="tel" class="pin-digit" maxlength="1" id="pin4" oninput="handlePinInput(this, null)" onkeydown="handlePinBackspace(event, 'pin3')">
+      </div>
+      <div class="auth-error" id="authError">Incorrect PIN. Try again.</div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div class="header">
+    <h1><span class="status-dot"></span> Race Control</h1>
+    <div class="header-info">
+      <div id="currentTime">--:--</div>
+      <div style="font-size: 11px;" id="connectionStatus">Connected</div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Quick Picker -->
+    <div class="section-title">Target Audience</div>
+    <div class="picker-row">
+      <select class="picker-select" id="targetClass">
+        <option value="all">📢 All Drivers</option>
+        <option value="Cadet">🏎️ Cadet</option>
+        <option value="Mini ROK U10">🌟 Mini ROK U10</option>
+        <option value="Mini ROK">⭐ Mini ROK</option>
+        <option value="OK-J">🔥 OK-J</option>
+        <option value="OK-N">🚀 OK-N</option>
+      </select>
+    </div>
+
+    <!-- Race Flags -->
+    <div class="section-title">Race Flags</div>
+    <div class="flag-grid">
+      <button class="flag-btn flag-red" onclick="sendFlag('red')">
+        <span class="flag-icon">🔴</span>
+        <span class="flag-label">RED FLAG</span>
+      </button>
+      <button class="flag-btn flag-yellow" onclick="sendFlag('yellow')">
+        <span class="flag-icon">🟡</span>
+        <span class="flag-label">YELLOW FLAG</span>
+      </button>
+      <button class="flag-btn flag-green" onclick="sendFlag('green')">
+        <span class="flag-icon">🟢</span>
+        <span class="flag-label">GREEN FLAG</span>
+      </button>
+      <button class="flag-btn flag-checkered" onclick="sendFlag('checkered')">
+        <span class="flag-icon">🏁</span>
+        <span class="flag-label">CHECKERED</span>
+      </button>
+      <button class="flag-btn flag-blue" onclick="sendFlag('blue')">
+        <span class="flag-icon">🔵</span>
+        <span class="flag-label">BLUE FLAG</span>
+      </button>
+      <button class="flag-btn flag-white" onclick="sendFlag('white')">
+        <span class="flag-icon">⚪</span>
+        <span class="flag-label">WHITE FLAG</span>
+      </button>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section-title">Quick Actions</div>
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="sendQuickAction('race_start')">
+        <span class="quick-icon">🏁</span>
+        <span>Race Starting - Proceed to Grid</span>
+      </button>
+      <button class="quick-btn" onclick="sendQuickAction('session_delay')">
+        <span class="quick-icon">⏸️</span>
+        <span>Session Delayed - Standby</span>
+      </button>
+      <button class="quick-btn" onclick="sendQuickAction('pit_open')">
+        <span class="quick-icon">🅿️</span>
+        <span>Pit Lane Open</span>
+      </button>
+      <button class="quick-btn" onclick="sendQuickAction('pit_closed')">
+        <span class="quick-icon">🚫</span>
+        <span>Pit Lane Closed</span>
+      </button>
+      <button class="quick-btn" onclick="sendQuickAction('briefing')">
+        <span class="quick-icon">📣</span>
+        <span>Drivers Briefing Now</span>
+      </button>
+    </div>
+
+    <!-- Custom Message -->
+    <div class="custom-section">
+      <h3>✏️ Custom Message</h3>
+      <input type="text" class="custom-input" id="customTitle" placeholder="Title (e.g. Attention All Drivers)">
+      <textarea class="custom-input" id="customBody" rows="3" placeholder="Message body..."></textarea>
+      <button class="send-custom-btn" onclick="sendCustomMessage()">
+        <span>📤</span> Send Custom Message
+      </button>
+    </div>
+
+    <!-- Message Individual Driver -->
+    <div class="custom-section" id="driverMessageSection">
+      <h3>👤 Message Individual Driver</h3>
+      <div style="position: relative; margin-bottom: 12px;">
+        <input type="text" class="custom-input" id="driverSearch" placeholder="Search driver name..." oninput="filterDriverList()" style="margin-bottom: 0; padding-right: 40px;">
+        <span style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #64748b;">🔍</span>
+      </div>
+      <div id="driverListContainer" style="max-height: 300px; overflow-y: auto; background: #0f172a; border-radius: 10px; border: 2px solid #334155;">
+        <div style="padding: 20px; text-align: center; color: #64748b;">Loading drivers...</div>
+      </div>
+      <div id="selectedDriverInfo" style="display: none; margin-top: 12px; padding: 12px; background: #1d4ed8; border-radius: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: 700; font-size: 14px;" id="selectedDriverName">-</div>
+            <div style="font-size: 12px; opacity: 0.8;" id="selectedDriverClass">-</div>
+          </div>
+          <button onclick="clearSelectedDriver()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">✕ Clear</button>
+        </div>
+      </div>
+      <input type="text" class="custom-input" id="driverMsgTitle" placeholder="Message title..." style="margin-top: 12px;">
+      <textarea class="custom-input" id="driverMsgBody" rows="2" placeholder="Message to driver..."></textarea>
+      <button class="send-custom-btn" onclick="sendDriverMessage()" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+        <span>📤</span> Send to Driver
+      </button>
+    </div>
+
+    <!-- Recent Log -->
+    <div class="recent-log">
+      <h3>📜 Recent Broadcasts</h3>
+      <div id="recentLog">
+        <div class="log-empty">No broadcasts yet this session</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span id="toastIcon">✓</span>
+    <span id="toastMessage">Notification sent!</span>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-content">
+      <div class="modal-icon" id="modalIcon">🔴</div>
+      <div class="modal-title" id="modalTitle">RED FLAG</div>
+      <div class="modal-message" id="modalMessage">Send RED FLAG alert to all drivers?</div>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="modal-btn modal-btn-confirm" id="modalConfirmBtn" onclick="confirmSend()">SEND</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // PIN Code (in production, this should be server-validated)
+    const CLERK_PIN = '1234'; // Change this!
+    let pendingNotification = null;
+    let recentBroadcasts = [];
+
+    // Update time
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    // PIN Authentication
+    function handlePinInput(current, nextId) {
+      if (current.value.length === 1 && nextId) {
+        document.getElementById(nextId).focus();
+      }
+      checkPin();
+    }
+
+    function handlePinBackspace(event, prevId) {
+      if (event.key === 'Backspace' && event.target.value === '' && prevId) {
+        document.getElementById(prevId).focus();
+      }
+    }
+
+    function checkPin() {
+      const pin = document.getElementById('pin1').value +
+                  document.getElementById('pin2').value +
+                  document.getElementById('pin3').value +
+                  document.getElementById('pin4').value;
+      
+      if (pin.length === 4) {
+        if (pin === CLERK_PIN) {
+          document.getElementById('authScreen').classList.add('hidden');
+          sessionStorage.setItem('clerkAuth', 'true');
+          // Load drivers after successful auth
+          loadDrivers();
+        } else {
+          document.getElementById('authError').style.display = 'block';
+          // Clear and refocus
+          document.getElementById('pin1').value = '';
+          document.getElementById('pin2').value = '';
+          document.getElementById('pin3').value = '';
+          document.getElementById('pin4').value = '';
+          document.getElementById('pin1').focus();
+        }
+      }
+    }
+
+    // Check if already authenticated
+    if (sessionStorage.getItem('clerkAuth') === 'true') {
+      document.getElementById('authScreen').classList.add('hidden');
+    }
+
+    // Driver list management
+    let allDrivers = [];
+    let selectedDriver = null;
+    
+    async function loadDrivers() {
+      try {
+        const response = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.drivers) {
+          allDrivers = data.data.drivers;
+          renderDriverList(allDrivers);
+        } else {
+          document.getElementById('driverListContainer').innerHTML = 
+            '<div style="padding: 20px; text-align: center; color: #ef4444;">Failed to load drivers</div>';
+        }
+      } catch (error) {
+        console.error('Error loading drivers:', error);
+        document.getElementById('driverListContainer').innerHTML = 
+          '<div style="padding: 20px; text-align: center; color: #ef4444;">Error loading drivers</div>';
+      }
+    }
+    
+    function renderDriverList(drivers) {
+      const container = document.getElementById('driverListContainer');
+      
+      if (!drivers || drivers.length === 0) {
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #64748b;">No drivers found</div>';
+        return;
+      }
+      
+      // Group by class and sort by surname
+      const grouped = {};
+      const classOrder = ['Cadet', 'Mini ROK U10', 'Mini ROK', 'OK-J', 'OK-N'];
+      
+      drivers.forEach(d => {
+        const cls = d.class || d.racing_class || 'Unknown';
+        if (!grouped[cls]) grouped[cls] = [];
+        grouped[cls].push(d);
+      });
+      
+      // Sort each class by surname
+      Object.keys(grouped).forEach(cls => {
+        grouped[cls].sort((a, b) => {
+          const surnameA = (a.last_name || a.surname || '').toLowerCase();
+          const surnameB = (b.last_name || b.surname || '').toLowerCase();
+          return surnameA.localeCompare(surnameB);
+        });
+      });
+      
+      // Sort classes by predefined order
+      const sortedClasses = Object.keys(grouped).sort((a, b) => {
+        const idxA = classOrder.indexOf(a);
+        const idxB = classOrder.indexOf(b);
+        if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+      
+      let html = '';
+      sortedClasses.forEach(cls => {
+        html += `<div class="driver-class-group">
+          <div class="driver-class-header">🏎️ ${cls} (${grouped[cls].length})</div>`;
+        
+        grouped[cls].forEach(d => {
+          const firstName = d.first_name || d.name?.split(' ')[0] || '';
+          const lastName = d.last_name || d.surname || d.name?.split(' ').slice(1).join(' ') || '';
+          const fullName = `${firstName} ${lastName}`.trim() || 'Unknown';
+          const initials = (firstName[0] || '') + (lastName[0] || '');
+          const raceNum = d.race_number || d.kart_number || '-';
+          const email = d.email || '';
+          const isSelected = selectedDriver && selectedDriver.id === d.id;
+          
+          html += `
+            <div class="driver-item ${isSelected ? 'selected' : ''}" onclick="selectDriver('${d.id}', '${fullName.replace(/'/g, "\\'")}', '${cls}', '${email.replace(/'/g, "\\'")}')">
+              <div class="driver-avatar">${initials.toUpperCase()}</div>
+              <div class="driver-details">
+                <div class="driver-name">${lastName}, ${firstName}</div>
+                <div class="driver-info">${email}</div>
+              </div>
+              <div class="driver-race-num">#${raceNum}</div>
+            </div>`;
+        });
+        
+        html += '</div>';
+      });
+      
+      container.innerHTML = html;
+    }
+    
+    function filterDriverList() {
+      const search = document.getElementById('driverSearch').value.toLowerCase().trim();
+      
+      if (!search) {
+        renderDriverList(allDrivers);
+        return;
+      }
+      
+      const filtered = allDrivers.filter(d => {
+        const firstName = (d.first_name || '').toLowerCase();
+        const lastName = (d.last_name || d.surname || '').toLowerCase();
+        const fullName = `${firstName} ${lastName}`;
+        const email = (d.email || '').toLowerCase();
+        const raceNum = String(d.race_number || d.kart_number || '');
+        
+        return fullName.includes(search) || lastName.includes(search) || 
+               firstName.includes(search) || email.includes(search) || 
+               raceNum.includes(search);
+      });
+      
+      renderDriverList(filtered);
+    }
+    
+    function selectDriver(id, name, cls, email) {
+      selectedDriver = { id, name, cls, email };
+      
+      document.getElementById('selectedDriverInfo').style.display = 'block';
+      document.getElementById('selectedDriverName').textContent = name;
+      document.getElementById('selectedDriverClass').textContent = cls;
+      
+      // Update visual selection
+      document.querySelectorAll('.driver-item').forEach(el => {
+        el.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
+    }
+    
+    function clearSelectedDriver() {
+      selectedDriver = null;
+      document.getElementById('selectedDriverInfo').style.display = 'none';
+      document.querySelectorAll('.driver-item').forEach(el => {
+        el.classList.remove('selected');
+      });
+    }
+    
+    function sendDriverMessage() {
+      if (!selectedDriver) {
+        showToast('Please select a driver first', true);
+        return;
+      }
+      
+      const title = document.getElementById('driverMsgTitle').value.trim();
+      const body = document.getElementById('driverMsgBody').value.trim();
+      
+      if (!title || !body) {
+        showToast('Please enter title and message', true);
+        return;
+      }
+      
+      pendingNotification = {
+        type: 'individual',
+        title: title,
+        body: body,
+        targetDriver: selectedDriver
+      };
+      
+      document.getElementById('modalIcon').textContent = '👤';
+      document.getElementById('modalTitle').textContent = 'Message Driver';
+      document.getElementById('modalMessage').textContent = `Send message to ${selectedDriver.name}?`;
+      document.getElementById('modalConfirmBtn').style.background = '#0ea5e9';
+      document.getElementById('modalConfirmBtn').className = 'modal-btn modal-btn-confirm';
+      document.getElementById('confirmModal').classList.add('show');
+    }
+    
+    // Load drivers when page loads (after auth)
+    setTimeout(() => {
+      if (sessionStorage.getItem('clerkAuth') === 'true') {
+        loadDrivers();
+      }
+    }, 500);
+
+    // Flag definitions
+    const flagDefinitions = {
+      red: {
+        icon: '🔴',
+        title: 'RED FLAG',
+        message: 'RED FLAG! All racing must stop immediately. Return to pit lane safely.',
+        color: '#dc2626'
+      },
+      yellow: {
+        icon: '🟡',
+        title: 'YELLOW FLAG',
+        message: 'YELLOW FLAG - Caution! Reduce speed, no overtaking. Be prepared to stop.',
+        color: '#eab308'
+      },
+      green: {
+        icon: '🟢',
+        title: 'GREEN FLAG',
+        message: 'GREEN FLAG - Track is clear. Racing may resume at full speed.',
+        color: '#22c55e'
+      },
+      checkered: {
+        icon: '🏁',
+        title: 'CHECKERED FLAG',
+        message: 'CHECKERED FLAG - Race/Session complete. Slow down and return to parc fermé.',
+        color: '#374151'
+      },
+      blue: {
+        icon: '🔵',
+        title: 'BLUE FLAG',
+        message: 'BLUE FLAG being shown. Faster karts approaching - allow them to pass safely.',
+        color: '#3b82f6'
+      },
+      white: {
+        icon: '⚪',
+        title: 'WHITE FLAG',
+        message: 'WHITE FLAG - Final lap! One lap remaining.',
+        color: '#94a3b8'
+      }
+    };
+
+    // Quick action definitions
+    const quickActions = {
+      race_start: {
+        icon: '🏁',
+        title: 'Race Starting',
+        message: 'Your race is starting soon! Please proceed to the grid area immediately.'
+      },
+      session_delay: {
+        icon: '⏸️',
+        title: 'Session Delayed',
+        message: 'Current session has been delayed. Please standby for further announcements.'
+      },
+      pit_open: {
+        icon: '🅿️',
+        title: 'Pit Lane Open',
+        message: 'Pit lane is now OPEN. You may enter pit lane.'
+      },
+      pit_closed: {
+        icon: '🚫',
+        title: 'Pit Lane Closed',
+        message: 'Pit lane is now CLOSED. Do not enter pit lane.'
+      },
+      briefing: {
+        icon: '📣',
+        title: 'Drivers Briefing',
+        message: 'Drivers briefing starting NOW at the main tent. Attendance is mandatory.'
+      }
+    };
+
+    function sendFlag(flagType) {
+      const flag = flagDefinitions[flagType];
+      const targetClass = document.getElementById('targetClass').value;
+      const targetLabel = targetClass === 'all' ? 'all drivers' : targetClass + ' class';
+      
+      pendingNotification = {
+        type: 'flag',
+        flagType: flagType,
+        title: flag.title,
+        body: flag.message,
+        targetClass: targetClass
+      };
+      
+      // Show confirmation modal
+      document.getElementById('modalIcon').textContent = flag.icon;
+      document.getElementById('modalTitle').textContent = flag.title;
+      document.getElementById('modalMessage').textContent = `Send ${flag.title} alert to ${targetLabel}?`;
+      document.getElementById('modalConfirmBtn').style.background = flag.color;
+      document.getElementById('modalConfirmBtn').className = 'modal-btn modal-btn-confirm';
+      document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function sendQuickAction(actionType) {
+      const action = quickActions[actionType];
+      const targetClass = document.getElementById('targetClass').value;
+      const targetLabel = targetClass === 'all' ? 'all drivers' : targetClass + ' class';
+      
+      pendingNotification = {
+        type: 'action',
+        actionType: actionType,
+        title: action.title,
+        body: action.message,
+        targetClass: targetClass
+      };
+      
+      // Show confirmation
+      document.getElementById('modalIcon').textContent = action.icon;
+      document.getElementById('modalTitle').textContent = action.title;
+      document.getElementById('modalMessage').textContent = `Send this notification to ${targetLabel}?`;
+      document.getElementById('modalConfirmBtn').style.background = '#22c55e';
+      document.getElementById('modalConfirmBtn').className = 'modal-btn modal-btn-confirm green';
+      document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function sendCustomMessage() {
+      const title = document.getElementById('customTitle').value.trim();
+      const body = document.getElementById('customBody').value.trim();
+      
+      if (!title || !body) {
+        showToast('Please enter both title and message', true);
+        return;
+      }
+      
+      const targetClass = document.getElementById('targetClass').value;
+      const targetLabel = targetClass === 'all' ? 'all drivers' : targetClass + ' class';
+      
+      pendingNotification = {
+        type: 'custom',
+        title: title,
+        body: body,
+        targetClass: targetClass
+      };
+      
+      document.getElementById('modalIcon').textContent = '📤';
+      document.getElementById('modalTitle').textContent = 'Send Message';
+      document.getElementById('modalMessage').textContent = `Send "${title}" to ${targetLabel}?`;
+      document.getElementById('modalConfirmBtn').style.background = '#6366f1';
+      document.getElementById('modalConfirmBtn').className = 'modal-btn modal-btn-confirm';
+      document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('confirmModal').classList.remove('show');
+      pendingNotification = null;
+    }
+
+    async function confirmSend() {
+      if (!pendingNotification) return;
+      
+      // Save notification data before closing modal (which clears pendingNotification)
+      const notification = { ...pendingNotification };
+      
+      closeModal();
+      
+      try {
+        const payload = {
+          title: notification.title,
+          body: notification.body
+        };
+        
+        // Add targeting
+        if (notification.type === 'individual' && notification.targetDriver) {
+          // Send to individual driver
+          payload.driverId = notification.targetDriver.id;
+        } else if (notification.targetClass && notification.targetClass !== 'all') {
+          payload.raceClass = notification.targetClass;
+        }
+        
+        const response = await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          if (notification.type === 'individual' && notification.targetDriver) {
+            showToast(`Sent to ${notification.targetDriver.name}!`);
+          } else {
+            showToast(`Sent to ${result.sent || 0} device(s)!`);
+          }
+          addToLog(notification);
+          
+          // Clear custom fields if it was a custom message
+          if (notification.type === 'custom') {
+            document.getElementById('customTitle').value = '';
+            document.getElementById('customBody').value = '';
+          }
+          
+          // Clear individual driver message fields
+          if (notification.type === 'individual') {
+            document.getElementById('driverMsgTitle').value = '';
+            document.getElementById('driverMsgBody').value = '';
+            clearSelectedDriver();
+          }
+        } else {
+          showToast('Failed to send: ' + (result.error || 'Unknown error'), true);
+        }
+      } catch (error) {
+        console.error('Send error:', error);
+        showToast('Error: ' + (error.message || 'Check server is running'), true);
+      }
+    }
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = message;
+      document.getElementById('toastIcon').textContent = isError ? '✕' : '✓';
+      toast.className = isError ? 'toast error show' : 'toast show';
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function addToLog(notification) {
+      const time = new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      let targetLabel = notification.targetClass === 'all' ? 'All' : notification.targetClass;
+      
+      // Handle individual driver target
+      if (notification.type === 'individual' && notification.targetDriver) {
+        targetLabel = notification.targetDriver.name;
+      }
+      
+      let icon = '📤';
+      if (notification.type === 'flag') {
+        icon = flagDefinitions[notification.flagType].icon;
+      } else if (notification.type === 'action') {
+        icon = quickActions[notification.actionType].icon;
+      } else if (notification.type === 'individual') {
+        icon = '👤';
+      }
+      
+      recentBroadcasts.unshift({
+        icon: icon,
+        title: notification.title,
+        target: targetLabel,
+        time: time
+      });
+      
+      // Keep only last 10
+      if (recentBroadcasts.length > 10) {
+        recentBroadcasts.pop();
+      }
+      
+      renderLog();
+    }
+
+    function renderLog() {
+      const container = document.getElementById('recentLog');
+      
+      if (recentBroadcasts.length === 0) {
+        container.innerHTML = '<div class="log-empty">No broadcasts yet this session</div>';
+        return;
+      }
+      
+      container.innerHTML = recentBroadcasts.map(item => `
+        <div class="log-item">
+          <span class="log-icon">${item.icon}</span>
+          <div class="log-details">
+            <div class="log-title">${item.title}</div>
+            <div class="log-time">${item.time} • ${item.target}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Prevent zoom on double-tap
+    document.addEventListener('touchend', function(e) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
+    let lastTouchEnd = 0;
+  </script>
+</body>
+</html>

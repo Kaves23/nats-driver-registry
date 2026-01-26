@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROK Cup South Africa - Race Day Instructions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       MAGAZINE-STYLE TWO-COLUMN LAYOUT
+       Print-ready, commercial design
+       Northern Crown Blue Theme
+       ============================================ */
+    
+    :root {
+      --nc-blue: #0ea5e9;
+      --nc-blue-dark: #0284c7;
+      --nc-blue-light: #e0f2fe;
+    }
+    
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Open Sans', sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      background: #fff;
+    }
+    
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 12mm;
+      margin: 0 auto 20px;
+      background: #fff;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Header Banner */
+    .page-header {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      color: white;
+      padding: 15mm 10mm;
+      margin: -12mm -12mm 8mm -12mm;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 100%;
+      background: url('https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800') center/cover;
+      opacity: 0.3;
+      mask-image: linear-gradient(to left, black, transparent);
+      -webkit-mask-image: linear-gradient(to left, black, transparent);
+    }
+    
+    .header-content {
+      position: relative;
+      z-index: 2;
+    }
+    
+    .event-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 9pt;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    
+    .page-header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 28pt;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      margin-bottom: 5px;
+    }
+    
+    .page-header .subtitle {
+      font-size: 12pt;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+    
+    .class-indicator {
+      position: absolute;
+      right: 15mm;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: right;
+      z-index: 2;
+    }
+    
+    .class-name {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 42pt;
+      font-weight: 900;
+      line-height: 1;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .class-subtitle {
+      font-size: 10pt;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    /* Two Column Layout */
+    .two-column {
+      column-count: 2;
+      column-gap: 8mm;
+      column-rule: 1px solid #e0e0e0;
+    }
+    
+    .two-column > * {
+      break-inside: avoid;
+    }
+    
+    /* Section Styling */
+    .section {
+      margin-bottom: 6mm;
+      break-inside: avoid;
+    }
+    
+    .section-header {
+      background: #1a1a1a;
+      color: white;
+      padding: 3mm 4mm;
+      margin-bottom: 3mm;
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+    }
+    
+    .section-number {
+      background: #0ea5e9;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 800;
+      font-size: 11pt;
+      flex-shrink: 0;
+    }
+    
+    .section-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .section-content {
+      padding: 0 2mm;
+    }
+    
+    .section-content p {
+      margin-bottom: 2mm;
+      text-align: justify;
+    }
+    
+    .section-content ul {
+      padding-left: 5mm;
+      margin-bottom: 2mm;
+    }
+    
+    .section-content li {
+      margin-bottom: 1.5mm;
+    }
+    
+    /* Highlight Boxes */
+    .highlight-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 3mm;
+      margin: 3mm 0;
+    }
+    
+    .highlight-box.danger {
+      background: #fef3c7;
+      border-left-color: #f59e0b;
+    }
+    
+    .highlight-box.info {
+      background: #e0f2fe;
+      border-left-color: #0ea5e9;
+    }
+    
+    .highlight-box.success {
+      background: #d4edda;
+      border-left-color: #28a745;
+    }
+    
+    .highlight-box strong {
+      display: block;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 9pt;
+      text-transform: uppercase;
+      margin-bottom: 1mm;
+    }
+    
+    /* Time Table */
+    .timetable {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 3mm 0;
+      font-size: 9pt;
+    }
+    
+    .timetable th {
+      background: #0ea5e9;
+      color: white;
+      padding: 2mm 3mm;
+      text-align: left;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 8pt;
+      text-transform: uppercase;
+    }
+    
+    .timetable td {
+      padding: 2mm 3mm;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .timetable tr:nth-child(even) {
+      background: #f8f9fa;
+    }
+    
+    .timetable .time {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      color: #0ea5e9;
+      white-space: nowrap;
+    }
+    
+    /* Checklist */
+    .checklist {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .checklist li {
+      position: relative;
+      padding-left: 7mm;
+      margin-bottom: 2mm;
+    }
+    
+    .checklist li::before {
+      content: '☐';
+      position: absolute;
+      left: 0;
+      color: #0ea5e9;
+      font-size: 12pt;
+    }
+    
+    /* Info Cards */
+    .info-card {
+      background: #f8f9fa;
+      border-radius: 3mm;
+      padding: 4mm;
+      margin: 3mm 0;
+    }
+    
+    .info-card h4 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10pt;
+      color: #0ea5e9;
+      margin-bottom: 2mm;
+      text-transform: uppercase;
+    }
+    
+    /* Contact Block */
+    .contact-block {
+      background: #1a1a1a;
+      color: white;
+      padding: 4mm;
+      margin-top: 5mm;
+    }
+    
+    .contact-block h4 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10pt;
+      color: #0ea5e9;
+      margin-bottom: 2mm;
+    }
+    
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 2mm;
+      margin-bottom: 1.5mm;
+      font-size: 9pt;
+    }
+    
+    /* Footer */
+    .page-footer {
+      position: absolute;
+      bottom: 8mm;
+      left: 12mm;
+      right: 12mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 3mm;
+      border-top: 1px solid #e0e0e0;
+      font-size: 8pt;
+      color: #666;
+    }
+    
+    .page-footer .logo-text {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 800;
+      color: #0ea5e9;
+    }
+    
+    /* Accent Elements */
+    .rok-accent {
+      color: #0ea5e9;
+    }
+    
+    .bold-stat {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18pt;
+      font-weight: 900;
+      color: #0ea5e9;
+      display: block;
+    }
+    
+    /* Print Optimization */
+    @media print {
+      body {
+        background: none;
+      }
+      .page {
+        box-shadow: none;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================
+       PAGE 1: MINI ROK RACE DAY INSTRUCTIONS
+       ============================================ -->
+  <div class="page">
+    <header class="page-header">
+      <div class="header-content">
+        <span class="event-badge">NATS 1 • Zwartkops Raceway • 8–9 February 2026</span>
+        <h1>Race Day Instructions</h1>
+        <p class="subtitle">Everything you need to know before wheels hit the track</p>
+      </div>
+      <div class="class-indicator">
+        <div class="class-name">MINI</div>
+        <div class="class-subtitle">ROK Class</div>
+      </div>
+    </header>
+
+    <div class="two-column">
+      
+      <!-- Section 1: Arrival & Registration -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">1</span>
+          <span class="section-title">Arrival & Registration</span>
+        </div>
+        <div class="section-content">
+          <p>All competitors must register at the <strong>Race Office</strong> upon arrival. Please have the following documents ready:</p>
+          <ul class="checklist">
+            <li>Valid MSA Competition License</li>
+            <li>Medical Certificate (if required)</li>
+            <li>Signed Indemnity Form</li>
+            <li>Proof of Entry Payment</li>
+            <li>Kart Logbook (if applicable)</li>
+          </ul>
+          
+          <div class="highlight-box info">
+            <strong>Registration Hours</strong>
+            Friday: 14:00 – 18:00<br>
+            Saturday: 06:30 – 08:00
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Paddock Allocation -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">2</span>
+          <span class="section-title">Paddock Allocation</span>
+        </div>
+        <div class="section-content">
+          <p>Paddock spaces are allocated on a <strong>first-come, first-served</strong> basis unless you have pre-booked a specific bay. Mini ROK competitors are located in <strong>Paddock Zone B</strong>.</p>
+          
+          <div class="info-card">
+            <h4>Paddock Rules</h4>
+            <ul>
+              <li>5 km/h speed limit strictly enforced</li>
+              <li>No engines running before 07:00 or after 18:00</li>
+              <li>Keep your pit area clean and safe</li>
+              <li>Fire extinguisher must be visible at all times</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Scrutineering -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">3</span>
+          <span class="section-title">Scrutineering</span>
+        </div>
+        <div class="section-content">
+          <p>All karts must pass technical inspection before the first practice session. Present your kart at the <strong>Scrutineering Bay</strong> during the allocated time slot.</p>
+          
+          <table class="timetable">
+            <tr>
+              <th>Day</th>
+              <th>Mini ROK Scrutineering</th>
+            </tr>
+            <tr>
+              <td>Friday</td>
+              <td class="time">15:00 – 17:30</td>
+            </tr>
+            <tr>
+              <td>Saturday</td>
+              <td class="time">06:30 – 07:45</td>
+            </tr>
+          </table>
+          
+          <div class="highlight-box danger">
+            <strong>Important</strong>
+            Karts that do not pass scrutineering will NOT be permitted on track. Ensure all safety equipment meets current MSA regulations.
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Driver Briefing -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">4</span>
+          <span class="section-title">Driver Briefing</span>
+        </div>
+        <div class="section-content">
+          <p>Attendance at the <strong>Driver Briefing</strong> is <strong>MANDATORY</strong>. Failure to attend will result in exclusion from the event.</p>
+          
+          <div class="info-card">
+            <h4>Briefing Schedule</h4>
+            <p><strong>Saturday:</strong> 07:45 at the Briefing Room</p>
+            <p><strong>Sunday:</strong> 07:45 at the Briefing Room</p>
+          </div>
+          
+          <p>Drivers under 16 must be accompanied by a parent or guardian. All class-specific rules and any changes will be communicated during the briefing.</p>
+        </div>
+      </div>
+
+      <!-- Section 5: Race Format -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">5</span>
+          <span class="section-title">Race Format</span>
+        </div>
+        <div class="section-content">
+          <p>The Mini ROK class will follow the standard <strong>National Championship format</strong>:</p>
+          
+          <table class="timetable">
+            <tr>
+              <th>Session</th>
+              <th>Duration/Laps</th>
+            </tr>
+            <tr>
+              <td>Free Practice</td>
+              <td>2 × 10 minutes</td>
+            </tr>
+            <tr>
+              <td>Qualifying</td>
+              <td>8 minutes</td>
+            </tr>
+            <tr>
+              <td>Heat 1</td>
+              <td>8 laps</td>
+            </tr>
+            <tr>
+              <td>Heat 2</td>
+              <td>8 laps</td>
+            </tr>
+            <tr>
+              <td>Heat 3</td>
+              <td>8 laps</td>
+            </tr>
+            <tr>
+              <td>Pre-Final</td>
+              <td>10 laps</td>
+            </tr>
+            <tr>
+              <td>Final</td>
+              <td>12 laps</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 6: Grid Procedure -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">6</span>
+          <span class="section-title">Grid Procedure</span>
+        </div>
+        <div class="section-content">
+          <p>Drivers must be in the <strong>Pre-Grid Area</strong> at least <strong>5 minutes</strong> before their scheduled session. The grid marshal will direct you to your position.</p>
+          
+          <div class="highlight-box">
+            <strong>Grid Closure</strong>
+            The grid closes 2 minutes before the scheduled start time. Late arrivals will start from the pit lane.
+          </div>
+          
+          <p><strong>Starting Procedure:</strong></p>
+          <ul>
+            <li>Formation lap behind the pace car</li>
+            <li>Green flag start from a rolling formation</li>
+            <li>Maintain your grid position until the start line</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="page-footer">
+      <span class="logo-text">ROK CUP SOUTH AFRICA</span>
+      <span>Mini ROK Race Day Instructions • Page 1 of 2</span>
+      <span>www.rokcupsa.co.za</span>
+    </footer>
+  </div>
+
+  <!-- ============================================
+       PAGE 2: MINI ROK - CONTINUED
+       ============================================ -->
+  <div class="page">
+    <header class="page-header" style="padding: 10mm; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+      <div class="header-content">
+        <span class="event-badge">Continued</span>
+        <h1 style="font-size: 22pt;">Race Day Instructions</h1>
+      </div>
+      <div class="class-indicator">
+        <div class="class-name" style="font-size: 32pt;">MINI</div>
+        <div class="class-subtitle">ROK Class</div>
+      </div>
+    </header>
+
+    <div class="two-column">
+
+      <!-- Section 7: Controlled Fuel -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">7</span>
+          <span class="section-title">Controlled Fuel Procedure</span>
+        </div>
+        <div class="section-content">
+          <p>ROK Cup South Africa operates a <strong>Controlled Fuel</strong> system to ensure fair competition. All competitors must use official fuel supplied at the event.</p>
+          
+          <div class="highlight-box danger">
+            <strong>Zero Tolerance Policy</strong>
+            Any competitor found using non-controlled fuel will be immediately disqualified and may face further sanctions.
+          </div>
+          
+          <div class="info-card">
+            <h4>Fuel Collection</h4>
+            <ul>
+              <li><strong>Location:</strong> Fuel Station (next to Scrutineering)</li>
+              <li><strong>Collection Times:</strong> Friday 15:00–17:00 / Saturday from 06:30</li>
+              <li><strong>Bring:</strong> Your own approved fuel containers</li>
+              <li><strong>Allocation:</strong> 10 litres per driver per day</li>
+            </ul>
+          </div>
+          
+          <p><strong>Fuel Mixing:</strong> Add your own 2-stroke oil at the approved ratio. The standard mixture is <strong>4% (25:1)</strong> unless otherwise specified for your engine.</p>
+        </div>
+      </div>
+
+      <!-- Section 8: Pool Engine Drivers -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">8</span>
+          <span class="section-title">Pool Engine Drivers</span>
+        </div>
+        <div class="section-content">
+          <p>If you are using a <strong>Pool Engine</strong>, please note the following:</p>
+          
+          <ul>
+            <li>Collect your engine from the <strong>Engine Bay</strong> on Friday between 14:00–17:00</li>
+            <li>Engine numbers are assigned randomly before the event</li>
+            <li>Return your engine within <strong>30 minutes</strong> of your final race</li>
+            <li>Report any mechanical issues immediately to the Technical Director</li>
+          </ul>
+          
+          <div class="highlight-box success">
+            <strong>Engine Parity</strong>
+            All pool engines are dyno-tested and sealed to ensure equal performance across the grid.
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 9: Tyres -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">9</span>
+          <span class="section-title">Tyre Regulations</span>
+        </div>
+        <div class="section-content">
+          <p>Mini ROK uses <strong>LeCont SVB</strong> tyres. The following regulations apply:</p>
+          
+          <table class="timetable">
+            <tr>
+              <th>Allocation</th>
+              <th>Qty</th>
+            </tr>
+            <tr>
+              <td>New tyres per event</td>
+              <td class="time">1 set</td>
+            </tr>
+            <tr>
+              <td>Used tyres allowed</td>
+              <td class="time">1 set</td>
+            </tr>
+            <tr>
+              <td>Rain tyres (if needed)</td>
+              <td class="time">1 set</td>
+            </tr>
+          </table>
+          
+          <p>All tyres must be presented for marking at Scrutineering. Unmarked tyres may not be used during the event.</p>
+        </div>
+      </div>
+
+      <!-- Section 10: Safety & Flags -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">10</span>
+          <span class="section-title">Safety & Flag Signals</span>
+        </div>
+        <div class="section-content">
+          <div class="info-card">
+            <h4>Know Your Flags</h4>
+            <ul>
+              <li>🟢 <strong>Green:</strong> Track clear, racing conditions</li>
+              <li>🟡 <strong>Yellow:</strong> Danger, no overtaking, slow down</li>
+              <li>🔴 <strong>Red:</strong> Session stopped, return to pit lane slowly</li>
+              <li>🏁 <strong>Chequered:</strong> End of session/race</li>
+              <li>🔵 <strong>Blue:</strong> Faster kart approaching, let them pass</li>
+              <li>⚫ <strong>Black:</strong> Report to Race Director immediately</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 11: Results & Protests -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">11</span>
+          <span class="section-title">Results & Protests</span>
+        </div>
+        <div class="section-content">
+          <p>Provisional results will be posted on the <strong>Official Notice Board</strong> within 15 minutes of each session.</p>
+          
+          <p><strong>Protest Procedure:</strong></p>
+          <ul>
+            <li>Protests must be submitted in writing</li>
+            <li>Deadline: 30 minutes after results are posted</li>
+            <li>Protest fee: R500 (refundable if upheld)</li>
+            <li>Submit to the Race Secretary</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Section 12: Prize Giving -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-number">12</span>
+          <span class="section-title">Prize Giving</span>
+        </div>
+        <div class="section-content">
+          <p>Prize giving will take place <strong>30 minutes</strong> after the final race of the day. All podium finishers must be present in full race suit.</p>
+          
+          <div class="info-card">
+            <h4>Mini ROK Prizes</h4>
+            <p>🥇 1st Place: Trophy + R2,500 voucher</p>
+            <p>🥈 2nd Place: Trophy + R1,500 voucher</p>
+            <p>🥉 3rd Place: Trophy + R1,000 voucher</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Block -->
+      <div class="contact-block">
+        <h4>Event Contacts</h4>
+        <div class="contact-item">📞 Race Director: 082 XXX XXXX</div>
+        <div class="contact-item">📞 Technical Director: 083 XXX XXXX</div>
+        <div class="contact-item">📞 Race Secretary: 084 XXX XXXX</div>
+        <div class="contact-item">📧 info@rokcupsa.co.za</div>
+      </div>
+
+    </div>
+
+    <footer class="page-footer">
+      <span class="logo-text">ROK CUP SOUTH AFRICA</span>
+      <span>Mini ROK Race Day Instructions • Page 2 of 2</span>
+      <span>www.rokcupsa.co.za</span>
+    </footer>
+  </div>
+
+  <!-- ============================================
+       PAGE 3: CONTROLLED FUEL INSTRUCTIONS
+       ============================================ -->
+  <div class="page">
+    <header class="page-header" style="background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);">
+      <div class="header-content">
+        <span class="event-badge" style="background: #0ea5e9;">Technical Bulletin</span>
+        <h1>Controlled Fuel</h1>
+        <p class="subtitle">Mandatory fuel procedures for all ROK Cup SA events</p>
+      </div>
+      <div class="class-indicator">
+        <div class="class-name" style="font-size: 28pt;">⛽</div>
+        <div class="class-subtitle">All Classes</div>
+      </div>
+    </header>
+
+    <div class="two-column">
+      
+      <!-- Why Controlled Fuel -->
+      <div class="section">
+        <div class="section-header" style="background: #0ea5e9;">
+          <span class="section-title">Why Controlled Fuel?</span>
+        </div>
+        <div class="section-content">
+          <p>ROK Cup South Africa operates a <strong>Controlled Fuel program</strong> to ensure:</p>
+          <ul>
+            <li><strong>Fair Competition:</strong> Every driver uses identical fuel, eliminating any performance advantage from fuel additives</li>
+            <li><strong>Engine Protection:</strong> Approved fuel protects your engine investment</li>
+            <li><strong>Cost Control:</strong> Prevents expensive "fuel wars" between competitors</li>
+            <li><strong>International Alignment:</strong> Matches ROK Cup global standards</li>
+          </ul>
+          
+          <div class="highlight-box info">
+            <strong>The Bottom Line</strong>
+            Controlled fuel means your results come from driving skill and setup — not from what's in your tank.
+          </div>
+        </div>
+      </div>
+
+      <!-- How It Works -->
+      <div class="section">
+        <div class="section-header" style="background: #0ea5e9;">
+          <span class="section-title">How The System Works</span>
+        </div>
+        <div class="section-content">
+          <p><strong>Step 1: Collection</strong></p>
+          <p>Collect your fuel allocation from the <strong>Official Fuel Station</strong> during designated hours. Bring your own approved containers (Jerry cans).</p>
+          
+          <p><strong>Step 2: Mixing</strong></p>
+          <p>Add your preferred 2-stroke oil to the fuel. The standard ratio is <strong>4% (25:1)</strong> for all ROK engines. Some classes may specify different ratios — check your class regulations.</p>
+          
+          <p><strong>Step 3: Use</strong></p>
+          <p>Use ONLY the controlled fuel in your kart throughout the event. Any remaining fuel at the end of the event is yours to keep.</p>
+          
+          <div class="highlight-box">
+            <strong>Daily Allocation</strong>
+            <span class="bold-stat">10 Litres</span>
+            Per driver, per race day
+          </div>
+        </div>
+      </div>
+
+      <!-- Collection Schedule -->
+      <div class="section">
+        <div class="section-header" style="background: #0ea5e9;">
+          <span class="section-title">Fuel Collection Schedule</span>
+        </div>
+        <div class="section-content">
+          <table class="timetable">
+            <tr>
+              <th>Day</th>
+              <th>Collection Hours</th>
+            </tr>
+            <tr>
+              <td>Friday (Setup Day)</td>
+              <td class="time">15:00 – 17:00</td>
+            </tr>
+            <tr>
+              <td>Saturday</td>
+              <td class="time">06:30 – 08:00</td>
+            </tr>
+            <tr>
+              <td>Saturday (Top-up)</td>
+              <td class="time">12:00 – 13:00</td>
+            </tr>
+            <tr>
+              <td>Sunday</td>
+              <td class="time">06:30 – 08:00</td>
+            </tr>
+            <tr>
+              <td>Sunday (Top-up)</td>
+              <td class="time">12:00 – 13:00</td>
+            </tr>
+          </table>
+          
+          <p><em>The fuel station is located next to the Scrutineering Bay. Look for the ROK Cup SA banner.</em></p>
+        </div>
+      </div>
+
+      <!-- What to Bring -->
+      <div class="section">
+        <div class="section-header" style="background: #0ea5e9;">
+          <span class="section-title">What to Bring</span>
+        </div>
+        <div class="section-content">
+          <ul class="checklist">
+            <li>Clean, approved fuel containers (Jerry cans)</li>
+            <li>Your driver number / entry confirmation</li>
+            <li>Your own 2-stroke oil for mixing</li>
+            <li>Measuring jug for accurate oil mixing</li>
+          </ul>
+          
+          <div class="info-card">
+            <h4>Approved Containers</h4>
+            <p>Use only proper fuel Jerry cans. No soft drink bottles, water bottles, or unapproved containers. Safety first!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Penalties -->
+      <div class="section">
+        <div class="section-header" style="background: #0ea5e9;">
+          <span class="section-title">Penalties for Non-Compliance</span>
+        </div>
+        <div class="section-content">
+          <div class="highlight-box danger">
+            <strong>Zero Tolerance Policy</strong>
+            ROK Cup South Africa operates a strict zero-tolerance policy on fuel irregularities.
+          </div>
+          
+          <p>Competitors found using non-controlled fuel will face:</p>
+          <ul>
+            <li><strong>First Offence:</strong> Immediate disqualification from the event</li>
+            <li><strong>Second Offence:</strong> Season ban + loss of all championship points</li>
+            <li><strong>Fuel Additives:</strong> Treated as fuel manipulation — instant DQ</li>
+          </ul>
+          
+          <p>Random fuel testing may be conducted at any time during the event. Samples can be taken from your tank, fuel containers, or catch bottles.</p>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="section">
+        <div class="section-header" style="background: #0ea5e9;">
+          <span class="section-title">Frequently Asked Questions</span>
+        </div>
+        <div class="section-content">
+          <p><strong>Q: Can I bring my own fuel from home?</strong><br>
+          A: No. All fuel must be collected on-site from the official fuel station.</p>
+          
+          <p><strong>Q: What if I run out during the event?</strong><br>
+          A: Additional fuel is available during top-up windows (see schedule above).</p>
+          
+          <p><strong>Q: Can I use any 2-stroke oil?</strong><br>
+          A: Yes, you can use your preferred 2-stroke oil brand for mixing.</p>
+          
+          <p><strong>Q: What octane is the controlled fuel?</strong><br>
+          A: ROK Cup SA uses 95 octane unleaded fuel, aligned with ROK international standards.</p>
+        </div>
+      </div>
+
+      <!-- Contact for Fuel -->
+      <div class="contact-block">
+        <h4>Fuel Station Contact</h4>
+        <div class="contact-item">📞 Fuel Marshal: On-site during collection hours</div>
+        <div class="contact-item">📞 Technical Director: 083 XXX XXXX</div>
+        <div class="contact-item">📧 technical@rokcupsa.co.za</div>
+      </div>
+
+    </div>
+
+    <footer class="page-footer">
+      <span class="logo-text">ROK CUP SOUTH AFRICA</span>
+      <span>Controlled Fuel Instructions • All Classes</span>
+      <span>www.rokcupsa.co.za</span>
+    </footer>
+  </div>
+
+</body>
+</html>

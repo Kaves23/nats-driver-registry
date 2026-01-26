@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal Diagnostics</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f9fafb;
+    }
+    h1 {
+      color: #111827;
+    }
+    .test-section {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .test-result {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+    }
+    .info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #3b82f6;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    pre {
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      max-height: 400px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Admin Portal Diagnostics</h1>
+  
+  <div class="test-section">
+    <h2>Test 1: API Connection</h2>
+    <button onclick="testAPI()">Test getAllDrivers API</button>
+    <div id="apiResult"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 2: Events API</h2>
+    <button onclick="testEventsAPI()">Test getAllEvents API</button>
+    <div id="eventsResult"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 3: Console Errors</h2>
+    <div class="test-result info">Open browser DevTools (F12) → Console tab and check for errors</div>
+    <div class="test-result info">Look for red error messages or failed network requests</div>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 4: Network Tab</h2>
+    <div class="test-result info">
+      1. Open DevTools (F12) → Network tab<br>
+      2. Login to admin portal<br>
+      3. Check if API calls are being made<br>
+      4. Check response status codes (should be 200)
+    </div>
+  </div>
+
+  <script>
+    async function testAPI() {
+      const resultDiv = document.getElementById('apiResult');
+      resultDiv.innerHTML = '<div class="test-result info">Testing API...</div>';
+      
+      try {
+        const response = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: '',
+            name: '',
+            status: '',
+            paid: ''
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div class="test-result success">
+              ✅ API Working!<br>
+              Status: ${response.status}<br>
+              Drivers found: ${data.data.drivers.length}
+            </div>
+            <pre>${JSON.stringify(data.data.drivers[0], null, 2)}</pre>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <div class="test-result error">
+              ❌ API returned error: ${data.error?.message || 'Unknown error'}
+            </div>
+          `;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `
+          <div class="test-result error">
+            ❌ Error: ${err.message}<br>
+            This might indicate CORS issues or server not running
+          </div>
+        `;
+      }
+    }
+    
+    async function testEventsAPI() {
+      const resultDiv = document.getElementById('eventsResult');
+      resultDiv.innerHTML = '<div class="test-result info">Testing Events API...</div>';
+      
+      try {
+        const response = await fetch('/api/getAllEvents');
+        const data = await response.json();
+        
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <div class="test-result success">
+              ✅ Events API Working!<br>
+              Status: ${response.status}<br>
+              Events found: ${data.events.length}
+            </div>
+            <pre>${JSON.stringify(data.events, null, 2)}</pre>
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <div class="test-result error">
+              ❌ API returned error: ${data.error || 'Unknown error'}
+            </div>
+          `;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `
+          <div class="test-result error">
+            ❌ Error: ${err.message}
+          </div>
+        `;
+      }
+    }
+    
+    // Log all console messages
+    console.log('📊 Diagnostic page loaded');
+    console.log('Server should be running on http://localhost:3000');
+  </script>
+</body>
+</html>

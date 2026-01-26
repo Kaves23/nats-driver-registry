@@ -1,0 +1,32 @@
+Document ID,Document Name,Category,Folder,File Path,Status,Version,Last Updated,Notes,Priority
+DOC001,Supplementary Regulations,Season,/documents/season/,supplementary-regulations.html,Missing,0,,MSA permit & core event rules,CRITICAL
+DOC002,MSA Permit,Season,/documents/season/,msa-permit.html,Missing,0,,Motorsport SA permit approval,CRITICAL
+DOC003,Entry Pack & Event Overview,Season,/documents/season/,entry-pack.html,Missing,0,,How to register & entry info,CRITICAL
+DOC004,National Regulations,Season,/documents/season/,national-regulations.html,Missing,0,,Full 2026 sporting & technical regs,CRITICAL
+DOC005,Technical Regulations,Season,/documents/season/,technical-regulations.html,Missing,0,,Technical specifications & rules,HIGH
+DOC006,Sporting Regulations,Season,/documents/season/,sporting-regulations.html,Missing,0,,Sporting rules & procedures,HIGH
+DOC007,Regional Regulations,Season,/documents/season/,regional-regulations.html,Missing,0,,Provincial/regional rules,MEDIUM
+DOC008,Spectator Guide,Season,/documents/season/,spectator-guide.html,Missing,0,,"Tickets, parking, facilities",LOW
+DOC009,Mini Class Guide,Classes,/documents/classes/,mini-class-guide.html,Missing,0,,"Cadet, Mini U/10, Mini ROK",CRITICAL
+DOC010,Mini Prize Structure,Classes,/documents/classes/,mini-prize-structure.html,Missing,0,,Points & prizes for Mini,HIGH
+DOC011,OK-J Class Guide,Classes,/documents/classes/,okj-class-guide.html,Missing,0,,OK-J class rules & specs,HIGH
+DOC012,OK-J Prize Structure,Classes,/documents/classes/,okj-prize-structure.html,Missing,0,,Points & prizes for OK-J,HIGH
+DOC013,OK-N Class Guide,Classes,/documents/classes/,okn-class-guide.html,Missing,0,,OK-N senior class rules,HIGH
+DOC014,OK-N Prize Structure,Classes,/documents/classes/,okn-prize-structure.html,Missing,0,,Points & prizes for OK-N,HIGH
+DOC015,Academy Class Guide,Classes,/documents/classes/,academy-class-guide.html,Missing,0,,Academy programme rules,HIGH
+DOC016,Academy Prize Structure,Classes,/documents/classes/,academy-prize-structure.html,Missing,0,,Academy points & prizes,HIGH
+DOC017,Academy Overview,Classes,/documents/classes/,academy-overview.html,Missing,0,,Academy overview & objectives,MEDIUM
+DOC018,Academy Format,Classes,/documents/classes/,academy-format.html,Missing,0,,Race format & coaching notes,MEDIUM
+DOC019,Mini Race Day Instructions,Race Day,/documents/raceday/,mini-raceday-instructions.html,Created,1,2026-01-25,Race day procedures for Mini,HIGH
+DOC020,OK-J Race Day Instructions,Race Day,/documents/raceday/,okj-raceday-instructions.html,Missing,0,,Race day procedures for OK-J,HIGH
+DOC021,OK-N Race Day Instructions,Race Day,/documents/raceday/,okn-raceday-instructions.html,Missing,0,,Race day procedures for OK-N,HIGH
+DOC022,Controlled Fuel Instructions,Race Day,/documents/raceday/,controlled-fuel.html,Created,1,2026-01-25,Fuel procedures all classes,HIGH
+DOC023,Bulletin 01,Events,/documents/events/,bulletin-01.html,Missing,0,,Example bulletin,MEDIUM
+DOC024,Bulletin 02,Events,/documents/events/,bulletin-02.html,Missing,0,,Example bulletin,MEDIUM
+DOC025,Access Map,Tracks,/documents/tracks/,access-map.html,Missing,0,,Traffic flow & access routes,MEDIUM
+DOC026,Spectator Map,Tracks,/documents/tracks/,spectator-map.html,Missing,0,,Viewing areas & facilities,MEDIUM
+DOC027,Zwartkops Track Map,Tracks,/documents/tracks/,zwartkops-track.html,Missing,0,,Track layout Zwartkops,MEDIUM
+DOC028,Red Star Track Map,Tracks,/documents/tracks/,redstar-track.html,Missing,0,,Track layout Red Star,MEDIUM
+DOC029,Idube Track Map,Tracks,/documents/tracks/,idube-track.html,Missing,0,,Track layout Idube,MEDIUM
+DOC030,Killarney Track Map,Tracks,/documents/tracks/,killarney-track.html,Missing,0,,Track layout Killarney,MEDIUM
+DOC031,Formula K Track Map,Tracks,/documents/tracks/,formulak-track.html,Missing,0,,Track layout Formula K,MEDIUM

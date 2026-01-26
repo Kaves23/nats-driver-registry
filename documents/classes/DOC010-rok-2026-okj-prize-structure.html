@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROK Cup South Africa - 2026 Prize Structure - OK-J</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap');
+        
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: white;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            page-break-after: always;
+        }
+        
+        .header {
+            background: #1e40af;
+            padding: 30px 40px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.2));
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .rok-logo-img {
+            height: 70px;
+            width: auto;
+        }
+        
+        .rok-logo {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .season-badge {
+            background: #1e40af;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 2px solid white;
+        }
+        
+        .doc-title {
+            font-size: 36px;
+            font-weight: 900;
+            margin: 20px 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+            background: #1e40af;
+            padding: 15px 25px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .doc-subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+            font-weight: 300;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .class-header {
+            background: #1e40af;
+            color: white;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        
+        .class-name {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .class-age {
+            font-size: 14px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .prize-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .prize-card {
+            background: #f8f8f8;
+            border-left: 4px solid #4caf50;
+            padding: 25px;
+            border-radius: 4px;
+        }
+        
+        .prize-type {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .prize-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: #1e40af;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        
+        .prize-description {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #1e40af;
+            margin: 40px 0 20px 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .prize-list {
+            margin: 15px 0;
+            list-style: none;
+        }
+        
+        .prize-list li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        
+        .prize-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #1e40af;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box p {
+            font-size: 12px;
+            line-height: 1.8;
+        }
+        
+        .points-table {
+            margin: 20px 0;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .points-table thead {
+            background: #1e40af;
+            color: white;
+        }
+        
+        .points-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+        
+        .points-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .points-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        .points-table tbody tr:hover {
+            background: #e8f5e9;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e40af;
+            color: white;
+            padding: 15px 40px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-left {
+            opacity: 0.7;
+        }
+        
+        .footer-right {
+            font-weight: 700;
+        }
+        
+        .page-number {
+            background: #1e40af;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 2px;
+            margin-left: 10px;
+            border: 2px solid white;
+        }
+        
+        @media print {
+            .page {
+                margin: 0;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-left">
+                        <img src="https://rokcup.co.za/wp-content/uploads/2024/01/ROK-CUP-NAZIONI-sud-africa.png" alt="ROK Cup South Africa Logo" class="rok-logo-img">
+                        <div class="rok-logo">ROK CUP SA</div>
+                    </div>
+                    <div class="season-badge">2026 SEASON</div>
+                </div>
+                <div class="doc-title">Prize Structure</div>
+                <div class="doc-subtitle">OK-J Class — FIA Junior Direct Drive</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="class-header">
+                <div class="class-name">OK-J</div>
+                <div class="class-age">11-14 Years • Vortex OK-J Engine • FIA Direct Drive • Pool Engine Programme</div>
+            </div>
+
+            <div class="prize-grid">
+                <div class="prize-card">
+                    <div class="prize-type">Per NATS Weekend Winner</div>
+                    <div class="prize-value">R25,000</div>
+                    <div class="prize-description">MSA4 or Junior Ginetta testing experience awarded to each double-header NATS weekend champion (minimum 10 starters required per day)</div>
+                </div>
+
+                <div class="prize-card">
+                    <div class="prize-type">Total Weekend Testing Value</div>
+                    <div class="prize-value">R100,000</div>
+                    <div class="prize-description">Combined value of car testing across all four NATS weekends throughout the season</div>
+                </div>
+            </div>
+
+            <div class="section-title">Season Champion Prize Package</div>
+
+            <ul class="prize-list">
+                <li><strong>FIA Junior European Academy Seat (2027)</strong> — Full entry and registration to the official FIA Junior Academy programme</li>
+                <li><strong>ROK Cup Superfinal Ticket</strong> — Entry to the international ROK Cup Superfinal in Italy</li>
+                <li><strong>FIA OK-NJ World Cup Seat</strong> — Entry to the official FIA junior world championship event</li>
+                <li><strong>National Champion Title</strong> — Official MSA National Champion recognition and championship trophy</li>
+            </ul>
+
+            <div class="info-box">
+                <p><strong>Note:</strong> International travel prizes include entry fees and championship registration. Travel, accommodation, and incidental expenses are the responsibility of the prize recipient.</p>
+            </div>
+
+            <div class="section-title">Championship Points System</div>
+            
+            <table class="points-table">
+                <thead>
+                    <tr>
+                        <th>Finishing Position</th>
+                        <th>Points Awarded</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1st Place</strong></td>
+                        <td>35 points</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2nd Place</strong></td>
+                        <td>32 points</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3rd Place</strong></td>
+                        <td>30 points</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4th Place</strong></td>
+                        <td>29 points</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5th Place</strong></td>
+                        <td>28 points</td>
+                    </tr>
+                    <tr>
+                        <td><strong>6th Place</strong></td>
+                        <td>27 points</td>
+                    </tr>
+                    <tr>
+                        <td><strong>7th Place onwards</strong></td>
+                        <td>Decreases by 1 point per position (26, 25, 24, etc.)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 25px;">
+                <h3 style="font-size: 16px; font-weight: 700; color: #1e40af; margin-bottom: 15px;">Important Scoring Rules</h3>
+                
+                <ul class="prize-list">
+                    <li><strong>Non-Finishers:</strong> A competitor who does not finish the race (DNF) receives 5 points less than the lowest-placed finisher</li>
+                    <li><strong>Definition of a Finisher:</strong> To be classified as a finisher, a driver must complete at least 67% of the race distance (rounded down to the nearest whole number of laps)</li>
+                    <li><strong>Dropped Heats (National):</strong> In the National Championship (which consists of 6 heats per weekend), a competitor is allowed to drop their single worst heat result from that combined weekend. However, a heat cannot be dropped if the driver was excluded/disqualified from it or did not start</li>
+                    <li><strong>Tie-Breakers:</strong> If points are tied at the end of the season/event, the winner is decided by the greatest number of 1st places. If still tied, it moves to 2nd places, then 3rd places, and so on. If a tie remains, the highest score in the last race takes preference</li>
+                </ul>
+            </div>
+
+            <div class="section-title">Prize Eligibility & Terms</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Weekend Prizes:</strong> The R25,000 car testing prize is awarded to the highest-scoring driver across both rounds of each NATS weekend. Testing may be fulfilled through official MSA4 single-seater test days or Junior Ginetta GT4 test sessions at approved circuits.</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Season Champion:</strong> The OK-J National Champion is determined by total championship points across all 8 rounds.</p>
+
+            <p style="font-size: 13px; line-height: 1.8;"><strong>General Terms:</strong> All prizes subject to full compliance with technical and sporting regulations throughout the season. Drivers under penalty or suspension at season end may forfeit prizes at the discretion of MSA and ROK Cup South Africa.</p>
+
+        </div>
+
+        <div class="footer">
+            <div class="footer-left">ROK Cup South Africa | Prize Structure — OK-J Class 2026 | Version 1.0</div>
+            <div class="footer-right">OFFICIAL DOCUMENT <span class="page-number">DOC010</span></div>
+        </div>
+    </div>
+</body>
+</html>

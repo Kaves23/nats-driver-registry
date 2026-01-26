@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROK Cup South Africa - 2026 Class Guide - OK-J</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap');
+        
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: white;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            page-break-after: always;
+        }
+        
+        .header {
+            background: #1e40af;
+            padding: 30px 40px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.2));
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .rok-logo-img {
+            height: 70px;
+            width: auto;
+        }
+        
+        .rok-logo {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .season-badge {
+            background: #1e40af;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 2px solid white;
+        }
+        
+        .doc-title {
+            font-size: 36px;
+            font-weight: 900;
+            margin: 20px 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+            background: #1e40af;
+            padding: 15px 25px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .doc-subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+            font-weight: 300;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .class-header {
+            background: #1e40af;
+            color: white;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        
+        .class-name {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .class-age {
+            font-size: 14px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #1e40af;
+            margin: 40px 0 20px 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .info-list {
+            margin: 15px 0;
+            list-style: none;
+        }
+        
+        .info-list li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        
+        .info-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #1e40af;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box p {
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: white;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 4px;
+            border-left: 4px solid #facd12;
+        }
+
+        .highlight-box h3 {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .highlight-box p {
+            font-size: 13px;
+            line-height: 1.7;
+            opacity: 0.95;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .spec-card {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #1e40af;
+        }
+
+        .spec-card.summer {
+            background: #fff8f0;
+            border-left: 4px solid #f97316;
+        }
+
+        .spec-card.autumn {
+            background: #fff4ed;
+            border-left: 4px solid #ea580c;
+        }
+
+        .spec-card.winter {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .spec-card.spring {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+        }
+
+        .spec-card h4 {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .spec-card p {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #666;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e40af;
+            color: white;
+            padding: 15px 40px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-left {
+            opacity: 0.7;
+        }
+        
+        .footer-right {
+            font-weight: 700;
+        }
+        
+        .page-number {
+            background: #1e40af;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 2px;
+            margin-left: 10px;
+            border: 2px solid white;
+        }
+        
+        @media print {
+            .page {
+                margin: 0;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-left">
+                        <img src="https://rokcup.co.za/wp-content/uploads/2024/01/ROK-CUP-NAZIONI-sud-africa.png" alt="ROK Cup South Africa Logo" class="rok-logo-img">
+                        <div class="rok-logo">ROK CUP SA</div>
+                    </div>
+                    <div class="season-badge">2026 SEASON</div>
+                </div>
+                <div class="doc-title">Class Guide</div>
+                <div class="doc-subtitle">OK-J Class — FIA Junior Direct Drive</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="class-header">
+                <div class="class-name">OK-J</div>
+                <div class="class-age">11-14 Years • Vortex OK-J Engine • FIA Direct Drive • Pool Engine Programme</div>
+            </div>
+
+            <div class="section-title">Class Overview</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;">OK-J is the first step into true FIA-style direct drive karting in ROK Cup South Africa. Aimed at serious junior drivers who have already mastered the fundamentals in MINI, OK-J delivers higher power, higher grip, and more demanding race formats. The category mirrors the international OK-J philosophy, giving South African drivers direct preparation for FIA Academy and European junior competition.</p>
+
+            <div class="highlight-box">
+                <h3>European-Spec Preparation</h3>
+                <p>OK-J provides direct drive, high-grip tyres, and race distances that demand fitness and concentration, matching the demands of FIA OK-J overseas. This is not a stepping stone — it's the real thing, run to international standards on South African soil.</p>
+            </div>
+
+            <div class="section-title">Eligibility & Requirements</div>
+
+            <ul class="info-list">
+                <li><strong>Age Range:</strong> Typically 11–14 years old (age as of 31 December 2026)</li>
+                <li><strong>Licence:</strong> Valid MSA karting licence appropriate for direct drive competition</li>
+                <li><strong>Engine:</strong> Vortex OK-J engine supplied via pool programme</li>
+                <li><strong>Experience Level:</strong> Usually 1-2 seasons of competitive karting experience with prior National or Regional MINI results</li>
+                <li><strong>Fitness:</strong> Higher physical demands than MINI — fitness and stamina are critical</li>
+            </ul>
+
+            <div class="section-title">Technical Specifications</div>
+
+            <div class="spec-grid">
+                <div class="spec-card winter">
+                    <h4>Engine & Performance</h4>
+                    <p><strong>Engine:</strong> Vortex OK-J (FIA homologated)<br>
+                    <strong>Supply:</strong> Pool engine programme<br>
+                    <strong>Power:</strong> ~20hp (direct drive)<br>
+                    <strong>Maintenance:</strong> Rebuilt after each National, logged and dyno-checked<br>
+                    <strong>Allocation:</strong> Structured draw system</p>
+                </div>
+
+                <div class="spec-card spring">
+                    <h4>Chassis & Equipment</h4>
+                    <p><strong>Chassis:</strong> FIA homologated OK-J chassis<br>
+                    <strong>Tyres:</strong> Controlled tyre allocation<br>
+                    <strong>Weight:</strong> Minimum weight as per FIA/MSA regulations<br>
+                    <strong>Data:</strong> Data logging strongly recommended<br>
+                    <strong>Brakes:</strong> High-performance braking system</p>
+                </div>
+            </div>
+
+            <div class="section-title">Class Philosophy & Standards</div>
+
+            <ul class="info-list">
+                <li><strong>Parity by Design:</strong> Pool engines are rebuilt after each National, logged and dyno-checked. Drivers arrive knowing the performance window is controlled and that results will reflect driving, not horsepower budgets</li>
+                <li><strong>Race Craft and Discipline:</strong> Starts, defending, overtaking, and race management are scrutinized closely. Penalties are applied consistently to teach drivers how to race hard but fair</li>
+                <li><strong>Professional Paddock Standards:</strong> Data logging, video analysis, and structured debriefs are the norm. Drivers learn to operate like young professionals, not just talented kids</li>
+                <li><strong>Fitness Requirements:</strong> Race distances and physical demands require proper fitness preparation. Drivers must be ready for sustained high-intensity driving</li>
+            </ul>
+
+            <div class="section-title">What to Expect</div>
+
+            <ul class="info-list">
+                <li><strong>Serious Competition:</strong> OK-J attracts the best junior drivers in South Africa. Expect close racing, high standards, and professional race management</li>
+                <li><strong>Technical Feedback:</strong> Drivers are expected to work with data, understand tyre management, and give structured feedback to their teams</li>
+                <li><strong>Race Weekends:</strong> Double-header NATS format provides extensive seat time — 12 heats per weekend across Saturday and Sunday</li>
+                <li><strong>Media Coverage:</strong> OK-J is a showcase class with professional photography, timing, and content production</li>
+            </ul>
+
+            <div class="section-title">Prize Package & Opportunities</div>
+
+            <div class="highlight-box">
+                <h3>Pathway to Professional Racing</h3>
+                <p>OK-J National Champions receive a 2027 FIA Junior European Academy seat, ROK Cup Superfinal ticket, and FIA OK-NJ World Cup seat. Weekend winners receive R25,000 in MSA4 or Junior Ginetta testing experience. This is a genuine pathway to cars and international competition.</p>
+            </div>
+
+            <ul class="info-list">
+                <li><strong>Weekend Prizes:</strong> R25,000 in MSA4 single-seater or Junior Ginetta GT4 testing per NATS weekend champion</li>
+                <li><strong>Season Champion:</strong> FIA Junior European Academy seat, ROK Superfinal ticket, FIA OK-NJ World Cup seat, National Champion title</li>
+                <li><strong>International Recognition:</strong> Strong OK-J results position drivers for selection to international programmes and European campaigns</li>
+            </ul>
+
+            <div class="section-title">Cost Structure</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;">OK-J operates on the pool engine model, saving approximately R38,000-R48,000 per season versus buying, rebuilding, and dynoing your own OK engine. The season package includes all National entries, pool race engines, race slicks, and fuel for 8 race days.</p>
+
+            <div class="info-box">
+                <p><strong>Investment in Development:</strong> OK-J represents a significant commitment in time, resources, and focus. However, for families serious about international karting or progression to cars, it provides professional-level preparation at controlled costs through the pool engine system.</p>
+            </div>
+
+            <div class="section-title">Progression Pathway</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>From MINI to OK-J:</strong> Successful MINI ROK drivers typically progress to OK-J around age 11-12. The jump is significant — direct drive, more power, higher speeds, longer races, and increased physical demands.</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>From OK-J to Cars/OK-N:</strong> Strong OK-J drivers progress to OK-N (senior direct drive) or move directly into single-seaters (MSA4, Formula 4) or GT Junior programmes. The FIA Academy seats and testing prizes are designed specifically to facilitate this transition.</p>
+
+            <p style="font-size: 13px; line-height: 1.8;"><strong>International Opportunities:</strong> OK-J provides the foundation for European karting campaigns, FIA Academy programmes, and junior world championships. The class is deliberately structured to align with international standards.</p>
+
+        </div>
+
+        <div class="footer">
+            <div class="footer-left">ROK Cup South Africa | Class Guide — OK-J Class 2026 | Version 1.0</div>
+            <div class="footer-right">OFFICIAL DOCUMENT <span class="page-number">DOC009</span></div>
+        </div>
+    </div>
+</body>
+</html>

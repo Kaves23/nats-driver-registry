@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Championship Multi-Select Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f9fafb;
+    }
+    h1 {
+      color: #111827;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 30px;
+    }
+    .champ-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .champ-option {
+      padding: 16px 12px;
+      border: 2px solid #e5e7eb;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+      font-size: 13px;
+      background: #f9fafb;
+      color: #111827;
+      border-radius: 8px;
+      user-select: none;
+    }
+    .champ-option:hover {
+      border-color: #9ca3af;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(15,23,42,0.12);
+    }
+    .champ-option.selected {
+      color: #fff;
+      transform: scale(1.05);
+    }
+    .champ-option.rok-nats.selected {
+      background: #facc15;
+      border-color: #facc15;
+      color: #000;
+      box-shadow: 0 8px 24px rgba(250, 204, 21, 0.5);
+    }
+    .champ-option.rok-nc.selected {
+      background: #0ea5e9;
+      border-color: #0ea5e9;
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
+    }
+    .champ-option.rok-sc.selected {
+      background: #06b6d4;
+      border-color: #06b6d4;
+      box-shadow: 0 8px 24px rgba(6, 182, 212, 0.4);
+    }
+    .hint {
+      background: #fef3c7;
+      border-left: 3px solid #f59e0b;
+      padding: 12px;
+      font-size: 12px;
+      color: #92400e;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    .result-box {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .result-label {
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .result-value {
+      font-size: 16px;
+      color: #111827;
+      font-weight: 600;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .status.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+    .status.warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #f59e0b;
+    }
+    .instructions {
+      background: #eff6ff;
+      border-left: 3px solid #3b82f6;
+      padding: 12px;
+      font-size: 13px;
+      color: #1e40af;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    .instructions strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #1e3a8a;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏁 Championship Multi-Select Test</h1>
+  <p class="subtitle">Testing the new multi-select championship functionality</p>
+  
+  <div class="instructions">
+    <strong>Instructions:</strong>
+    Click on championship buttons to select/deselect them. You can select one, two, or all three. At least one must always be selected.
+  </div>
+  
+  <div class="hint">
+    💡 You can select multiple championships by clicking on each one
+  </div>
+  
+  <div class="champ-selector">
+    <div class="champ-option rok-nats selected" data-champ="ROK NATS">
+      ROK NATS
+    </div>
+    <div class="champ-option rok-nc" data-champ="ROK Northern Crown">
+      Northern Crown
+    </div>
+    <div class="champ-option rok-sc" data-champ="ROK Southern Crown">
+      Southern Crown
+    </div>
+  </div>
+  
+  <div class="result-box">
+    <div class="result-label">Selected Championships</div>
+    <div class="result-value" id="selectedValue">ROK NATS</div>
+    
+    <div class="result-label" style="margin-top: 20px;">Selection Count</div>
+    <div class="result-value" id="countValue">1 selected</div>
+    
+    <div class="result-label" style="margin-top: 20px;">Database Value (r_champ)</div>
+    <div class="result-value" id="dbValue" style="font-family: monospace; font-size: 14px;">ROK NATS</div>
+  </div>
+  
+  <div class="status success" id="status">
+    ✅ Multi-select enabled: Click buttons to toggle selections
+  </div>
+
+  <script>
+    // Championship selector logic (same as production)
+    document.querySelectorAll('.champ-option').forEach(option => {
+      option.addEventListener('click', () => {
+        // Toggle selection
+        option.classList.toggle('selected');
+        
+        // Get all selected championships
+        const selected = Array.from(document.querySelectorAll('.champ-option.selected'));
+        const selectedChamps = selected.map(o => o.dataset.champ);
+        const champString = selectedChamps.join(', ');
+        
+        // Update displays
+        document.getElementById('selectedValue').textContent = champString || 'None';
+        document.getElementById('countValue').textContent = `${selectedChamps.length} selected`;
+        document.getElementById('dbValue').textContent = champString || 'ROK NATS';
+        
+        // Ensure at least one is always selected
+        if (selectedChamps.length === 0) {
+          option.classList.add('selected');
+          document.getElementById('status').className = 'status warning';
+          document.getElementById('status').textContent = '⚠️ At least one championship must be selected';
+          
+          // Update displays again with forced selection
+          document.getElementById('selectedValue').textContent = option.dataset.champ;
+          document.getElementById('countValue').textContent = '1 selected';
+          document.getElementById('dbValue').textContent = option.dataset.champ;
+        } else {
+          document.getElementById('status').className = 'status success';
+          document.getElementById('status').textContent = `✅ ${selectedChamps.length} championship${selectedChamps.length > 1 ? 's' : ''} selected - Ready to save`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

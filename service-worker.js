@@ -1,37 +1,59 @@
 // ROK Cup South Africa PWA Service Worker
-const CACHE_NAME = 'rok-cup-v5';
+const CACHE_NAME = 'rok-cup-v8';
 const OFFLINE_URL = '/offline.html';
+const DRIVER_PORTAL_URL = '/driver_portal.html';
 
-// Files to cache for offline use
-const STATIC_ASSETS = [
-  '/',
+// Critical files to cache for offline use (only files that definitely exist)
+const CRITICAL_ASSETS = [
   '/driver_portal.html',
-  '/admin.html',
-  '/officials.html',
   '/index.html',
   '/offline.html',
-  '/manifest.json',
+  '/manifest.json'
+];
+
+// Optional files to cache (won't fail install if missing)
+const OPTIONAL_ASSETS = [
+  '/',
+  '/admin.html',
+  '/officials.html',
   '/icons/icon-72.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/css/styles.css'
+  '/icons/rok-logo-original.png',
+  '/documents/raceday/mini-raceday-instructions.html',
+  '/documents/season/DOC003-rok-2026-event-entry-pack.html',
+  '/documents/season/DOC030-rok-2026-spectator-guide.html'
 ];
 
-// Install event - cache static assets
+// Install event - cache static assets with error handling
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing...');
+  console.log('[ServiceWorker] Installing v7...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[ServiceWorker] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        console.log('[ServiceWorker] Caching critical assets');
+        // Cache critical assets - must succeed
+        return cache.addAll(CRITICAL_ASSETS)
+          .then(() => {
+            console.log('[ServiceWorker] Critical assets cached, now caching optional assets');
+            // Try to cache optional assets individually, don't fail on errors
+            return Promise.allSettled(
+              OPTIONAL_ASSETS.map(url => 
+                cache.add(url)
+                  .then(() => console.log(`[SW] ✓ Cached: ${url}`))
+                  .catch(err => console.log(`[SW] ✗ Could not cache ${url}: ${err.message}`))
+              )
+            );
+          });
       })
       .then(() => {
         console.log('[ServiceWorker] Install complete');
         return self.skipWaiting();
       })
       .catch((err) => {
-        console.error('[ServiceWorker] Install failed:', err);
+        console.error('[ServiceWorker] Install failed:', err.message);
+        // Still skip waiting even if some caches fail
+        return self.skipWaiting();
       })
   );
 });
@@ -75,6 +97,12 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
   
+  // Skip non-HTTP(S) requests (chrome-extension, data, blob, etc.)
+  const url = new URL(event.request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+  
   // Skip API requests - always go to network
   if (event.request.url.includes('/api/')) {
     return;
@@ -108,40 +136,83 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For other assets (images, CSS, JS), use cache-first strategy
+  // For other assets (images, CSS, JS, documents), use cache-first strategy
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
         if (cachedResponse) {
+          // Return cached version and update in background
+          fetch(event.request)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(event.request, networkResponse.clone());
+                }).catch(err => {
+                  // Silently fail cache update
+                  console.log('[SW] Cache update failed:', err.message);
+                });
+              }
+            })
+            .catch(() => {
+              // Network failed, but we have cache so it's fine
+            });
+          
           return cachedResponse;
         }
 
+        // Not in cache, fetch from network
         return fetch(event.request)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
               const responseClone = networkResponse.clone();
               caches.open(CACHE_NAME).then((cache) => {
                 cache.put(event.request, responseClone);
+              }).catch(err => {
+                // Silently fail cache write
+                console.log('[SW] Cache write failed:', err.message);
               });
             }
             return networkResponse;
           })
-          .catch(() => {
-            return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+          .catch((err) => {
+            // Don't throw errors for failed fetches
+            console.log('[SW] Fetch failed for:', event.request.url);
+            // Return a simple error response
+            return new Response('Offline - Content Unavailable', { 
+              status: 503, 
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'text/plain' }
+            });
           });
+      })
+      .catch((err) => {
+        // Catch any cache.match errors
+        console.log('[SW] Cache match failed:', err.message);
+        return new Response('Cache Error', {
+          status: 500,
+          statusText: 'Internal Error',
+          headers: { 'Content-Type': 'text/plain' }
+        });
       })
   );
 });
 
-// Background sync for form submissions (future enhancement)
+// Background sync for form submissions
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-registrations') {
-    console.log('[ServiceWorker] Syncing registrations...');
+    console.log('[ServiceWorker] Syncing queued registrations...');
     // Future: sync queued registrations when back online
+    event.waitUntil(syncQueuedData());
   }
 });
 
-// Push notifications (future enhancement)
+async function syncQueuedData() {
+  // Placeholder for future sync functionality
+  console.log('[ServiceWorker] Sync complete');
+  return Promise.resolve();
+}
+
+// Push notifications
 self.addEventListener('push', (event) => {
   if (event.data) {
     const data = event.data.json();
@@ -151,8 +222,13 @@ self.addEventListener('push', (event) => {
       badge: '/icons/icon-72.png',
       vibrate: [100, 50, 100],
       data: {
-        url: data.url || '/driver_portal.html'
-      }
+        url: data.url || '/driver_portal.html',
+        timestamp: Date.now()
+      },
+      actions: [
+        { action: 'open', title: 'View', icon: '/icons/icon-72.png' },
+        { action: 'close', title: 'Dismiss', icon: '/icons/icon-72.png' }
+      ]
     };
     event.waitUntil(
       self.registration.showNotification(data.title || 'ROK Cup South Africa', options)

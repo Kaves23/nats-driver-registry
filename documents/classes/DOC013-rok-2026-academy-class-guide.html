@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROK Cup South Africa - 2026 Class Guide - Academy</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap');
+        
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: white;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            page-break-after: always;
+        }
+        
+        .header {
+            background: #1e40af;
+            padding: 30px 40px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.2));
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .rok-logo-img {
+            height: 70px;
+            width: auto;
+        }
+        
+        .rok-logo {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .season-badge {
+            background: #1e40af;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 2px solid white;
+        }
+        
+        .doc-title {
+            font-size: 36px;
+            font-weight: 900;
+            margin: 20px 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+            background: #1e40af;
+            padding: 15px 25px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .doc-subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+            font-weight: 300;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .class-header {
+            background: #1e40af;
+            color: white;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        
+        .class-name {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .class-age {
+            font-size: 14px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #1e40af;
+            margin: 40px 0 20px 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .info-list {
+            margin: 15px 0;
+            list-style: none;
+        }
+        
+        .info-list li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        
+        .info-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #1e40af;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box p {
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .highlight-box {
+            background: #f0f7ff;
+            border-left: 4px solid #1e40af;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+
+        .highlight-box h3 {
+            color: #1e40af;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .highlight-box p {
+            font-size: 13px;
+            line-height: 1.7;
+            color: #333;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .spec-card {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #1e40af;
+        }
+
+        .spec-card.summer {
+            background: #fff8f0;
+            border-left: 4px solid #f97316;
+        }
+
+        .spec-card.autumn {
+            background: #fff4ed;
+            border-left: 4px solid #ea580c;
+        }
+
+        .spec-card.winter {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .spec-card.spring {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+        }
+
+        .spec-card h4 {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .spec-card p {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .benefit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .benefit-card {
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 4px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .benefit-card.summer {
+            background: #fff8f0;
+            border-left: 4px solid #f97316;
+            border-top: 2px solid #e5e7eb;
+            border-right: 2px solid #e5e7eb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .benefit-card.autumn {
+            background: #fff4ed;
+            border-left: 4px solid #ea580c;
+            border-top: 2px solid #e5e7eb;
+            border-right: 2px solid #e5e7eb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .benefit-card.winter {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            border-top: 2px solid #e5e7eb;
+            border-right: 2px solid #e5e7eb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .benefit-card.spring {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            border-top: 2px solid #e5e7eb;
+            border-right: 2px solid #e5e7eb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .benefit-card h4 {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .benefit-card p {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #666;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e40af;
+            color: white;
+            padding: 15px 40px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-left {
+            opacity: 0.7;
+        }
+        
+        .footer-right {
+            font-weight: 700;
+        }
+        
+        .page-number {
+            background: #1e40af;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 2px;
+            margin-left: 10px;
+            border: 2px solid white;
+        }
+        
+        @media print {
+            .page {
+                margin: 0;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-left">
+                        <img src="https://rokcup.co.za/wp-content/uploads/2024/01/ROK-CUP-NAZIONI-sud-africa.png" alt="ROK Cup South Africa Logo" class="rok-logo-img">
+                        <div class="rok-logo">ROK CUP SA</div>
+                    </div>
+                    <div class="season-badge">2026 SEASON</div>
+                </div>
+                <div class="doc-title">Class Guide</div>
+                <div class="doc-subtitle">Academy Class — Structured Driver Development Programme</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="class-header">
+                <div class="class-name">ROK ACADEMY</div>
+                <div class="class-age">Development Class • Direct Drive • Pool Engine Programme • Learning-Focused Environment</div>
+            </div>
+
+            <div class="section-title">Programme Overview</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;">ROK Academy is the development arm of ROK Cup South Africa. It is a dedicated class and programme designed for drivers who are serious about improving but who are not yet ready to jump straight into a full National campaign in OK-J or OK-N. The Academy environment offers the structure and intensity of a National weekend, but with a calmer grid and reduced pressure, making it ideal for learning how a big event really works.</p>
+
+            <div class="highlight-box">
+                <h3>The Academy Concept</h3>
+                <p>Take the same European-style direct drive and pool-engine ethos that underpins the National classes, wrap it in a controlled and supportive race format, and use it to expose committed young drivers to the full "feel" of a National event. ROK Academy is where drivers learn how to handle race-day stress, time pressure, and procedures — not just how to drive quickly for a lap or two.</p>
+            </div>
+
+            <div class="section-title">Who Should Join Academy</div>
+
+            <ul class="info-list">
+                <li><strong>MINI Graduates:</strong> Drivers who have been competitive in Cadet, Mini ROK U/10, or MINI ROK and want to test themselves in direct-drive before committing to full OK-J</li>
+                <li><strong>Late Arrivals:</strong> Older newcomers with natural pace or strong rental kart backgrounds who need structured exposure to proper race weekends without the cost and pressure of a full National campaign</li>
+                <li><strong>European Preparation:</strong> Families already thinking about FIA Academy, European OK programmes, or international ROK events who want a clearly defined preparation step</li>
+                <li><strong>Development Focus:</strong> Drivers who would benefit from a calmer learning environment before the intensity of National OK-J or OK-N competition</li>
+            </ul>
+
+            <div class="section-title">How Academy Operates</div>
+
+            <div class="benefit-grid">
+                <div class="benefit-card summer">
+                    <h4>Pool Engines & Controlled Hardware</h4>
+                    <p>Academy runs on centrally prepared engines and tightly controlled equipment. Engines are stripped after use, measured, and dyno-checked inside the same narrow performance window as the National pool. Focus stays on driver development, not engine spending.</p>
+                </div>
+
+                <div class="benefit-card autumn">
+                    <h4>National-Style Race Weekends</h4>
+                    <p>Academy events run alongside key ROK Cup South Africa meetings, so drivers experience proper race control, timing, scrutineering, and paddock procedures. Timetable, briefing structure, and parc fermé rules are aligned with Nationals.</p>
+                </div>
+
+                <div class="benefit-card winter">
+                    <h4>Learning By Doing</h4>
+                    <p>There is no formal ROK coaching on race day in the Academy class. Drivers and teams are free to work in their own way while the format itself teaches them how to manage call-up times, grids, warm-up laps, restarts, and busy race days.</p>
+                </div>
+
+                <div class="benefit-card spring">
+                    <h4>Fixed & Predictable Costs</h4>
+                    <p>By combining engine rental, technical preparation, and track time into a single Academy package, families can plan their budget with far more confidence than in a traditional "open" engine model.</p>
+                </div>
+            </div>
+
+            <div class="section-title">Technical Specifications</div>
+
+            <div class="spec-grid">
+                <div class="spec-card summer">
+                    <h4>Engine & Performance</h4>
+                    <p><strong>Engine:</strong> Direct drive (specification TBC)<br>
+                    <strong>Supply:</strong> Pool engine programme<br>
+                    <strong>Power:</strong> Controlled performance window<br>
+                    <strong>Maintenance:</strong> Centrally managed by pool<br>
+                    <strong>Allocation:</strong> Structured draw system</p>
+                </div>
+
+                <div class="spec-card autumn">
+                    <h4>Chassis & Equipment</h4>
+                    <p><strong>Chassis:</strong> MSA-approved chassis as per class regulations<br>
+                    <strong>Tyres:</strong> Controlled tyre specification<br>
+                    <strong>Weight:</strong> Minimum weight as per regulations<br>
+                    <strong>Safety:</strong> Full safety equipment required<br>
+                    <strong>Data:</strong> Data logging permitted</p>
+                </div>
+            </div>
+
+            <div class="section-title">Academy Philosophy & Learning Outcomes</div>
+
+            <ul class="info-list">
+                <li><strong>Race Craft First:</strong> The Academy class is deliberately engineered to remove horsepower as the primary variable. Starts, overtaking, defending, traffic management, and staying calm under pressure are treated as the core outcomes</li>
+                <li><strong>Professional Habits:</strong> Drivers learn to arrive prepared, manage their own checklists, pay attention to notices and flags, and respect procedures — the same habits expected in top European teams and later in cars</li>
+                <li><strong>Safe & Disciplined Environment:</strong> Driving standards are clearly defined and enforced. The goal is to teach drivers how to race hard but fair, with respect for regulations, officials, and competitors</li>
+                <li><strong>Confidence with Big Events:</strong> By the end of an Academy season, drivers are comfortable with long race days, tight schedules, and busy grids. The stress of a National weekend becomes familiar rather than overwhelming</li>
+            </ul>
+
+            <div class="section-title">What to Expect</div>
+
+            <ul class="info-list">
+                <li><strong>Supportive Environment:</strong> Academy maintains a calmer, more forgiving atmosphere than the National OK classes while still requiring professional standards</li>
+                <li><strong>Full Event Experience:</strong> Drivers experience the complete National weekend structure: practice, qualifying, heats, finals, parc fermé, scrutineering</li>
+                <li><strong>Progressive Learning:</strong> The season builds driver capability progressively — early rounds focus on procedures, later rounds on race management and consistency</li>
+                <li><strong>Team Development:</strong> Families and teams learn how to operate at National events without the high-pressure stakes of OK-J or OK-N</li>
+            </ul>
+
+            <div class="section-title">Progression Pathway</div>
+
+            <div class="highlight-box">
+                <h3>Bridge to National Competition</h3>
+                <p>A successful Academy season gives a driver the toolbox required to step into OK-J or OK-N and compete immediately. The driving style, race distances, and technical expectations are deliberately aligned with the National direct drive classes.</p>
+            </div>
+
+            <ul class="info-list">
+                <li><strong>Into OK-J and OK-N:</strong> Academy graduates are prepared for the demands of National-level direct drive competition</li>
+                <li><strong>Selection for International Opportunities:</strong> The Academy platform makes it easier to identify drivers ready for FIA-linked programmes, European ROK events, and international tests</li>
+                <li><strong>Long-Term Career Support:</strong> Habits learned in Academy — discipline, communication, time management, race craft — remain relevant throughout a motorsport career</li>
+                <li><strong>Clear Development Ladder:</strong> MINI → Academy → OK-J → OK-N → international opportunities. Families can see the entire pathway</li>
+            </ul>
+
+            <div class="section-title">Recognition & Championship</div>
+
+            <ul class="info-list">
+                <li><strong>Academy Champion Title:</strong> Official ROK Cup South Africa Academy Champion recognition and championship trophy</li>
+                <li><strong>Priority Entry:</strong> Academy Champion receives priority consideration for National OK-J or OK-N programmes in the following season</li>
+                <li><strong>Season Achievement Award:</strong> Recognition at end-of-season awards ceremony with full paddock acknowledgment</li>
+                <li><strong>Development Pathway Status:</strong> Academy Champion is formally tracked as part of ROK Cup South Africa talent development pathway</li>
+            </ul>
+
+            <div class="info-box">
+                <p><strong>Cost Philosophy:</strong> Academy operates on the pool engine model with predictable, controlled costs. The focus is on providing maximum development value rather than competing on budgets. Entry packages are designed to be accessible while maintaining professional standards.</p>
+            </div>
+
+            <div class="section-title">Getting Started</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Prerequisites:</strong> Drivers should have basic karting experience and be comfortable with kart control. Previous racing experience is helpful but not required for drivers with strong natural ability.</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Equipment:</strong> Drivers will need an approved chassis and safety equipment. Pool engines are provided as part of the Academy programme.</p>
+
+            <p style="font-size: 13px; line-height: 1.8;"><strong>Support:</strong> While there is no formal coaching during race weekends, Academy drivers are encouraged to work with experienced mechanics and coaches in their own team structure. The programme provides the platform; families provide the support framework.</p>
+
+        </div>
+
+        <div class="footer">
+            <div class="footer-left">ROK Cup South Africa | Class Guide — Academy Class 2026 | Version 1.0</div>
+            <div class="footer-right">OFFICIAL DOCUMENT <span class="page-number">DOC013</span></div>
+        </div>
+    </div>
+</body>
+</html>

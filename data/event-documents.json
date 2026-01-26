@@ -1,0 +1,46 @@
+{
+  "events": {
+    "1": {
+      "name": "NATS 1 - Zwartkops",
+      "documents": [
+        {
+          "name": "Supplementary Regulations",
+          "type": "Supplementary Regulations",
+          "url": "https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing"
+        },
+        {
+          "name": "Entry List",
+          "type": "Entry List",
+          "url": "https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing"
+        },
+        {
+          "name": "Timetable",
+          "type": "Timetable",
+          "url": "https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing"
+        }
+      ]
+    },
+    "2": {
+      "name": "NATS 2 - Killarney",
+      "documents": []
+    }
+  },
+  "_instructions": {
+    "how_to_add_documents": [
+      "1. Upload your PDF to Google Drive",
+      "2. Right-click the file > Share > Anyone with the link",
+      "3. Copy the share link",
+      "4. Add it to this file under the correct event ID",
+      "5. Commit and push to GitHub - site updates automatically!"
+    ],
+    "document_types": [
+      "Supplementary Regulations",
+      "Entry List", 
+      "Timetable",
+      "Results",
+      "Bulletin",
+      "Notice",
+      "Track Map"
+    ]
+  }
+}

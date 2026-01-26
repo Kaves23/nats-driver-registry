@@ -9,9 +9,41 @@ const crypto = require('crypto');
 const axios = require('axios');
 const fs = require('fs');
 const webpush = require('web-push');
+const multer = require('multer');
+const adminNotificationQueue = require('./adminNotificationQueue');
 
 const app = express();
 const path = require('path');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|pdf/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only images (JPEG, PNG, GIF) and PDF files are allowed'));
+  }
+});
 
 // Configure web push
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -156,13 +188,24 @@ const initEventsTable = async () => {
         event_id VARCHAR(255) PRIMARY KEY,
         event_name VARCHAR(255) NOT NULL,
         event_date DATE NOT NULL,
+        start_date DATE,
+        end_date DATE,
         location VARCHAR(255),
         registration_deadline DATE,
         entry_fee DECIMAL(10, 2),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);    
+    
+    // Add start_date and end_date columns if they don't exist
+    await pool.query(`
+      ALTER TABLE events
+      ADD COLUMN IF NOT EXISTS start_date DATE,
+      ADD COLUMN IF NOT EXISTS end_date DATE
     `);
+    
+    console.log('✅ Events table initialized with start/end date columns');
   } catch (err) {
     console.error('Events table init error:', err.message);
   }
@@ -203,6 +246,15 @@ const initRaceEntriesTable = async () => {
     await pool.query(`
       ALTER TABLE race_entries
       ADD COLUMN IF NOT EXISTS team_code VARCHAR(50)
+    `);
+
+    // Add unique ticket reference columns for validation
+    await pool.query(`
+      ALTER TABLE race_entries
+      ADD COLUMN IF NOT EXISTS ticket_engine_ref VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS ticket_tyres_ref VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS ticket_transponder_ref VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS ticket_fuel_ref VARCHAR(100)
     `);
 
     console.log('✅ Race entries table initialized with all columns');
@@ -581,6 +633,21 @@ function generateRaceTicketHTML(ticketData) {
 }
 
 // Generate ENGINE RENTAL ticket HTML - Vortex Engines
+// Generate unique ticket reference with barcode
+function generateUniqueTicketRef(type, driverId, eventId) {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const typeCode = {
+    'engine': 'ENG',
+    'tyres': 'TYR',
+    'transponder': 'TRN',
+    'fuel': 'FUL'
+  }[type] || 'TKT';
+  
+  // Format: TYPE-TIMESTAMP-RANDOM (e.g., ENG-1737900123456-ABC123)
+  return `${typeCode}-${timestamp}-${random}`;
+}
+
 function generateEngineRentalTicketHTML(ticketData) {
   const {
     reference,
@@ -1388,6 +1455,18 @@ app.post('/api/loginWithPassword', async (req, res) => {
     const points = await pool.query('SELECT * FROM points WHERE driver_id = $1', [driver_id]);
 
     console.log(`✅ Successful login: ${email}`);
+    
+    // Send batched admin notification (prevents email flooding)
+    adminNotificationQueue.addToBatch({
+      action: 'User Login',
+      userEmail: email,
+      details: {
+        driverName: `${driver.first_name} ${driver.last_name}`,
+        driverClass: driver.class,
+        loginTime: new Date().toLocaleString()
+      }
+    });
+    
     res.json({
       success: true,
       data: {
@@ -2852,8 +2931,13 @@ app.post('/api/updateDriver', async (req, res) => {
       }
 
       for (const change of fieldsChanged) {
-        // Use ADMIN_OVERRIDE action for payment/entry status changes made by admin
-        const action = (change.isAdminOverride && admin_override) ? 'ADMIN_OVERRIDE' : 'UPDATE_PROFILE';
+        // Use TITAN_EDIT if email is 'TITAN', otherwise use ADMIN_OVERRIDE for admin changes, or UPDATE_PROFILE for normal changes
+        let action = 'UPDATE_PROFILE';
+        if (email === 'TITAN') {
+          action = 'TITAN_EDIT';
+        } else if (change.isAdminOverride && admin_override) {
+          action = 'ADMIN_OVERRIDE';
+        }
         await logAuditEvent(driver_id, email || 'admin', action, change.field, String(change.old || ''), String(change.new || ''));
       }
     } catch (auditErr) {
@@ -2869,6 +2953,25 @@ app.post('/api/updateDriver', async (req, res) => {
     }
     
     console.log('Driver updated and verified from database:', driver_id);
+    
+    // Send admin notification for profile updates
+    try {
+      if (updates.length > 0) {
+        const fieldsUpdated = updates.map(u => u.split(' = ')[0]).join(', ');
+        adminNotificationQueue.addNotification({
+          action: 'Profile Update',
+          subject: `[Profile] ${first_name || oldDriver.first_name} ${last_name || oldDriver.last_name} updated profile`,
+          details: {
+            driverId: driver_id,
+            driverName: `${first_name || oldDriver.first_name} ${last_name || oldDriver.last_name}`,
+            class: klass || oldDriver.class,
+            fieldsUpdated: fieldsUpdated || 'None',
+            adminOverride: admin_override ? 'Yes' : 'No',
+            timestamp: new Date().toLocaleString()
+          }
+        });
+      }
+    } catch (e) { /* Silent fail */ }
     
     res.json({ 
       success: true, 
@@ -3481,6 +3584,17 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     // Format selected items as JSON (entry_items column expects JSON format)
     const selectedItemsJson = selectedItems ? JSON.stringify(selectedItems) : JSON.stringify([]);
     
+    // Generate unique ticket references for purchased items
+    const selectedItemsArray = Array.isArray(selectedItems) ? selectedItems : [];
+    const ticketEngineRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('engine')) 
+      ? generateUniqueTicketRef('engine', driverId, eventId) : null;
+    const ticketTyresRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('tyre')) 
+      ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
+    const ticketTransponderRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('transponder')) 
+      ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
+    const ticketFuelRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('fuel')) 
+      ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
+    
     // Check if driver has season engine rental from pool engines
     const seasonRentalResult = await pool.query(
       `SELECT COUNT(*) as count FROM pool_engine_rentals 
@@ -3501,11 +3615,11 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     
     const engineValue = hasEngineRental ? 1 : 0;
     
-    // Store the free entry in database
+    // Store the free entry in database with unique ticket references
     await pool.query(
-      `INSERT INTO race_entries (entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, race_class, entry_items, team_code, engine, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())`,
-      [entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, raceClass, selectedItemsJson, teamCode || null, engineValue]
+      `INSERT INTO race_entries (entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, race_class, entry_items, team_code, engine, ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())`,
+      [entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, raceClass, selectedItemsJson, teamCode || null, engineValue, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
     );
 
     // Update driver's next race status
@@ -3546,25 +3660,37 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
       const hasTyresItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('tyre'));
       const hasTransponderItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('transponder'));
       
-      // Build rental ticket HTML using new ticket generators
-      const ticketGeneratorData = {
-        reference,
-        eventName,
-        eventDate: eventDetails?.event_date,
-        eventLocation,
-        raceClass,
-        driverName
-      };
-      
+      // Build rental ticket HTML using new ticket generators with unique references
       let rentalTicketsHtml = '';
-      if (hasEngineRentalItem) {
-        rentalTicketsHtml += generateEngineRentalTicketHTML(ticketGeneratorData);
+      if (hasEngineRentalItem && ticketEngineRef) {
+        rentalTicketsHtml += generateEngineRentalTicketHTML({
+          reference: ticketEngineRef,
+          eventName,
+          eventDate: eventDetails?.event_date,
+          eventLocation,
+          raceClass,
+          driverName
+        });
       }
-      if (hasTyresItem) {
-        rentalTicketsHtml += generateTyreRentalTicketHTML(ticketGeneratorData);
+      if (hasTyresItem && ticketTyresRef) {
+        rentalTicketsHtml += generateTyreRentalTicketHTML({
+          reference: ticketTyresRef,
+          eventName,
+          eventDate: eventDetails?.event_date,
+          eventLocation,
+          raceClass,
+          driverName
+        });
       }
-      if (hasTransponderItem) {
-        rentalTicketsHtml += generateTransponderRentalTicketHTML(ticketGeneratorData);
+      if (hasTransponderItem && ticketTransponderRef) {
+        rentalTicketsHtml += generateTransponderRentalTicketHTML({
+          reference: ticketTransponderRef,
+          eventName,
+          eventDate: eventDetails?.event_date,
+          eventLocation,
+          raceClass,
+          driverName
+        });
       }
       
       const emailHtml = `
@@ -3995,19 +4121,36 @@ app.post('/api/paymentNotify', async (req, res) => {
       driverId = referenceParts[2] || 'unknown';
     }
 
+    // Extract rental items from item_description to determine what was purchased
+    const itemDesc = item_description ? item_description.toLowerCase() : '';
+    const hasEngine = itemDesc.includes('engine');
+    const hasTyres = itemDesc.includes('tyre');
+    const hasTransponder = itemDesc.includes('transponder');
+    const hasFuel = itemDesc.includes('fuel');
+    
+    // Generate unique ticket references for each purchased item
+    const ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null;
+    const ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
+    const ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
+    const ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
+    
     // Store payment record using new schema
     const race_entry_id = `race_entry_${pf_payment_id}`;
     if (!isPoolEngineRental) {
       // Only store as race entry if it's not a pool engine rental
       await pool.query(
-        `INSERT INTO race_entries (race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5, entry_status = $6, amount_paid = $7`,
-        [race_entry_id, eventId, driverId, m_payment_id, 'Completed', 'confirmed', amount_gross]
+        `INSERT INTO race_entries (race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5, entry_status = $6, amount_paid = $7, ticket_engine_ref = $8, ticket_tyres_ref = $9, ticket_transponder_ref = $10, ticket_fuel_ref = $11`,
+        [race_entry_id, eventId, driverId, m_payment_id, 'Completed', 'confirmed', amount_gross, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
       );
     }
 
     console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross} - Driver: ${driverId}`);
+    if (ticketEngineRef) console.log(`   Engine ticket: ${ticketEngineRef}`);
+    if (ticketTyresRef) console.log(`   Tyres ticket: ${ticketTyresRef}`);
+    if (ticketTransponderRef) console.log(`   Transponder ticket: ${ticketTransponderRef}`);
+    if (ticketFuelRef) console.log(`   Fuel ticket: ${ticketFuelRef}`);
 
     // Send confirmation emails
     try {
@@ -4039,40 +4182,45 @@ app.post('/api/paymentNotify', async (req, res) => {
         }
       }
       
-      // Extract rental items from item_description to build ticket HTML
-      let ticketsHtml = '';
-      const itemDesc = item_description ? item_description.toLowerCase() : '';
-      const hasEngine = itemDesc.includes('engine');
-      const hasTyres = itemDesc.includes('tyre');
-      const hasTransponder = itemDesc.includes('transponder');
+      // Build ticket HTML using unique references
+      const hasFuel = itemDesc.includes('fuel');
       
-      if (hasEngine || hasTyres || hasTransponder) {
+      if (hasEngine || hasTyres || hasTransponder || hasFuel) {
         ticketsHtml = '<div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;"><div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Rental Items</div>';
         
-        if (hasEngine) {
+        if (hasEngine && ticketEngineRef) {
           ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #f97316;">
             <div style="font-size: 13px; color: #f97316; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Engine Rental</div>
             <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Pool Engine Reserved</div>
             <div style="font-size: 12px; color: #374151; line-height: 1.5;">Your competition engine is assigned for this event. Technical inspection required before practice.</div>
-            <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${reference}</div>
+            <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${ticketEngineRef}</div>
           </div>`;
         }
         
-        if (hasTyres) {
+        if (hasTyres && ticketTyresRef) {
           ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #8b5cf6;">
             <div style="font-size: 13px; color: #8b5cf6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Tyre Rental</div>
             <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Complete Tyre Set</div>
             <div style="font-size: 12px; color: #374151; line-height: 1.5;">Tyres included with your entry. Available for collection at race practice day.</div>
-            <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${reference}</div>
+            <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${ticketTyresRef}</div>
           </div>`;
         }
         
-        if (hasTransponder) {
-          ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; border-left: 6px solid #0ea5e9;">
+        if (hasTransponder && ticketTransponderRef) {
+          ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #0ea5e9;">
             <div style="font-size: 13px; color: #0ea5e9; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Transponder Rental</div>
             <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Timing Transponder</div>
             <div style="font-size: 12px; color: #374151; line-height: 1.5;">Transponder issued at race control. Must be installed before technical inspection.</div>
-            <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${reference}</div>
+            <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${ticketTransponderRef}</div>
+          </div>`;
+        }
+        
+        if (hasFuel && ticketFuelRef) {
+          ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #10b981;">
+            <div style="font-size: 13px; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Fuel Package</div>
+            <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Race Fuel Included</div>
+            <div style="font-size: 12px; color: #374151; line-height: 1.5;">Pre-measured fuel allocation available at pit area.</div>
+            <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${ticketFuelRef}</div>
           </div>`;
         }
         
@@ -4260,6 +4408,26 @@ app.post('/api/savePoolEngineRental', async (req, res) => {
     );
 
     console.log(`✅ Pool engine rental saved: ${rentalId} - ${rentalType} for ${rentalClass}`);
+    
+    // Send admin notification for engine rental payment
+    try {
+      const driverInfo = await pool.query('SELECT first_name, last_name FROM drivers WHERE driver_id = $1', [driverId]);
+      const driver = driverInfo.rows[0] || {};
+      adminNotificationQueue.addNotification({
+        action: 'Pool Engine Rental',
+        subject: `[Rental] ${driver.first_name} ${driver.last_name} - ${rentalType} (R${parseFloat(amountPaid).toFixed(2)})`,
+        details: {
+          driverId: driverId,
+          driverName: `${driver.first_name} ${driver.last_name}`,
+          rentalType: rentalType,
+          amount: `R${parseFloat(amountPaid).toFixed(2)}`,
+          class: rentalClass,
+          season: currentYear,
+          paymentReference: paymentReference || 'N/A',
+          timestamp: new Date().toLocaleString()
+        }
+      });
+    } catch (e) { /* Silent fail */ }
 
     res.json({ success: true, data: { rentalId } });
   } catch (err) {
@@ -4345,8 +4513,9 @@ app.get('/api/getDriverEntries/:driverId', async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT r.race_entry_id, r.event_id, e.event_name, e.event_date, e.location,
-              r.payment_status, r.entry_status, r.amount_paid, r.created_at
+      `SELECT r.entry_id, r.event_id, e.event_name, e.event_date, e.location,
+              r.payment_status, r.entry_status, r.amount_paid, r.payment_reference,
+              r.race_class, r.race_number, r.notes, r.created_at
        FROM race_entries r
        JOIN events e ON r.event_id = e.event_id
        WHERE r.driver_id = $1
@@ -4358,6 +4527,445 @@ app.get('/api/getDriverEntries/:driverId', async (req, res) => {
     res.json({ success: true, entries: result.rows });
   } catch (err) {
     console.error('❌ getDriverEntries error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Alias for driver events (same as getDriverEntries)
+app.get('/api/driver-events/:driverId', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    
+    if (!driverId) {
+      throw new Error('Driver ID required');
+    }
+
+    const result = await pool.query(
+      `SELECT r.entry_id, r.event_id, e.event_name, e.event_date, e.location,
+              r.payment_status, r.entry_status, r.amount_paid, r.payment_reference,
+              r.race_class, r.race_number, r.notes, r.created_at
+       FROM race_entries r
+       JOIN events e ON r.event_id = e.event_id
+       WHERE r.driver_id = $1
+       ORDER BY e.event_date DESC`,
+      [driverId]
+    );
+
+    console.log(`✅ Retrieved ${result.rows.length} race entries for driver ${driverId}`);
+    res.json({ success: true, events: result.rows });
+  } catch (err) {
+    console.error('❌ driver-events error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// ============= DRIVER POINTS & RESULTS ENDPOINTS =============
+
+// Get driver's points history and standings
+app.get('/api/driver-points/:driverId', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    
+    if (!driverId) {
+      throw new Error('Driver ID required');
+    }
+
+    // Get driver's points records
+    const pointsResult = await pool.query(
+      `SELECT points_id, season, event, round, class,
+              qualifying_points, heat1_points, heat2_points, final_points,
+              penalties_points, total_points, position, notes, created_at
+       FROM points
+       WHERE driver_id = $1
+       ORDER BY created_at DESC`,
+      [driverId]
+    );
+
+    // Calculate season totals by class
+    const seasonTotals = await pool.query(
+      `SELECT season, class, 
+              SUM(total_points) as total_points,
+              COUNT(*) as races_completed
+       FROM points
+       WHERE driver_id = $1
+       GROUP BY season, class
+       ORDER BY season DESC, class`,
+      [driverId]
+    );
+
+    // Get driver info for display
+    const driverInfo = await pool.query(
+      `SELECT first_name, last_name, race_number, class, championship
+       FROM drivers
+       WHERE driver_id = $1`,
+      [driverId]
+    );
+
+    console.log(`✅ Retrieved ${pointsResult.rows.length} points records for driver ${driverId}`);
+    
+    res.json({ 
+      success: true, 
+      points: pointsResult.rows,
+      seasonTotals: seasonTotals.rows,
+      driver: driverInfo.rows[0] || {}
+    });
+  } catch (err) {
+    console.error('❌ driver-points error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get championship standings for a specific class/season
+app.get('/api/championship-standings/:season/:class', async (req, res) => {
+  try {
+    const { season, class: raceClass } = req.params;
+    
+    if (!season || !raceClass) {
+      throw new Error('Season and class required');
+    }
+
+    // Get standings with driver info
+    const result = await pool.query(
+      `SELECT d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name,
+              SUM(p.total_points) as total_points,
+              COUNT(p.points_id) as races_completed,
+              MAX(p.position) as best_position
+       FROM points p
+       JOIN drivers d ON p.driver_id = d.driver_id
+       WHERE p.season = $1 AND p.class = $2
+       GROUP BY d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name
+       ORDER BY total_points DESC, races_completed DESC`,
+      [season, raceClass]
+    );
+
+    console.log(`✅ Retrieved championship standings: ${season} ${raceClass} - ${result.rows.length} drivers`);
+    
+    res.json({ 
+      success: true, 
+      standings: result.rows,
+      season,
+      class: raceClass
+    });
+  } catch (err) {
+    console.error('❌ championship-standings error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get driver's race results with lap times
+app.get('/api/driver-results/:driverId', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    
+    if (!driverId) {
+      throw new Error('Driver ID required');
+    }
+
+    // Get race results with event info
+    const results = await pool.query(
+      `SELECT rr.result_id, rr.event_id, e.event_name, e.event_date,
+              rr.session_type, rr.position, rr.best_lap_time, rr.average_lap_time,
+              rr.total_laps, rr.gap_to_leader, rr.gap_to_ahead, rr.fastest_lap,
+              rr.dnf, rr.dns, rr.dsq, rr.notes
+       FROM race_results rr
+       JOIN events e ON rr.event_id = e.event_id
+       WHERE rr.driver_id = $1
+       ORDER BY e.event_date DESC, 
+                CASE rr.session_type 
+                  WHEN 'qualifying' THEN 1
+                  WHEN 'heat1' THEN 2
+                  WHEN 'heat2' THEN 3
+                  WHEN 'final' THEN 4
+                  ELSE 5
+                END`,
+      [driverId]
+    );
+
+    // Get statistics
+    const stats = await pool.query(
+      `SELECT 
+        COUNT(DISTINCT event_id) as events_participated,
+        COUNT(CASE WHEN position = 1 THEN 1 END) as wins,
+        COUNT(CASE WHEN position <= 3 THEN 1 END) as podiums,
+        COUNT(CASE WHEN fastest_lap = true THEN 1 END) as fastest_laps,
+        MIN(best_lap_time) as personal_best_lap
+       FROM race_results
+       WHERE driver_id = $1`,
+      [driverId]
+    );
+
+    console.log(`✅ Retrieved ${results.rows.length} race results for driver ${driverId}`);
+    
+    res.json({ 
+      success: true, 
+      results: results.rows,
+      stats: stats.rows[0] || {}
+    });
+  } catch (err) {
+    console.error('❌ driver-results error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// ============= DRIVER NOTIFICATIONS ENDPOINTS =============
+
+// Get driver's notifications
+app.get('/api/notifications/:driverId', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { limit = 50 } = req.query;
+    
+    if (!driverId) {
+      throw new Error('Driver ID required');
+    }
+
+    const result = await pool.query(
+      `SELECT id, driver_id, event_id, event_name, title, body, url, notification_type, sent_at, created_at
+       FROM notification_history
+       WHERE driver_id = $1 OR driver_id IS NULL
+       ORDER BY sent_at DESC
+       LIMIT $2`,
+      [driverId, parseInt(limit)]
+    );
+
+    console.log(`✅ Retrieved ${result.rows.length} notifications for driver ${driverId}`);
+    
+    res.json({ 
+      success: true, 
+      notifications: result.rows
+    });
+  } catch (err) {
+    console.error('❌ notifications error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Mark notification as read (future feature - needs read_status column)
+app.post('/api/notifications/:notificationId/read', async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    
+    // For now, just return success - will need to add read_status column later
+    res.json({ success: true, message: 'Notification marked as read' });
+  } catch (err) {
+    console.error('❌ mark-notification-read error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Send notification (admin use)
+app.post('/api/notifications/send', async (req, res) => {
+  try {
+    const { driverId, eventId, eventName, title, body, url, notificationType } = req.body;
+    
+    if (!title) {
+      throw new Error('Title required');
+    }
+
+    const result = await pool.query(
+      `INSERT INTO notification_history (driver_id, event_id, event_name, title, body, url, notification_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [driverId || null, eventId || null, eventName || null, title, body || null, url || null, notificationType || 'general']
+    );
+
+    console.log(`✅ Notification sent: ${title} to ${driverId || 'all drivers'}`);
+    
+    res.json({ 
+      success: true, 
+      notification: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ send-notification error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// ============= DRIVER PROFILE MANAGEMENT ENDPOINTS =============
+
+// Upload driver profile photo
+app.post('/api/driver-photo-upload', upload.single('photo'), async (req, res) => {
+  try {
+    const { driverId } = req.body;
+    
+    if (!driverId) {
+      throw new Error('Driver ID required');
+    }
+    
+    if (!req.file) {
+      throw new Error('No photo uploaded');
+    }
+    
+    // Update driver profile with photo path
+    const photoPath = `/uploads/${req.file.filename}`;
+    
+    await pool.query(
+      `UPDATE drivers SET profile_photo = $1, updated_at = CURRENT_TIMESTAMP WHERE driver_id = $2`,
+      [photoPath, driverId]
+    );
+    
+    console.log(`✅ Profile photo uploaded for driver ${driverId}: ${photoPath}`);
+    
+    res.json({ 
+      success: true, 
+      photoPath: photoPath,
+      message: 'Photo uploaded successfully'
+    });
+  } catch (err) {
+    console.error('❌ driver-photo-upload error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Medical consent - Update
+app.put('/api/medical-consent', async (req, res) => {
+  try {
+    const {
+      driver_id,
+      allergies,
+      medical_conditions,
+      medication,
+      consent_signed,
+      consent_date
+    } = req.body;
+
+    if (!driver_id) {
+      return res.status(400).json({ success: false, error: { message: 'Driver ID is required' } });
+    }
+
+    // Check if medical record exists
+    const checkResult = await pool.query(
+      'SELECT driver_id FROM medical_consent WHERE driver_id = $1',
+      [driver_id]
+    );
+
+    let result;
+    if (checkResult.rows.length > 0) {
+      // Update existing record (only editable fields)
+      result = await pool.query(
+        `UPDATE medical_consent 
+         SET allergies = $1, 
+             medical_conditions = $2, 
+             medication = $3, 
+             consent_signed = $4, 
+             consent_date = $5
+         WHERE driver_id = $6
+         RETURNING *`,
+        [
+          allergies || null,
+          medical_conditions || null,
+          medication || null,
+          consent_signed || null,
+          consent_date || null,
+          driver_id
+        ]
+      );
+    } else {
+      // Insert new record (only editable fields - indemnity and media release stay as NULL)
+      result = await pool.query(
+        `INSERT INTO medical_consent 
+         (driver_id, allergies, medical_conditions, medication, consent_signed, consent_date)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          driver_id,
+          allergies || null,
+          medical_conditions || null,
+          medication || null,
+          consent_signed || null,
+          consent_date || null
+        ]
+      );
+    }
+
+    console.log(`✅ Medical consent updated for driver ${driver_id}`);
+    
+    // Send admin notification for medical updates
+    try {
+      const driverInfo = await pool.query('SELECT first_name, last_name, email FROM drivers d LEFT JOIN contacts c ON d.driver_id = c.driver_id WHERE d.driver_id = $1 LIMIT 1', [driver_id]);
+      const driver = driverInfo.rows[0] || {};
+      adminNotificationQueue.addNotification({
+        action: 'Medical & Consent Update',
+        subject: `[Medical] ${driver.first_name} ${driver.last_name} updated medical information`,
+        details: {
+          driverId: driver_id,
+          driverName: `${driver.first_name} ${driver.last_name}`,
+          email: driver.email,
+          allergies: allergies ? 'Updated' : 'Not provided',
+          medicalConditions: medical_conditions ? 'Updated' : 'Not provided',
+          medication: medication ? 'Updated' : 'Not provided',
+          consentSigned: consent_signed,
+          timestamp: new Date().toLocaleString()
+        }
+      });
+    } catch (e) { /* Silent fail on notification */ }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Error updating medical consent:', error);
+    res.status(500).json({ success: false, error: { message: error.message } });
+  }
+});
+
+// Get driver's emergency contacts
+app.get('/api/emergency-contacts/:driverId', async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    
+    if (!driverId) {
+      throw new Error('Driver ID required');
+    }
+
+    const result = await pool.query(
+      `SELECT contact_id, full_name, email, phone_mobile, phone_work, relationship
+       FROM contacts
+       WHERE driver_id = $1 AND emergency_contact = 'Y'
+       ORDER BY relationship`,
+      [driverId]
+    );
+
+    console.log(`✅ Retrieved ${result.rows.length} emergency contacts for driver ${driverId}`);
+    
+    res.json({ 
+      success: true, 
+      contacts: result.rows
+    });
+  } catch (err) {
+    console.error('❌ emergency-contacts error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Update emergency contact
+app.put('/api/emergency-contacts/:contactId', async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const { fullName, email, phoneMobile, phoneWork } = req.body;
+    
+    if (!contactId) {
+      throw new Error('Contact ID required');
+    }
+
+    const result = await pool.query(
+      `UPDATE contacts 
+       SET full_name = $1, email = $2, phone_mobile = $3, phone_work = $4, updated_at = CURRENT_TIMESTAMP
+       WHERE contact_id = $5
+       RETURNING *`,
+      [fullName, email, phoneMobile, phoneWork, contactId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Contact not found');
+    }
+
+    console.log(`✅ Updated emergency contact ${contactId}`);
+    
+    res.json({ 
+      success: true, 
+      contact: result.rows[0]
+    });
+  } catch (err) {
+    console.error('❌ update-emergency-contact error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 });
@@ -4409,22 +5017,29 @@ app.get('/api/getEvent/:eventId', async (req, res) => {
 // Create new event
 app.post('/api/createEvent', async (req, res) => {
   try {
-    const { event_name, event_date, location, entry_fee, registration_deadline } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline } = req.body;
 
-    if (!event_name || !event_date || !location || !entry_fee || !registration_deadline) {
+    if (!event_name || !location || !entry_fee || !registration_deadline) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+    
+    // Use start_date as event_date if provided, otherwise use event_date for backwards compatibility
+    const mainEventDate = start_date || event_date;
+    
+    if (!mainEventDate) {
+      return res.status(400).json({ success: false, message: 'Event start date is required' });
     }
 
     const event_id = `event_${Date.now()}`;
 
     const result = await pool.query(
-      `INSERT INTO events (event_id, event_name, event_date, location, entry_fee, registration_deadline)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO events (event_id, event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [event_id, event_name, event_date, location, entry_fee, registration_deadline]
+      [event_id, event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline]
     );
 
-    console.log(`✅ Event created: ${event_name}`);
+    console.log(`✅ Event created: ${event_name} (${start_date && end_date ? `${start_date} to ${end_date}` : mainEventDate})`);
     res.json({ success: true, event: result.rows[0] });
   } catch (err) {
     console.error('❌ createEvent error:', err.message);
@@ -4436,14 +5051,17 @@ app.post('/api/createEvent', async (req, res) => {
 app.put('/api/updateEvent/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
-    const { event_name, event_date, location, entry_fee, registration_deadline } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline } = req.body;
+    
+    // Use start_date as event_date if provided, otherwise use event_date for backwards compatibility
+    const mainEventDate = start_date || event_date;
 
     const result = await pool.query(
       `UPDATE events 
-       SET event_name = $1, event_date = $2, location = $3, entry_fee = $4, registration_deadline = $5
-       WHERE event_id = $6
+       SET event_name = $1, event_date = $2, start_date = $3, end_date = $4, location = $5, entry_fee = $6, registration_deadline = $7, updated_at = NOW()
+       WHERE event_id = $8
        RETURNING *`,
-      [event_name, event_date, location, entry_fee, registration_deadline, eventId]
+      [event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, eventId]
     );
 
     if (result.rows.length === 0) {
@@ -4603,10 +5221,121 @@ app.post('/api/getRaceEntries', async (req, res) => {
 // Update Race Entry (Admin - Inline Editing)
 app.post('/api/updateRaceEntry', async (req, res) => {
   try {
-    const { race_entry_id, field, value } = req.body;
+    const { race_entry_id, entry_id, field, value, race_class, race_number, entry_status, payment_status, amount_paid, performed_by } = req.body;
 
-    if (!race_entry_id || !field) {
-      throw new Error('Race entry ID and field name are required');
+    // Accept either entry_id or race_entry_id
+    const entryId = entry_id || race_entry_id;
+    
+    if (!entryId) {
+      throw new Error('Entry ID is required');
+    }
+
+    // Check if this is a multi-field update (from Titan Command) or single field update
+    const isMultiFieldUpdate = race_class !== undefined || race_number !== undefined || 
+                                entry_status !== undefined || payment_status !== undefined || 
+                                amount_paid !== undefined;
+
+    if (isMultiFieldUpdate) {
+      // Multi-field update from Titan Command
+      const updates = [];
+      const values = [];
+      let paramCount = 1;
+
+      if (race_class !== undefined) {
+        updates.push(`race_class = $${paramCount++}`);
+        values.push(race_class);
+      }
+      if (race_number !== undefined) {
+        updates.push(`race_number = $${paramCount++}`);
+        values.push(race_number);
+      }
+      if (entry_status !== undefined) {
+        updates.push(`entry_status = $${paramCount++}`);
+        values.push(entry_status);
+      }
+      if (payment_status !== undefined) {
+        updates.push(`payment_status = $${paramCount++}`);
+        values.push(payment_status);
+      }
+      if (amount_paid !== undefined) {
+        updates.push(`amount_paid = $${paramCount++}`);
+        values.push(parseFloat(amount_paid));
+      }
+
+      if (updates.length === 0) {
+        throw new Error('No fields to update');
+      }
+
+      updates.push(`updated_at = NOW()`);
+      values.push(entryId);
+
+      // Get old values for audit
+      const oldResult = await pool.query(
+        `SELECT * FROM race_entries WHERE entry_id = $1`,
+        [entryId]
+      );
+
+      if (oldResult.rows.length === 0) {
+        throw new Error('Race entry not found');
+      }
+
+      const oldEntry = oldResult.rows[0];
+
+      // Update the entry
+      const updateQuery = `UPDATE race_entries SET ${updates.join(', ')} WHERE entry_id = $${paramCount} RETURNING *`;
+      const result = await pool.query(updateQuery, values);
+
+      // Log changes to audit
+      const loggedBy = performed_by || 'TITAN';
+      const action = loggedBy === 'TITAN' ? 'TITAN_EDIT' : 'RACE_ENTRY_UPDATED';
+      
+      if (race_class !== undefined && oldEntry.race_class !== race_class) {
+        await pool.query(
+          `INSERT INTO audit_log (driver_id, driver_email, action, field_name, old_value, new_value, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [oldEntry.driver_id, oldEntry.driver_email || loggedBy, action, 'race_class', String(oldEntry.race_class || ''), String(race_class)]
+        );
+      }
+      if (race_number !== undefined && oldEntry.race_number !== race_number) {
+        await pool.query(
+          `INSERT INTO audit_log (driver_id, driver_email, action, field_name, old_value, new_value, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [oldEntry.driver_id, oldEntry.driver_email || loggedBy, action, 'race_number', String(oldEntry.race_number || ''), String(race_number)]
+        );
+      }
+      if (entry_status !== undefined && oldEntry.entry_status !== entry_status) {
+        await pool.query(
+          `INSERT INTO audit_log (driver_id, driver_email, action, field_name, old_value, new_value, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [oldEntry.driver_id, oldEntry.driver_email || loggedBy, action, 'entry_status', String(oldEntry.entry_status || ''), String(entry_status)]
+        );
+      }
+      if (payment_status !== undefined && oldEntry.payment_status !== payment_status) {
+        await pool.query(
+          `INSERT INTO audit_log (driver_id, driver_email, action, field_name, old_value, new_value, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [oldEntry.driver_id, oldEntry.driver_email || loggedBy, action, 'payment_status', String(oldEntry.payment_status || ''), String(payment_status)]
+        );
+      }
+      if (amount_paid !== undefined && parseFloat(oldEntry.amount_paid || 0) !== parseFloat(amount_paid)) {
+        await pool.query(
+          `INSERT INTO audit_log (driver_id, driver_email, action, field_name, old_value, new_value, created_at) 
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [oldEntry.driver_id, oldEntry.driver_email || loggedBy, action, 'amount_paid', String(oldEntry.amount_paid || 0), String(amount_paid)]
+        );
+      }
+
+      console.log(`✅ Race entry updated by ${loggedBy}: ${entryId}`);
+
+      return res.json({
+        success: true,
+        data: { entry: result.rows[0] }
+      });
+    }
+
+    // Single field update (original behavior)
+    if (!field) {
+      throw new Error('Field name is required for single field updates');
     }
 
     // Whitelist allowed fields to update
@@ -4625,8 +5354,8 @@ app.post('/api/updateRaceEntry', async (req, res) => {
 
     // Get the old value for audit
     const oldResult = await pool.query(
-      `SELECT ${field}, driver_email, driver_id FROM race_entries WHERE race_entry_id = $1`,
-      [race_entry_id]
+      `SELECT ${field}, driver_email, driver_id FROM race_entries WHERE entry_id = $1`,
+      [entryId]
     );
 
     if (oldResult.rows.length === 0) {
@@ -4638,8 +5367,8 @@ app.post('/api/updateRaceEntry', async (req, res) => {
     const driverId = oldResult.rows[0].driver_id;
 
     // Update the field
-    const updateQuery = `UPDATE race_entries SET ${field} = $1, updated_at = NOW() WHERE race_entry_id = $2 RETURNING *`;
-    const result = await pool.query(updateQuery, [updateValue, race_entry_id]);
+    const updateQuery = `UPDATE race_entries SET ${field} = $1, updated_at = NOW() WHERE entry_id = $2 RETURNING *`;
+    const result = await pool.query(updateQuery, [updateValue, entryId]);
 
     if (result.rows.length === 0) {
       throw new Error('Failed to update race entry');
@@ -4652,7 +5381,7 @@ app.post('/api/updateRaceEntry', async (req, res) => {
       [driverId, driverEmail, 'RACE_ENTRY_UPDATED', field, String(oldValue), String(updateValue)]
     );
 
-    console.log(`✅ Race entry updated: ${race_entry_id} - ${field} = ${updateValue}`);
+    console.log(`✅ Race entry updated: ${entryId} - ${field} = ${updateValue}`);
 
     res.json({
       success: true,
@@ -5899,32 +6628,38 @@ app.post('/api/push/send', async (req, res) => {
     const failedEndpoints = [];
     const notifiedDriverIds = new Set();
 
-    for (const sub of result.rows) {
-      try {
-        await webpush.sendNotification({
-          endpoint: sub.endpoint,
-          keys: {
-            p256dh: sub.p256dh,
-            auth: sub.auth
+    // Send notifications in parallel batches of 10 for efficiency
+    const batchSize = 10;
+    for (let i = 0; i < result.rows.length; i += batchSize) {
+      const batch = result.rows.slice(i, i + batchSize);
+      
+      await Promise.all(batch.map(async (sub) => {
+        try {
+          await webpush.sendNotification({
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: sub.p256dh,
+              auth: sub.auth
+            }
+          }, payload);
+          successCount++;
+          
+          // Track driver ID for notification history
+          if (sub.driver_id) {
+            notifiedDriverIds.add(sub.driver_id);
           }
-        }, payload);
-        successCount++;
-        
-        // Track driver ID for notification history
-        if (sub.driver_id) {
-          notifiedDriverIds.add(sub.driver_id);
+          
+          // Update last_used
+          await pool.query('UPDATE push_subscriptions SET last_used = CURRENT_TIMESTAMP WHERE id = $1', [sub.id]);
+        } catch (err) {
+          failCount++;
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            // Subscription expired or invalid - remove it
+            failedEndpoints.push(sub.endpoint);
+            await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);
+          }
         }
-        
-        // Update last_used
-        await pool.query('UPDATE push_subscriptions SET last_used = CURRENT_TIMESTAMP WHERE id = $1', [sub.id]);
-      } catch (err) {
-        failCount++;
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          // Subscription expired or invalid - remove it
-          failedEndpoints.push(sub.endpoint);
-          await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);
-        }
-      }
+      }));
     }
 
     // Record notification history for each driver who received it
@@ -5974,6 +6709,36 @@ app.get('/api/push/stats', async (req, res) => {
   }
 });
 
+// Get all push subscribers list (admin)
+app.get('/api/push/subscribers', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT ps.id, ps.driver_id, ps.endpoint, ps.created_at, ps.last_used,
+             d.first_name, d.last_name, d.email, d.racing_class
+      FROM push_subscriptions ps
+      LEFT JOIN drivers d ON ps.driver_id::text = d.id::text
+      ORDER BY ps.created_at DESC
+    `);
+    
+    res.json({ 
+      success: true, 
+      subscribers: result.rows.map(row => ({
+        id: row.id,
+        driverId: row.driver_id,
+        driverName: row.first_name && row.last_name ? `${row.first_name} ${row.last_name}` : (row.driver_id ? 'Unknown Driver' : 'Anonymous'),
+        email: row.email || '-',
+        racingClass: row.racing_class || '-',
+        endpoint: row.endpoint ? row.endpoint.substring(0, 50) + '...' : '-',
+        createdAt: row.created_at,
+        lastUsed: row.last_used
+      }))
+    });
+  } catch (err) {
+    console.error('Push subscribers error:', err.message);
+    res.status(500).json({ success: false, error: err.message, subscribers: [] });
+  }
+});
+
 // Get notification history for a driver
 app.get('/api/notifications/history', async (req, res) => {
   try {
@@ -6017,6 +6782,30 @@ app.get('/api/notifications/history', async (req, res) => {
   }
 });
 
+// Get public notifications for an event (no auth required)
+app.get('/api/notifications/event/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    
+    // Get unique notifications sent for this event (deduplicated by title/body)
+    const result = await pool.query(`
+      SELECT DISTINCT ON (title, body) 
+        id, event_id, event_name, title, body, url, notification_type, created_at as sent_at
+      FROM notification_history
+      WHERE event_id = $1
+      ORDER BY title, body, created_at DESC
+    `, [eventId]);
+    
+    res.json({
+      success: true,
+      notifications: result.rows
+    });
+  } catch (err) {
+    console.error('Event notifications error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Serve static files from the project root (AFTER all API routes)
 app.use(express.static(path.join(__dirname, '.')));
 
@@ -6031,6 +6820,78 @@ app.use((err, req, res, next) => {
     error: 'Internal server error', 
     message: err.message 
   });
+});
+
+// ============= EVENT DOCUMENTS (Google Drive / JSON Config) =============
+// Reads from event-documents.json - no file uploads needed!
+app.get('/api/events/:eventId/docs', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Read the JSON config file
+    const configPath = path.join(__dirname, 'event-documents.json');
+    
+    if (!fs.existsSync(configPath)) {
+      return res.json({ success: true, documents: [], message: 'No documents config file found' });
+    }
+    
+    const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const eventDocs = configData.events?.[eventId];
+    
+    if (!eventDocs || !eventDocs.documents || eventDocs.documents.length === 0) {
+      return res.json({ success: true, documents: [], message: 'No documents for this event' });
+    }
+    
+    // Map documents with icons based on type
+    const documents = eventDocs.documents
+      .filter(doc => doc.url && doc.url !== 'https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing')
+      .map(doc => {
+        // Determine icon based on document type
+        let icon = '📄';
+        const typeLower = (doc.type || '').toLowerCase();
+        if (typeLower.includes('regulation') || typeLower.includes('sr')) icon = '📕';
+        else if (typeLower.includes('entry') || typeLower.includes('list')) icon = '📋';
+        else if (typeLower.includes('time') || typeLower.includes('schedule')) icon = '🕐';
+        else if (typeLower.includes('result')) icon = '🏆';
+        else if (typeLower.includes('bulletin')) icon = '📢';
+        else if (typeLower.includes('notice')) icon = '⚠️';
+        else if (typeLower.includes('map')) icon = '🗺️';
+        
+        // Convert Google Drive view link to direct download/preview link
+        let url = doc.url;
+        if (url.includes('drive.google.com/file/d/')) {
+          // Extract file ID and create preview URL
+          const match = url.match(/\/d\/([^\/]+)/);
+          if (match) {
+            url = `https://drive.google.com/file/d/${match[1]}/preview`;
+          }
+        }
+        
+        return {
+          display_name: doc.name,
+          document_type: doc.type || 'Document',
+          file_path: doc.url, // Keep original for download
+          preview_url: url,   // For embedded preview
+          icon: icon
+        };
+      })
+      .sort((a, b) => {
+        // Sort by type priority
+        const priority = { 'Supplementary Regulations': 1, 'Entry List': 2, 'Timetable': 3, 'Results': 4, 'Bulletin': 5, 'Notice': 6 };
+        const aPri = priority[a.document_type] || 99;
+        const bPri = priority[b.document_type] || 99;
+        if (aPri !== bPri) return aPri - bPri;
+        return a.display_name.localeCompare(b.display_name);
+      });
+    
+    res.json({ success: true, documents, count: documents.length, eventName: eventDocs.name });
+    
+  } catch (err) {
+    console.error('Error reading event documents:', err);
+    res.json({ success: true, documents: [], error: err.message });
+  }
 });
 
 // Handle 404 for API routes

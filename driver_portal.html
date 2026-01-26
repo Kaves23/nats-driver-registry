@@ -6,12 +6,14 @@
   <title>NATS Driver Registry</title>
   
   <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#e74c3c">
+  <meta name="theme-color" content="#000000">
   <meta name="description" content="ROK Cup South Africa - Driver Registration & Event Management">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROK Cup SA">
   <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/rok-cup-favicon.png" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
   <style>
@@ -562,16 +564,17 @@
       border-color: var(--ink);
     }
     .champ-option.rok-nats.selected{
+      background: #facc15;
+      border-color: #facc15;
+      color: #000;
+    }
+    .champ-option.rok-nc.selected{
       background: #0ea5e9;
       border-color: #0ea5e9;
     }
-    .champ-option.rok-nc.selected{
-      background: #f97316;
-      border-color: #f97316;
-    }
     .champ-option.rok-sc.selected{
-      background: #ec4899;
-      border-color: #ec4899;
+      background: #06b6d4;
+      border-color: #06b6d4;
     }
     .champ-option.all.selected{
       background: #22c55e;
@@ -661,13 +664,13 @@
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
       }
       .champ-option.rok-nats.selected{
-        box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
+        box-shadow: 0 8px 24px rgba(250, 204, 21, 0.5);
       }
       .champ-option.rok-nc.selected{
-        box-shadow: 0 8px 24px rgba(249, 115, 22, 0.4);
+        box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
       }
       .champ-option.rok-sc.selected{
-        box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
+        box-shadow: 0 8px 24px rgba(6, 182, 212, 0.4);
       }
       .champ-option.all.selected{
         box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
@@ -950,63 +953,89 @@
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        padding: 8px 10px;
-        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-        border: 2px solid var(--border-soft);
+        padding: 12px 14px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid #e5e7eb;
         border-radius: 0;
         transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
         position: relative;
         z-index: 20;
-        gap: 8px;
+        gap: 12px;
+        box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+        min-height: 52px;
+      }
+
+      .portalTab-current::before{
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+        transition: all 0.3s ease;
       }
 
       .portalTab-current-label{
-        font-size: 14px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--ink);
         flex: 1;
+        padding-left: 8px;
+        line-height: 1.2;
       }
 
       .portalTab-fab{
-        padding: 6px 10px;
+        padding: 8px 16px;
         border-radius: 0;
-        background: var(--ink);
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
         border: none;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-        box-shadow: 0 6px 16px rgba(15,23,42,0.2);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
         flex-shrink: 0;
-        animation: fabFlash 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 3;
+        position: relative;
+        overflow: hidden;
+        min-height: 36px;
       }
 
-      @keyframes fabFlash{
-        0%, 100%{
-          box-shadow: 0 6px 16px rgba(15,23,42,0.2);
-          transform: scale(1);
-        }
-        50%{
-          box-shadow: 0 10px 26px rgba(15,23,42,0.35), 0 0 20px rgba(15,23,42,0.15);
-          transform: scale(1.05);
-        }
+      .portalTab-fab::before{
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .portalTab-fab:hover::before{
+        opacity: 1;
       }
 
       .portalTab-fab:hover{
-        transform: scale(1.08);
-        box-shadow: 0 10px 24px rgba(15,23,42,0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+      }
+
+      .portalTab-fab:active{
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
       }
 
       .portalTab-fab-icon{
         font-size: 12px;
         color: #fff;
-        font-weight: 700;
+        font-weight: 800;
         line-height: 1;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
+        position: relative;
+        z-index: 1;
       }
 
       /* Menu when expanded */
@@ -1038,47 +1067,55 @@
       .portalTab-menu-grid{
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 4px;
-        padding: 4px;
-        background: rgba(255,255,255,0.5);
-        border: 1px solid var(--border-soft);
+        gap: 8px;
+        padding: 12px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 2px solid #e5e7eb;
         border-top: none;
         border-radius: 0;
+        box-shadow: 0 4px 12px rgba(15,23,42,0.08);
       }
 
       .portalTab-option{
-        padding: 4px 5px;
-        background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-        border: 2px solid var(--border-soft);
+        padding: 14px 10px;
+        background: #ffffff;
+        border: 2px solid #e5e7eb;
         border-radius: 0;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
         position: relative;
         overflow: hidden;
         opacity: 0;
-        transform: translateY(30px) scale(0.75) rotateX(-10deg);
-        animation: slideInOption 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        transform: translateY(20px) scale(0.9);
+        animation: slideInOption 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        box-shadow: 0 2px 4px rgba(15,23,42,0.04);
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      .portalTab-option:nth-child(1){ animation-delay: 0.1s; }
-      .portalTab-option:nth-child(2){ animation-delay: 0.16s; }
-      .portalTab-option:nth-child(3){ animation-delay: 0.22s; }
-      .portalTab-option:nth-child(4){ animation-delay: 0.28s; }
-      .portalTab-option:nth-child(5){ animation-delay: 0.34s; }
-      .portalTab-option:nth-child(6){ animation-delay: 0.4s; }
-      .portalTab-option:nth-child(7){ animation-delay: 0.46s; }
+      .portalTab-option:nth-child(1){ animation-delay: 0.05s; }
+      .portalTab-option:nth-child(2){ animation-delay: 0.1s; }
+      .portalTab-option:nth-child(3){ animation-delay: 0.15s; }
+      .portalTab-option:nth-child(4){ animation-delay: 0.2s; }
+      .portalTab-option:nth-child(5){ animation-delay: 0.25s; }
+      .portalTab-option:nth-child(6){ animation-delay: 0.3s; }
+      .portalTab-option:nth-child(7){ animation-delay: 0.35s; }
+      .portalTab-option:nth-child(8){ animation-delay: 0.4s; }
+      .portalTab-option:nth-child(9){ animation-delay: 0.45s; }
 
       @keyframes slideInOption{
         0%{
           opacity: 0;
-          transform: translateY(30px) scale(0.75) rotateX(-10deg);
+          transform: translateY(20px) scale(0.9);
         }
-        50%{
-          opacity: 1;
+        70%{
+          transform: translateY(-4px) scale(1.02);
         }
         to{
           opacity: 1;
-          transform: translateY(0) scale(1) rotateX(0deg);
+          transform: translateY(0) scale(1);
         }
       }
 
@@ -1086,25 +1123,44 @@
         content: "";
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.5) 0%, transparent 70%);
+        background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 100%);
         opacity: 0;
         transition: opacity 0.3s ease;
       }
 
+      .portalTab-option::after{
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 0;
+        background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%);
+        transition: height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
       .portalTab-option:hover{
-        border-color: var(--border-strong);
-        box-shadow: 0 6px 12px rgba(15,23,42,0.1);
-        transform: translateY(-2px);
+        border-color: #cbd5e1;
+        box-shadow: 0 8px 16px rgba(15,23,42,0.12);
+        transform: translateY(-4px) scale(1.02);
       }
 
       .portalTab-option:hover::before{
         opacity: 1;
       }
 
+      .portalTab-option:hover::after{
+        height: 3px;
+      }
+
+      .portalTab-option:active{
+        transform: translateY(-1px) scale(0.98);
+      }
+
       .portalTab-option-label{
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         color: var(--ink);
         position: relative;
@@ -1112,53 +1168,70 @@
         display: block;
         word-wrap: break-word;
         overflow-wrap: break-word;
-        line-height: 1.1;
+        line-height: 1.3;
+        text-align: center;
       }
 
       /* Active option styling */
       .portalTab-option.active{
         border-color: transparent;
-        box-shadow: 0 8px 16px rgba(15,23,42,0.12);
+        box-shadow: 0 10px 24px rgba(15,23,42,0.18);
+        transform: scale(1.02);
+      }
+
+      .portalTab-option.active::after{
+        height: 4px;
       }
 
       .portalTab-option[data-ptab="driver"].active{
-        background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);
-        box-shadow: 0 8px 16px rgba(250, 204, 21, 0.45);
+        background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+        box-shadow: 0 8px 20px rgba(253, 224, 71, 0.5), 0 0 0 2px rgba(250, 204, 21, 0.3);
       }
 
       .portalTab-option[data-ptab="contacts"].active{
-        background: linear-gradient(135deg, #fed7aa 0%, #fb923c 100%);
-        box-shadow: 0 8px 16px rgba(251, 146, 60, 0.45);
+        background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+        box-shadow: 0 8px 20px rgba(253, 186, 116, 0.5), 0 0 0 2px rgba(251, 146, 60, 0.3);
       }
 
       .portalTab-option[data-ptab="medical"].active{
-        background: linear-gradient(135deg, #a5f3fc 0%, #22d3ee 100%);
-        box-shadow: 0 8px 16px rgba(34, 211, 238, 0.45);
+        background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%);
+        box-shadow: 0 8px 20px rgba(103, 232, 249, 0.5), 0 0 0 2px rgba(34, 211, 238, 0.3);
+      }
+
+      .portalTab-option[data-ptab="events"].active{
+        background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+        box-shadow: 0 8px 20px rgba(74, 222, 128, 0.5), 0 0 0 2px rgba(34, 197, 94, 0.3);
       }
 
       .portalTab-option[data-ptab="points"].active{
-        background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
-        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.45);
+        background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+        box-shadow: 0 8px 20px rgba(74, 222, 128, 0.5), 0 0 0 2px rgba(34, 197, 94, 0.3);
       }
 
       .portalTab-option[data-ptab="payments"].active{
-        background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
-        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.45);
+        background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+        box-shadow: 0 8px 20px rgba(74, 222, 128, 0.5), 0 0 0 2px rgba(34, 197, 94, 0.3);
       }
 
       .portalTab-option[data-ptab="msa"].active{
-        background: linear-gradient(135deg, #86efac 0%, #22c55e 100%);
-        box-shadow: 0 8px 16px rgba(34, 197, 94, 0.45);
+        background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+        box-shadow: 0 8px 20px rgba(74, 222, 128, 0.5), 0 0 0 2px rgba(34, 197, 94, 0.3);
+      }
+
+      .portalTab-option[data-ptab="notifications"].active{
+        background: linear-gradient(135deg, #a5f3fc 0%, #67e8f9 100%);
+        box-shadow: 0 8px 20px rgba(103, 232, 249, 0.5), 0 0 0 2px rgba(34, 211, 238, 0.3);
       }
 
       .portalTab-option[data-ptab="requests"].active{
-        background: linear-gradient(135deg, #fed7aa 0%, #fb923c 100%);
-        box-shadow: 0 8px 16px rgba(251, 146, 60, 0.45);
+        background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+        box-shadow: 0 8px 20px rgba(253, 186, 116, 0.5), 0 0 0 2px rgba(251, 146, 60, 0.3);
       }
 
       .portalTab-option.active .portalTab-option-label{
-        color: #fff;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        color: #1e293b;
+        font-weight: 900;
+        text-shadow: 0 1px 3px rgba(255,255,255,0.5);
       }
 
       /* Mobile responsive table fix */
@@ -1614,6 +1687,146 @@
       #tab-register .row{ grid-template-columns: 1fr !important; }
       #tab-register.show{ grid-template-columns: 1fr !important; }
     }
+    
+    /* Skeleton Loading Animations */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s ease-in-out infinite;
+      border-radius: 4px;
+    }
+    
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 10px;
+    }
+    
+    .skeleton-text-large {
+      height: 20px;
+      margin-bottom: 12px;
+    }
+    
+    .skeleton-card {
+      height: 120px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+    }
+    
+    .skeleton-table-row {
+      height: 48px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+    }
+    
+    .skeleton-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+    }
+    
+    .skeleton-button {
+      height: 40px;
+      width: 120px;
+      border-radius: 6px;
+    }
+    
+    /* Skeleton container */
+    .skeleton-container {
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+    }
+    
+    /* Responsive Tables - Card layout on mobile */
+    @media (max-width: 768px) {
+      /* Events table responsive */
+      .table {
+        display: block;
+        width: 100%;
+        overflow-x: visible !important;
+      }
+      
+      .table thead {
+        display: none;
+      }
+      
+      .table tbody {
+        display: block;
+      }
+      
+      .table tr {
+        display: block;
+        margin-bottom: 16px;
+        padding: 16px;
+        background: white !important;
+        border: 2px solid #e5e7eb !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+      }
+      
+      .table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0 !important;
+        border: none !important;
+        text-align: right !important;
+      }
+      
+      .table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+      }
+      
+      .table td:first-child {
+        padding-top: 0 !important;
+      }
+      
+      .table td:last-child {
+        padding-bottom: 0 !important;
+        border-bottom: none !important;
+      }
+      
+      /* Notification cards - already mobile friendly, just adjust */
+      .notification-history-container > div {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+      
+      /* Make pull-to-refresh more prominent on mobile */
+      #pullIndicator {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 24px !important;
+      }
+    }
+    
+    /* Extra small screens - further optimize */
+    @media (max-width: 480px) {
+      .table tr {
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      
+      .table td {
+        padding: 8px 0 !important;
+        font-size: 13px;
+      }
+      
+      .table td::before {
+        font-size: 10px;
+      }
+    }
   </style>
 </head>
 
@@ -1735,6 +1948,7 @@
               <button class="ptab active" data-ptab="driver" data-accent="summer" type="button"><span class="tabBar"></span>Driver</button>
               <button class="ptab" data-ptab="contacts" data-accent="autumn" type="button"><span class="tabBar"></span>Entrant Details</button>
               <button class="ptab" data-ptab="medical" data-accent="winter" type="button"><span class="tabBar"></span>Medical & Consent</button>
+              <button class="ptab" data-ptab="events" data-accent="spring" type="button"><span class="tabBar"></span>My Events</button>
               <button class="ptab" data-ptab="points" data-accent="spring" type="button"><span class="tabBar"></span>Points</button>
               <button class="ptab" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
               <button class="ptab" data-ptab="msa" data-accent="spring" type="button"><span class="tabBar"></span>MSA License</button>
@@ -1767,6 +1981,9 @@
                   </button>
                   <button class="portalTab-option" data-ptab="medical">
                     <span class="portalTab-option-label">Medical & Consent</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="events">
+                    <span class="portalTab-option-label">My Events</span>
                   </button>
                   <button class="portalTab-option" data-ptab="points">
                     <span class="portalTab-option-label">Points</span>
@@ -1889,6 +2106,16 @@
                 <div class="panel">
                   <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Medical & Consent</div>
                   <div id="p_medicalBlock" class="hint">No data loaded.</div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="events">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>My Events</div>
+                  <div class="hint">View all events you've registered for and their status</div>
+                  <div id="p_eventsBlock" style="margin-top: 20px;">
+                    <div style="color: var(--muted); text-align: center; padding: 40px 20px;">Loading your events...</div>
+                  </div>
                 </div>
               </div>
 
@@ -2193,13 +2420,12 @@
                     <div class="champ-option rok-nc" data-champ="ROK Northern Crown">Northern Crown</div>
                     <div class="champ-option rok-sc" data-champ="ROK Southern Crown">Southern Crown</div>
                   </div>
-                  <div class="champ-option all" data-champ="ALL">ALL</div>
                 </div>
-                <select id="champ-select" style="display:none; width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:14px;">
-                  <option value="ROK NATS">ROK NATS</option>
+                <div class="hint" style="font-size: 11px; margin-top: 8px; color: #6b7280;">💡 You can select multiple championships by clicking on each one</div>
+                <select id="champ-select" style="display:none; width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:14px;" multiple size="3">
+                  <option value="ROK NATS" selected>ROK NATS</option>
                   <option value="ROK Northern Crown">Northern Crown</option>
                   <option value="ROK Southern Crown">Southern Crown</option>
-                  <option value="ALL">ALL</option>
                 </select>
                 <input id="r_champ" type="hidden" value="ROK NATS" />
               </div>
@@ -2258,10 +2484,6 @@
               </div>
               <div class="row">
                 <div>
-                  <label>Email *</label>
-                  <input id="c_email" />
-                </div>
-                <div>
                   <label>Mobile phone *</label>
                   <input id="c_phone" placeholder="+27..." />
                 </div>
@@ -2287,6 +2509,13 @@
 
             <div class="panel">
               <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Medical & Consent</div>
+              <div class="hint" style="margin-bottom: 12px; padding: 10px; background: #fef3c7; border-left: 3px solid #f59e0b;">📧 Driver email is required for identity verification and communication</div>
+              <div class="row">
+                <div>
+                  <label>Driver Email *</label>
+                  <input id="c_email" placeholder="driver@example.com" />
+                </div>
+              </div>
               <div class="row">
                 <div>
                   <label>Allergies</label>
@@ -2565,6 +2794,260 @@
     let currentDriverData = {};
     let currentToken = localStorage.getItem('driverToken') || '';
 
+    // Auto-login function - checks for saved credentials and logs in automatically
+    async function attemptAutoLogin() {
+      const savedEmail = localStorage.getItem('driverEmail');
+      const savedPassword = localStorage.getItem('driverPassword');
+      const savedToken = localStorage.getItem('driverToken');
+      
+      if (!savedEmail || !savedPassword || !savedToken) {
+        console.log('ℹ️ No saved credentials found');
+        return false;
+      }
+      
+      console.log('🔄 Attempting auto-login for:', savedEmail);
+      
+      try {
+        setStatusCard_({
+          chipText: "Auto-login",
+          chipKind: "wait",
+          driver: "—",
+          klass: "—",
+          ident: savedEmail,
+          status: "—",
+          note: "Restoring your session…",
+          spinner: true
+        });
+        
+        const profile = await api('loginWithPassword', { email: savedEmail, password: savedPassword });
+        
+        if (profile && profile.driver) {
+          let driverId = "";
+          if (profile.driver.driver_id) {
+            driverId = String(profile.driver.driver_id);
+          } else if (profile.driver_id) {
+            driverId = String(profile.driver_id);
+          } else if (profile.id) {
+            driverId = String(profile.id);
+          }
+          
+          window.currentDriverId = driverId;
+          currentDriverId = driverId;
+          currentEmail = savedEmail;
+          currentPassword = savedPassword;
+          currentToken = savedToken;
+          currentProfile = profile;
+          
+          renderPortal(profile, savedEmail);
+          document.body.classList.add('logged-in');
+          toast("good", "Welcome back! Session restored.");
+          console.log('✅ Auto-login successful');
+          return true;
+        } else {
+          throw new Error('Invalid session');
+        }
+      } catch (err) {
+        console.log('❌ Auto-login failed:', err.message);
+        // Clear invalid credentials
+        localStorage.removeItem('driverEmail');
+        localStorage.removeItem('driverPassword');
+        localStorage.removeItem('driverToken');
+        return false;
+      }
+    }
+    
+    // Run auto-login on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      attemptAutoLogin();
+      initPullToRefresh();
+    });
+
+    // Pull-to-refresh functionality for mobile
+    function initPullToRefresh() {
+      let startY = 0;
+      let currentY = 0;
+      let isDragging = false;
+      let refreshThreshold = 80; // pixels to pull before triggering refresh
+      
+      const portalSections = document.getElementById('portalSections');
+      if (!portalSections) return;
+      
+      // Create pull indicator
+      const pullIndicator = document.createElement('div');
+      pullIndicator.id = 'pullIndicator';
+      pullIndicator.style.cssText = `
+        position: fixed;
+        top: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+        transition: top 0.3s ease, transform 0.3s ease;
+        z-index: 10000;
+        pointer-events: none;
+      `;
+      pullIndicator.innerHTML = '↓';
+      document.body.appendChild(pullIndicator);
+      
+      portalSections.addEventListener('touchstart', (e) => {
+        // Only enable if scrolled to top
+        if (portalSections.scrollTop === 0) {
+          startY = e.touches[0].clientY;
+          isDragging = true;
+        }
+      }, { passive: true });
+      
+      portalSections.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        
+        currentY = e.touches[0].clientY;
+        const pullDistance = currentY - startY;
+        
+        if (pullDistance > 0 && portalSections.scrollTop === 0) {
+          // Prevent default scroll
+          e.preventDefault();
+          
+          // Move indicator down
+          const indicatorPos = Math.min(pullDistance - 20, refreshThreshold);
+          pullIndicator.style.top = `${indicatorPos}px`;
+          
+          // Rotate arrow as you pull
+          const rotation = Math.min((pullDistance / refreshThreshold) * 180, 180);
+          pullIndicator.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+          
+          // Change to spinner icon when threshold reached
+          if (pullDistance >= refreshThreshold) {
+            pullIndicator.innerHTML = '⟳';
+            pullIndicator.style.animation = 'spin 1s linear infinite';
+          } else {
+            pullIndicator.innerHTML = '↓';
+            pullIndicator.style.animation = 'none';
+          }
+        }
+      }, { passive: false });
+      
+      portalSections.addEventListener('touchend', async (e) => {
+        if (!isDragging) return;
+        
+        const pullDistance = currentY - startY;
+        isDragging = false;
+        
+        if (pullDistance >= refreshThreshold) {
+          // Trigger refresh
+          pullIndicator.innerHTML = '⟳';
+          pullIndicator.style.animation = 'spin 1s linear infinite';
+          
+          try {
+            // Refresh current tab data
+            await refreshCurrentTab();
+            
+            // Show success
+            pullIndicator.innerHTML = '✓';
+            pullIndicator.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+            pullIndicator.style.animation = 'none';
+            
+            setTimeout(() => {
+              pullIndicator.style.top = '-60px';
+              pullIndicator.style.transform = 'translateX(-50%) rotate(0deg)';
+              
+              setTimeout(() => {
+                pullIndicator.style.background = 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)';
+                pullIndicator.innerHTML = '↓';
+              }, 300);
+            }, 800);
+            
+          } catch (error) {
+            console.error('Refresh error:', error);
+            pullIndicator.innerHTML = '✗';
+            pullIndicator.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            pullIndicator.style.animation = 'none';
+            
+            setTimeout(() => {
+              pullIndicator.style.top = '-60px';
+              pullIndicator.style.transform = 'translateX(-50%) rotate(0deg)';
+              
+              setTimeout(() => {
+                pullIndicator.style.background = 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)';
+                pullIndicator.innerHTML = '↓';
+              }, 300);
+            }, 800);
+          }
+        } else {
+          // Reset indicator
+          pullIndicator.style.top = '-60px';
+          pullIndicator.style.transform = 'translateX(-50%) rotate(0deg)';
+        }
+        
+        currentY = 0;
+        startY = 0;
+      });
+      
+      // Add spin animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes spin {
+          from { transform: translateX(-50%) rotate(0deg); }
+          to { transform: translateX(-50%) rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Refresh data for currently active tab
+    async function refreshCurrentTab() {
+      const activeTab = document.querySelector('.portalSection.active');
+      if (!activeTab) return;
+      
+      const section = activeTab.getAttribute('data-psection');
+      
+      console.log(`🔄 Refreshing tab: ${section}`);
+      
+      switch(section) {
+        case 'driver':
+          // Reload driver profile
+          if (currentEmail && currentPassword) {
+            const profile = await api('loginWithPassword', { email: currentEmail, password: currentPassword });
+            if (profile && profile.driver) {
+              renderPortalData(profile);
+            }
+          }
+          break;
+          
+        case 'events':
+          if (currentDriverId) {
+            await loadDriverEvents(currentDriverId);
+          }
+          break;
+          
+        case 'points':
+          if (currentDriverId && currentProfile && currentProfile.driver) {
+            await loadDriverPoints(currentDriverId, currentProfile.driver.class, currentProfile.driver.championship);
+          }
+          break;
+          
+        case 'notifications':
+          await loadNotificationHistory();
+          break;
+          
+        case 'payments':
+          await loadPaymentHistory();
+          break;
+          
+        default:
+          console.log(`No refresh handler for tab: ${section}`);
+      }
+      
+      toast("good", "Refreshed!");
+    }
+
     function escapeHtml(s){
       return String(s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
     }
@@ -2773,9 +3256,11 @@
           'driver': 'Driver',
           'contacts': 'Entrant',
           'medical': 'Medical',
+          'events': 'Events',
           'points': 'Points',
           'payments': 'Entries',
           'msa': 'License',
+          'notifications': 'Notifications',
           'requests': 'Admin'
         };
         currentLabel.textContent = labels[key] || 'Driver';
@@ -3027,13 +3512,50 @@
       `;
 
       document.getElementById("p_medicalBlock").innerHTML = `
-        <div class="hint">
-          Allergies: <b>${escapeHtml(med.allergies||"")}</b><br/>
-          Conditions: <b>${escapeHtml(med.medical_conditions||"")}</b><br/>
-          Medication: <b>${escapeHtml(med.medication||"")}</b><br/>
-          Consent Signed: <b>${escapeHtml(med.consent_signed||"")}</b> (${escapeHtml(med.consent_date||"")})<br/>
-          Indemnity Signed: <b>${escapeHtml(med.indemnity_signed||"")}</b><br/>
-          Media Release Signed: <b>${escapeHtml(med.media_release_signed||"")}</b><br/>
+        <div class="row">
+          <div>
+            <label>Allergies</label>
+            <textarea id="p_allergies" rows="2" placeholder="List any allergies...">${escapeHtml(med.allergies||"")}</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Medical Conditions</label>
+            <textarea id="p_medical_conditions" rows="2" placeholder="List any medical conditions...">${escapeHtml(med.medical_conditions||"")}</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Medication</label>
+            <textarea id="p_medication" rows="2" placeholder="List any current medication...">${escapeHtml(med.medication||"")}</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Consent Signed</label>
+            <select id="p_consent_signed">
+              <option value="">Select...</option>
+              <option value="Yes" ${med.consent_signed === 'Yes' ? 'selected' : ''}>Yes</option>
+              <option value="No" ${med.consent_signed === 'No' ? 'selected' : ''}>No</option>
+            </select>
+          </div>
+          <div>
+            <label>Consent Date</label>
+            <input type="date" id="p_consent_date" value="${med.consent_date ? med.consent_date.split('T')[0] : ''}" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Indemnity Signed (Read Only)</label>
+            <input type="text" value="${escapeHtml(med.indemnity_signed||'Not Set')}" readonly style="background: #f3f4f6; cursor: not-allowed;" />
+          </div>
+          <div>
+            <label>Media Release Signed (Read Only)</label>
+            <input type="text" value="${escapeHtml(med.media_release_signed||'Not Set')}" readonly style="background: #f3f4f6; cursor: not-allowed;" />
+          </div>
+        </div>
+        <div class="btnbar" style="margin-top: 15px;">
+          <button class="btn primary" onclick="saveMedicalData()" type="button">Save Medical Data</button>
         </div>
       `;
 
@@ -3058,8 +3580,544 @@
       // Keep buttons enabled - user is still logged in
       // Do NOT disable buttons when switching tabs
       
+      // Load events data
+      loadDriverEvents(d.driver_id);
+      
+      // Load points data
+      loadDriverPoints(d.driver_id, d.class, d.championship);
+      
+      // Load notifications
+      loadNotificationHistory();
+      
       // Update the Next Race status box
       updateNextRaceBox(d);
+    }
+
+    // Function to save medical data
+    async function saveMedicalData() {
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      
+      try {
+        const medicalData = {
+          driver_id: currentProfile.driver.driver_id,
+          allergies: document.getElementById('p_allergies')?.value || '',
+          medical_conditions: document.getElementById('p_medical_conditions')?.value || '',
+          medication: document.getElementById('p_medication')?.value || '',
+          consent_signed: document.getElementById('p_consent_signed')?.value || '',
+          consent_date: document.getElementById('p_consent_date')?.value || null
+        };
+        
+        const response = await fetch('/api/medical-consent', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(medicalData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save medical data');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          btn.textContent = '\u2713 Saved!';
+          btn.style.background = 'var(--spring)';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+            btn.disabled = false;
+          }, 2000);
+        } else {
+          throw new Error(result.error?.message || 'Failed to save');
+        }
+      } catch (error) {
+        console.error('Error saving medical data:', error);
+        btn.textContent = '\u2717 Failed';
+        btn.style.background = '#ef4444';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '';
+          btn.disabled = false;
+        }, 2000);
+      }
+    }
+
+    // Function to load driver's registered events
+    async function loadDriverEvents(driverId) {
+      const container = document.getElementById('p_eventsBlock');
+      if (!container) return;
+      
+      // Show skeleton screen
+      container.innerHTML = `
+        <div class="skeleton-container">
+          <div class="skeleton skeleton-text-large" style="width: 40%;"></div>
+          <div class="skeleton skeleton-table-row"></div>
+          <div class="skeleton skeleton-table-row"></div>
+          <div class="skeleton skeleton-table-row"></div>
+          <div class="skeleton skeleton-table-row"></div>
+        </div>
+      `;
+      
+      try {
+        const response = await fetch(`/api/driver-events/${driverId}`, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load events');
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success || !data.events || data.events.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--muted);">
+              <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">📅</div>
+              <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Events Yet</div>
+              <div style="font-size: 14px;">You haven't registered for any events. Visit the Events page to register!</div>
+              <button onclick="window.location.href='index.html#events'" style="margin-top: 20px; padding: 12px 24px; background: var(--spring); color: white; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer;">Browse Events</button>
+            </div>
+          `;
+          return;
+        }
+        
+        // Build events table
+        const eventsHtml = data.events.map(event => {
+          const statusColors = {
+            'confirmed': { bg: '#dcfce7', text: '#16a34a', label: '✓ Confirmed', glow: '#22c55e' },
+            'pending': { bg: '#fef3c7', text: '#d97706', label: '⏳ Pending', glow: '#f59e0b' },
+            'cancelled': { bg: '#fee2e2', text: '#dc2626', label: '✗ Cancelled', glow: '#ef4444' },
+            'submitted': { bg: '#dbeafe', text: '#2563eb', label: '📤 Submitted', glow: '#3b82f6' }
+          };
+          
+          const paymentColors = {
+            'Completed': { text: '#16a34a', icon: '✓' },
+            'Pending': { text: '#d97706', icon: '⏳' },
+            'Failed': { text: '#dc2626', icon: '✗' }
+          };
+          
+          const status = statusColors[event.entry_status?.toLowerCase()] || statusColors['pending'];
+          const payment = paymentColors[event.payment_status] || paymentColors['Pending'];
+          
+          // Check if event is in the past
+          const isPast = event.event_date && new Date(event.event_date) < new Date();
+          const glowColor = isPast ? '#6b7280' : status.glow;
+          const rowBg = isPast ? 'rgba(107, 114, 128, 0.03)' : `${status.bg}15`;
+          
+          const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString('en-ZA', { 
+            day: '2-digit', month: 'short' 
+          }) : 'TBA';
+          
+          return `
+            <tr style="border-bottom: 1px solid #e5e7eb; border-left: 4px solid ${glowColor}; background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${status.bg}40'; this.style.transform='translateX(4px)'" onmouseout="this.style.background='${rowBg}'; this.style.transform='translateX(0)'">
+              <td data-label="Event" style="padding: 12px 8px;">
+                <div style="font-weight: 600; color: ${isPast ? '#9ca3af' : 'var(--ink)'}; font-size: 14px;">${escapeHtml(event.event_name || 'Event')}${isPast ? ' <span style="font-size: 11px; color: #6b7280; font-weight: 400;">(Past)</span>' : ''}</div>
+              </td>
+              <td data-label="Date" style="padding: 12px 8px; white-space: nowrap;">
+                <div style="font-size: 13px; color: ${isPast ? '#9ca3af' : 'var(--muted)'};">${eventDate}</div>
+              </td>
+              <td data-label="Location" style="padding: 12px 8px;">
+                <div style="font-size: 13px; color: ${isPast ? '#9ca3af' : 'var(--muted)'};">${escapeHtml(event.location || 'TBA')}</div>
+              </td>
+              <td data-label="Status" style="padding: 12px 8px; text-align: center;">
+                <div style="display: inline-block; padding: 4px 10px; background: ${isPast ? '#e5e7eb' : status.bg}; color: ${isPast ? '#6b7280' : status.text}; font-size: 11px; font-weight: 700; border-radius: 4px; white-space: nowrap;">
+                  ${isPast ? '🕐 Past' : status.label}
+                </div>
+              </td>
+              <td data-label="Payment" style="padding: 12px 8px; text-align: center;">
+                <div style="color: ${isPast ? '#9ca3af' : payment.text}; font-size: 14px; font-weight: 600;">
+                  ${payment.icon} ${event.payment_status || 'Pending'}
+                </div>
+              </td>
+              <td data-label="Class" style="padding: 12px 8px; text-align: center;">
+                <div style="font-weight: 600; color: ${isPast ? '#9ca3af' : 'var(--ink)'}; font-size: 13px;">${escapeHtml(event.race_class || 'N/A')}</div>
+              </td>
+              <td data-label="Race #" style="padding: 12px 8px; text-align: center;">
+                <div style="font-weight: 600; color: ${isPast ? '#9ca3af' : 'var(--muted)'}; font-size: 13px;">${event.race_number ? '#' + escapeHtml(event.race_number) : '-'}</div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        
+        container.innerHTML = `
+          <div style="margin-bottom: 16px; padding: 12px 16px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-radius: var(--radius); border: 2px solid #3b82f6; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">ℹ️</span>
+            <div style="font-size: 14px; color: #1e40af; font-weight: 600;">
+              You have <strong>${data.events.length}</strong> event registration${data.events.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius); box-shadow: var(--shadow);">
+              <thead>
+                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Event</th>
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Date</th>
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Location</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Status</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Payment</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Class</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Race #</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${eventsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+      } catch (error) {
+        console.error('Error loading driver events:', error);
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px 20px; color: var(--muted);">
+            <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">⚠️</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Failed to Load Events</div>
+            <div style="font-size: 14px;">Unable to load your event registrations. Please try again later.</div>
+          </div>
+        `;
+      }
+    }
+
+    // Function to load driver's points standings and history
+    async function loadDriverPoints(driverId, driverClass, driverChampionship) {
+      const container = document.getElementById('p_pointsTable');
+      if (!container) return;
+      
+      // Show skeleton screen
+      container.innerHTML = `
+        <div class="skeleton-container">
+          <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+            <div class="skeleton skeleton-card" style="flex: 1;"></div>
+            <div class="skeleton skeleton-card" style="flex: 1;"></div>
+          </div>
+          <div class="skeleton skeleton-text-large" style="width: 30%; margin-bottom: 16px;"></div>
+          <div class="skeleton skeleton-table-row"></div>
+          <div class="skeleton skeleton-table-row"></div>
+          <div class="skeleton skeleton-table-row"></div>
+        </div>
+      `;
+      
+      try {
+        const response = await fetch(`/api/driver-points/${driverId}`, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load points');
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load points');
+        }
+        
+        // If no points data
+        if (!data.points || data.points.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--muted);">
+              <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">🏆</div>
+              <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Points Yet</div>
+              <div style="font-size: 14px;">Your championship points will appear here after races are completed and results are published.</div>
+            </div>
+          `;
+          return;
+        }
+        
+        // Build season summary cards
+        const seasonCards = data.seasonTotals.map(season => {
+          const avgPoints = season.races_completed > 0 ? (season.total_points / season.races_completed).toFixed(1) : '0.0';
+          
+          return `
+            <div style="flex: 1; min-width: 200px; padding: 20px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border: 2px solid #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+              <div style="font-size: 28px; font-weight: 800; color: #92400e; margin-bottom: 4px;">${escapeHtml(season.total_points || 0)}</div>
+              <div style="font-size: 11px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">Total Points</div>
+              <div style="display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #fbbf2480;">
+                <div>
+                  <div style="font-size: 18px; font-weight: 700; color: #92400e;">${escapeHtml(season.races_completed)}</div>
+                  <div style="font-size: 10px; color: #b45309;">Races</div>
+                </div>
+                <div>
+                  <div style="font-size: 18px; font-weight: 700; color: #92400e;">${avgPoints}</div>
+                  <div style="font-size: 10px; color: #b45309;">Avg/Race</div>
+                </div>
+              </div>
+              <div style="margin-top: 8px; font-size: 12px; font-weight: 600; color: #78350f;">
+                ${escapeHtml(season.season)} · ${escapeHtml(season.class)}
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        // Build points history table with breakdown
+        const pointsRows = data.points.map((point, index) => {
+          const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+          const totalColor = point.total_points >= 25 ? '#16a34a' : point.total_points >= 15 ? '#d97706' : '#6b7280';
+          
+          return `
+            <tr style="border-bottom: 1px solid #e5e7eb; background: ${rowBg}; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='${rowBg}'">
+              <td style="padding: 12px 8px;">
+                <div style="font-weight: 600; color: var(--ink); font-size: 14px;">${escapeHtml(point.event || 'Event')}</div>
+                <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Round ${escapeHtml(point.round || 'N/A')}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="font-size: 13px; color: var(--muted);">${escapeHtml(point.class || '-')}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="font-size: 13px; color: var(--muted);">${point.qualifying_points || '-'}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="font-size: 13px; color: var(--muted);">${point.heat1_points || '-'}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="font-size: 13px; color: var(--muted);">${point.heat2_points || '-'}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="font-size: 13px; color: var(--muted);">${point.final_points || '-'}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="font-size: 13px; color: #dc2626;">${point.penalties_points || '-'}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="font-size: 16px; font-weight: 700; color: ${totalColor};">${point.total_points || 0}</div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="display: inline-block; padding: 4px 10px; background: #dbeafe; color: #1e40af; font-size: 12px; font-weight: 700; border-radius: 4px;">
+                  ${point.position || '-'}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        
+        container.innerHTML = `
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+              ${seasonCards}
+            </div>
+            
+            ${data.seasonTotals.length > 0 ? `
+            <div style="padding: 16px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 24px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 20px;">📊</span>
+                <div style="font-weight: 700; color: #0c4a6e; font-size: 15px;">Season Summary</div>
+              </div>
+              <div style="font-size: 13px; color: #0c4a6e; line-height: 1.6;">
+                You're competing in <strong>${escapeHtml(driverClass || 'N/A')}</strong> for the <strong>${escapeHtml(driverChampionship || 'Championship')}</strong>. 
+                Keep racing to climb the standings!
+              </div>
+            </div>
+            ` : ''}
+          </div>
+          
+          <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ink);">Race Results Breakdown</h3>
+            <div style="font-size: 12px; color: var(--muted);">${data.points.length} result${data.points.length !== 1 ? 's' : ''}</div>
+          </div>
+          
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; box-shadow: var(--shadow);">
+              <thead>
+                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Event</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Class</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Quali</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Heat 1</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Heat 2</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Final</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Penalties</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Total</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${pointsRows}
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+      } catch (error) {
+        console.error('Error loading driver points:', error);
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px 20px; color: var(--muted);">
+            <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">⚠️</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Failed to Load Points</div>
+            <div style="font-size: 14px;">Unable to load your points data. Please try again later.</div>
+          </div>
+        `;
+      }
+    }
+
+    // Function to load and display notification history
+    async function loadNotificationHistory() {
+      if (!currentDriverId) {
+        console.warn('No driver ID available');
+        return;
+      }
+      
+      const container = document.getElementById('notificationHistoryList');
+      if (!container) return;
+      
+      // Show skeleton screen
+      container.innerHTML = `
+        <div class="skeleton-container">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
+      `;
+      
+      try {
+        const response = await fetch(`/api/notifications/${currentDriverId}`, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load notifications');
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load notifications');
+        }
+        
+        // Apply filters
+        const typeFilter = document.getElementById('notifFilterType').value;
+        const eventFilter = document.getElementById('notifFilterEvent').value;
+        
+        let notifications = data.notifications || [];
+        
+        if (typeFilter) {
+          notifications = notifications.filter(n => n.notification_type === typeFilter);
+        }
+        
+        if (eventFilter) {
+          notifications = notifications.filter(n => n.event_id === eventFilter);
+        }
+        
+        // If no notifications
+        if (notifications.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--muted);">
+              <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">🔔</div>
+              <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Notifications Yet</div>
+              <div style="font-size: 14px;">You'll see important updates and announcements here.</div>
+            </div>
+          `;
+          return;
+        }
+        
+        // Build notification cards
+        const notifHtml = notifications.map((notif, index) => {
+          const typeIcons = {
+            'event': '📅',
+            'registration': '📝',
+            'payment': '💰',
+            'general': 'ℹ️',
+            'alert': '⚠️',
+            'success': '✅'
+          };
+          
+          const typeColors = {
+            'event': { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+            'registration': { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
+            'payment': { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
+            'general': { bg: '#f3f4f6', border: '#6b7280', text: '#374151' },
+            'alert': { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
+            'success': { bg: '#d1fae5', border: '#10b981', text: '#065f46' }
+          };
+          
+          const type = notif.notification_type || 'general';
+          const icon = typeIcons[type] || '🔔';
+          const colors = typeColors[type] || typeColors['general'];
+          
+          const sentDate = notif.sent_at ? new Date(notif.sent_at).toLocaleDateString('en-ZA', { 
+            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+          }) : 'Unknown date';
+          
+          const isNew = notif.sent_at && (new Date() - new Date(notif.sent_at)) < (24 * 60 * 60 * 1000); // 24 hours
+          
+          return `
+            <div style="padding: 16px; margin-bottom: 12px; background: white; border: 2px solid ${colors.border}; border-left: 6px solid ${colors.border}; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all 0.2s; position: relative;" 
+                 onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'; this.style.transform='translateY(-2px)'" 
+                 onmouseout="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.05)'; this.style.transform='translateY(0)'">
+              
+              ${isNew ? `<div style="position: absolute; top: 12px; right: 12px; padding: 4px 10px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; border-radius: 12px; text-transform: uppercase;">NEW</div>` : ''}
+              
+              <div style="display: flex; align-items: start; gap: 12px;">
+                <div style="font-size: 32px; line-height: 1;">${icon}</div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <div>
+                      <div style="font-weight: 700; color: var(--ink); font-size: 15px; margin-bottom: 4px;">${escapeHtml(notif.title)}</div>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="display: inline-block; padding: 3px 8px; background: ${colors.bg}; color: ${colors.text}; font-size: 10px; font-weight: 700; border-radius: 4px; text-transform: uppercase;">
+                          ${type.replace('_', ' ')}
+                        </div>
+                        ${notif.event_name ? `<div style="font-size: 11px; color: var(--muted); font-weight: 600;">📍 ${escapeHtml(notif.event_name)}</div>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  ${notif.body ? `
+                  <div style="font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; padding: 12px; background: #f9fafb; border-radius: 6px;">
+                    ${escapeHtml(notif.body)}
+                  </div>
+                  ` : ''}
+                  
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                    <div style="font-size: 11px; color: #9ca3af; font-weight: 600;">
+                      🕐 ${sentDate}
+                    </div>
+                    ${notif.url ? `
+                    <a href="${escapeHtml(notif.url)}" style="padding: 6px 12px; background: ${colors.border}; color: white; font-size: 12px; font-weight: 600; border-radius: 6px; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                      View Details →
+                    </a>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        // Populate event filter dropdown with unique events
+        const eventFilter_ = document.getElementById('notifFilterEvent');
+        if (eventFilter_) {
+          const uniqueEvents = [...new Set(notifications.map(n => n.event_id).filter(Boolean))];
+          const eventOptions = notifications
+            .filter((n, i, arr) => n.event_id && arr.findIndex(x => x.event_id === n.event_id) === i)
+            .map(n => `<option value="${n.event_id}">${escapeHtml(n.event_name)}</option>`)
+            .join('');
+          
+          eventFilter_.innerHTML = '<option value="">All Events</option>' + eventOptions;
+        }
+        
+        container.innerHTML = `
+          <div style="margin-bottom: 16px; padding: 12px 16px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-radius: 8px; border: 2px solid #0ea5e9; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📬</span>
+            <div style="font-size: 14px; color: #0c4a6e; font-weight: 600;">
+              ${notifications.length} notification${notifications.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+          ${notifHtml}
+        `;
+        
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px 20px; color: var(--muted);">
+            <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">⚠️</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Failed to Load Notifications</div>
+            <div style="font-size: 14px;">Unable to load your notifications. Please try again later.</div>
+          </div>
+        `;
+      }
     }
 
     // Function to update the "Next Race" status box based on driver profile
@@ -3565,37 +4623,84 @@
         .then(r => r.json())
         .then(data => {
           const rentals = data.data || [];
-          const currentRental = rentals.length > 0 ? rentals[0] : null;
+          
+          // Find the highest priced rental they've paid for
+          let highestPaidRental = null;
+          let highestPrice = 0;
+          
+          rentals.forEach(rental => {
+            const matchingOption = options.find(opt => opt.type === rental.rental_type);
+            if (matchingOption && matchingOption.price > highestPrice) {
+              highestPrice = matchingOption.price;
+              highestPaidRental = rental;
+            }
+          });
 
           let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">';
           
-          options.forEach(option => {
-            const isCurrentRental = currentRental && currentRental.rental_type === option.type;
-            const statusStyle = isCurrentRental ? 
-              'background: #ecfdf5; border-left: 4px solid #10b981;' : 
-              'background: #f9fafb; border-left: 4px solid #d1d5db;';
+          // If they have a paid rental, only show that one
+          if (highestPaidRental) {
+            const paidOption = options.find(opt => opt.type === highestPaidRental.rental_type);
             
-            const statusText = isCurrentRental ? 
-              `<span style="color: #10b981; font-weight: 600; font-size: 12px;">✓ REGISTERED</span>` : 
-              `<span style="color: #6b7280; font-weight: 600; font-size: 12px;">Not yet registered</span>`;
-
             html += `
-              <div style="${statusStyle} border-radius: 6px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #1f2937;">${option.type}</div>
-                <div style="color: #6b7280; font-size: 12px; margin-bottom: 12px;">${option.description}</div>
-                <div style="font-size: 18px; font-weight: 700; color: #ef4444; margin-bottom: 12px;">R${option.price.toLocaleString('en-ZA')}</div>
-                <div style="margin-bottom: 12px; font-size: 12px;">
-                  ${statusText}
+              <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 3px solid #10b981; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <span style="font-size: 24px;">✓</span>
+                  <div style="font-weight: 800; font-size: 16px; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">${paidOption.type}</div>
                 </div>
-                <button type="button" class="poolEngineRentalBtn" data-class="${driverClass}" data-type="${option.type}" data-price="${option.price}" ${isCurrentRental ? 'disabled' : ''} style="width: 100%; padding: 10px; background: ${isCurrentRental ? '#d1d5db' : '#ef4444'}; color: white; border: none; border-radius: 4px; cursor: ${isCurrentRental ? 'default' : 'pointer'}; font-weight: 600; font-size: 13px; transition: background 0.2s;">
-                  ${isCurrentRental ? 'Already Registered' : 'Pay Now'}
-                </button>
+                <div style="color: #047857; font-size: 13px; margin-bottom: 16px; font-weight: 500;">${paidOption.description}</div>
+                <div style="background: rgba(16, 185, 129, 0.15); padding: 12px; border-radius: 6px; text-align: center;">
+                  <div style="color: #065f46; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">PAID & REGISTERED</div>
+                  <div style="color: #047857; font-size: 12px; margin-top: 4px;">You're all set for this rental</div>
+                  <div style="color: #059669; font-size: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(16, 185, 129, 0.2); line-height: 1.4;">Stand-alone northern regions races not included: 14 Feb & 7 Sep (Redstar), 11 Apr (VKC)</div>
+                </div>
               </div>
             `;
-          });
+          } else {
+            // Show all options if nothing is paid
+            options.forEach(option => {
+              html += `
+                <div style="background: #f9fafb; border-left: 4px solid #d1d5db; border-radius: 6px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #1f2937;">${option.type}</div>
+                  <div style="color: #6b7280; font-size: 12px; margin-bottom: 12px;">${option.description}</div>
+                  <div style="font-size: 18px; font-weight: 700; color: #ef4444; margin-bottom: 12px;">R${option.price.toLocaleString('en-ZA')}</div>
+                  <div style="margin-bottom: 12px; font-size: 12px;">
+                    <span style="color: #6b7280; font-weight: 600; font-size: 12px;">Not yet registered</span>
+                  </div>
+                  <button type="button" class="poolEngineRentalBtn" data-class="${driverClass}" data-type="${option.type}" data-price="${option.price}" style="width: 100%; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: background 0.2s;">
+                    Pay Now
+                  </button>
+                </div>
+              `;
+            });
+          }
 
           html += '</div>';
           container.innerHTML = html;
+
+          // Hide Season Engine Rental and Season Entry Status if they have a paid rental
+          if (highestPaidRental) {
+            const seasonEngineSection = document.querySelector('#portalSections .panel [id="p_season_engine_rental_status"]')?.closest('div[style*="padding: 16px"]');
+            const seasonEntrySection = document.querySelector('#portalSections .panel [id="p_season_entry_status"]')?.closest('div[style*="padding: 16px"]');
+            
+            if (seasonEngineSection) {
+              seasonEngineSection.style.display = 'none';
+            }
+            if (seasonEntrySection) {
+              seasonEntrySection.style.display = 'none';
+            }
+          } else {
+            // Show them if no rental is paid
+            const seasonEngineSection = document.querySelector('#portalSections .panel [id="p_season_engine_rental_status"]')?.closest('div[style*="padding: 16px"]');
+            const seasonEntrySection = document.querySelector('#portalSections .panel [id="p_season_entry_status"]')?.closest('div[style*="padding: 16px"]');
+            
+            if (seasonEngineSection) {
+              seasonEngineSection.style.display = 'block';
+            }
+            if (seasonEntrySection) {
+              seasonEntrySection.style.display = 'block';
+            }
+          }
 
           // Attach click handlers to payment buttons
           const btns = container.querySelectorAll('.poolEngineRentalBtn:not([disabled])');
@@ -4060,6 +5165,10 @@
     document.getElementById("btnLogout").addEventListener("click", ()=>{
       document.getElementById("login_identifier").value = "";
       document.getElementById("login_password").value = "";
+      // Clear saved credentials for persistent login
+      localStorage.removeItem('driverEmail');
+      localStorage.removeItem('driverPassword');
+      localStorage.removeItem('driverToken');
       clearPortal();
       toast("good", "Logged out.");
     });
@@ -4340,15 +5449,33 @@
       }
     });
 
-    // Championship selector wiring with interactive glow
+    // Championship selector wiring with interactive glow (multi-select enabled)
     document.querySelectorAll('.champ-option').forEach(option => {
       option.addEventListener('click', () => {
-        document.querySelectorAll('.champ-option').forEach(o => o.classList.remove('selected'));
-        option.classList.add('selected');
-        document.getElementById('r_champ').value = option.dataset.champ;
-        // Also update dropdown if visible
+        // Toggle selection instead of single-select
+        option.classList.toggle('selected');
+        
+        // Get all selected championships
+        const selectedChamps = Array.from(document.querySelectorAll('.champ-option.selected'))
+          .map(o => o.dataset.champ)
+          .join(', ');
+        
+        // Update hidden field with comma-separated values
+        document.getElementById('r_champ').value = selectedChamps || 'ROK NATS';
+        
+        // Ensure at least one is always selected
+        if (selectedChamps === '') {
+          option.classList.add('selected');
+          document.getElementById('r_champ').value = option.dataset.champ;
+        }
+        
+        // Also update dropdown if visible (mobile)
         const select = document.getElementById('champ-select');
-        if(select) select.value = option.dataset.champ;
+        if(select && select.multiple) {
+          Array.from(select.options).forEach(opt => {
+            opt.selected = selectedChamps.includes(opt.value);
+          });
+        }
       });
 
       // Interactive radial gradient on mouse move
@@ -4361,11 +5488,12 @@
       });
     });
 
-    // Championship dropdown wiring (for mobile)
+    // Championship dropdown wiring (for mobile - multi-select)
     const champSelect = document.getElementById('champ-select');
     if(champSelect) {
       champSelect.addEventListener('change', () => {
-        document.getElementById('r_champ').value = champSelect.value;
+        const selectedOptions = Array.from(champSelect.selectedOptions).map(opt => opt.value);
+        document.getElementById('r_champ').value = selectedOptions.join(', ');
       });
     }
 

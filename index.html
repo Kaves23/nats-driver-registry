@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -3573,7 +3573,20 @@ body[data-season="spring"] .info-section-select {
       <div class="modal-title" id="infoModalTitle">EVENT · INFORMATION</div>
       <button class="modal-close" type="button" data-close-modal>&times;</button>
     </div>
+    
+    <!-- Top-Level Tabs -->
+    <div class="info-top-tabs" style="display: flex; border-bottom: 2px solid #e5e7eb; background: var(--modal-bg);">
+      <button type="button" class="info-top-tab active" data-info-tab="general" onclick="switchInfoTopTab('general')" style="flex: 1; padding: 14px 16px; border: none; background: transparent; cursor: pointer; font-weight: 700; font-size: 14px; color: #22c55e; border-bottom: 3px solid #22c55e; margin-bottom: -2px; text-transform: uppercase; letter-spacing: 0.05em;">
+        General Info
+      </button>
+      <button type="button" class="info-top-tab" data-info-tab="race-specific" onclick="switchInfoTopTab('race-specific')" style="flex: 1; padding: 14px 16px; border: none; background: transparent; cursor: pointer; font-weight: 700; font-size: 14px; color: #6b7280; border-bottom: 3px solid transparent; margin-bottom: -2px; text-transform: uppercase; letter-spacing: 0.05em;">
+        Race Specific
+      </button>
+    </div>
+
     <div class="modal-body">
+      <!-- General Info Tab Content -->
+      <div id="infoTabGeneral" class="info-tab-content">
       <div class="info-layout">
         <nav class="info-nav" aria-label="Event information sections">
           <button class="nav-item nav-item--primary active" data-section="pool" type="button">POOL ENGINES</button>
@@ -4406,25 +4419,25 @@ body[data-season="spring"] .info-section-select {
             <h3>Official Documents</h3>
             <p style="color: black;">Core official documents for this event (issued by the promoter / MSA).</p>
             <div class="info-doc-list">
-              <a href="/docs/rok-2026-event-official-notice.pdf" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+              <a href="/documents/season/supplementary-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">DOC</span>
                 <span class="info-doc-text">
-                  <span class="info-doc-title">Supplementry Regulations</span>
-                  <span class="info-doc-meta">Download · PDF</span>
+                  <span class="info-doc-title">Supplementary Regulations</span>
+                  <span class="info-doc-meta">View Document</span>
                 </span>
               </a>
-              <a href="/docs/rok-2026-event-official-notice.pdf" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+              <a href="/documents/season/msa-permit.html" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">DOC</span>
                 <span class="info-doc-text">
                   <span class="info-doc-title">Motorsport South Africa Permit</span>
-                  <span class="info-doc-meta">Download · PDF</span>
+                  <span class="info-doc-meta">View Document</span>
                 </span>
               </a>
-              <a href="/docs/rok-2026-event-entry-pack.pdf" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+              <a href="/documents/season/DOC003-rok-2026-event-entry-pack.html" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">DOC</span>
                 <span class="info-doc-text">
                   <span class="info-doc-title">Entry Pack &amp; Event Overview</span>
-                  <span class="info-doc-meta">Download · PDF</span>
+                  <span class="info-doc-meta">View Document</span>
                 </span>
               </a>
             </div>
@@ -4437,33 +4450,33 @@ body[data-season="spring"] .info-section-select {
             </p>
 
             <div class="info-doc-list">
-              <a href="/docs/rok-msa-2026-national-regs.pdf" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+              <a href="/documents/season/national-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">DOC</span>
                 <span class="info-doc-text">
                   <span class="info-doc-title">MSA ROK National Regulations 2026</span>
-                  <span class="info-doc-meta">Download · PDF</span>
+                  <span class="info-doc-meta">View Document</span>
                 </span>
               </a>
 
-              <a href="/docs/rok-2026-event-supplementary-regs.pdf" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+              <a href="/documents/season/technical-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">DOC</span>
                 <span class="info-doc-text">
-                  <span class="info-doc-title">Event Supplementary Regulations</span>
-                  <span class="info-doc-meta">Download · PDF</span>
+                  <span class="info-doc-title">Technical Regulations</span>
+                  <span class="info-doc-meta">View Document</span>
                 </span>
               </a>
-              <a href="/docs/rok-2026-event-supplementary-regs.pdf" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+              <a href="/documents/season/sporting-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">DOC</span>
                 <span class="info-doc-text">
-                  <span class="info-doc-title">Event Supplementary Regulations 2</span>
-                  <span class="info-doc-meta">Download · PDF</span>
+                  <span class="info-doc-title">Sporting Regulations</span>
+                  <span class="info-doc-meta">View Document</span>
                 </span>
               </a>
-              <a href="/docs/rok-2026-event-supplementary-regs.pdf" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+              <a href="/documents/season/regional-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">DOC</span>
                 <span class="info-doc-text">
-                  <span class="info-doc-title">Regional Regulations 2</span>
-                  <span class="info-doc-meta">Download · PDF</span>
+                  <span class="info-doc-title">Regional Regulations</span>
+                  <span class="info-doc-meta">View Document</span>
                 </span>
               </a>
             </div>
@@ -4490,13 +4503,13 @@ body[data-season="spring"] .info-section-select {
                 <h4>Key documents</h4>
                 <ul class="pdf-list">
                   <li>
-                    <a href="/docs/rok-2026-mini-class-guide.pdf" target="_blank">
-                      Cadet &amp; Mini Class Guide (PDF)
+                    <a href="/documents/classes/DOC007-rok-2026-mini-class-guide.html" target="_blank">
+                      Cadet &amp; Mini Class Guide
                     </a>
                   </li>
                   <li>
-                    <a href="/docs/rok-2026-mini-prize-structure.pdf" target="_blank">
-                      Prize Structure &amp; Points – Mini Classes (PDF)
+                    <a href="/documents/classes/DOC008-rok-2026-mini-prize-structure.html" target="_blank">
+                      Prize Structure &amp; Points – Mini Classes
                     </a>
                   </li>
                 </ul>
@@ -4601,13 +4614,13 @@ body[data-season="spring"] .info-section-select {
                 <h4>Key documents</h4>
                 <ul class="pdf-list">
                   <li>
-                    <a href="/docs/rok-2026-mini-class-guide.pdf" target="_blank">
-                      OK-J Class Guide (PDF)
+                    <a href="/documents/classes/DOC009-rok-2026-okj-class-guide.html" target="_blank">
+                      OK-J Class Guide
                     </a>
                   </li>
                   <li>
-                    <a href="/docs/rok-2026-mini-prize-structure.pdf" target="_blank">
-                      Prize Structure &amp; Points – OK-J Class (PDF)
+                    <a href="/documents/classes/DOC010-rok-2026-okj-prize-structure.html" target="_blank">
+                      Prize Structure &amp; Points – OK-J Class
                     </a>
                   </li>
                 </ul>
@@ -4686,13 +4699,13 @@ body[data-season="spring"] .info-section-select {
                   <h4>Key documents</h4>
                   <ul class="pdf-list">
                     <li>
-                      <a href="/docs/rok-2026-mini-class-guide.pdf" target="_blank">
-                        OK-N Class Guide (PDF)
+                      <a href="/documents/classes/DOC011-rok-2026-okn-class-guide.html" target="_blank">
+                        OK-N Class Guide
                       </a>
                     </li>
                     <li>
-                      <a href="/docs/rok-2026-mini-prize-structure.pdf" target="_blank">
-                        Prize Structure &amp; Points – OK-N Class (PDF)
+                      <a href="/documents/classes/DOC012-rok-2026-okn-prize-structure.html" target="_blank">
+                        Prize Structure &amp; Points – OK-N Class
           </a>
         </li>
       </ul>
@@ -4769,13 +4782,13 @@ body[data-season="spring"] .info-section-select {
       <h4>Key documents</h4>
       <ul class="pdf-list">
         <li>
-          <a href="/docs/rok-2026-mini-class-guide.pdf" target="_blank">
-            Academy Class Guide (PDF)
+          <a href="/documents/classes/DOC013-rok-2026-academy-class-guide.html" target="_blank">
+            Academy Class Guide
           </a>
         </li>
         <li>
-          <a href="/docs/rok-2026-mini-prize-structure.pdf" target="_blank">
-            Prize Structure &amp; Points – Academy Classes (PDF)
+          <a href="/documents/classes/DOC014-rok-2026-academy-prize-structure.html" target="_blank">
+            Prize Structure &amp; Points – Academy Classes
           </a>
         </li>
       </ul>
@@ -4918,8 +4931,8 @@ body[data-season="spring"] .info-section-select {
     <footer class="class-info-footer">
       <h4>Key documents</h4>
       <ul class="pdf-list">
-        <li><a href="/docs/rok-2026-academy-overview.pdf" target="_blank">Academy Overview &amp; Objectives (PDF)</a></li>
-        <li><a href="/docs/rok-2026-academy-format.pdf" target="_blank">Academy Race Format &amp; Coaching Notes (PDF)</a></li>
+        <li><a href="/documents/classes/academy-overview.html" target="_blank">Academy Overview &amp; Objectives</a></li>
+        <li><a href="/documents/classes/academy-format.html" target="_blank">Academy Race Format &amp; Coaching Notes</a></li>
       </ul>
     </footer>
   </div>
@@ -4981,8 +4994,8 @@ the paddock quickly and consistently.
 </p>
 
             <ul class="pdf-list">
-              <li><a href="/docs/rok-2026-event-bulletin-01.pdf" target="_blank">Bulletin 01 – Example (PDF)</a></li>
-              <li><a href="/docs/rok-2026-event-bulletin-02.pdf" target="_blank">Bulletin 02 – Example (PDF)</a></li>
+              <li><a href="/documents/events/bulletin-01.html" target="_blank">Bulletin 01 – Example</a></li>
+              <li><a href="/documents/events/bulletin-02.html" target="_blank">Bulletin 02 – Example</a></li>
             </ul>
           </section>
 
@@ -5023,7 +5036,17 @@ the paddock quickly and consistently.
       </div>
     </article>
   </div>
-</section>
+
+            <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-size: 14px; font-weight: 700; color: white; margin-bottom: 4px;">Add to Calendar</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.8);">Download all 2026 ROK Cup dates to your calendar</div>
+              </div>
+              <a href="/documents/season/rok-cup-sa-2026-calendar.ics" download style="padding: 10px 20px; background: #facd12; color: #111827; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                Download .ICS
+              </a>
+            </div></section>
           </section>
 
           <section class="info-section" data-section-panel="spectator">
@@ -5033,7 +5056,7 @@ the paddock quickly and consistently.
               catering and viewing areas.
             </p>
             <ul class="pdf-list">
-              <li><a href="/docs/rok-2026-spectator-guide.pdf" target="_blank">Spectator Guide &amp; Facilities (PDF)</a></li>
+              <li><a href="/documents/season/DOC030-rok-2026-spectator-guide.html" target="_blank">Spectator Guide &amp; Facilities</a></li>
             </ul>
           </section>
 
@@ -5044,12 +5067,276 @@ the paddock quickly and consistently.
               approach roads and recommended entry points.
             </p>
             <ul class="pdf-list">
-              <li><a href="/docs/rok-2026-event-access-map.pdf" target="_blank">Access &amp; Traffic Flow Map (PDF)</a></li>
-              <li><a href="/docs/rok-2026-event-spectator-map.pdf" target="_blank">Spectator Zones &amp; Facilities Map (PDF)</a></li>
+              <li><a href="/documents/tracks/access-map.html" target="_blank">Access &amp; Traffic Flow Map</a></li>
+              <li><a href="/documents/tracks/spectator-map.html" target="_blank">Spectator Zones &amp; Facilities Map</a></li>
             </ul>
           </section>
         </div>
       </div>
+      </div><!-- end infoTabGeneral -->
+
+      <!-- Race Specific Tab Content -->
+      <div id="infoTabRaceSpecific" class="info-tab-content" style="display: none; padding: 32px; background: linear-gradient(180deg, #111827 0%, #1f2937 100%);">
+        <div class="rs-container" style="max-width: 900px; margin: 0 auto;">
+          
+          <!-- Combined Event Details & Registration Box -->
+          <div id="rsEventBox" class="rs-event-box" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); border-radius: 0; padding: 0; margin-bottom: 24px; display: flex; align-items: stretch; overflow: hidden; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.2); position: relative;">
+            
+            <!-- Animated background accent -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 50%, #0ea5e9 100%); background-size: 200% 100%; animation: shimmer 3s linear infinite;"></div>
+            
+            <!-- ROK Logo & Event Info -->
+            <div class="rs-event-info" style="flex: 1; padding: 36px 40px; display: flex; align-items: center; gap: 24px;">
+              <img src="/icons/rok-logo-original.png" alt="ROK Cup" class="rs-logo" style="height: 70px; width: auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
+              <div style="flex: 1;">
+                <div class="rs-title-row" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px;">
+                  <div style="font-size: 32px; color: white; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.3);" id="rsEventName">Loading...</div>
+                </div>
+                <div class="rs-meta" style="display: flex; gap: 16px; align-items: center;">
+                  <div style="font-size: 14px; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;" id="rsEventLocation">--</div>
+                  <div style="width: 3px; height: 16px; background: rgba(14, 165, 233, 0.5);"></div>
+                  <div style="font-size: 14px; color: rgba(255,255,255,0.95); font-weight: 600; letter-spacing: 0.05em;" id="rsEventDate">--</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Registration Status -->
+            <div id="rsStatusBox" class="rs-status-box" style="background: linear-gradient(135deg, #111827 0%, #1f2937 100%); padding: 36px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-width: 240px; position: relative; border-left: 3px solid rgba(14, 165, 233, 0.4);">
+              <!-- Glow effect behind indicator -->
+              <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%); width: 80px; height: 80px; background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%); filter: blur(20px);"></div>
+              
+              <div id="rsStatusIndicator" style="width: 18px; height: 18px; border-radius: 50%; background: #ef4444; margin-bottom: 12px; box-shadow: 0 0 20px #ef4444, 0 0 40px rgba(239, 68, 68, 0.5); position: relative; z-index: 1; animation: pulse 2s ease-in-out infinite;"></div>
+              <div id="rsRegistrationLabel" style="font-size: 11px; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 6px;">Registration</div>
+              <div id="rsStatusText" style="font-size: 26px; color: #ef4444; font-weight: 900; margin-bottom: 16px; text-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);">NOT OPEN</div>
+              <a href="driver_portal.html" class="rs-enter-btn" style="padding: 12px 28px; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; text-decoration: none; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; border-radius: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4), 0 2px 4px rgba(0,0,0,0.2); position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-2px) scale(1.02)'; this.style.boxShadow='0 8px 20px rgba(14, 165, 233, 0.6), 0 4px 8px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 12px rgba(14, 165, 233, 0.4), 0 2px 4px rgba(0,0,0,0.2)'">
+                ENTER NOW
+              </a>
+            </div>
+          </div>
+
+          <!-- Documents Box - Full Width with Premium Styling -->
+          <div style="background: #111827; border-radius: 0; padding: 0; min-height: 380px; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.2); position: relative; overflow: hidden;">
+            
+            <!-- Top accent bar -->
+            <div style="height: 5px; background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 50%, #0ea5e9 100%); background-size: 200% 100%; animation: shimmer 3s linear infinite;"></div>
+            
+            <!-- Header -->
+            <div style="padding: 24px 32px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(2, 132, 199, 0.1) 100%); border-bottom: 2px solid rgba(14, 165, 233, 0.2);">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <svg width="24" height="24" fill="#0ea5e9" viewBox="0 0 24 24"><path d="M7 18h2V6H7v12zm4 4h2V2h-2v20zm4-8h2V6h-2v8z"/></svg>
+                <div style="font-size: 15px; color: #0ea5e9; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em;">Event Documents</div>
+              </div>
+            </div>
+            
+            <!-- Documents content -->
+            <div id="rsEventDocuments" style="flex: 1; padding: 32px; overflow-y: auto; background: #ffffff; position: relative;">
+              <div style="color: #6b7280; text-align: center; font-size: 14px; padding: 40px 0;">Loading...</div>
+            </div>
+            
+            <!-- Scroll Indicator (Mobile Only) -->
+            <div class="scroll-indicator">
+              <span>Scroll for more</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#0ea5e9">
+                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- end infoTabRaceSpecific -->
+
+      <style>
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        @keyframes folderPopIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.8) translateY(-10px);
+          }
+          60% {
+            transform: scale(1.05) translateY(0);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        
+        @keyframes scrollBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        
+        .scroll-indicator {
+          display: none;
+          position: fixed;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          color: #0ea5e9;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          z-index: 1001;
+          animation: scrollBounce 2s ease-in-out infinite;
+        }
+        
+        .scroll-indicator svg {
+          filter: drop-shadow(0 2px 8px rgba(14, 165, 233, 0.5));
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+          #infoTabRaceSpecific {
+            padding: 16px !important;
+          }
+          
+          .rs-container {
+            max-width: 100% !important;
+          }
+          
+          /* Stack event box vertically */
+          .rs-event-box {
+            flex-direction: column !important;
+          }
+          
+          /* Event info adjustments */
+          .rs-event-info {
+            padding: 24px 20px !important;
+            gap: 16px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+          
+          .rs-logo {
+            height: 50px !important;
+            align-self: center !important;
+          }
+          
+          .rs-title-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            width: 100%;
+          }
+          
+          #rsEventName {
+            font-size: 20px !important;
+          }
+          
+          .rs-meta {
+            flex-direction: column !important;
+            gap: 8px !important;
+            align-items: flex-start !important;
+          }
+          
+          .rs-meta div[style*="width: 3px"] {
+            display: none !important;
+          }
+          
+          /* Status box adjustments */
+          .rs-status-box {
+            border-left: none !important;
+            border-top: 3px solid rgba(14, 165, 233, 0.4) !important;
+            padding: 24px 20px !important;
+            min-width: unset !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            gap: 16px;
+          }
+          
+          .rs-status-box > div[style*="position: absolute"] {
+            display: none !important;
+          }
+          
+          #rsStatusIndicator {
+            margin-bottom: 0 !important;
+            margin-right: 8px !important;
+          }
+          
+          .rs-status-box > div:first-of-type {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+          }
+          
+          #rsRegistrationLabel {
+            margin-bottom: 0 !important;
+          }
+          
+          #rsStatusText {
+            margin-bottom: 0 !important;
+            font-size: 20px !important;
+          }
+          
+          .rs-enter-btn {
+            padding: 10px 20px !important;
+            font-size: 12px !important;
+            white-space: nowrap !important;
+          }
+          
+          /* Show scroll indicator on mobile */
+          .scroll-indicator {
+            display: flex !important;
+          }
+          
+          /* Mobile folder popup adjustments */
+          .folder-item {
+            width: calc(50% - 6px) !important;
+            min-width: 140px !important;
+          }
+          
+          .folder-popup {
+            width: calc(100vw - 40px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          #rsEventName {
+            font-size: 18px !important;
+          }
+          
+          #rsEventLocation,
+          #rsEventDate {
+            font-size: 12px !important;
+          }
+          
+          .rs-status-box {
+            flex-direction: column !important;
+            align-items: center !important;
+          }
+          
+          .rs-status-box > div:first-of-type {
+            flex-direction: column;
+            text-align: center;
+          }
+          
+          #rsStatusIndicator {
+            margin-right: 0 !important;
+            margin-bottom: 8px !important;
+          }
+          
+          .folder-item {
+            width: 100% !important;
+          }
+        }
+      </style>
+
     </div>
   </div>
 
@@ -5701,8 +5988,437 @@ the paddock quickly and consistently.
       if (modal === infoModal) {
         ensurePortalLoaded('register');
         setTimeout(armInfoSectionHint, 160);
+        // Reset to General tab when opening modal
+        switchInfoTopTab('general');
       }
     }
+
+    // ============= INFO MODAL TOP TABS =============
+    window.switchInfoTopTab = function(tab) {
+      // Update tab buttons
+      document.querySelectorAll('.info-top-tab').forEach(btn => {
+        if (btn.dataset.infoTab === tab) {
+          btn.style.background = 'transparent';
+          btn.style.color = '#22c55e';
+          btn.style.borderBottom = '3px solid #22c55e';
+        } else {
+          btn.style.background = 'transparent';
+          btn.style.color = '#6b7280';
+          btn.style.borderBottom = '3px solid transparent';
+        }
+      });
+
+      // Show/hide content
+      document.getElementById('infoTabGeneral').style.display = tab === 'general' ? 'block' : 'none';
+      document.getElementById('infoTabRaceSpecific').style.display = tab === 'race-specific' ? 'block' : 'none';
+
+      // Load race-specific data when switching to that tab
+      if (tab === 'race-specific') {
+        loadRaceSpecificData();
+        initScrollIndicator();
+      }
+    };
+
+    function initScrollIndicator() {
+      const indicator = document.querySelector('.scroll-indicator');
+      const docsContainer = document.getElementById('rsEventDocuments');
+      
+      if (!indicator || !docsContainer) return;
+      
+      let hasScrolled = false;
+      
+      // Hide after 15 seconds
+      const hideTimer = setTimeout(() => {
+        indicator.style.display = 'none';
+      }, 15000);
+      
+      // Hide on scroll
+      const handleScroll = () => {
+        if (!hasScrolled) {
+          hasScrolled = true;
+          indicator.style.display = 'none';
+          clearTimeout(hideTimer);
+          docsContainer.removeEventListener('scroll', handleScroll);
+        }
+      };
+      
+      docsContainer.addEventListener('scroll', handleScroll);
+    }
+
+    async function loadRaceSpecificData() {
+      // Get current season from the landing page
+      const currentSeason = seasons[currentIndex];
+      
+      // Update the event box based on current season
+      const eventBox = document.getElementById('rsEventBox');
+      const rsEventName = document.getElementById('rsEventName');
+      const rsEventLocation = document.getElementById('rsEventLocation');
+      const rsEventDate = document.getElementById('rsEventDate');
+      const enterNowBtn = document.querySelector('#rsStatusBox a');
+      
+      // Set the display from the current season (matches landing page)
+      rsEventName.textContent = currentSeason.name;
+      rsEventLocation.textContent = currentSeason.track;
+      rsEventDate.textContent = currentSeason.dates;
+      
+      // Set background color based on season type and update ENTER NOW button
+      let seasonColor = '#2563eb';
+      let seasonColorHover = '#1d4ed8';
+      let btnTextColor = 'white';
+      
+      if (currentSeason.id === 'northern') {
+        seasonColor = '#2563eb'; // Blue for Northern
+        seasonColorHover = '#1d4ed8';
+      } else if (currentSeason.id === 'summer') {
+        seasonColor = '#fbbf24'; // Gold for Summer
+        seasonColorHover = '#f59e0b';
+        btnTextColor = '#111827';
+        rsEventName.style.color = '#111827';
+        rsEventLocation.style.color = '#111827';
+        rsEventDate.style.color = '#111827';
+      } else if (currentSeason.id === 'autumn') {
+        seasonColor = '#f97316'; // Orange for Autumn
+        seasonColorHover = '#ea580c';
+      } else if (currentSeason.id === 'winter') {
+        seasonColor = '#3b82f6'; // Light blue for Winter
+        seasonColorHover = '#2563eb';
+      } else if (currentSeason.id === 'spring') {
+        seasonColor = '#22c55e'; // Green for Spring
+        seasonColorHover = '#16a34a';
+      }
+      
+      eventBox.style.background = seasonColor;
+      
+      // Update ENTER NOW button to match race color
+      if (enterNowBtn) {
+        enterNowBtn.style.background = seasonColor;
+        enterNowBtn.style.color = btnTextColor;
+        enterNowBtn.onmouseover = function() { this.style.background = seasonColorHover; };
+        enterNowBtn.onmouseout = function() { this.style.background = seasonColor; };
+      }
+      
+      // Update Registration label color to match race
+      const registrationLabel = document.getElementById('rsRegistrationLabel');
+      if (registrationLabel) {
+        registrationLabel.style.color = seasonColor;
+      }
+      
+      // Reset text colors for non-summer events
+      if (currentSeason.id !== 'summer') {
+        rsEventName.style.color = 'white';
+        rsEventLocation.style.color = 'rgba(255,255,255,0.9)';
+        rsEventDate.style.color = 'rgba(255,255,255,0.9)';
+      }
+
+      try {
+        // Fetch available events to find matching event for entry info & documents
+        const eventsResponse = await fetch('/api/getAvailableEvents');
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          if (eventsData.success && eventsData.data && eventsData.data.length > 0) {
+            // Try to find matching event by name
+            const matchingEvent = eventsData.data.find(e => 
+              e.event_name && e.event_name.toUpperCase().includes(currentSeason.name.toUpperCase().split(' ')[0])
+            ) || eventsData.data.find(e =>
+              e.location && e.location.toUpperCase().includes(currentSeason.track.toUpperCase().split(' ')[0])
+            ) || eventsData.data[0];
+            
+            // Update registration status
+            const statusIndicator = document.getElementById('rsStatusIndicator');
+            const statusText = document.getElementById('rsStatusText');
+            const now = new Date();
+            const deadline = matchingEvent.registration_deadline ? new Date(matchingEvent.registration_deadline) : null;
+            const isOpen = matchingEvent.registration_open !== false && (!deadline || deadline > now);
+            
+            if (isOpen) {
+              statusIndicator.style.background = '#22c55e';
+              statusIndicator.style.boxShadow = '0 0 10px #22c55e';
+              statusText.style.color = '#22c55e';
+              statusText.textContent = 'OPEN';
+            } else {
+              statusIndicator.style.background = '#6b7280';
+              statusIndicator.style.boxShadow = '0 0 10px #6b7280';
+              statusText.style.color = '#6b7280';
+              statusText.textContent = 'CLOSED';
+            }
+
+            // Load event documents
+            loadRsEventDocuments(matchingEvent.event_id);
+            
+            // Load event notifications
+            loadRsEventNotifications(matchingEvent.event_id);
+          } else {
+            // No events - show coming soon and empty folder structure
+            document.getElementById('rsStatusText').textContent = 'COMING SOON';
+            document.getElementById('rsStatusText').style.color = '#fbbf24';
+            document.getElementById('rsStatusIndicator').style.background = '#fbbf24';
+            document.getElementById('rsEventDocuments').innerHTML = buildEmptyFolderStructure();
+            document.getElementById('rsEventNotifications').innerHTML = '<div style="color: #6b7280; text-align: center; font-size: 13px; padding: 20px 0;">No updates yet</div>';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading race specific data:', error);
+        // Show empty folder structure on error
+        document.getElementById('rsEventDocuments').innerHTML = buildEmptyFolderStructure();
+        document.getElementById('rsEventNotifications').innerHTML = '<div style="color: #6b7280; text-align: center; font-size: 13px; padding: 20px 0;">No updates yet</div>';
+      }
+    }
+
+    async function loadRsEventDocuments(eventId) {
+      const container = document.getElementById('rsEventDocuments');
+      
+      // Define class categories for organizing documents
+      const classCategories = [
+        { id: 'general', name: 'General', keywords: ['sr', 'supplementary', 'timetable', 'entry', 'track', 'map', 'bulletin', 'result', 'final'] },
+        { id: 'cadet', name: 'Cadet', keywords: ['cadet'] },
+        { id: 'miniu10', name: 'Mini ROK U10', keywords: ['u10', 'under 10', 'under10'] },
+        { id: 'mini', name: 'Mini ROK', keywords: ['mini'] },
+        { id: 'okj', name: 'OK-J', keywords: ['ok-j', 'okj', 'junior'] },
+        { id: 'okn', name: 'OK-N', keywords: ['ok-n', 'okn', 'senior', 'national'] }
+      ];
+      
+      try {
+        const response = await fetch('/api/events/' + eventId + '/docs');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.documents && data.documents.length > 0) {
+            // Group documents by category
+            const grouped = {};
+            classCategories.forEach(cat => grouped[cat.id] = []);
+            
+            data.documents.forEach(doc => {
+              const docNameLower = (doc.display_name + ' ' + doc.document_type).toLowerCase();
+              let assigned = false;
+              
+              for (const cat of classCategories) {
+                if (cat.keywords.some(kw => docNameLower.includes(kw))) {
+                  grouped[cat.id].push(doc);
+                  assigned = true;
+                  break;
+                }
+              }
+              if (!assigned) grouped['general'].push(doc);
+            });
+            
+            // Build folder grid with popups
+            let html = '<div class="folder-grid" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">';
+            classCategories.forEach((cat, idx) => {
+              const count = grouped[cat.id].length;
+              const isEmpty = count === 0;
+              
+              html += '<div class="folder-item" data-folder-id="' + cat.id + '" onclick="toggleFolder(this)" style="' +
+                'display: flex; align-items: center; justify-content: space-between; ' +
+                'padding: 14px 20px; ' +
+                'width: 180px; ' +
+                'background: #1a1a1a; ' +
+                'border: 2px solid #2a2a2a; ' +
+                'border-radius: 0; ' +
+                'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); ' +
+                'transition: all 0.3s ease; ' +
+                'cursor: pointer;' +
+                'position: relative;' +
+              '">' +
+                '<span style="color: #ffffff; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">' + cat.name + '</span>' +
+                '<span style="' +
+                  'width: 20px; height: 20px; ' +
+                  'display: flex; align-items: center; justify-content: center; ' +
+                  'background: #2a2a2a; ' +
+                  'border-radius: 0; ' +
+                  'font-size: 10px; ' +
+                  'color: ' + (isEmpty ? '#6b7280' : '#0ea5e9') + '; ' +
+                  'font-weight: 700;' +
+                '">' + count + '</span>';
+              
+              // Popup with file list
+              if (count > 0) {
+                html += '<div class="folder-popup" style="' +
+                  'display: none; ' +
+                  'position: absolute; ' +
+                  'top: calc(100% + 8px); ' +
+                  'left: 0; ' +
+                  'width: 300px; ' +
+                  'max-width: 90vw; ' +
+                  'background: #ffffff; ' +
+                  'border: 2px solid #0ea5e9; ' +
+                  'border-radius: 0; ' +
+                  'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(14, 165, 233, 0.5); ' +
+                  'padding: 0; ' +
+                  'z-index: 1000; ' +
+                  'transform-origin: top center; ' +
+                  'animation: folderPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); ' +
+                  'overflow: hidden;' +
+                '">' +
+                  '<div style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); padding: 12px 16px; color: white; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">' + cat.name + ' Documents</div>' +
+                  '<div style="max-height: 200px; overflow-y: auto;">';
+                
+                grouped[cat.id].forEach((doc, docIdx) => {
+                  html += '<a href="' + doc.file_path + '" target="_blank" onclick="event.stopPropagation()" style="' +
+                    'display: flex; align-items: center; gap: 10px; ' +
+                    'padding: 12px 16px; ' +
+                    'text-decoration: none; ' +
+                    'color: #1f2937; ' +
+                    'font-size: 13px; ' +
+                    'border-bottom: 1px solid #e5e7eb; ' +
+                    'transition: all 0.2s; ' +
+                    'background: white;' +
+                  '" onmouseover="this.style.background=\'#e0f2fe\'; this.style.paddingLeft=\'20px\'" onmouseout="this.style.background=\'white\'; this.style.paddingLeft=\'16px\'">' +
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="#0ea5e9"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>' +
+                    '<span style="flex: 1;">' + doc.display_name + '</span>' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="#6b7280"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>' +
+                  '</a>';
+                });
+                
+                html += '</div></div>';
+              } else {
+                html += '<div class="folder-popup" style="' +
+                  'display: none; ' +
+                  'position: absolute; ' +
+                  'top: calc(100% + 8px); ' +
+                  'left: 0; ' +
+                  'width: 250px; ' +
+                  'background: #ffffff; ' +
+                  'border: 2px solid #6b7280; ' +
+                  'border-radius: 0; ' +
+                  'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); ' +
+                  'padding: 16px; ' +
+                  'z-index: 1000; ' +
+                  'transform-origin: top center; ' +
+                  'animation: folderPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);' +
+                '">' +
+                  '<div style="color: #6b7280; font-size: 12px; text-align: center; font-style: italic;">No documents</div>' +
+                '</div>';
+              }
+              
+              html += '</div>';
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+          } else {
+            // No documents from API - still show empty folder structure
+            container.innerHTML = buildEmptyFolderStructure();
+          }
+        } else {
+          // API returned error - show empty folder structure
+          container.innerHTML = buildEmptyFolderStructure();
+        }
+      } catch (error) {
+        // Show empty folder structure on error
+        container.innerHTML = buildEmptyFolderStructure();
+      }
+    }
+    
+    function buildEmptyFolderStructure() {
+      const classCategories = [
+        { name: 'General', id: 'general' },
+        { name: 'Cadet', id: 'cadet' },
+        { name: 'Mini ROK U10', id: 'miniu10' },
+        { name: 'Mini ROK', id: 'mini' },
+        { name: 'OK-J', id: 'okj' },
+        { name: 'OK-N', id: 'okn' }
+      ];
+      
+      let html = '<div class="folder-grid" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">';
+      classCategories.forEach((cat, idx) => {
+        html += '<div class="folder-item" data-folder-id="' + cat.id + '" onclick="toggleFolder(this)" style="' +
+          'display: flex; align-items: center; justify-content: space-between; ' +
+          'padding: 14px 20px; ' +
+          'width: 180px; ' +
+          'background: #1a1a1a; ' +
+          'border: 2px solid #2a2a2a; ' +
+          'border-radius: 0; ' +
+          'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); ' +
+          'transition: all 0.3s ease; ' +
+          'cursor: pointer;' +
+          'position: relative;' +
+        '">' +
+          '<span style="color: #ffffff; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">' + cat.name + '</span>' +
+          '<span style="' +
+            'width: 20px; height: 20px; ' +
+            'display: flex; align-items: center; justify-content: center; ' +
+            'background: #2a2a2a; ' +
+            'border-radius: 0; ' +
+            'font-size: 10px; ' +
+            'color: #6b7280; ' +
+            'font-weight: 700;' +
+          '">0</span>' +
+          '<div class="folder-popup" style="' +
+            'display: none; ' +
+            'position: absolute; ' +
+            'top: calc(100% + 8px); ' +
+            'left: 0; ' +
+            'right: 0; ' +
+            'background: #ffffff; ' +
+            'border: 2px solid #0ea5e9; ' +
+            'border-radius: 0; ' +
+            'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(14, 165, 233, 0.5); ' +
+            'padding: 16px; ' +
+            'z-index: 1000; ' +
+            'transform-origin: top center; ' +
+            'animation: folderPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);' +
+          '">' +
+            '<div style="color: #6b7280; font-size: 12px; text-align: center; font-style: italic;">No documents</div>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+      html += '<div style="margin-top: 32px; text-align: center; color: #4b5563; font-size: 13px; font-style: italic;">No documents uploaded yet for this event</div>';
+      return html;
+    }
+
+    function toggleFolder(element) {
+      // Close all other popups first
+      document.querySelectorAll('.folder-popup').forEach(popup => {
+        if (popup.parentElement !== element) {
+          popup.style.display = 'none';
+          popup.style.animation = 'none';
+        }
+      });
+      
+      const popup = element.querySelector('.folder-popup');
+      if (popup) {
+        if (popup.style.display === 'none' || popup.style.display === '') {
+          // Show with animation
+          popup.style.display = 'block';
+          // Force reflow to restart animation
+          void popup.offsetWidth;
+          // Remove and re-add animation class
+          popup.style.animation = 'none';
+          setTimeout(() => {
+            popup.style.animation = 'folderPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+          }, 10);
+        } else {
+          popup.style.display = 'none';
+        }
+      }
+    }
+
+    async function loadRsEventNotifications(eventId) {
+      const container = document.getElementById('rsEventNotifications');
+      try {
+        // Public notifications for the event (no driver login required)
+        const response = await fetch('/api/notifications/event/' + eventId);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.notifications && data.notifications.length > 0) {
+            container.innerHTML = data.notifications.map(n => 
+              '<div style="padding: 12px; background: #f9fafb; border-left: 3px solid #dc2626; margin-bottom: 8px;">' +
+                '<div style="font-weight: 700; font-size: 13px; color: #111827; margin-bottom: 4px;">' + n.title + '</div>' +
+                '<div style="font-size: 12px; color: #4b5563; line-height: 1.4;">' + n.body + '</div>' +
+                '<div style="font-size: 10px; color: #9ca3af; margin-top: 6px;">' + new Date(n.sent_at || n.created_at).toLocaleString('en-ZA') + '</div>' +
+              '</div>'
+            ).join('');
+          } else {
+            container.innerHTML = '<div style="color: #6b7280; text-align: center; font-size: 13px; padding: 20px 0;">No updates yet</div>';
+          }
+        } else {
+          container.innerHTML = '<div style="color: #6b7280; text-align: center; font-size: 13px; padding: 20px 0;">No updates yet</div>';
+        }
+      } catch (error) {
+        container.innerHTML = '<div style="color: #6b7280; text-align: center; font-size: 13px; padding: 20px 0;">No updates yet</div>';
+      }
+    }
+    // ============= END INFO MODAL TOP TABS =============
 
     
 function clearInfoSectionHint(){

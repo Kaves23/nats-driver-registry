@@ -1,0 +1,424 @@
+{
+  "_metadata": {
+    "description": "ROK Cup SA Document Management System",
+    "version": "1.0",
+    "lastUpdated": "2026-01-25",
+    "instructions": "Update this file to manage all PDFs. Set status to 'uploaded' and add URL when ready."
+  },
+  
+  "seasonDocuments": {
+    "_description": "Documents that apply to the entire 2026 season (upload once)",
+    
+    "officialDocs": [
+      {
+        "id": "DOC001",
+        "name": "Supplementary Regulations",
+        "section": "docs",
+        "filePath": "/docs/rok-2026-supplementary-regulations.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "CRITICAL",
+        "notes": "Core event rules issued by promoter/MSA"
+      },
+      {
+        "id": "DOC003",
+        "name": "Entry Pack & Event Overview",
+        "section": "docs",
+        "filePath": "/docs/rok-2026-event-entry-pack.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "CRITICAL",
+        "notes": "Entry fees, registration process, deadlines"
+      }
+    ],
+    
+    "regulations": [
+      {
+        "id": "DOC004",
+        "name": "MSA ROK National Regulations 2026",
+        "section": "regs",
+        "filePath": "/docs/rok-msa-2026-national-regs.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "CRITICAL",
+        "notes": "Full sporting & technical regulations for 2026"
+      },
+      {
+        "id": "DOC006",
+        "name": "Regional Regulations",
+        "section": "regs",
+        "filePath": "/docs/rok-2026-regional-regs.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "MEDIUM",
+        "notes": "Provincial/regional specific rules"
+      }
+    ],
+    
+    "classGuides": [
+      {
+        "id": "DOC007",
+        "name": "Cadet & Mini Class Guide",
+        "section": "mini",
+        "filePath": "/docs/rok-2026-mini-class-guide.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "CRITICAL",
+        "notes": "Cadet, Mini U/10, Mini ROK class rules"
+      },
+      {
+        "id": "DOC009",
+        "name": "OK-J Class Guide",
+        "section": "okj",
+        "filePath": "/docs/rok-2026-okj-class-guide.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "OK-J junior class rules & specs"
+      },
+      {
+        "id": "DOC011",
+        "name": "OK-N Class Guide",
+        "section": "okn",
+        "filePath": "/docs/rok-2026-okn-class-guide.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "OK-N senior class rules & specs"
+      },
+      {
+        "id": "DOC013",
+        "name": "Academy Class Guide",
+        "section": "academy",
+        "filePath": "/docs/rok-2026-academy-class-guide.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "Academy programme overview & rules"
+      }
+    ],
+    
+    "prizeStructures": [
+      {
+        "id": "DOC008",
+        "name": "Prize Structure - Mini Classes",
+        "section": "mini",
+        "filePath": "/docs/rok-2026-mini-prize-structure.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "Points system & prizes for Cadet/Mini"
+      },
+      {
+        "id": "DOC010",
+        "name": "Prize Structure - OK-J",
+        "section": "okj",
+        "filePath": "/docs/rok-2026-okj-prize-structure.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "Points & prizes for OK-J"
+      },
+      {
+        "id": "DOC012",
+        "name": "Prize Structure - OK-N",
+        "section": "okn",
+        "filePath": "/docs/rok-2026-okn-prize-structure.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "Points & prizes for OK-N (R100k testing etc)"
+      },
+      {
+        "id": "DOC014",
+        "name": "Prize Structure - Academy",
+        "section": "academy",
+        "filePath": "/docs/rok-2026-academy-prize-structure.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "Academy class prizes & pathway"
+      }
+    ],
+    
+    "poolEngines": [
+      {
+        "id": "DOC028",
+        "name": "Pool Engine Agreement",
+        "section": "pool",
+        "filePath": "/docs/rok-2026-pool-engine-agreement.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "HIGH",
+        "notes": "Engine rental terms & conditions"
+      },
+      {
+        "id": "DOC029",
+        "name": "Pool Engine Parity Report",
+        "section": "pool",
+        "filePath": "/docs/rok-2026-pool-engine-parity.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "LOW",
+        "notes": "Dyno results showing engine parity"
+      }
+    ],
+    
+    "spectatorInfo": [
+      {
+        "id": "DOC030",
+        "name": "Spectator Information Guide",
+        "section": "spectator",
+        "filePath": "/docs/rok-2026-spectator-guide.pdf",
+        "status": "missing",
+        "version": 0,
+        "googleDriveUrl": "",
+        "priority": "LOW",
+        "notes": "Tickets, parking, facilities, FAQs"
+      }
+    ]
+  },
+  
+  "trackDocuments": {
+    "_description": "Track-specific documents (upload per venue)",
+    
+    "redstar": {
+      "trackName": "Red Star Raceway",
+      "location": "Delmas",
+      "documents": [
+        {
+          "id": "MAP-RS-01",
+          "name": "Red Star Track Map",
+          "filePath": "/docs/tracks/redstar-track-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        },
+        {
+          "id": "MAP-RS-02",
+          "name": "Red Star Paddock Layout",
+          "filePath": "/docs/tracks/redstar-paddock-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        },
+        {
+          "id": "MAP-RS-03",
+          "name": "Red Star Parking Map",
+          "filePath": "/docs/tracks/redstar-parking-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        }
+      ]
+    },
+    
+    "idube": {
+      "trackName": "Idube Raceway",
+      "location": "Alberton",
+      "documents": [
+        {
+          "id": "MAP-ID-01",
+          "name": "Idube Track Map",
+          "filePath": "/docs/tracks/idube-track-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        },
+        {
+          "id": "MAP-ID-02",
+          "name": "Idube Paddock Layout",
+          "filePath": "/docs/tracks/idube-paddock-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        }
+      ]
+    },
+    
+    "formulak": {
+      "trackName": "Formula K Raceway",
+      "location": "Benoni",
+      "documents": [
+        {
+          "id": "MAP-FK-01",
+          "name": "Formula K Track Map",
+          "filePath": "/docs/tracks/formulak-track-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        },
+        {
+          "id": "MAP-FK-02",
+          "name": "Formula K Paddock Layout",
+          "filePath": "/docs/tracks/formulak-paddock-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        }
+      ]
+    },
+    
+    "killarney": {
+      "trackName": "Killarney Raceway",
+      "location": "Cape Town",
+      "documents": [
+        {
+          "id": "MAP-KI-01",
+          "name": "Killarney Track Map",
+          "filePath": "/docs/tracks/killarney-track-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        },
+        {
+          "id": "MAP-KI-02",
+          "name": "Killarney Paddock Layout",
+          "filePath": "/docs/tracks/killarney-paddock-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        }
+      ]
+    },
+    
+    "zwartkops": {
+      "trackName": "Zwartkops Raceway",
+      "location": "Pretoria",
+      "documents": [
+        {
+          "id": "MAP-ZW-01",
+          "name": "Zwartkops Track Map",
+          "filePath": "/docs/tracks/zwartkops-track-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        },
+        {
+          "id": "MAP-ZW-02",
+          "name": "Zwartkops Paddock Layout",
+          "filePath": "/docs/tracks/zwartkops-paddock-map.pdf",
+          "status": "missing",
+          "googleDriveUrl": ""
+        }
+      ]
+    }
+  },
+  
+  "eventDocuments": {
+    "_description": "Event-specific documents (upload per race weekend)",
+    "_uploadFolder": "/uploads/event-docs/{eventId}/",
+    
+    "documentTypes": [
+      {
+        "type": "supplementary-regs",
+        "name": "Event Supplementary Regulations",
+        "naming": "{eventId}-supplementary-regs.pdf",
+        "priority": "CRITICAL"
+      },
+      {
+        "type": "msa-permit",
+        "name": "MSA Event Permit",
+        "naming": "{eventId}-msa-permit.pdf",
+        "priority": "CRITICAL"
+      },
+      {
+        "type": "entry-list",
+        "name": "Official Entry List",
+        "naming": "{eventId}-entry-list.pdf",
+        "priority": "HIGH"
+      },
+      {
+        "type": "timetable-friday",
+        "name": "Friday Timetable",
+        "naming": "{eventId}-friday-timetable.pdf",
+        "priority": "MEDIUM"
+      },
+      {
+        "type": "timetable-saturday",
+        "name": "Saturday Timetable",
+        "naming": "{eventId}-saturday-timetable.pdf",
+        "priority": "MEDIUM"
+      },
+      {
+        "type": "timetable-sunday",
+        "name": "Sunday Timetable",
+        "naming": "{eventId}-sunday-timetable.pdf",
+        "priority": "MEDIUM"
+      },
+      {
+        "type": "results-qualifying",
+        "name": "Qualifying Results",
+        "naming": "{eventId}-results-qualifying.pdf",
+        "priority": "HIGH"
+      },
+      {
+        "type": "results-heats",
+        "name": "Heat Results",
+        "naming": "{eventId}-results-heats.pdf",
+        "priority": "HIGH"
+      },
+      {
+        "type": "results-finals",
+        "name": "Final Results",
+        "naming": "{eventId}-results-finals.pdf",
+        "priority": "HIGH"
+      },
+      {
+        "type": "bulletin",
+        "name": "Steward Bulletin",
+        "naming": "{eventId}-bulletin-{number}.pdf",
+        "priority": "MEDIUM"
+      },
+      {
+        "type": "tech-bulletin",
+        "name": "Technical Bulletin",
+        "naming": "{eventId}-tech-bulletin-{number}.pdf",
+        "priority": "MEDIUM"
+      }
+    ],
+    
+    "events": {
+      "1": {
+        "name": "NATS 1 - Zwartkops",
+        "date": "2026-02-08",
+        "track": "zwartkops",
+        "documents": []
+      },
+      "2": {
+        "name": "NATS 2 - Red Star",
+        "date": "2026-03-21",
+        "track": "redstar",
+        "documents": []
+      },
+      "3": {
+        "name": "NATS 3 - Idube",
+        "date": "2026-05-16",
+        "track": "idube",
+        "documents": []
+      },
+      "4": {
+        "name": "NATS 4 - Killarney",
+        "date": "2026-07-18",
+        "track": "killarney",
+        "documents": []
+      },
+      "5": {
+        "name": "NATS 5 - Formula K",
+        "date": "2026-09-12",
+        "track": "formulak",
+        "documents": []
+      },
+      "6": {
+        "name": "NATS 6 - Red Star (Finals)",
+        "date": "2026-11-14",
+        "track": "redstar",
+        "documents": []
+      }
+    }
+  }
+}

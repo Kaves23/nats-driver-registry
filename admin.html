@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NATS Admin Portal</title>
+  <link rel="icon" type="image/png" href="/rok-cup-favicon.png" />
+  <link rel="apple-touch-icon" href="/rok-cup-favicon.png" />
   <style>
     * {
       margin: 0;
@@ -682,6 +684,7 @@
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
       <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notifications</button>
       <button class="tab-btn" onclick="switchTab('audit')">Audit Trail</button>
+      <a href="/clerk.html" target="_blank" class="tab-btn" style="text-decoration: none; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border-radius: 6px; margin-left: auto;">🏁 Race Control</a>
     </div>
 
     <!-- Drivers Tab -->
@@ -775,8 +778,12 @@
               <th>Class</th>
               <th>Entry Fee</th>
               <th>Tyres</th>
+              <th>Tyres Ticket</th>
               <th>Transponder</th>
+              <th>Transponder Ticket</th>
               <th>Engine</th>
+              <th>Engine Ticket</th>
+              <th>Fuel Ticket</th>
               <th>Total Amount</th>
               <th>Payment Status</th>
               <th>Team Code</th>
@@ -784,7 +791,7 @@
             </tr>
           </thead>
           <tbody id="raceEntriesTable">
-            <tr><td colspan="12" class="loading">Loading race entries...</td></tr>
+            <tr><td colspan="16" class="loading">Loading race entries...</td></tr>
           </tbody>
         </table>
       </div>
@@ -951,30 +958,119 @@
             </div>
           </div>
           
-          <!-- Quick Templates -->
-          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-            <h4 style="margin: 0 0 16px 0; color: #1e293b;">⚡ Quick Templates</h4>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <button onclick="useTemplate('Race Starting', 'Your heat is starting in 30 minutes. Please proceed to the grid area.')" 
-                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
-                🏁 Race Starting Soon
+          <!-- Quick Templates & Message Builder Row -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <!-- Quick Templates -->
+            <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <h4 style="margin: 0 0 16px 0; color: #1e293b; font-size: 14px;">⚡ Quick Templates</h4>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button onclick="useTemplate('Race Starting', 'Your heat is starting in 30 minutes. Please proceed to the grid area.')" 
+                        style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
+                  🏁 Race Starting
+                </button>
+                <button onclick="useTemplate('Schedule Change', 'The race schedule has been updated. Please check the latest times on your driver portal.')" 
+                        style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
+                  📋 Schedule Update
+                </button>
+                <button onclick="useTemplate('Weather Alert', 'Due to weather conditions, racing is temporarily paused. Please standby for further announcements.')" 
+                        style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
+                  🌧️ Weather Alert
+                </button>
+                <button onclick="useTemplate('Results Posted', 'Race results are now available! Check your driver portal to see your times and positions.')" 
+                        style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
+                  🏆 Results Posted
+                </button>
+                <button onclick="useTemplate('Briefing Reminder', 'Drivers briefing in 15 minutes at the main tent. Attendance is mandatory.')" 
+                        style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
+                  📣 Briefing
+                </button>
+              </div>
+            </div>
+            
+            <!-- Message Builder -->
+            <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <h4 style="margin: 0 0 16px 0; color: #1e293b; font-size: 14px;">🛠️ Message Builder</h4>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <select id="msgBuilderType" onchange="updateMsgBuilder()" style="padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; background: white;">
+                  <option value="">Select type...</option>
+                  <option value="heat">🏎️ Heat/Race Call</option>
+                  <option value="time">⏰ Time Reminder</option>
+                  <option value="location">📍 Location Alert</option>
+                  <option value="announcement">📢 General Announcement</option>
+                  <option value="urgent">🚨 Urgent Notice</option>
+                </select>
+                
+                <div id="msgBuilderOptions" style="display: none;">
+                  <!-- Heat/Race options -->
+                  <div id="heatOptions" style="display: none;">
+                    <select id="heatClass" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; margin-bottom: 8px;">
+                      <option value="All Classes">All Classes</option>
+                      <option value="Cadet">Cadet</option>
+                      <option value="Mini ROK">Mini ROK</option>
+                      <option value="Mini ROK U10">Mini ROK U10</option>
+                      <option value="OK-J">OK-J</option>
+                      <option value="OK-N">OK-N</option>
+                    </select>
+                    <select id="heatType" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;">
+                      <option value="Qualifying">Qualifying</option>
+                      <option value="Heat 1">Heat 1</option>
+                      <option value="Heat 2">Heat 2</option>
+                      <option value="Pre-Final">Pre-Final</option>
+                      <option value="Final">Final</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Time options -->
+                  <div id="timeOptions" style="display: none;">
+                    <select id="timeMinutes" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;">
+                      <option value="5">5 minutes</option>
+                      <option value="10">10 minutes</option>
+                      <option value="15">15 minutes</option>
+                      <option value="30" selected>30 minutes</option>
+                      <option value="60">1 hour</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Location options -->
+                  <div id="locationOptions" style="display: none;">
+                    <select id="locationPlace" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;">
+                      <option value="grid area">Grid Area</option>
+                      <option value="scrutineering">Scrutineering</option>
+                      <option value="main tent">Main Tent</option>
+                      <option value="paddock">Paddock</option>
+                      <option value="pit lane">Pit Lane</option>
+                      <option value="race control">Race Control</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Urgent options -->
+                  <div id="urgentOptions" style="display: none;">
+                    <select id="urgentType" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;">
+                      <option value="red">🔴 Red Flag</option>
+                      <option value="delay">⏸️ Session Delayed</option>
+                      <option value="cancelled">❌ Session Cancelled</option>
+                      <option value="safety">⚠️ Safety Notice</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <button onclick="generateMessage()" style="padding: 10px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                  ✨ Generate Message
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Push Subscribers List -->
+          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h4 style="margin: 0; color: #1e293b;">👥 Push Subscribers</h4>
+              <button onclick="loadPushSubscribers()" style="padding: 6px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                ↻ Refresh
               </button>
-              <button onclick="useTemplate('Schedule Change', 'The race schedule has been updated. Please check the latest times on your driver portal.')" 
-                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
-                📋 Schedule Update
-              </button>
-              <button onclick="useTemplate('Weather Alert', 'Due to weather conditions, racing is temporarily paused. Please standby for further announcements.')" 
-                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
-                🌧️ Weather Alert
-              </button>
-              <button onclick="useTemplate('Results Posted', 'Race results are now available! Check your driver portal to see your times and positions.')" 
-                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
-                🏆 Results Posted
-              </button>
-              <button onclick="useTemplate('Briefing Reminder', 'Drivers briefing in 15 minutes at the main tent. Attendance is mandatory.')" 
-                      style="padding: 12px 16px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s;">
-                📣 Briefing Reminder
-              </button>
+            </div>
+            <div id="subscribersList" style="max-height: 300px; overflow-y: auto;">
+              <p style="color: #6b7280; text-align: center; padding: 20px;">Loading subscribers...</p>
             </div>
           </div>
         </div>
@@ -1223,8 +1319,12 @@
         <input type="text" id="eventName" placeholder="e.g., Northern Regions Crown">
       </div>
       <div class="form-group">
-        <label>Event Date</label>
-        <input type="date" id="eventDate">
+        <label>Start Date (Day 1)</label>
+        <input type="date" id="eventStartDate">
+      </div>
+      <div class="form-group">
+        <label>End Date (Last Day)</label>
+        <input type="date" id="eventEndDate">
       </div>
       <div class="form-group">
         <label>Location</label>
@@ -1772,7 +1872,7 @@
         showToast(err.message, 'error');
         const table = document.getElementById('raceEntriesTable');
         if (table) {
-          table.innerHTML = '<tr><td colspan="12" class="loading">Error loading race entries: ' + err.message + '</td></tr>';
+          table.innerHTML = '<tr><td colspan="16" class="loading">Error loading race entries: ' + err.message + '</td></tr>';
         }
       }
     }
@@ -1782,7 +1882,7 @@
       if (!table) return;
       
       if (!entries || entries.length === 0) {
-        table.innerHTML = '<tr><td colspan="12" class="loading">No entries found</td></tr>';
+        table.innerHTML = '<tr><td colspan="16" class="loading">No entries found</td></tr>';
         return;
       }
 
@@ -1821,6 +1921,23 @@
         const hasEngineFromColumn = entry.engine === 1 || entry.engine === '1';
         const engineDisplay = (hasEngineFromItems || hasEngineFromColumn) ? '✓' : '';
         
+        // Ticket references (show serial number if exists, otherwise "NOT PURCHASED" in red)
+        const tyresTicket = entry.ticket_tyres_ref 
+          ? `<span style="font-family: monospace; font-size: 11px; color: #059669;">${entry.ticket_tyres_ref}</span>`
+          : '<span style="color: red; font-weight: bold;">NOT PURCHASED</span>';
+        
+        const transponderTicket = entry.ticket_transponder_ref
+          ? `<span style="font-family: monospace; font-size: 11px; color: #0ea5e9;">${entry.ticket_transponder_ref}</span>`
+          : '<span style="color: red; font-weight: bold;">NOT PURCHASED</span>';
+        
+        const engineTicket = entry.ticket_engine_ref
+          ? `<span style="font-family: monospace; font-size: 11px; color: #f97316;">${entry.ticket_engine_ref}</span>`
+          : '<span style="color: red; font-weight: bold;">NOT PURCHASED</span>';
+        
+        const fuelTicket = entry.ticket_fuel_ref
+          ? `<span style="font-family: monospace; font-size: 11px; color: #10b981;">${entry.ticket_fuel_ref}</span>`
+          : '<span style="color: red; font-weight: bold;">NOT PURCHASED</span>';
+        
         console.log(`Entry: ${entry.driver_email || 'N/A'} - Engine from items: ${hasEngineFromItems}, Engine column: ${entry.engine}, Display: ${engineDisplay}`);
         
         const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
@@ -1836,8 +1953,12 @@
             <td><span class="class-badge ${getClassBadgeClass(raceClass)}">${raceClass}</span></td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'amount_paid', ${entry.amount_paid || 0})">R${parseFloat(entry.amount_paid || entry.entry_fee || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</td>
             <td>${tyres}</td>
+            <td>${tyresTicket}</td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'transponder_number', '${entry.transponder_number || ''}')">${transponderDisplay}</td>
+            <td>${transponderTicket}</td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'engine', ${hasEngineFromColumn ? 1 : 0})">${engineDisplay}</td>
+            <td>${engineTicket}</td>
+            <td>${fuelTicket}</td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'amount_paid', ${entry.amount_paid || 0})"><strong>R${parseFloat(entry.amount_paid || entry.entry_fee || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</strong></td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'payment_status', '${entry.payment_status || 'Pending'}')"  data-type="select">
               <span class="status-badge status-${(entry.payment_status || 'pending').toLowerCase()}">${entry.payment_status || 'Pending'}</span>
@@ -2239,7 +2360,16 @@
       }
 
       tbody.innerHTML = events.map(event => {
-        const eventDate = new Date(event.event_date).toLocaleDateString('en-ZA');
+        // Show date range if start_date and end_date exist, otherwise show event_date
+        let dateDisplay;
+        if (event.start_date && event.end_date) {
+          const startDate = new Date(event.start_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
+          const endDate = new Date(event.end_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+          dateDisplay = `${startDate} - ${endDate}`;
+        } else {
+          dateDisplay = new Date(event.event_date).toLocaleDateString('en-ZA');
+        }
+        
         const deadline = new Date(event.registration_deadline).toLocaleDateString('en-ZA');
         const created = new Date(event.created_at).toLocaleDateString('en-ZA');
         const registrationsCount = event.registration_count || 0;
@@ -2247,7 +2377,7 @@
         return `
           <tr>
             <td>${event.event_name}</td>
-            <td>${eventDate}</td>
+            <td>${dateDisplay}</td>
             <td>${event.location || '-'}</td>
             <td>R${parseFloat(event.entry_fee).toLocaleString('en-ZA')}</td>
             <td>${deadline}</td>
@@ -2266,7 +2396,8 @@
       currentEvent = null;
       document.getElementById('eventModalTitle').textContent = 'Create Event';
       document.getElementById('eventName').value = '';
-      document.getElementById('eventDate').value = '';
+      document.getElementById('eventStartDate').value = '';
+      document.getElementById('eventEndDate').value = '';
       document.getElementById('eventLocation').value = '';
       document.getElementById('eventEntryFee').value = '';
       document.getElementById('eventDeadline').value = '';
@@ -2286,7 +2417,13 @@
 
         document.getElementById('eventModalTitle').textContent = 'Edit Event';
         document.getElementById('eventName').value = event.event_name;
-        document.getElementById('eventDate').value = event.event_date.split('T')[0];
+        
+        // Use start_date/end_date if available, otherwise fall back to event_date
+        const startDate = event.start_date || event.event_date;
+        const endDate = event.end_date || event.event_date;
+        
+        document.getElementById('eventStartDate').value = startDate ? startDate.split('T')[0] : '';
+        document.getElementById('eventEndDate').value = endDate ? endDate.split('T')[0] : '';
         document.getElementById('eventLocation').value = event.location || '';
         document.getElementById('eventEntryFee').value = event.entry_fee;
         document.getElementById('eventDeadline').value = event.registration_deadline.split('T')[0];
@@ -2300,13 +2437,20 @@
 
     async function saveEvent() {
       const name = document.getElementById('eventName').value.trim();
-      const date = document.getElementById('eventDate').value;
+      const startDate = document.getElementById('eventStartDate').value;
+      const endDate = document.getElementById('eventEndDate').value;
       const location = document.getElementById('eventLocation').value.trim();
       const fee = parseFloat(document.getElementById('eventEntryFee').value);
       const deadline = document.getElementById('eventDeadline').value;
 
-      if (!name || !date || !location || !fee || !deadline) {
+      if (!name || !startDate || !endDate || !location || !fee || !deadline) {
         showToast('Please fill in all fields', 'error');
+        return;
+      }
+      
+      // Validate end date is not before start date
+      if (new Date(endDate) < new Date(startDate)) {
+        showToast('End date cannot be before start date', 'error');
         return;
       }
 
@@ -2319,7 +2463,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             event_name: name,
-            event_date: date,
+            event_date: startDate, // Keep for backwards compatibility
+            start_date: startDate,
+            end_date: endDate,
             location,
             entry_fee: fee,
             registration_deadline: deadline
@@ -2820,10 +2966,58 @@
         
         // Also load drivers, classes, and events for targeting
         await loadNotificationTargets();
+        
+        // Load subscribers list
+        await loadPushSubscribers();
       } catch (error) {
         console.error('Error loading push stats:', error);
         document.getElementById('subscribedCount').textContent = '?';
         document.getElementById('notificationsSent').textContent = '?';
+      }
+    }
+    
+    async function loadPushSubscribers() {
+      const container = document.getElementById('subscribersList');
+      if (!container) return;
+      
+      container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">Loading...</p>';
+      
+      try {
+        const response = await fetch('/api/push/subscribers');
+        const data = await response.json();
+        
+        if (data.success && data.subscribers && data.subscribers.length > 0) {
+          container.innerHTML = `
+            <div style="font-size: 11px; color: #6b7280; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+              Total: ${data.subscribers.length} subscriber${data.subscribers.length !== 1 ? 's' : ''}
+            </div>
+            ${data.subscribers.map(sub => `
+              <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 6px; border-left: 3px solid ${sub.driverId ? '#10b981' : '#94a3b8'};">
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: 13px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${sub.driverName}
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${sub.email}
+                  </div>
+                </div>
+                <div style="text-align: right; flex-shrink: 0;">
+                  <div style="font-size: 11px; color: #6b7280; background: ${sub.racingClass !== '-' ? '#e0f2fe' : '#f1f5f9'}; padding: 2px 8px; border-radius: 4px;">
+                    ${sub.racingClass}
+                  </div>
+                  <div style="font-size: 10px; color: #94a3b8; margin-top: 4px;">
+                    ${sub.createdAt ? new Date(sub.createdAt).toLocaleDateString('en-ZA') : '-'}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          `;
+        } else {
+          container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No subscribers yet</p>';
+        }
+      } catch (error) {
+        console.error('Error loading subscribers:', error);
+        container.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">Error loading subscribers</p>';
       }
     }
     
@@ -2995,6 +3189,90 @@
     function useTemplate(title, body) {
       document.getElementById('pushTitle').value = title;
       document.getElementById('pushBody').value = body;
+    }
+    
+    function updateMsgBuilder() {
+      const type = document.getElementById('msgBuilderType').value;
+      const optionsContainer = document.getElementById('msgBuilderOptions');
+      
+      // Hide all option panels
+      document.getElementById('heatOptions').style.display = 'none';
+      document.getElementById('timeOptions').style.display = 'none';
+      document.getElementById('locationOptions').style.display = 'none';
+      document.getElementById('urgentOptions').style.display = 'none';
+      
+      if (!type) {
+        optionsContainer.style.display = 'none';
+        return;
+      }
+      
+      optionsContainer.style.display = 'block';
+      
+      // Show relevant options
+      if (type === 'heat') {
+        document.getElementById('heatOptions').style.display = 'block';
+        document.getElementById('timeOptions').style.display = 'block';
+      } else if (type === 'time') {
+        document.getElementById('timeOptions').style.display = 'block';
+      } else if (type === 'location') {
+        document.getElementById('locationOptions').style.display = 'block';
+      } else if (type === 'urgent') {
+        document.getElementById('urgentOptions').style.display = 'block';
+      }
+    }
+    
+    function generateMessage() {
+      const type = document.getElementById('msgBuilderType').value;
+      
+      if (!type) {
+        alert('Please select a message type first.');
+        return;
+      }
+      
+      let title = '';
+      let body = '';
+      
+      if (type === 'heat') {
+        const heatClass = document.getElementById('heatClass').value;
+        const heatType = document.getElementById('heatType').value;
+        const minutes = document.getElementById('timeMinutes').value;
+        
+        title = `${heatClass} - ${heatType}`;
+        body = `${heatClass} ${heatType} starts in ${minutes} minutes. Please proceed to the grid area and be ready.`;
+        
+      } else if (type === 'time') {
+        const minutes = document.getElementById('timeMinutes').value;
+        title = 'Time Reminder';
+        body = `Reminder: ${minutes} minutes until the next session. Please ensure you are prepared.`;
+        
+      } else if (type === 'location') {
+        const location = document.getElementById('locationPlace').value;
+        title = 'Location Required';
+        body = `All drivers please report to ${location} immediately.`;
+        
+      } else if (type === 'announcement') {
+        title = 'Announcement';
+        body = 'Please check the notice board for the latest updates.';
+        
+      } else if (type === 'urgent') {
+        const urgentType = document.getElementById('urgentType').value;
+        const urgentMessages = {
+          'red': { title: '🔴 RED FLAG', body: 'RED FLAG! All drivers must stop racing immediately and return to the pit lane safely.' },
+          'delay': { title: 'Session Delayed', body: 'The current session has been delayed. Please standby for further announcements.' },
+          'cancelled': { title: 'Session Cancelled', body: 'The session has been cancelled. Please check with race control for updated schedule.' },
+          'safety': { title: '⚠️ Safety Notice', body: 'Important safety notice: Please ensure all equipment is properly secured and follow marshal instructions.' }
+        };
+        title = urgentMessages[urgentType].title;
+        body = urgentMessages[urgentType].body;
+      }
+      
+      // Fill in the notification form
+      document.getElementById('pushTitle').value = title;
+      document.getElementById('pushBody').value = body;
+      
+      // Scroll to the form
+      document.getElementById('pushTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('pushTitle').focus();
     }
     
     async function sendPushNotification() {

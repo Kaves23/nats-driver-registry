@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROK Cup South Africa - 2026 Class Guide - OK-N</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap');
+        
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: white;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            page-break-after: always;
+        }
+        
+        .header {
+            background: #1e40af;
+            padding: 30px 40px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.2));
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .logo-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .rok-logo-img {
+            height: 70px;
+            width: auto;
+        }
+        
+        .rok-logo {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .season-badge {
+            background: #1e40af;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            border: 2px solid white;
+        }
+        
+        .doc-title {
+            font-size: 36px;
+            font-weight: 900;
+            margin: 20px 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+            background: #1e40af;
+            padding: 15px 25px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .doc-subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+            font-weight: 300;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .class-header {
+            background: #1e40af;
+            color: white;
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        
+        .class-name {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .class-age {
+            font-size: 14px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+            font-family: 'Montserrat', sans-serif;
+            color: #facd12;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #1e40af;
+            margin: 40px 0 20px 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .info-list {
+            margin: 15px 0;
+            list-style: none;
+        }
+        
+        .info-list li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        
+        .info-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #1e40af;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box p {
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: white;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 4px;
+            border-left: 4px solid #facd12;
+        }
+
+        .highlight-box h3 {
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .highlight-box p {
+            font-size: 13px;
+            line-height: 1.7;
+            opacity: 0.95;
+        }
+
+        .spec-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .spec-card {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #1e40af;
+        }
+
+        .spec-card.summer {
+            background: #fff8f0;
+            border-left: 4px solid #f97316;
+        }
+
+        .spec-card.autumn {
+            background: #fff4ed;
+            border-left: 4px solid #ea580c;
+        }
+
+        .spec-card.winter {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .spec-card.spring {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+        }
+
+        .spec-card h4 {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .spec-card p {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #666;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e40af;
+            color: white;
+            padding: 15px 40px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-left {
+            opacity: 0.7;
+        }
+        
+        .footer-right {
+            font-weight: 700;
+        }
+        
+        .page-number {
+            background: #1e40af;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 2px;
+            margin-left: 10px;
+            border: 2px solid white;
+        }
+        
+        @media print {
+            .page {
+                margin: 0;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-left">
+                        <img src="https://rokcup.co.za/wp-content/uploads/2024/01/ROK-CUP-NAZIONI-sud-africa.png" alt="ROK Cup South Africa Logo" class="rok-logo-img">
+                        <div class="rok-logo">ROK CUP SA</div>
+                    </div>
+                    <div class="season-badge">2026 SEASON</div>
+                </div>
+                <div class="doc-title">Class Guide</div>
+                <div class="doc-subtitle">OK-N Class — FIA Senior Direct Drive</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="class-header">
+                <div class="class-name">OK-N</div>
+                <div class="class-age">14+ Years • Vortex OK-N Engine • FIA Direct Drive • Pool Engine Programme</div>
+            </div>
+
+            <div class="section-title">Class Overview</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;">OK-N is the senior direct drive category in ROK Cup South Africa and the closest local equivalent to top-level European OK racing. Aimed at drivers targeting international seats, FIA Academy programmes, and ultimately a move into single-seaters or high-level GT programmes, OK-N delivers full-power direct drive performance with centrally managed engine parity.</p>
+
+            <div class="highlight-box">
+                <h3>Benchmark Competition</h3>
+                <p>The OK-N grid brings together the best young drivers from MINI and OK-J with experienced seniors returning from European campaigns. This creates a benchmark field: if you are competitive in OK-N in South Africa, you have a realistic reference for where you stand against international pace.</p>
+            </div>
+
+            <div class="section-title">Eligibility & Requirements</div>
+
+            <ul class="info-list">
+                <li><strong>Age Range:</strong> From around 14-15 years upwards (age as of 31 December 2026)</li>
+                <li><strong>Licence:</strong> Valid MSA karting licence appropriate for senior direct drive competition</li>
+                <li><strong>Engine:</strong> Vortex OK-N engine supplied via pool programme</li>
+                <li><strong>Experience Level:</strong> Ambitious drivers with significant karting experience, often graduates from OK-J or drivers with European racing background</li>
+                <li><strong>Fitness:</strong> High-level fitness required — race distances and power demands are serious</li>
+            </ul>
+
+            <div class="section-title">Technical Specifications</div>
+
+            <div class="spec-grid">
+                <div class="spec-card summer">
+                    <h4>Engine & Performance</h4>
+                    <p><strong>Engine:</strong> Vortex OK-N (FIA homologated)<br>
+                    <strong>Supply:</strong> Pool engine programme<br>
+                    <strong>Power:</strong> ~24-25hp (senior direct drive)<br>
+                    <strong>Maintenance:</strong> Stripped and rebuilt after each National, dyno signed-off<br>
+                    <strong>Allocation:</strong> Structured draw system</p>
+                </div>
+
+                <div class="spec-card autumn">
+                    <h4>Chassis & Equipment</h4>
+                    <p><strong>Chassis:</strong> FIA homologated OK-N chassis<br>
+                    <strong>Tyres:</strong> Controlled tyre allocation, managed across heats<br>
+                    <strong>Weight:</strong> Minimum weight as per FIA/MSA regulations<br>
+                    <strong>Data:</strong> Data logging essential — professional standard<br>
+                    <strong>Brakes:</strong> High-performance senior braking system</p>
+                </div>
+            </div>
+
+            <div class="section-title">Class Philosophy & Standards</div>
+
+            <ul class="info-list">
+                <li><strong>Serious Senior-Level Racing:</strong> Race distances, tyre usage, and event formats are structured to resemble European OK weekends, including tyre and engine management across heats and finals</li>
+                <li><strong>Engine Parity and Cost Control:</strong> Engines supplied from the National pool, dramatically reducing the cost of chasing power compared with owning multiple tuned engines, while keeping the performance window tight</li>
+                <li><strong>High Performance Standards:</strong> Driving standards, fitness requirements, and expectations around professionalism are deliberately high. Drivers expected to arrive prepared, work with data, and give structured feedback</li>
+                <li><strong>Showcase for Talent:</strong> OK-N is treated as a flagship class for South African karting, with media, content, and event presentation built to highlight the best emerging talent</li>
+            </ul>
+
+            <div class="section-title">What to Expect</div>
+
+            <ul class="info-list">
+                <li><strong>Elite Competition:</strong> OK-N fields include the fastest drivers in the country. Expect professional-level race management, close battles, and zero tolerance for poor driving standards</li>
+                <li><strong>Technical Sophistication:</strong> Drivers must manage tyres, data, and strategy over full double-header weekends. This is exactly what car teams look for when evaluating karting graduates</li>
+                <li><strong>Physical Demands:</strong> Full race distances at senior power levels require serious fitness preparation. Drivers must sustain high-intensity physical output</li>
+                <li><strong>Professional Environment:</strong> Teams operate at professional standards with structured debriefs, video analysis, and comprehensive data review</li>
+            </ul>
+
+            <div class="section-title">Prize Package & Opportunities</div>
+
+            <div class="highlight-box">
+                <h3>Direct Bridge to Single-Seaters</h3>
+                <p>OK-N National Champions receive R100,000 in MSA4 tyres for the 2027 season, directly supporting the progression from karting into single-seater racing. This is combined with a FIA Senior European Academy seat, ROK Superfinal ticket, and FIA OK-N World Cup seat.</p>
+            </div>
+
+            <ul class="info-list">
+                <li><strong>Season Champion:</strong> R100,000 in MSA4 tyres for 2027 MSA4 Championship, FIA Senior European Academy seat, ROK Superfinal ticket, FIA OK-N World Cup seat, National Champion title</li>
+                <li><strong>International Pathway:</strong> Prize package specifically designed to facilitate transition into professional single-seater racing</li>
+                <li><strong>Recognition:</strong> OK-N Champions receive significant media coverage and recognition within South African motorsport</li>
+            </ul>
+
+            <div class="section-title">Cost Structure</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;">OK-N operates on the pool engine model, saving approximately R38,000-R48,000 per season versus buying, rebuilding, and dynoing your own OK engine. The season package includes all National entries, pool race engines, race slicks, and fuel for 8 race days at approximately R107,760 for the season.</p>
+
+            <div class="info-box">
+                <p><strong>Professional Investment:</strong> OK-N represents the pinnacle of South African karting. For drivers serious about international competition or progression to professional racing, it provides world-class preparation at controlled costs.</p>
+            </div>
+
+            <div class="section-title">Progression Pathway</div>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>Into OK-N:</strong> Drivers typically enter OK-N from OK-J (around age 14-15) or arrive with European karting experience. The step up from OK-J is significant in power, speed, and physical demands.</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>From OK-N to Cars:</strong> OK-N is structured as direct preparation for MSA4, Formula 4, GT4 Junior, and touring car programmes. The R100,000 MSA4 tyre package for the National Champion specifically addresses the financial barrier of entering single-seaters.</p>
+
+            <p style="font-size: 13px; line-height: 1.8; margin-bottom: 15px;"><strong>European Opportunities:</strong> Strong OK-N drivers are positioned for European OK campaigns, FIA Academy programmes, and international junior championships. The FIA Senior Academy seat provides direct access to the European pathway.</p>
+
+            <p style="font-size: 13px; line-height: 1.8;"><strong>Skills Translation:</strong> The tyre management, data analysis, physical fitness, and race strategy demands of OK-N translate directly to car racing requirements. Teams recruiting from karting specifically look for OK-N-level experience.</p>
+
+            <div class="section-title">Who Should Race OK-N</div>
+
+            <ul class="info-list">
+                <li><strong>Ambitious Juniors:</strong> Drivers who have excelled in OK-J and are ready for the next level of competition</li>
+                <li><strong>European Veterans:</strong> Drivers returning from European campaigns who want to maintain competitive fitness while racing in South Africa</li>
+                <li><strong>Car Racing Candidates:</strong> Drivers actively preparing for single-seater or GT programmes who need serious mileage at competitive levels</li>
+                <li><strong>International Prospects:</strong> Drivers targeting FIA Academy, European OK, or world championship programmes</li>
+            </ul>
+
+        </div>
+
+        <div class="footer">
+            <div class="footer-left">ROK Cup South Africa | Class Guide — OK-N Class 2026 | Version 1.0</div>
+            <div class="footer-right">OFFICIAL DOCUMENT <span class="page-number">DOC011</span></div>
+        </div>
+    </div>
+</body>
+</html>

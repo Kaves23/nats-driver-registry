@@ -1,0 +1,31 @@
+Document ID,Document Name,Category,Section,File Path,Status,Current Version,Last Updated,Event Specific,Notes,Priority
+DOC001,Supplementary Regulations,Official Documents,docs,/docs/rok-2026-event-official-notice.pdf,Missing,0,,"No - Season Wide",MSA permit & core event rules,CRITICAL
+DOC002,MSA Permit,Official Documents,docs,/docs/rok-2026-msa-permit.pdf,Missing,0,,"No - Per Event",Motorsport SA permit approval,CRITICAL
+DOC003,Entry Pack & Event Overview,Official Documents,docs,/docs/rok-2026-event-entry-pack.pdf,Missing,0,,"No - Season Wide",How to register & entry info,CRITICAL
+DOC004,MSA ROK National Regulations 2026,Regulations,regs,/docs/rok-msa-2026-national-regs.pdf,Missing,0,,"No - Season Wide",Full 2026 sporting & technical regs,CRITICAL
+DOC005,Event Supplementary Regulations,Regulations,regs,/docs/rok-2026-event-supplementary-regs.pdf,Missing,0,,"Yes - Per Event",Event-specific SR,CRITICAL
+DOC006,Regional Regulations,Regulations,regs,/docs/rok-2026-regional-regs.pdf,Missing,0,,"No - Season Wide",Provincial/regional rules,MEDIUM
+DOC007,Cadet & Mini Class Guide,Class Guide,mini,/docs/rok-2026-mini-class-guide.pdf,Missing,0,,"No - Season Wide","Mini classes: Cadet, Mini U/10, Mini ROK",CRITICAL
+DOC008,Prize Structure - Mini Classes,Prize Structure,mini,/docs/rok-2026-mini-prize-structure.pdf,Missing,0,,"No - Season Wide",Points & prizes for Mini classes,HIGH
+DOC009,OK-J Class Guide,Class Guide,okj,/docs/rok-2026-okj-class-guide.pdf,Missing,0,,"No - Season Wide",OK-J class rules & specs,HIGH
+DOC010,Prize Structure - OK-J,Prize Structure,okj,/docs/rok-2026-okj-prize-structure.pdf,Missing,0,,"No - Season Wide",Points & prizes for OK-J,HIGH
+DOC011,OK-N Class Guide,Class Guide,okn,/docs/rok-2026-okn-class-guide.pdf,Missing,0,,"No - Season Wide",OK-N senior class rules,HIGH
+DOC012,Prize Structure - OK-N,Prize Structure,okn,/docs/rok-2026-okn-prize-structure.pdf,Missing,0,,"No - Season Wide",Points & prizes for OK-N,HIGH
+DOC013,Academy Class Guide,Class Guide,academy,/docs/rok-2026-academy-class-guide.pdf,Missing,0,,"No - Season Wide",Academy programme rules,HIGH
+DOC014,Prize Structure - Academy,Prize Structure,academy,/docs/rok-2026-academy-prize-structure.pdf,Missing,0,,"No - Season Wide",Academy points & prizes,HIGH
+DOC015,Friday Timetable,Timetable,times,/docs/events/EVENTID/friday-timetable.pdf,Missing,0,,"Yes - Per Event",Practice day schedule,MEDIUM
+DOC016,Saturday Timetable,Timetable,times,/docs/events/EVENTID/saturday-timetable.pdf,Missing,0,,"Yes - Per Event","Qualifying, Heats, Prizegiving",MEDIUM
+DOC017,Sunday Timetable,Timetable,times,/docs/events/EVENTID/sunday-timetable.pdf,Missing,0,,"Yes - Per Event","Finals, Championship day",MEDIUM
+DOC018,Circuit Track Map,Maps,maps,/docs/tracks/TRACKNAME-track-map.pdf,Missing,0,,"Yes - Per Track",Track layout diagram,MEDIUM
+DOC019,Paddock Layout Map,Maps,maps,/docs/tracks/TRACKNAME-paddock-map.pdf,Missing,0,,"Yes - Per Track",Paddock & pit locations,MEDIUM
+DOC020,Spectator Parking Map,Maps,maps,/docs/tracks/TRACKNAME-parking-map.pdf,Missing,0,,"Yes - Per Track",Where spectators can park,LOW
+DOC021,Venue Facility Guide,Maps,maps,/docs/tracks/TRACKNAME-facility-guide.pdf,Missing,0,,"Yes - Per Track","Restrooms, food, viewing areas",LOW
+DOC022,Entry List,Race Specific,race-docs,/uploads/event-docs/EVENTID/entry-list.pdf,Missing,0,,"Yes - Per Event",Official driver entry list,HIGH
+DOC023,Results - Qualifying,Race Specific,race-docs,/uploads/event-docs/EVENTID/results-qualifying.pdf,Missing,0,,"Yes - Per Event",Qualifying session results,HIGH
+DOC024,Results - Heats,Race Specific,race-docs,/uploads/event-docs/EVENTID/results-heats.pdf,Missing,0,,"Yes - Per Event",Heat race results,HIGH
+DOC025,Results - Finals,Race Specific,race-docs,/uploads/event-docs/EVENTID/results-finals.pdf,Missing,0,,"Yes - Per Event",Final race results,HIGH
+DOC026,Steward Bulletins,Race Specific,race-docs,/uploads/event-docs/EVENTID/bulletin-XX.pdf,Missing,0,,"Yes - Per Event",Official notices & decisions,MEDIUM
+DOC027,Technical Bulletins,Race Specific,race-docs,/uploads/event-docs/EVENTID/tech-bulletin-XX.pdf,Missing,0,,"Yes - Per Event",Technical clarifications,MEDIUM
+DOC028,Pool Engine Agreement,Pool Engines,pool,/docs/rok-2026-pool-engine-agreement.pdf,Missing,0,,"No - Season Wide",Engine rental T&Cs,HIGH
+DOC029,Pool Engine Parity Report,Pool Engines,pool,/docs/rok-2026-pool-engine-parity.pdf,Missing,0,,"No - Season Wide",Dyno results & engine specs,LOW
+DOC030,Spectator Information,Spectators,spectator,/docs/rok-2026-spectator-guide.pdf,Missing,0,,"No - Season Wide","Tickets, parking, facilities",LOW

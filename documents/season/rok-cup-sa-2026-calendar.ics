@@ -1,0 +1,64 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ROK Cup South Africa//2026 Season//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:ROK Cup SA 2026
+X-WR-TIMEZONE:Africa/Johannesburg
+BEGIN:VEVENT
+UID:rok2026-regional-rd1@rokcup.co.za
+DTSTART;VALUE=DATE:20260214
+DTEND;VALUE=DATE:20260215
+SUMMARY:Northern Regions Round 1
+DESCRIPTION:Season Opener.\nStandalone Regional Event.\nVenue: Red Star Raceway
+LOCATION:Red Star Raceway, Delmas
+END:VEVENT
+BEGIN:VEVENT
+UID:rok2026-summernats@rokcup.co.za
+DTSTART;VALUE=DATE:20260320
+DTEND;VALUE=DATE:20260323
+SUMMARY:Summer Nats (National Rds 1 & 2)
+DESCRIPTION:ROK Cup National Rounds 1 & 2.\nIncludes Northern Regions Rounds 2 & 3.\nFriday: Official Practice\nSaturday: Round 1 (Regional Rd 2)\nSunday: Round 2 (Regional Rd 3)
+LOCATION:Red Star Raceway, Delmas
+END:VEVENT
+BEGIN:VEVENT
+UID:rok2026-regional-rd4@rokcup.co.za
+DTSTART;VALUE=DATE:20260411
+DTEND;VALUE=DATE:20260412
+SUMMARY:Northern Regions Round 4
+DESCRIPTION:Standalone Regional Event.\nVenue: VKC (Vereeniging)
+LOCATION:VKC Kart Circuit, Vereeniging
+END:VEVENT
+BEGIN:VEVENT
+UID:rok2026-autumnnats@rokcup.co.za
+DTSTART;VALUE=DATE:20260508
+DTEND;VALUE=DATE:20260511
+SUMMARY:Autumn Nats (National Rds 3 & 4)
+DESCRIPTION:ROK Cup National Rounds 3 & 4.\nFriday: Official Practice\nSaturday: Round 3\nSunday: Round 4
+LOCATION:iDube Raceway, Camperdown, KZN
+END:VEVENT
+BEGIN:VEVENT
+UID:rok2026-winternats@rokcup.co.za
+DTSTART;VALUE=DATE:20260710
+DTEND;VALUE=DATE:20260713
+SUMMARY:Winter Nats (National Rds 5 & 6)
+DESCRIPTION:ROK Cup National Rounds 5 & 6.\nIncludes Northern Regions Rounds 5 & 6.\nFriday: Official Practice\nSaturday: Round 5 (Regional Rd 5)\nSunday: Round 6 (Regional Rd 6)
+LOCATION:Formula K Raceway, Benoni
+END:VEVENT
+BEGIN:VEVENT
+UID:rok2026-springnats@rokcup.co.za
+DTSTART;VALUE=DATE:20260910
+DTEND;VALUE=DATE:20260913
+SUMMARY:Spring Nats (National Rds 7 & 8)
+DESCRIPTION:SEASON FINALE.\nROK Cup National Rounds 7 & 8.\nThursday: Official Practice\nFriday: Round 7\nSaturday: Round 8\n(Note: No Sunday racing at Killarney)
+LOCATION:Killarney International Raceway, Cape Town
+END:VEVENT
+BEGIN:VEVENT
+UID:rok2026-regional-final@rokcup.co.za
+DTSTART;VALUE=DATE:20261107
+DTEND;VALUE=DATE:20261108
+SUMMARY:Northern Regions Final (Round 7)
+DESCRIPTION:Final Round of the Northern Regions Championship.\nVenue: Red Star Raceway
+LOCATION:Red Star Raceway, Delmas
+END:VEVENT
+END:VCALENDAR
