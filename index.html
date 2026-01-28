@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ROK Cup South Africa 2026 — Nats Series</title>
-  <meta name="description" content="ROK Cup South Africa 2026 — Summer, Autumn, Winter and Spring Nats." />
+  <title>ROK Cup South Africa 2026 - Nats Series</title>
+  <meta name="description" content="ROK Cup South Africa 2026 - Summer, Autumn, Winter and Spring Nats." />
 
  
   <!-- Favicon: place rok-cup-favicon.png alongside this HTML (or update the path below) -->
@@ -20,7 +20,7 @@
       padding: 0;
     }
 
-     /* Overview modal — document / PDF link styling */
+     /* Overview modal - document / PDF link styling */
     .info-section .info-doc-list {
       display: flex;
       flex-direction: column;
@@ -33,25 +33,25 @@
       --doc-accent: #0ea5e9;
     }
 
-    /* Base card styles */
+    /* Base card styles for document links - Dark theme */
     .info-section .info-doc-link {
       display: flex;
       align-items: stretch;
-      gap: 0.8rem;
-      padding: 0.6rem 0.8rem;
-      border: 1px solid rgba(148, 163, 184, 0.55);
-      background: transparent;
-      color: #e5e7eb;
+      gap: 16px;
+      padding: 20px 24px;
+      border: 1px solid #1f1f1f;
+      background: #0f0f0f;
+      color: #ffffff;
       text-decoration: none;
       position: relative;
       overflow: hidden;
       border-radius: 0;
       cursor: pointer;
       transition:
-        transform 180ms ease-out,
-        box-shadow 180ms ease-out,
-        border-color 180ms ease-out,
-        background 180ms ease-out;
+        transform 200ms ease-out,
+        box-shadow 200ms ease-out,
+        border-color 200ms ease-out,
+        background 200ms ease-out;
     }
 
     /* Left accent strip */
@@ -62,11 +62,7 @@
       top: 0;
       bottom: 0;
       width: 3px;
-      background: linear-gradient(
-        to bottom,
-        var(--doc-accent),
-        rgba(15, 23, 42, 0.9)
-      );
+      background: #0ea5e9;
     }
 
     /* Subtle glow */
@@ -76,12 +72,12 @@
       inset: 0;
       background: radial-gradient(
         circle at top left,
-        rgba(14, 165, 233, 0.45),
-        transparent 55%
+        rgba(14, 165, 233, 0.1),
+        transparent 60%
       );
       opacity: 0;
       pointer-events: none;
-      transition: opacity 180ms ease-out;
+      transition: opacity 200ms ease-out;
     }
 
     /* Icon block */
@@ -90,15 +86,15 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0 0.6rem;
-      font-size: 0.7rem;
+      padding: 8px 12px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.3);
       border-radius: 0;
-      color: var(--doc-accent);
+      color: #0ea5e9;
     }
 
     /* Text block */
@@ -107,34 +103,38 @@
       flex-direction: column;
       justify-content: center;
       min-width: 0;
-      color: #000000;
+      color: #ffffff;
     }
 
     .info-section .info-doc-title {
-      font-size: 0.86rem;
+      font-size: 15px;
       font-weight: 600;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      margin-bottom: 0.1rem;
+      margin-bottom: 4px;
+      color: #ffffff;
     }
     
     .info-section .info-doc-meta {
-      color: #000000;
-      font-size: 0.7rem;
+      color: #9ca3af;
+      font-size: 13px;
     }
 
     /* Hover / focus */
     .info-section .info-doc-link:hover,
     .info-section .info-doc-link:focus-visible {
-      transform: translateY(-1px);
-      border-color: var(--doc-accent);
-      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.45);
-      background: rgba(15, 23, 42, 0.98);
+      transform: translateY(-2px);
+      border-color: #0ea5e9;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      background: #111111;
     }
 
-    .info-section .info-doc-link:hover .info-doc-text,
+    .info-section .info-doc-link:hover .info-doc-text {
+      color: #ffffff;
+    }
+
     .info-section .info-doc-link:hover .info-doc-meta {
-      color: #e5e7eb;
+      color: #d1d5db;
     }
 
     .info-section .info-doc-link:hover::after,
@@ -143,7 +143,7 @@
     }
 
     .info-section .info-doc-link:focus-visible {
-      outline: 2px solid var(--doc-accent);
+      outline: 2px solid #0ea5e9;
       outline-offset: 2px;
     }
     
@@ -937,6 +937,31 @@
       --scrollbar-thumb: #1e40af;
       --scrollbar-track: #dbeafe;
     }
+    
+    /* Northern regions crown - make class pills and text white */
+    body[data-season="northern"] .class-pill {
+      border-color: rgba(219, 234, 254, 0.3);
+      background: rgba(219, 234, 254, 0.1);
+      color: #dbeafe;
+    }
+    
+    body[data-season="northern"] .class-chip {
+      background: rgba(219, 234, 254, 0.1);
+      border-color: rgba(219, 234, 254, 0.2);
+      color: rgba(219, 234, 254, 0.95);
+    }
+    
+    body[data-season="northern"] .class-intro,
+    body[data-season="northern"] .class-info-card p,
+    body[data-season="northern"] .class-info-card li,
+    body[data-season="northern"] .class-note {
+      color: rgba(219, 234, 254, 0.98);
+    }
+    
+    body[data-season="northern"] .nats-day-detail,
+    body[data-season="northern"] .nats-timetable-tagline {
+      color: rgba(219, 234, 254, 0.95);
+    }
 
     .lockup {
       text-align: center;
@@ -1181,15 +1206,16 @@
       width: min(1400px, 96vw);
       max-height: 96vh;
       min-height: 80vh;
-      background: var(--modal-bg);
-      color: var(--modal-text);
-      border: 1px solid var(--modal-border);
-      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.45);
-      padding: 40px 44px;
+      background: #000000;
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.1);
+      padding: 0;
       display: none;
       flex-direction: column;
       z-index: 40;
       overflow: hidden;
+      border-radius: 0;
     }
 
     .modal.active {
@@ -1200,95 +1226,341 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 24px;
-      font-size: 0.95rem;
+      height: 80px;
+      background: #000000;
       position: relative;
-      gap: 1rem;
+      padding: 0 40px;
+      border-bottom: 1px solid transparent;
+      background-image: linear-gradient(90deg, transparent 0%, rgba(14, 165, 233, 0.3) 50%, transparent 100%);
+      background-size: 200% 1px;
+      background-position: 0 100%;
+      background-repeat: no-repeat;
+      animation: shimmerBorder 4s linear infinite;
+    }
+
+    @keyframes shimmerBorder {
+      0% { background-position: -200% 100%; }
+      100% { background-position: 200% 100%; }
     }
 
     .modal-title {
-      font-weight: 600;
-      letter-spacing: 0.2em;
+      font-weight: 900;
+      font-size: 28px;
+      letter-spacing: -0.01em;
       text-transform: uppercase;
       flex: 1;
       text-align: center;
+      color: #ffffff;
     }
 
     .modal-close {
       border: none;
       background: transparent;
-      font-size: 1.2rem;
+      font-size: 32px;
       cursor: pointer;
-      padding: 4px 6px;
+      padding: 8px;
       line-height: 1;
-      color: inherit;
+      color: #ffffff;
       position: absolute;
-      right: 0;
+      right: 32px;
       top: 50%;
       transform: translateY(-50%);
+      transition: color 0.3s ease, transform 0.2s ease;
+      font-weight: 300;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: #0ea5e9;
+      transform: translateY(-50%) rotate(90deg);
+    }
+
+    /* Top-level tabs styling */
+    .info-top-tabs {
+      display: flex;
+      height: 64px;
+      background: #0a0a0a;
+      border-bottom: 1px solid #1f1f1f;
+      position: relative;
+    }
+
+    .info-top-tab {
+      flex: 1;
+      padding: 20px 24px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: color 0.3s ease;
+      position: relative;
+      border-bottom: 3px solid transparent;
+    }
+
+    .info-top-tab--menu {
+      display: none;
+      flex: 0 0 auto;
+      width: 64px;
+      border-right: 1px solid #1f1f1f;
+    }
+
+    #infoTabRaceSpecific {
+      padding: 0;
+      background: #000000;
+      overflow-y: auto;
+    }
+
+    #infoTabRaceSpecific .rs-container {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .info-top-tab:hover {
+      color: #9ca3af;
+    }
+
+    .info-top-tab.active {
+      color: #ffffff;
+      border-bottom-color: #0ea5e9;
+    }
+
+    .info-top-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #0ea5e9;
+      animation: tabSlideIn 0.3s ease-out;
+    }
+
+    @keyframes tabSlideIn {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    /* ============= SEASONAL COLOR VARIANTS ============= */
+    /* Summer NATS - Yellow */
+    .modal--summer .info-top-tab.active {
+      color: #facc15 !important;
+      border-bottom-color: #facc15 !important;
+    }
+    .modal--summer .info-top-tab.active::after {
+      background: #facc15 !important;
+    }
+    .modal--summer .nav-item.active {
+      border-left-color: #facc15 !important;
+      color: #facc15 !important;
+    }
+    .modal--summer .nats-day-role {
+      color: #facc15 !important;
+    }
+
+    /* Autumn NATS - Orange */
+    .modal--autumn .info-top-tab.active {
+      color: #f97316 !important;
+      border-bottom-color: #f97316 !important;
+    }
+    .modal--autumn .info-top-tab.active::after {
+      background: #f97316 !important;
+    }
+    .modal--autumn .nav-item.active {
+      border-left-color: #f97316 !important;
+      color: #f97316 !important;
+    }
+    .modal--autumn .nats-day-role {
+      color: #f97316 !important;
+    }
+
+    /* Winter NATS - Blue (default cyan, no override needed) */
+    .modal--winter .info-top-tab.active {
+      color: #0ea5e9 !important;
+      border-bottom-color: #0ea5e9 !important;
+    }
+    .modal--winter .info-top-tab.active::after {
+      background: #0ea5e9 !important;
+    }
+    .modal--winter .nav-item.active {
+      border-left-color: #0ea5e9 !important;
+      color: #0ea5e9 !important;
+    }
+    .modal--winter .nats-day-role {
+      color: #0ea5e9 !important;
+    }
+
+    /* Spring NATS - Green */
+    .modal--spring .info-top-tab.active {
+      color: #4ade80 !important;
+      border-bottom-color: #4ade80 !important;
+    }
+    .modal--spring .info-top-tab.active::after {
+      background: #4ade80 !important;
+    }
+    .modal--spring .nav-item.active {
+      border-left-color: #4ade80 !important;
+      color: #4ade80 !important;
+    }
+    .modal--spring .nats-day-role {
+      color: #4ade80 !important;
     }
 
     .modal-body {
       font-size: 0.95rem;
       line-height: 1.8;
-      border-top: 1px solid var(--modal-border);
-      padding-top: 20px;
       flex: 1 1 auto;
-      overflow-y: auto;
+      min-height: 0;
+      overflow: hidden;
+      background: #000000;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .info-tab-content {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .info-layout {
       display: flex;
-      gap: 32px;
-      height: 100%;
+      gap: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .info-nav {
-      width: 300px;
-      border-right: 1px solid rgba(15, 23, 42, 0.25);
-      padding-right: 16px;
+      width: 280px;
+      background: #0a0a0a;
+      border-right: 1px solid #1f1f1f;
+      padding: 32px 0;
       display: flex;
       flex-direction: column;
-      height: 100%;
-      justify-content: space-between;
-      gap: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      gap: 4px;
       flex-shrink: 0;
+      overflow-y: auto;
     }
 
     .nav-item {
-      padding: 1.6rem 1.6rem;
-      font-size: 1.2rem;
-      letter-spacing: 0.26em;
+      padding: 14px 24px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       border: none;
       background: transparent;
       text-align: left;
       cursor: pointer;
-      color: rgba(15, 23, 42, 0.85);
-      border-left: 2px solid transparent;
+      color: #6b7280;
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease-out;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-item::before {
+      content: '';
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.5;
+      transition: opacity 0.2s ease;
+    }
+
+    .nav-item:hover {
+      color: #ffffff;
+      transform: translateX(4px);
+      border-left-color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.05);
+    }
+
+    .nav-item:hover::before {
+      opacity: 1;
     }
 
     .nav-item.active {
-      color: var(--nav-active-text);
-      border-left-color: var(--modal-border);
-      background: var(--nav-active-bg);
+      color: #ffffff;
+      border-left-color: #0ea5e9;
+      background: #111111;
+    }
+
+    .nav-item.active::before {
+      opacity: 1;
     }
 
     .nav-item--primary {
       font-weight: 700;
-      letter-spacing: 0.3em;
-      border-left-width: 3px;
+      font-size: 14px;
+      letter-spacing: 0.08em;
     }
 
     .nav-item--primary.active {
-      background: var(--modal-border);
-      color: var(--modal-bg);
+      background: linear-gradient(90deg, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0.05) 100%);
+      color: #ffffff;
+      border-left-color: #0ea5e9;
+      border-left-width: 3px;
+    }
+
+    /* Navigation section dividers */
+    .nav-item[data-section="prizes"]::after,
+    .nav-item[data-section="mini"]::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 24px;
+      right: 24px;
+      height: 1px;
+      background: #1f1f1f;
     }
 
     .info-content {
       flex: 1 1 auto;
-      padding-left: 16px;
+      min-height: 0;
+      padding: 48px 56px;
       overflow-y: auto;
+      background: #000000;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .info-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .info-content::-webkit-scrollbar-track {
+      background: #0a0a0a;
+    }
+
+    .info-content::-webkit-scrollbar-thumb {
+      background: #2a2a2a;
+      border-radius: 4px;
+    }
+
+    .info-content::-webkit-scrollbar-thumb:hover {
+      background: #3a3a3a;
     }
 
     .info-section {
@@ -1300,17 +1572,99 @@
     }
 
     .info-section h3 {
-      font-size: 1.5rem;
+      font-size: 36px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.22em;
-      margin-bottom: 1.4rem;
+      letter-spacing: -0.02em;
+      margin-bottom: 32px;
+      color: #ffffff;
     }
 
     .info-section p {
-      font-size: 1.05rem;
-      line-height: 1.9;
-      color: var(--body-text);
-      margin-bottom: 1.1rem;
+      font-size: 17px;
+      line-height: 1.8;
+      color: #d1d5db;
+      margin-bottom: 20px;
+    }
+
+    .info-section p strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Lists */
+    .info-section ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 24px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .info-section ul li {
+      color: #d1d5db;
+      font-size: 16px;
+      line-height: 1.7;
+      padding-left: 32px;
+      position: relative;
+    }
+
+    .info-section ul li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 6px;
+      height: 6px;
+      background: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+
+    .info-section ul li strong {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Links */
+    .info-section a {
+      color: #0ea5e9;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .info-section a:hover {
+      border-bottom-color: #0ea5e9;
+      color: #22d3ee;
+    }
+
+    /* Headings */
+    .info-section h4 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 32px;
+      margin-bottom: 16px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Content cards/callouts */
+    .info-section .hint,
+    .info-section .note {
+      background: #0f0f0f;
+      border: 1px solid #1f1f1f;
+      border-left: 3px solid #0ea5e9;
+      padding: 20px 24px;
+      margin: 24px 0;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #d1d5db;
+    }
+
+    .info-section .hint strong {
+      color: #0ea5e9;
     }
 
     /* MOBILE SECTION DROPDOWN (for info sections) */
@@ -1400,43 +1754,380 @@
     .pdf-list {
       list-style: none;
       padding-left: 0;
-      margin-top: 0.8rem;
+      margin-top: 24px;
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 12px;
     }
 
     .pdf-list li a {
-      color: var(--link-color);
+      display: block;
+      color: #0ea5e9;
       text-decoration: none;
-      border-bottom: 1px solid var(--link-underline);
-      padding-bottom: 4px;
-      font-size: 1.05rem;
+      background: #0f0f0f;
+      border: 1px solid #1f1f1f;
+      border-left: 3px solid #0ea5e9;
+      padding: 16px 20px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      letter-spacing: 0.01em;
     }
 
     .pdf-list li a:hover {
-      border-bottom-color: var(--link-color);
-    }
-
-    .hint {
-      margin-top: 0.9rem;
-      font-size: 0.95rem;
-      color: var(--body-text);
-      opacity: 0.9;
+      background: #111111;
+      border-left-color: #22d3ee;
+      color: #22d3ee;
+      transform: translateX(4px);
     }
     
 
     .embed-frame-shell {
-      margin-top: 1.2rem;
-      border: 1px dashed rgba(148, 163, 184, 0.9);
-      padding: 1.2rem;
+      margin-top: 32px;
+      border: 1px solid #1f1f1f;
+      background: #0f0f0f;
+      padding: 0;
       font-size: 0.98rem;
-      color: var(--body-text);
-      background: rgba(15, 23, 42, 0.03);
+      color: #d1d5db;
+      border-radius: 0;
+      overflow: hidden;
     }
 
-    /* POOL tab highlight removed */
-50%      { text-shadow: 0 0 10px rgba(34, 197, 94, 0.6); }
+    .portal-bar {
+      background: #0a0a0a;
+      border-bottom: 1px solid #1f1f1f;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .portal-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9ca3af;
+    }
+
+    .portal-chip .dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    }
+
+    .portal-actions .mini-link {
+      font-size: 12px;
+      color: #0ea5e9;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .portal-actions .mini-link:hover {
+      border-bottom-color: #0ea5e9;
+      color: #22d3ee;
+    }
+
+    .iframe-shell {
+      padding: 20px;
+      background: #000000;
+    }
+
+    .portal-footnote {
+      background: #0a0a0a;
+      border-top: 1px solid #1f1f1f;
+      padding: 16px 20px;
+      font-size: 13px;
+      color: #9ca3af;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .portal-footnote .note-dot {
+      width: 6px;
+      height: 6px;
+      background: #0ea5e9;
+      border-radius: 50%;
+      margin-top: 8px;
+      flex-shrink: 0;
+    }
+
+    .portal-footnote strong {
+      color: #ffffff;
+    }
+
+    /* Pulse animation for race-specific tab - Green when registration open */
+    @keyframes pulse-glow-green {
+      0%, 100% { 
+        box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+        text-shadow: 0 0 0 rgba(34, 197, 94, 0);
+        opacity: 1;
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), 0 0 40px rgba(34, 197, 94, 0.2);
+        text-shadow: 0 0 8px rgba(34, 197, 94, 0.6), 0 0 15px rgba(34, 197, 94, 0.3);
+        opacity: 0.95;
+      }
+    }
+    
+    /* Pulse animation for race-specific tab - Red when registration closed */
+    @keyframes pulse-glow-red {
+      0%, 100% { 
+        box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+        text-shadow: 0 0 0 rgba(239, 68, 68, 0);
+        opacity: 1;
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+        text-shadow: 0 0 8px rgba(239, 68, 68, 0.6), 0 0 15px rgba(239, 68, 68, 0.3);
+        opacity: 0.95;
+      }
+    }
+    
+    .info-top-tab[data-info-tab="race-specific"]:not(.active).pulse-green {
+      animation: pulse-glow-green 2s ease-in-out infinite;
+    }
+    
+    .info-top-tab[data-info-tab="race-specific"]:not(.active).pulse-red {
+      animation: pulse-glow-red 2s ease-in-out infinite;
+    }
+
+    /* Mobile Navigation Toggle */
+    .nav-toggle {
+      display: none;
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      z-index: 10;
+      width: 44px;
+      height: 44px;
+      background: transparent;
+      border: 1px solid #1f1f1f;
+      border-radius: 0;
+      cursor: pointer;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .nav-toggle:hover {
+      background: #111111;
+      border-color: #0ea5e9;
+    }
+
+    .nav-toggle:hover {
+      background: #111111;
+      border-color: #0ea5e9;
+    }
+
+    .nav-toggle-icon {
+      width: 20px;
+      height: 14px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .nav-toggle-icon span {
+      width: 100%;
+      height: 2px;
+      background: #ffffff;
+      transition: all 0.3s ease;
+      display: block;
+    }
+
+    .nav-toggle.active .nav-toggle-icon span:nth-child(1) {
+      transform: translateY(6px) rotate(45deg);
+    }
+
+    .nav-toggle.active .nav-toggle-icon span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .nav-toggle.active .nav-toggle-icon span:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg);
+    }
+
+    /* Mobile Navigation Backdrop */
+    .nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .nav-backdrop.active {
+      opacity: 1;
+    }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 968px) {
+      .nav-toggle {
+        display: flex;
+      }
+
+      .info-section-dropdown {
+        display: none !important;
+      }
+
+      .info-tab-content {
+        position: relative;
+      }
+
+      .info-layout {
+        position: relative;
+      }
+
+      .info-nav {
+        position: fixed !important;
+        display: flex !important;
+        top: 0 !important;
+        left: -100% !important;
+        width: 280px !important;
+        height: 100vh !important;
+        z-index: 101 !important;
+        background: #0a0a0a !important;
+        border-right: 1px solid #1f1f1f !important;
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.5) !important;
+        transition: left 0.3s ease !important;
+        overflow-y: auto !important;
+        padding-top: 20px !important;
+        padding-bottom: 20px !important;
+        margin: 0 !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        border-bottom: none !important;
+      }
+
+      .info-nav.active {
+        left: 0 !important;
+      }
+
+      .nav-item {
+        padding: 8px 16px !important;
+        font-size: 11px !important;
+        gap: 6px !important;
+        min-height: unset !important;
+        height: auto !important;
+        line-height: 1.2 !important;
+        flex: none !important;
+        width: 100% !important;
+        border-left-width: 3px !important;
+        border-bottom: none !important;
+      }
+
+      .nav-item::before {
+        width: 14px !important;
+        height: 14px !important;
+        flex-shrink: 0 !important;
+      }
+
+      .info-top-tabs {
+        height: 56px;
+      }
+
+      .info-top-tab--menu {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .info-top-tab {
+        font-size: 13px;
+        padding: 16px 16px;
+      }
+
+      .info-content {
+        width: 100%;
+        padding: 32px 24px;
+      }
+
+      .info-section h3 {
+        font-size: 28px;
+      }
+
+      .info-section p,
+      .info-section ul li {
+        font-size: 16px;
+      }
+
+      .modal {
+        width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+      }
+
+      .modal-header {
+        height: 64px;
+        padding: 0 20px;
+      }
+
+      .modal-title {
+        font-size: 20px;
+      }
+
+      .modal-close {
+        width: 28px;
+        height: 28px;
+      }
+
+      .info-top-tabs {
+        height: 56px;
+        padding: 0 16px 0 64px;
+      }
+
+      .info-top-tab {
+        font-size: 13px;
+        padding: 0 16px;
+        height: 56px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .info-content {
+        padding: 24px 16px;
+      }
+
+      .info-section h3 {
+        font-size: 24px;
+      }
+
+      .modal-header {
+        height: 56px;
+      }
+
+      .modal-title {
+        font-size: 18px;
+      }
+
+      .info-top-tabs {
+        padding: 0 8px;
+      }
+
+      .info-top-tab {
+        font-size: 12px;
+        padding: 0 12px;
+      }
+
+      .nav-toggle {
+        top: 96px;
+        left: 12px;
+        width: 44px;
+        height: 44px;
+      }
     }
 
     .info-section[data-section-panel="prizes"].active {
@@ -2585,7 +3276,7 @@ body[data-season="spring"] .info-section-select {
     }
 
     .overview-animation .scroll-hint::after {
-      content: "↓";
+      content: "?";
       margin-left: 0.4rem;
       font-size: 0.8em;
     }
@@ -3062,7 +3753,7 @@ body[data-season="spring"] .info-section-select {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #111827;
+    color: #0ea5e9;
   }
 
   .nats-day-detail {
@@ -3154,7 +3845,7 @@ body[data-season="spring"] .info-section-select {
       margin-bottom: 0.6rem;
     }
 
-    /* Square “chips” (no rounded corners) */
+    /* Square -chips- (no rounded corners) */
     .prize-chip {
       border-radius: 0;
       border: 1px solid rgba(148, 163, 184, 0.85);
@@ -3188,7 +3879,7 @@ body[data-season="spring"] .info-section-select {
       font-weight: 600;
     }
 
-    /* Bullet list of “what this class really does” */
+    /* Bullet list of -what this class really does- */
     .prize-list {
       margin: 0.4rem 0 0;
       padding-left: 1.05rem;
@@ -3570,21 +4261,31 @@ body[data-season="spring"] .info-section-select {
   <!-- MORE INFO modal -->
   <div class="modal" id="infoModal" aria-hidden="true">
     <div class="modal-header">
-      <div class="modal-title" id="infoModalTitle">EVENT · INFORMATION</div>
+      <div class="modal-title" id="infoModalTitle">EVENT - INFORMATION</div>
       <button class="modal-close" type="button" data-close-modal>&times;</button>
     </div>
     
     <!-- Top-Level Tabs -->
-    <div class="info-top-tabs" style="display: flex; border-bottom: 2px solid #e5e7eb; background: var(--modal-bg);">
-      <button type="button" class="info-top-tab active" data-info-tab="general" onclick="switchInfoTopTab('general')" style="flex: 1; padding: 14px 16px; border: none; background: transparent; cursor: pointer; font-weight: 700; font-size: 14px; color: #22c55e; border-bottom: 3px solid #22c55e; margin-bottom: -2px; text-transform: uppercase; letter-spacing: 0.05em;">
+    <div class="info-top-tabs">
+      <button type="button" class="info-top-tab info-top-tab--menu" aria-label="Toggle navigation menu">
+        <svg width="20" height="16" viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0H20V2H0V0Z" fill="currentColor"/>
+          <path d="M0 7H20V9H0V7Z" fill="currentColor"/>
+          <path d="M0 14H20V16H0V14Z" fill="currentColor"/>
+        </svg>
+      </button>
+      <button type="button" class="info-top-tab active" data-info-tab="general" onclick="switchInfoTopTab('general')">
         General Info
       </button>
-      <button type="button" class="info-top-tab" data-info-tab="race-specific" onclick="switchInfoTopTab('race-specific')" style="flex: 1; padding: 14px 16px; border: none; background: transparent; cursor: pointer; font-weight: 700; font-size: 14px; color: #6b7280; border-bottom: 3px solid transparent; margin-bottom: -2px; text-transform: uppercase; letter-spacing: 0.05em;">
+      <button type="button" class="info-top-tab" data-info-tab="race-specific" onclick="switchInfoTopTab('race-specific')">
         Race Specific
       </button>
     </div>
 
     <div class="modal-body">
+      <!-- Navigation Backdrop -->
+      <div class="nav-backdrop"></div>
+      
       <!-- General Info Tab Content -->
       <div id="infoTabGeneral" class="info-tab-content">
       <div class="info-layout">
@@ -3593,7 +4294,6 @@ body[data-season="spring"] .info-section-select {
           <button class="nav-item" data-section="prizes" type="button">CLASSES &amp; PRIZES</button>
           <button class="nav-item" data-section="dates" type="button">DATES</button>
           <button class="nav-item" data-section="track" type="button">TRACK INFO</button>
-          <button class="nav-item" data-section="docs" type="button">OFFICIAL DOCUMENTS</button>
           <button class="nav-item" data-section="regs" type="button">REGULATIONS</button>
           <button class="nav-item" data-section="mini" type="button">MINI CLASSES</button>
           <button class="nav-item" data-section="okj" type="button">OK-J CLASS</button>
@@ -3612,7 +4312,6 @@ body[data-season="spring"] .info-section-select {
             <option value="prizes">Classes &amp; prizes</option>
             <option value="dates">Dates</option>
             <option value="track">Track info</option>
-            <option value="docs">Official documents</option>
             <option value="regs">Regulations</option>
             <option value="mini">Mini classes</option>
             <option value="okj">OK-J class</option>
@@ -3668,20 +4367,20 @@ body[data-season="spring"] .info-section-select {
           </section>
 
         <section class="info-section active" data-section-panel="pool">
-  <h3>Pool Engines – How ROK Cup South Africa Levels the Playing Field</h3>
+  <h3>Pool Engines - How ROK Cup South Africa Levels the Playing Field</h3>
 
   <p>
     At ROK Cup South Africa the engine is no longer an arms race.
   </p>
   <p>
     Our central pool engine programme is designed so that National-level karting is decided by race craft,
-    discipline and consistency – not by who can spend the most on horsepower. Every driver competes within
+    discipline and consistency - not by who can spend the most on horsepower. Every driver competes within
     a tightly controlled performance window, which means results genuinely reflect who drove best.
   </p>
   <p>
     We treat the pool as a long-term technical asset, not a collection of random rental motors. Engines are
     purchased, built and maintained by a dedicated workshop team, then tracked and managed across the season
-    like a professional fleet. After each National “NATS” weekend, every engine comes back to the workshop,
+    like a professional fleet. After each National -NATS- weekend, every engine comes back to the workshop,
     is logged by serial number and enters a structured preparation cycle before it ever returns to the grid.
   </p>
 
@@ -3697,33 +4396,33 @@ body[data-season="spring"] .info-section-select {
     <li>
       <strong>Dyno-verified parity as standard.</strong>
       Each unit is run on a calibrated engine dyno. Only engines that sit inside a narrow, predefined band
-      for power and torque are cleared back into the pool. The goal is not a single “hero” motor – it is a
+      for power and torque are cleared back into the pool. The goal is not a single -hero- motor - it is a
       group of engines that are effectively interchangeable, giving real engine parity across the field.
     </li>
     <li>
       <strong>Documented history for every engine.</strong>
       Hours, rebuilds and dyno sheets are recorded for each serial number. This data allows us to manage the
       pool like a professional race team manages a car fleet: engines are rotated, usage is balanced and
-      potential issues are picked up early, long before they affect a driver’s weekend.
+      potential issues are picked up early, long before they affect a driver-s weekend.
     </li>
     <li>
       <strong>Controlled, transparent allocation.</strong>
       Engines are issued by a structured draw, ensuring that competitors cycle through different units over
-      the course of the season. Across eight National rounds and twenty-four heats, the “luck” of any single
+      the course of the season. Across eight National rounds and twenty-four heats, the -luck- of any single
       allocation is averaged out and the consistently strong drivers naturally rise to the top.
     </li>
     <li>
       <strong>Season-long cost advantage.</strong>
       The rental fee for a ROK pool engine over the full National championship is only a fraction of what it
-      would cost to buy, develop and maintain a truly front-running private engine – once you include
+      would cost to buy, develop and maintain a truly front-running private engine - once you include
       rebuilds, dyno time, development parts and inevitable upgrades. Parents and teams get front-running
       performance without runaway costs.
     </li>
     <li>
       <strong>Less politics, more racing.</strong>
       Because everyone knows the engines are centrally prepared, dyno-tested and rotated, the paddock noise
-      about “unfair motors” drops away. Energy is redirected to data, lines, braking points, starts and race
-      craft – exactly the skills young drivers must master on the pathway to international karting and cars.
+      about -unfair motors- drops away. Energy is redirected to data, lines, braking points, starts and race
+      craft - exactly the skills young drivers must master on the pathway to international karting and cars.
     </li>
   </ul>
 
@@ -3744,7 +4443,7 @@ body[data-season="spring"] .info-section-select {
   </ul>
 
   <p>
-    In short: pool engines give you factory-level preparation and parity at a predictable cost – while
+    In short: pool engines give you factory-level preparation and parity at a predictable cost - while
     letting the best drivers prove it on track.
   </p>
     
@@ -3756,13 +4455,13 @@ body[data-season="spring"] .info-section-select {
       <header class="header">
         <div class="header-left">
           <div class="header-text">
-            <div class="header-kicker">ROK CUP SOUTH AFRICA · 2026 NATIONALS</div>
+            <div class="header-kicker">ROK CUP SOUTH AFRICA - 2026 NATIONALS</div>
             <div class="header-title">POOL ENGINES VS OWNING</div>
-            <div class="header-subtitle">MINI · OK-J · OK-N · DIRECT DRIVE CLASSES</div>
+            <div class="header-subtitle">MINI - OK-J - OK-N - DIRECT DRIVE CLASSES</div>
           </div>
         </div>
         <div class="header-right">
-          ALL FIGURES IN ZAR · SEASON = 4 NATIONAL WEEKENDS / 8 RACE DAYS
+          ALL FIGURES IN ZAR - SEASON = 4 NATIONAL WEEKENDS / 8 RACE DAYS
         </div>
       </header>
 
@@ -3770,7 +4469,7 @@ body[data-season="spring"] .info-section-select {
       <section class="kpi-row">
         <div class="kpi-chip mini">
           <div class="kpi-label">Mini season saving</div>
-          <div class="kpi-value">R57k–R67k</div>
+          <div class="kpi-value">R57k-R67k</div>
           <div class="kpi-caption">
             Typical saving per National season with pool engines compared to owning a front-running MINI engine.
           </div>
@@ -3778,7 +4477,7 @@ body[data-season="spring"] .info-section-select {
 
         <div class="kpi-chip ok">
           <div class="kpi-label">OK-J &amp; OK-N season saving</div>
-          <div class="kpi-value">R38k–R48k</div>
+          <div class="kpi-value">R38k-R48k</div>
           <div class="kpi-caption">
             Approximate saving per season versus buying, rebuilding and dynoing your own OK engine.
           </div>
@@ -3786,9 +4485,9 @@ body[data-season="spring"] .info-section-select {
 
         <div class="kpi-chip day">
           <div class="kpi-label">Per race day impact</div>
-          <div class="kpi-value">Up to 47%↓</div>
+          <div class="kpi-value">Up to 47%?</div>
           <div class="kpi-caption">
-            MINI pool engines cut realistic total spend by roughly 40–47% per race day over a full National season.
+            MINI pool engines cut realistic total spend by roughly 40-47% per race day over a full National season.
           </div>
         </div>
 
@@ -3801,13 +4500,13 @@ body[data-season="spring"] .info-section-select {
       <section class="main-panels">
         <!-- MINI PANEL -->
         <article class="panel panel-mini">
-          <div class="panel-eyebrow">Mini — Pool Engines Model</div>
-          <h2 class="panel-title">Mini · National Season Cost Picture</h2>
+          <div class="panel-eyebrow">Mini - Pool Engines Model</div>
+          <h2 class="panel-title">Mini - National Season Cost Picture</h2>
           <p class="panel-subtitle">
-            All-in entries · engines · race slicks · fuel · 8 race days
+            All-in entries - engines - race slicks - fuel - 8 race days
           </p>
           <p class="panel-subtitle-price">
-            Season package (8 race days) · <span>R 75&nbsp;640</span>
+            Season package (8 race days) - <span>R 75&nbsp;640</span>
           </p>
 
           <div class="panel-body">
@@ -3820,7 +4519,7 @@ body[data-season="spring"] .info-section-select {
                 <div class="block-value">R 18&nbsp;910</div>
               </div>
               <div class="block-row">
-                <div class="block-label">“True” separate stack / weekend</div>
+                <div class="block-label">-True- separate stack / weekend</div>
                 <div class="block-value">R 21&nbsp;800</div>
               </div>
               <div class="block-row">
@@ -3830,13 +4529,13 @@ body[data-season="spring"] .info-section-select {
 
               <div class="block-footnote">
                 Season package at R 75&nbsp;640 includes all National entries, pool race engines, race slicks and fuel.
-                Buying entry, tyres, fuel and rental separately is ≈R2&nbsp;480 more per weekend.
+                Buying entry, tyres, fuel and rental separately is -R2&nbsp;480 more per weekend.
               </div>
 
               <div class="delta-badge">
                 <div class="delta-label">Per-day effective cost</div>
                 <div class="block-em mini">
-                  ≈ R 9&nbsp;455 per race day — all-in, including entries, engine, tyres and fuel.
+                  - R 9&nbsp;455 per race day - all-in, including entries, engine, tyres and fuel.
                 </div>
               </div>
             </div>
@@ -3847,19 +4546,19 @@ body[data-season="spring"] .info-section-select {
 
               <div class="block-row">
                 <div class="block-label">New engine</div>
-                <div class="block-value">≈ R 65&nbsp;000</div>
+                <div class="block-value">- R 65&nbsp;000</div>
               </div>
               <div class="block-row">
-                <div class="block-label">Rebuilds (2–3 × R5k)</div>
-                <div class="block-value">R 10&nbsp;000–R 15&nbsp;000</div>
+                <div class="block-label">Rebuilds (2-3 - R5k)</div>
+                <div class="block-value">R 10&nbsp;000-R 15&nbsp;000</div>
               </div>
               <div class="block-row">
                 <div class="block-label">Dyno / checks (season)</div>
-                <div class="block-value">≈ R 5&nbsp;000</div>
+                <div class="block-value">- R 5&nbsp;000</div>
               </div>
               <div class="block-row">
                 <div class="block-label">Engine spend alone</div>
-                <div class="block-value">R 75&nbsp;000–R 85&nbsp;000</div>
+                <div class="block-value">R 75&nbsp;000-R 85&nbsp;000</div>
               </div>
 
               <div class="block-row">
@@ -3870,7 +4569,7 @@ body[data-season="spring"] .info-section-select {
               <div class="block-row">
                 <div class="block-label">Total season if you own</div>
                 <div class="block-value block-em mini">
-                  R 132&nbsp;560–R 142&nbsp;560
+                  R 132&nbsp;560-R 142&nbsp;560
                 </div>
               </div>
 
@@ -3881,9 +4580,9 @@ body[data-season="spring"] .info-section-select {
           </div>
 
           <div class="delta-badge">
-            <div class="delta-label">Season saving — MINI</div>
+            <div class="delta-label">Season saving - MINI</div>
             <div class="block-em mini">
-              Pool-engine MINI season at R 75&nbsp;640 saves ≈ R 56&nbsp;920–R 66&nbsp;920 vs owning a competitive engine and running the same National programme.
+              Pool-engine MINI season at R 75&nbsp;640 saves - R 56&nbsp;920-R 66&nbsp;920 vs owning a competitive engine and running the same National programme.
             </div>
           </div>
 
@@ -3891,22 +4590,22 @@ body[data-season="spring"] .info-section-select {
             <div class="chip">
               <div class="chip-label">Per National weekend</div>
               <div class="chip-value">
-                Pool: R 18&nbsp;910 vs own: R 33&nbsp;140–R 35&nbsp;640<br />
-                → ≈ R 14k–R 17k less per event.
+                Pool: R 18&nbsp;910 vs own: R 33&nbsp;140-R 35&nbsp;640<br />
+                ? - R 14k-R 17k less per event.
               </div>
             </div>
             <div class="chip">
               <div class="chip-label">Per race day</div>
               <div class="chip-value">
-                Pool: ≈ R 9&nbsp;455 vs own: R 16&nbsp;570–R 17&nbsp;820<br />
-                → ≈ R 7k–R 8.4k saved per race day.
+                Pool: - R 9&nbsp;455 vs own: R 16&nbsp;570-R 17&nbsp;820<br />
+                ? - R 7k-R 8.4k saved per race day.
               </div>
             </div>
             <div class="chip">
               <div class="chip-label">Percentage impact</div>
               <div class="chip-value">
                 MINI pool engines cut realistic total season spend by roughly
-                <strong>40–47%</strong> compared to owning and maintaining your own race engine.
+                <strong>40-47%</strong> compared to owning and maintaining your own race engine.
               </div>
             </div>
           </div>
@@ -3914,13 +4613,13 @@ body[data-season="spring"] .info-section-select {
 
         <!-- OK PANEL -->
         <article class="panel panel-ok">
-          <div class="panel-eyebrow">OK-J &amp; OK-N — FIA-Style Direct Drive</div>
-          <h2 class="panel-title">OK-J &amp; OK-N · Season Cost Picture</h2>
+          <div class="panel-eyebrow">OK-J &amp; OK-N - FIA-Style Direct Drive</div>
+          <h2 class="panel-title">OK-J &amp; OK-N - Season Cost Picture</h2>
           <p class="panel-subtitle">
             Top-end performance with centrally managed powertrains
           </p>
           <p class="panel-subtitle-price">
-            Season package (8 race days) · <span>R 107&nbsp;760</span>
+            Season package (8 race days) - <span>R 107&nbsp;760</span>
           </p>
 
           <div class="panel-body">
@@ -3934,15 +4633,15 @@ body[data-season="spring"] .info-section-select {
               </div>
               <div class="block-row">
                 <div class="block-label">Typical stack / weekend</div>
-                <div class="block-value">Tyres ≈R 9&nbsp;460</div>
+                <div class="block-value">Tyres -R 9&nbsp;460</div>
               </div>
               <div class="block-row">
                 <div class="block-label"></div>
-                <div class="block-value">Fuel ≈R 1&nbsp;500</div>
+                <div class="block-value">Fuel -R 1&nbsp;500</div>
               </div>
               <div class="block-row">
                 <div class="block-label"></div>
-                <div class="block-value">Engine rental ≈R 13&nbsp;000</div>
+                <div class="block-value">Engine rental -R 13&nbsp;000</div>
               </div>
               <div class="block-row">
                 <div class="block-label">Season engine rental only</div>
@@ -3951,13 +4650,13 @@ body[data-season="spring"] .info-section-select {
 
               <div class="block-footnote">
                 Season package at R 107&nbsp;760 includes entries, tyres, fuel and centrally prepared pool engines.
-                Entry component is implied at ≈R 2&nbsp;980 per National once tyres, fuel and engine rental are stripped out.
+                Entry component is implied at -R 2&nbsp;980 per National once tyres, fuel and engine rental are stripped out.
               </div>
 
               <div class="delta-badge">
                 <div class="delta-label">Per-day effective cost</div>
                 <div class="block-em ok">
-                  ≈ R 13&nbsp;470 per race day — all-in, including entries, OK-J / OK-N engine, tyres and fuel.
+                  - R 13&nbsp;470 per race day - all-in, including entries, OK-J / OK-N engine, tyres and fuel.
                 </div>
               </div>
             </div>
@@ -3968,19 +4667,19 @@ body[data-season="spring"] .info-section-select {
 
               <div class="block-row">
                 <div class="block-label">New OK engine</div>
-                <div class="block-value">≈ R 80&nbsp;000</div>
+                <div class="block-value">- R 80&nbsp;000</div>
               </div>
               <div class="block-row">
-                <div class="block-label">Rebuilds (2–3 × R5k)</div>
-                <div class="block-value">R 10&nbsp;000–R 15&nbsp;000</div>
+                <div class="block-label">Rebuilds (2-3 - R5k)</div>
+                <div class="block-value">R 10&nbsp;000-R 15&nbsp;000</div>
               </div>
               <div class="block-row">
                 <div class="block-label">Dyno / checks (season)</div>
-                <div class="block-value">≈ R 5&nbsp;000</div>
+                <div class="block-value">- R 5&nbsp;000</div>
               </div>
               <div class="block-row">
                 <div class="block-label">Engine spend alone</div>
-                <div class="block-value">R 90&nbsp;000–R 100&nbsp;000</div>
+                <div class="block-value">R 90&nbsp;000-R 100&nbsp;000</div>
               </div>
 
               <div class="block-row">
@@ -3991,7 +4690,7 @@ body[data-season="spring"] .info-section-select {
               <div class="block-row">
                 <div class="block-label">Total season if you own</div>
                 <div class="block-value block-em ok">
-                  R 145&nbsp;760–R 155&nbsp;760
+                  R 145&nbsp;760-R 155&nbsp;760
                 </div>
               </div>
 
@@ -4002,9 +4701,9 @@ body[data-season="spring"] .info-section-select {
           </div>
 
           <div class="delta-badge">
-            <div class="delta-label">Season saving — OK-J &amp; OK-N</div>
+            <div class="delta-label">Season saving - OK-J &amp; OK-N</div>
             <div class="block-em ok">
-              Pool-engine OK season at R 107&nbsp;760 saves ≈ R 38&nbsp;000–R 48&nbsp;000 vs buying, rebuilding and dynoing your own OK engine while running the same National programme.
+              Pool-engine OK season at R 107&nbsp;760 saves - R 38&nbsp;000-R 48&nbsp;000 vs buying, rebuilding and dynoing your own OK engine while running the same National programme.
             </div>
           </div>
 
@@ -4012,22 +4711,22 @@ body[data-season="spring"] .info-section-select {
             <div class="chip">
               <div class="chip-label">Per National weekend</div>
               <div class="chip-value">
-                Pool: R 26&nbsp;940 vs own: R 36&nbsp;440–R 38&nbsp;940<br />
-                → ≈ R 9.5k–R 12k less per event.
+                Pool: R 26&nbsp;940 vs own: R 36&nbsp;440-R 38&nbsp;940<br />
+                ? - R 9.5k-R 12k less per event.
               </div>
             </div>
             <div class="chip">
               <div class="chip-label">Per race day</div>
               <div class="chip-value">
-                Pool: ≈ R 13&nbsp;470 vs own: R 18&nbsp;220–R 19&nbsp;470<br />
-                → ≈ R 4.75k–R 6k saved per race day.
+                Pool: - R 13&nbsp;470 vs own: R 18&nbsp;220-R 19&nbsp;470<br />
+                ? - R 4.75k-R 6k saved per race day.
               </div>
             </div>
             <div class="chip">
               <div class="chip-label">Percentage impact</div>
               <div class="chip-value">
                 OK pool engines reduce realistic total season spend by roughly
-                <strong>26–31%</strong> compared to owning a single OK engine and chasing power all season.
+                <strong>26-31%</strong> compared to owning a single OK engine and chasing power all season.
               </div>
             </div>
           </div>
@@ -4042,7 +4741,7 @@ body[data-season="spring"] .info-section-select {
         <ul class="bottom-list">
           <li>
             <strong>Less capital locked up in engines.</strong>
-            Instead of tying up roughly R 75k–R 85k (MINI) or R 90k–R 100k (OK) in engines plus rebuilds and dyno work,
+            Instead of tying up roughly R 75k-R 85k (MINI) or R 90k-R 100k (OK) in engines plus rebuilds and dyno work,
             families pay a fixed rental while the pool carries the technical risk.
           </li>
           <li>
@@ -4052,7 +4751,7 @@ body[data-season="spring"] .info-section-select {
           <li>
             <strong>Parity by design.</strong>
             Engines are prepared, rebuilt and dyno-checked centrally to a narrow performance window. Races are decided by driving,
-            race craft and setup — not by who is chasing the biggest horsepower number.
+            race craft and setup - not by who is chasing the biggest horsepower number.
           </li>
           <li>
             <strong>Aligned with the European pathway.</strong>
@@ -4075,7 +4774,7 @@ body[data-season="spring"] .info-section-select {
            <section class="info-section" data-section-panel="prizes">
             <h3>Classes, Prizes &amp; Opportunities</h3>
             <p>
-              Each Nats weekend crowns a “Nats Weekend Winner” in every class, with significant prizes attached.
+              Each Nats weekend crowns a -Nats Weekend Winner- in every class, with significant prizes attached.
               Across four double-header events that adds up to more than R500&nbsp;000 in value and, critically,
               to real pathways into cars and international competition.
             </p>
@@ -4083,7 +4782,7 @@ body[data-season="spring"] .info-section-select {
             <div class="prize-grid">
               <article class="prize-card prize-card--cadet">
                 <div class="prize-card-inner">
-                  <h4 class="prize-title">Cadet · 5–8 Years (Tillotson Cadet)</h4>
+                  <h4 class="prize-title">Cadet - 5-8 Years (Tillotson Cadet)</h4>
                   <div class="prize-meta-row">
                     <span class="prize-chip">Entry category</span>
                     <span class="prize-chip">Tillotson platform</span>
@@ -4105,7 +4804,7 @@ body[data-season="spring"] .info-section-select {
 
               <article class="prize-card prize-card--mini-u10">
                 <div class="prize-card-inner">
-                  <h4 class="prize-title">Mini Rok U/10 · 7–10 Years</h4>
+                  <h4 class="prize-title">Mini Rok U/10 - 7-10 Years</h4>
                   <div class="prize-meta-row">
                     <span class="prize-chip">Under 10</span>
                     <span class="prize-chip">Pool engines</span>
@@ -4127,7 +4826,7 @@ body[data-season="spring"] .info-section-select {
 
               <article class="prize-card prize-card--mini">
                 <div class="prize-card-inner">
-                  <h4 class="prize-title">Mini Rok · 8–12 Years</h4>
+                  <h4 class="prize-title">Mini Rok - 8-12 Years</h4>
                   <div class="prize-meta-row">
                     <span class="prize-chip">Core Mini class</span>
                     <span class="prize-chip">Pathway to OK-J</span>
@@ -4149,7 +4848,7 @@ body[data-season="spring"] .info-section-select {
 
               <article class="prize-card prize-card--okj">
                 <div class="prize-card-inner">
-                  <h4 class="prize-title">OK-J · 11–14 Years</h4>
+                  <h4 class="prize-title">OK-J - 11-14 Years</h4>
                   <div class="prize-meta-row">
                     <span class="prize-chip">FIA junior direct drive</span>
                     <span class="prize-chip">International pathway</span>
@@ -4164,7 +4863,7 @@ body[data-season="spring"] .info-section-select {
                   </p>
                   <ul class="prize-list">
                     <li>True FIA-spec direct-drive category that mirrors the European ladder drivers will face overseas.</li>
-                    <li>Race weekends structured to build technical feedback skills – drivers are expected to work with data, tyres and pool engines.</li>
+                    <li>Race weekends structured to build technical feedback skills - drivers are expected to work with data, tyres and pool engines.</li>
                
                   <li>Creates a genuine stepping stone into FIA Academy, MSA4 and GT4 Junior-style programmes.</li>
                     <li>Rewards complete junior drivers: pace, mechanical sympathy, discipline and race craft over full double-header weekends.</li>
@@ -4173,7 +4872,7 @@ body[data-season="spring"] .info-section-select {
               </article>
               <article class="prize-card prize-card--okn">
                 <div class="prize-card-inner">
-                  <h4 class="prize-title">OK-N · 14+ Years</h4>
+                  <h4 class="prize-title">OK-N - 14+ Years</h4>
                   <div class="prize-meta-row">
                     <span class="prize-chip">Senior FIA direct drive</span>
                     <span class="prize-chip">Car-racing preparation</span>
@@ -4188,8 +4887,8 @@ body[data-season="spring"] .info-section-select {
                   </p>
                   <ul class="prize-list">
                     <li>Structured preparation for MSA4, GT4, touring cars and other senior categories via serious mileage in a modern FIA engine formula.</li>
-                    <li>Drivers must manage tyres, data and strategy over full double-header weekends – exactly what car teams are looking for.</li>
-                    <li>Pool engines create a genuine “spec power” environment, so winning comes from preparation, consistency and race craft.</li>
+                    <li>Drivers must manage tyres, data and strategy over full double-header weekends - exactly what car teams are looking for.</li>
+                    <li>Pool engines create a genuine -spec power- environment, so winning comes from preparation, consistency and race craft.</li>
                     <li>Positions South African seniors directly on the European pathway, with real seats and tests attached to performance.</li>
                   </ul>
                 </div>
@@ -4215,47 +4914,58 @@ body[data-season="spring"] .info-section-select {
               <article class="nats-date-card nats-date-card--summer">
                 <div class="nats-date-card-header">Summer Nats</div>
                 <div class="nats-date-rounds">National Rounds 1 &amp; 2</div>
-                <div class="nats-date-track">Red Star Raceway · Delmas, Mpumalanga</div>
+                <div class="nats-date-track">Red Star Raceway - Delmas, Mpumalanga</div>
                 <ul class="nats-date-lines">
-                  <li><span class="label">Dates:</span> <span class="value">20–22 March 2026</span></li>
-                  <li><span class="label">Format:</span> <span class="value">Friday practice · Two full race days.</span></li>
+                  <li><span class="label">Dates:</span> <span class="value">20-22 March 2026</span></li>
+                  <li><span class="label">Format:</span> <span class="value">Friday practice - Two full race days.</span></li>
                 </ul>
               </article>
 
               <article class="nats-date-card nats-date-card--autumn">
                 <div class="nats-date-card-header">Autumn Nats</div>
                 <div class="nats-date-rounds">National Rounds 3 &amp; 4</div>
-                <div class="nats-date-track">iDube Raceway · KwaZulu-Natal</div>
+                <div class="nats-date-track">iDube Raceway - KwaZulu-Natal</div>
                 <ul class="nats-date-lines">
                   <li><span class="label">Dates:</span> <span class="value">08-10 May 2026</span></li>
-                  <li><span class="label">Format:</span> <span class="value">Friday practice · Two full race days.</span></li>
+                  <li><span class="label">Format:</span> <span class="value">Friday practice - Two full race days.</span></li>
                 </ul>
               </article>
 
               <article class="nats-date-card nats-date-card--winter">
                 <div class="nats-date-card-header">Winter Nats</div>
                 <div class="nats-date-rounds">National Rounds 5 &amp; 6</div>
-                <div class="nats-date-track">Formula K Raceway · Benoni, Gauteng</div>
+                <div class="nats-date-track">Formula K Raceway - Benoni, Gauteng</div>
                 <ul class="nats-date-lines">
-                  <li><span class="label">Dates:</span> <span class="value">10–12 July 2026</span></li>
-                  <li><span class="label">Format:</span> <span class="value">Friday practice · Two full race days.</span></li>
+                  <li><span class="label">Dates:</span> <span class="value">10-12 July 2026</span></li>
+                  <li><span class="label">Format:</span> <span class="value">Friday practice - Two full race days.</span></li>
                 </ul>
               </article>
 
               <article class="nats-date-card nats-date-card--spring">
                 <div class="nats-date-card-header">Spring Nats</div>
                 <div class="nats-date-rounds">National Rounds 7 &amp; 8</div>
-                <div class="nats-date-track">Killarney International Raceway · Cape Town</div>
+                <div class="nats-date-track">Killarney International Raceway - Cape Town</div>
                 <ul class="nats-date-lines">
-                  <li><span class="label">Dates:</span> <span class="value">10–12 September 2026</span></li>
-                  <li><span class="label">Format:</span> <span class="value">Thursday practice · Two full race days Friday and Saturday.</span></li>
+                  <li><span class="label">Dates:</span> <span class="value">10-12 September 2026</span></li>
+                  <li><span class="label">Format:</span> <span class="value">Thursday practice - Two full race days Friday and Saturday.</span></li>
                 </ul>
               </article>
             </div>
 
             <p class="hint">
-              Detailed per-session programme (practice, qualifying and heats) is available under the “Timetables” tab.
+              Detailed per-session programme (practice, qualifying and heats) is available under the -Timetables- tab.
             </p>
+            
+            <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); border-radius: 4px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <div style="font-size: 14px; font-weight: 700; color: white; margin-bottom: 4px;">Add to Calendar</div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.8);">Download all 2026 ROK Cup dates to your calendar</div>
+              </div>
+              <a href="/documents/season/rok-cup-sa-2026-calendar.ics" download style="padding: 10px 20px; background: #facd12; color: #111827; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 4px; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                Download .ICS
+              </a>
+            </div>
           </section>
 
           <section class="info-section" data-section-panel="location">
@@ -4271,7 +4981,7 @@ body[data-season="spring"] .info-section-select {
                 <div class="location-icon">RS</div>
                 <div class="location-badge">Summer Nats</div>
                 <div class="location-title">Red Star Raceway</div>
-                <div class="location-meta">Delmas · Mpumalanga</div>
+                <div class="location-meta">Delmas - Mpumalanga</div>
                 <ul class="location-lines">
                   <li>
                     <span class="label">Character:</span>
@@ -4294,7 +5004,7 @@ body[data-season="spring"] .info-section-select {
                 <div class="location-icon">ID</div>
                 <div class="location-badge">Autumn Nats</div>
                 <div class="location-title">iDube Kart Track</div>
-                <div class="location-meta">Cato Ridge · KwaZulu-Natal</div>
+                <div class="location-meta">Cato Ridge - KwaZulu-Natal</div>
                 <ul class="location-lines">
                   <li>
                     <span class="label">Character:</span>
@@ -4317,7 +5027,7 @@ body[data-season="spring"] .info-section-select {
                 <div class="location-icon">FK</div>
                 <div class="location-badge">Winter Nats</div>
                 <div class="location-title">Formula K Raceway</div>
-                <div class="location-meta">Benoni · Gauteng</div>
+                <div class="location-meta">Benoni - Gauteng</div>
                 <ul class="location-lines">
                   <li>
                     <span class="label">Character:</span>
@@ -4340,7 +5050,7 @@ body[data-season="spring"] .info-section-select {
                 <div class="location-icon">KL</div>
                 <div class="location-badge">Spring Nats</div>
                 <div class="location-title">Killarney Raceway</div>
-                <div class="location-meta">Table View · Cape Town</div>
+                <div class="location-meta">Table View - Cape Town</div>
                 <ul class="location-lines">
                   <li>
                     <span class="label">Character:</span>
@@ -4348,7 +5058,7 @@ body[data-season="spring"] .info-section-select {
                   </li>
                   <li>
                     <span class="label">Role:</span>
-                    Season finale at sea level – different air, different grip and a true National-level spectacle.
+                    Season finale at sea level - different air, different grip and a true National-level spectacle.
                   </li>
                 </ul>
                 <div class="location-map-link">
@@ -4369,7 +5079,7 @@ body[data-season="spring"] .info-section-select {
 
             <div class="track-grid">
               <article class="track-card track-card--summer">
-                <div class="track-card-header">Summer Nats · Red Star</div>
+                <div class="track-card-header">Summer Nats - Red Star</div>
                 <div class="track-card-track">Red Star Raceway</div>
                 <div class="track-card-meta">
                   N12 Zonderfout Farm I226, Portion 5, Delmas, 2210 Phone: 076 624 6972
@@ -4377,7 +5087,7 @@ body[data-season="spring"] .info-section-select {
               </article>
 
               <article class="track-card track-card--autumn">
-                <div class="track-card-header">Autumn Nats · iDube</div>
+                <div class="track-card-header">Autumn Nats - iDube</div>
                 <div class="track-card-track">iDube Kart Track</div>
                 <div class="track-card-meta">
                   iDube Raceway. Camperdown, 3720. Phone. 083 232 3084. Email. secretary@kznkartclub.co.za.
@@ -4385,7 +5095,7 @@ body[data-season="spring"] .info-section-select {
               </article>
 
               <article class="track-card track-card--winter">
-                <div class="track-card-header">Winter Nats · Formula K</div>
+                <div class="track-card-header">Winter Nats - Formula K</div>
                 <div class="track-card-track">Formula K Raceway</div>
                 <div class="track-card-meta">
                   7 Golden Dr, Morehill, Benoni, 1501
@@ -4394,7 +5104,7 @@ body[data-season="spring"] .info-section-select {
               </article>
 
               <article class="track-card track-card--spring">
-                <div class="track-card-header">Spring Nats · Killarney</div>
+                <div class="track-card-header">Spring Nats - Killarney</div>
                 <div class="track-card-track">Killarney Kart Circuit</div>
                 <div class="track-card-meta">
                   6 Potsdam Rd, Table View, Cape Town, 7441
@@ -4403,44 +5113,10 @@ body[data-season="spring"] .info-section-select {
               </article>
             </div>
 
-            <ul class="pdf-list track-pdf-list">
-              <li>
-                <a href="#"></a>
-              </li>
-            </ul>
-
             <p class="hint">
               Detailed track maps, site maps, paddock layout, pre race, parc ferme, access routes and marshal-post diagrams will be published closer to each
               event in the maps section.
             </p>
-          </section>
-          
-           <section class="info-section" data-section-panel="docs">
-            <h3>Official Documents</h3>
-            <p style="color: black;">Core official documents for this event (issued by the promoter / MSA).</p>
-            <div class="info-doc-list">
-              <a href="/documents/season/supplementary-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">DOC</span>
-                <span class="info-doc-text">
-                  <span class="info-doc-title">Supplementary Regulations</span>
-                  <span class="info-doc-meta">View Document</span>
-                </span>
-              </a>
-              <a href="/documents/season/msa-permit.html" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">DOC</span>
-                <span class="info-doc-text">
-                  <span class="info-doc-title">Motorsport South Africa Permit</span>
-                  <span class="info-doc-meta">View Document</span>
-                </span>
-              </a>
-              <a href="/documents/season/DOC003-rok-2026-event-entry-pack.html" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">DOC</span>
-                <span class="info-doc-text">
-                  <span class="info-doc-title">Entry Pack &amp; Event Overview</span>
-                  <span class="info-doc-meta">View Document</span>
-                </span>
-              </a>
-            </div>
           </section>
 
             <section class="info-section" data-section-panel="regs">
@@ -4450,33 +5126,27 @@ body[data-season="spring"] .info-section-select {
             </p>
 
             <div class="info-doc-list">
-              <a href="/documents/season/national-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">DOC</span>
+              <a href="https://drive.google.com/file/d/11ySOTlULk3TKZP2HbaklfddOH-hChTI6/view" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">PDF</span>
                 <span class="info-doc-text">
-                  <span class="info-doc-title">MSA ROK National Regulations 2026</span>
-                  <span class="info-doc-meta">View Document</span>
+                  <span class="info-doc-title">2026 MSA National ROK Karting Technical Regulations</span>
+                  <span class="info-doc-meta">Opens in new tab</span>
                 </span>
               </a>
 
-              <a href="/documents/season/technical-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">DOC</span>
+              <a href="https://drive.google.com/file/d/1Exgs-F4dqkeM25gb6FR-zzNeTtUcizc1/view" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">PDF</span>
                 <span class="info-doc-text">
-                  <span class="info-doc-title">Technical Regulations</span>
-                  <span class="info-doc-meta">View Document</span>
+                  <span class="info-doc-title">2026 MSA National Rok Sporting Regulations</span>
+                  <span class="info-doc-meta">Opens in new tab</span>
                 </span>
               </a>
-              <a href="/documents/season/sporting-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">DOC</span>
+              
+              <a href="https://drive.google.com/file/d/1Eq_XV5JkMwmqbZAeumCpokJycGZ6WxB-/view" class="info-doc-link" target="_blank" rel="noopener">
+                <span class="info-doc-icon">PDF</span>
                 <span class="info-doc-text">
-                  <span class="info-doc-title">Sporting Regulations</span>
-                  <span class="info-doc-meta">View Document</span>
-                </span>
-              </a>
-              <a href="/documents/season/regional-regulations.html" class="info-doc-link" target="_blank" rel="noopener">
-                <span class="info-doc-icon">DOC</span>
-                <span class="info-doc-text">
-                  <span class="info-doc-title">Regional Regulations</span>
-                  <span class="info-doc-meta">View Document</span>
+                  <span class="info-doc-title">2026 MSA NR Regional Rok Karting Championship Regulations</span>
+                  <span class="info-doc-meta">Opens in new tab</span>
                 </span>
               </a>
             </div>
@@ -4486,15 +5156,15 @@ body[data-season="spring"] .info-section-select {
               <header class="class-info-header">
                 <div class="class-info-tagline">
                   <span class="class-pill">MINI PROGRAMME</span>
-                  <span class="class-chip">Cadet · Mini U/10 · MINI ROK</span>
+                  <span class="class-chip">Cadet - Mini U/10 - MINI ROK</span>
                 </div>
                 <div>
-                  <h3>Mini Classes — Cadet, Mini ROK U/10 &amp; MINI ROK</h3>
+                  <h3>Mini Classes - Cadet, Mini ROK U/10 &amp; MINI ROK</h3>
                   <p class="class-intro">
                     The MINI classes are where most South African drivers begin serious race craft within
                     the ROK Cup South Africa structure. Cadet, Mini ROK U/10 and MINI ROK share one
                     philosophy: a safe, professionally managed environment that teaches fundamentals
-                    properly while still feeling like a “real” national championship.
+                    properly while still feeling like a -real- national championship.
                   </p>
                 </div>
               </header>
@@ -4509,7 +5179,7 @@ body[data-season="spring"] .info-section-select {
                   </li>
                   <li>
                     <a href="/documents/classes/DOC008-rok-2026-mini-prize-structure.html" target="_blank">
-                      Prize Structure &amp; Points – Mini Classes
+                      Prize Structure &amp; Points - Mini Classes
                     </a>
                   </li>
                 </ul>
@@ -4520,15 +5190,15 @@ body[data-season="spring"] .info-section-select {
                   <h4>Ages &amp; eligibility (guideline)</h4>
                   <ul>
                     <li>
-                      <strong>Cadet:</strong> typically 7–9 years old — the first step into owner-driver
+                      <strong>Cadet:</strong> typically 7-9 years old - the first step into owner-driver
                       karting after Bambino or rental kart experience.
                     </li>
                     <li>
-                      <strong>Mini ROK U/10:</strong> typically 8–10 years old — for younger drivers who
+                      <strong>Mini ROK U/10:</strong> typically 8-10 years old - for younger drivers who
                       are ready for national-level pace but are still developing race craft and confidence.
                     </li>
                     <li>
-                      <strong>MINI ROK:</strong> typically 9–13 years old — the main national MINI category
+                      <strong>MINI ROK:</strong> typically 9-13 years old - the main national MINI category
                       with full grids, race weekends and a clear pathway to OK-J.
                     </li>
                   </ul>
@@ -4564,7 +5234,7 @@ body[data-season="spring"] .info-section-select {
                       <strong>Parity-focused mindset:</strong> from MINI ROK upwards, the National
                       programme uses the same parity philosophy as the senior classes. Engines are
                       prepared centrally, checked on the dyno and managed as a technical asset, so the
-                      emphasis stays on driving and setup rather than “engine wars”.
+                      emphasis stays on driving and setup rather than -engine wars-.
                     </li>
                     <li>
                       <strong>Professional but accessible:</strong> the paddock is run like a proper
@@ -4587,7 +5257,7 @@ body[data-season="spring"] .info-section-select {
                     <li>
                       <strong>Long-term development:</strong> by the time a driver leaves MINI ROK, they
                       should understand data, tyres, starts, race management and basic engineering
-                      feedback — the toolkit required to be competitive in international junior karting.
+                      feedback - the toolkit required to be competitive in international junior karting.
                     </li>
                   </ul>
                 </div>
@@ -4620,7 +5290,7 @@ body[data-season="spring"] .info-section-select {
                   </li>
                   <li>
                     <a href="/documents/classes/DOC010-rok-2026-okj-prize-structure.html" target="_blank">
-                      Prize Structure &amp; Points – OK-J Class
+                      Prize Structure &amp; Points - OK-J Class
                     </a>
                   </li>
                 </ul>
@@ -4630,9 +5300,9 @@ body[data-season="spring"] .info-section-select {
                 <div class="class-info-column">
                   <h4>Ages &amp; eligibility (guideline)</h4>
                   <ul>
-                    <li><strong>Typical age band:</strong> around 12–14 years old, for drivers graduating from
+                    <li><strong>Typical age band:</strong> around 12-14 years old, for drivers graduating from
                       MINI ROK who are ready for international-style junior karting.</li>
-                    <li><strong>Background:</strong> usually 1–2 seasons of competitive karting experience,
+                    <li><strong>Background:</strong> usually 1-2 seasons of competitive karting experience,
                       with prior National or Regional MINI results.</li>
                   </ul>
 
@@ -4676,7 +5346,7 @@ body[data-season="spring"] .info-section-select {
             <div class="class-info-card">
               <header class="class-info-header">
                 <span class="class-pill">OK-N CLASS</span>
-                <h3>OK-N — Senior Direct Drive &amp; European Pathway</h3>
+                <h3>OK-N - Senior Direct Drive &amp; European Pathway</h3>
               </header>
 
               <div class="class-info-body">
@@ -4705,7 +5375,7 @@ body[data-season="spring"] .info-section-select {
                     </li>
                     <li>
                       <a href="/documents/classes/DOC012-rok-2026-okn-prize-structure.html" target="_blank">
-                        Prize Structure &amp; Points – OK-N Class
+                        Prize Structure &amp; Points - OK-N Class
           </a>
         </li>
       </ul>
@@ -4715,7 +5385,7 @@ body[data-season="spring"] .info-section-select {
       <div class="class-info-column">
          <h4>Ages &amp; eligibility (guideline)</h4>
 <ul>
-  <li><strong>Typical age band:</strong> from around 14–15 years upwards, for drivers who
+  <li><strong>Typical age band:</strong> from around 14-15 years upwards, for drivers who
       have outgrown OK-J or who already have significant karting experience.</li>
   <li><strong>Profile:</strong> ambitious drivers looking to test themselves against a
       national field at full senior power, often with an eye on FIA Academy, European OK
@@ -4733,7 +5403,7 @@ body[data-season="spring"] .info-section-select {
       management across heats and finals.</li>
   <li><strong>Engine parity and cost control:</strong> Engines are supplied from the
       National pool, stripped and rebuilt after each event, and signed off on a dyno.
-      This dramatically reduces the cost of “chasing power” compared with owning multiple
+      This dramatically reduces the cost of -chasing power- compared with owning multiple
       tuned engines, while keeping the performance window tight.</li>
   <li><strong>High performance standards:</strong> Driving standards, fitness requirements
       and expectations around professionalism are deliberately high. Drivers are expected
@@ -4769,7 +5439,7 @@ body[data-season="spring"] .info-section-select {
         <span class="class-chip">ACADEMY CLASS</span>
       </div>
       <div>
-        <h3>ROK Academy — Structured Driver Development Class</h3>
+        <h3>ROK Academy - Structured Driver Development Class</h3>
         <div class="class-intro">
           <ul>
             <li>Bridging step between MINI and the National OK classes. National-style race weekends with a calmer, learning-focused grid.</li>
@@ -4788,7 +5458,7 @@ body[data-season="spring"] .info-section-select {
         </li>
         <li>
           <a href="/documents/classes/DOC014-rok-2026-academy-prize-structure.html" target="_blank">
-            Prize Structure &amp; Points – Academy Classes
+            Prize Structure &amp; Points - Academy Classes
           </a>
         </li>
       </ul>
@@ -4809,9 +5479,9 @@ body[data-season="spring"] .info-section-select {
         <p>
           The concept is simple: take the same European-style direct drive and pool-engine ethos
           that underpins the National classes, wrap it in a controlled and supportive race format,
-          and use it to expose committed young drivers to the full “feel” of a National event.
+          and use it to expose committed young drivers to the full -feel- of a National event.
           ROK Academy is where drivers learn how to handle race-day stress, time pressure and
-          procedures — not just how to drive quickly for a lap or two.
+          procedures - not just how to drive quickly for a lap or two.
         </p>
 
         <h4>Who the Academy class is for</h4>
@@ -4849,7 +5519,7 @@ body[data-season="spring"] .info-section-select {
             <strong>National-style race weekends:</strong>
             Academy events run alongside key ROK Cup South Africa meetings, so drivers experience
             proper race control, timing, scrutineering and paddock procedures. The timetable,
-            briefing structure and parc fermé rules are aligned with Nationals, but the class
+            briefing structure and parc ferm- rules are aligned with Nationals, but the class
             itself remains more relaxed and forgiving for newcomers.
           </li>
           <li>
@@ -4862,7 +5532,7 @@ body[data-season="spring"] .info-section-select {
             <strong>Fixed and predictable costs:</strong>
             By combining engine rental, technical preparation and track time into a single Academy
             package, families can plan their budget with far more confidence than in a traditional
-            “open” engine model.
+            -open- engine model.
           </li>
         </ul>
 
@@ -4877,7 +5547,7 @@ body[data-season="spring"] .info-section-select {
           <li>
             <strong>Professional habits from a young age:</strong>
             Drivers learn to arrive prepared, manage their own checklists, pay attention to
-            notices and flags, and respect procedures — the same habits expected in top European
+            notices and flags, and respect procedures - the same habits expected in top European
             teams and later in cars.
           </li>
           <li>
@@ -4915,14 +5585,14 @@ body[data-season="spring"] .info-section-select {
       <li>
         <strong>Support for long-term careers:</strong>
         Whether a driver ultimately targets European karting, Formula 4, GT racing or stays
-        within South African motorsport, the habits learned in the Academy class — discipline,
-        communication, time management and race craft — remain relevant for the rest of their
+        within South African motorsport, the habits learned in the Academy class - discipline,
+        communication, time management and race craft - remain relevant for the rest of their
         career.
       </li>
       <li>
         <strong>A clear, branded development ladder:</strong>
         ROK Academy sits visibly between MINI and the National OK classes, so families can see
-        the entire pathway: MINI → Academy → OK-J → OK-N → international opportunities.
+        the entire pathway: MINI ? Academy ? OK-J ? OK-N ? international opportunities.
         The message is simple: there is a structured way to grow, in a calmer class that
         prepares drivers for the real thing.
       </li>
@@ -4971,14 +5641,14 @@ and during race weekends for short-notice updates.
 </ul>
  <div class="info-doc-list">
               <a href="https://chat.whatsapp.com/DyBxA0FjK4KL204Q5Fo2pZ" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+                <span class="info-doc-icon" style="background: #25D366; color: #ffffff; border-color: #25D366;">WHATSAPP</span>
                 <span class="info-doc-text">
                   <span class="info-doc-title"> Join the Race Day Notices WhatsApp group</span>
                   <span class="info-doc-meta">JOIN</span>
                 </span>
               </a>
              <a href="https://chat.whatsapp.com/Gn2VRrAFWBbIkukVs8C7Fw" target="_blank" rel="noopener">
-                <span class="info-doc-icon">PDF</span>
+                <span class="info-doc-icon" style="background: #25D366; color: #ffffff; border-color: #25D366;">WHATSAPP</span>
                 <span class="info-doc-text">
                   <span class="info-doc-title"> Join the ROK Info &amp; Announcements WhatsApp group</span>
                   <span class="info-doc-meta">JOIN</span>
@@ -4994,8 +5664,8 @@ the paddock quickly and consistently.
 </p>
 
             <ul class="pdf-list">
-              <li><a href="/documents/events/bulletin-01.html" target="_blank">Bulletin 01 – Example</a></li>
-              <li><a href="/documents/events/bulletin-02.html" target="_blank">Bulletin 02 – Example</a></li>
+              <li><a href="/documents/events/bulletin-01.html" target="_blank">Bulletin 01 - Example</a></li>
+              <li><a href="/documents/events/bulletin-02.html" target="_blank">Bulletin 02 - Example</a></li>
             </ul>
           </section>
 
@@ -5003,7 +5673,7 @@ the paddock quickly and consistently.
             <h3>Timetables</h3>
             <section class="nats-timetable">
               <body class="summer-nats">
-  <h3 class="nats-timetable-heading">Weekend Timetable · National Round</h3>
+  <h3 class="nats-timetable-heading">Weekend Timetable - National Round</h3>
   <p class="nats-timetable-tagline">
     A clean three-day format that keeps travel simple and track time focused.
   </p>
@@ -5020,7 +5690,7 @@ the paddock quickly and consistently.
 
     <article class="nats-day-card">
       <div class="nats-day-label">Saturday</div>
-      <div class="nats-day-role">Nats · Race Day 1</div>
+      <div class="nats-day-role">Nats - Race Day 1</div>
       <div class="nats-day-detail">
         Official ROK programme: warm-up, qualifying and first set of heats.
         Points scored to the National Championship as published in the regulations.
@@ -5029,7 +5699,7 @@ the paddock quickly and consistently.
 
     <article class="nats-day-card">
       <div class="nats-day-label">Sunday</div>
-      <div class="nats-day-role">Nats · Race Day 2</div>
+      <div class="nats-day-role">Nats - Race Day 2</div>
       <div class="nats-day-detail">
         Second race day with remaining heats and finals. Trophies, podiums and
         National points allocation after technical checks are complete.
@@ -5037,16 +5707,7 @@ the paddock quickly and consistently.
     </article>
   </div>
 
-            <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); border-radius: 4px; display: flex; align-items: center; justify-content: space-between;">
-              <div>
-                <div style="font-size: 14px; font-weight: 700; color: white; margin-bottom: 4px;">Add to Calendar</div>
-                <div style="font-size: 12px; color: rgba(255,255,255,0.8);">Download all 2026 ROK Cup dates to your calendar</div>
-              </div>
-              <a href="/documents/season/rok-cup-sa-2026-calendar.ics" download style="padding: 10px 20px; background: #facd12; color: #111827; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
-                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
-                Download .ICS
-              </a>
-            </div></section>
+          </section>
           </section>
 
           <section class="info-section" data-section-panel="spectator">
@@ -5076,61 +5737,93 @@ the paddock quickly and consistently.
       </div><!-- end infoTabGeneral -->
 
       <!-- Race Specific Tab Content -->
-      <div id="infoTabRaceSpecific" class="info-tab-content" style="display: none; padding: 32px; background: linear-gradient(180deg, #111827 0%, #1f2937 100%);">
-        <div class="rs-container" style="max-width: 900px; margin: 0 auto;">
+      <div id="infoTabRaceSpecific" class="info-tab-content" style="display: none;">
           
-          <!-- Combined Event Details & Registration Box -->
-          <div id="rsEventBox" class="rs-event-box" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); border-radius: 0; padding: 0; margin-bottom: 24px; display: flex; align-items: stretch; overflow: hidden; box-shadow: 0 12px 32px rgba(37, 99, 235, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.2); position: relative;">
+          <!-- Hero Header Section -->
+          <div id="rsEventBox" class="rs-event-box" style="background: #000000; position: relative; overflow: visible;">
             
-            <!-- Animated background accent -->
-            <div style="position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 50%, #0ea5e9 100%); background-size: 200% 100%; animation: shimmer 3s linear infinite;"></div>
+            <!-- Animated gradient border -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, #0ea5e9 50%, transparent 100%); background-size: 200% 100%; animation: shimmerBorder 4s linear infinite;"></div>
             
-            <!-- ROK Logo & Event Info -->
-            <div class="rs-event-info" style="flex: 1; padding: 36px 40px; display: flex; align-items: center; gap: 24px;">
-              <img src="/icons/rok-logo-original.png" alt="ROK Cup" class="rs-logo" style="height: 70px; width: auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
-              <div style="flex: 1;">
-                <div class="rs-title-row" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px;">
-                  <div style="font-size: 32px; color: white; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.3);" id="rsEventName">Loading...</div>
+            <!-- Main content wrapper -->
+            <div style="max-width: 1200px; margin: 0 auto; padding: 40px 32px 32px; position: relative;">
+              
+              <!-- ROK Logo - Floating -->
+              <div style="position: absolute; top: 24px; right: 40px; opacity: 0.15; z-index: 0;">
+                <img src="/icons/rok-logo-original.png" alt="ROK Cup" style="height: 180px; width: auto; filter: grayscale(100%) brightness(2);">
+              </div>
+              
+              <!-- Content Grid -->
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center; position: relative; z-index: 1;">
+                
+                <!-- Left: Event Info -->
+                <div>
+                  <!-- Small ROK logo for mobile -->
+                  <img src="/icons/rok-logo-original.png" alt="ROK Cup" class="rs-logo-mobile" style="height: 48px; width: auto; margin-bottom: 24px; display: none;">
+                  
+                  <!-- Event Name -->
+                  <div id="rsEventName" style="font-size: 56px; color: #ffffff; font-weight: 700; line-height: 1; margin-bottom: 20px; letter-spacing: 0.35em; text-transform: uppercase; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+                    Loading...
+                  </div>
+                  
+                  <!-- Event Meta -->
+                  <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
+                    <div id="rsEventLocation" style="font-size: 16px; color: #0ea5e9; font-weight: 600; letter-spacing: 0.05em;">--</div>
+                    <div style="width: 1px; height: 18px; background: rgba(255, 255, 255, 0.2);"></div>
+                    <div id="rsEventDate" style="font-size: 16px; color: rgba(255,255,255,0.7); font-weight: 500;">--</div>
+                  </div>
+                  
+                  <!-- CTA Button -->
+                  <a href="driver_portal.html" class="rs-enter-btn" style="display: inline-block; padding: 18px 40px; background: transparent; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; border-radius: 0; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); position: relative; overflow: hidden; border: 2px solid #ffffff;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 32px rgba(255, 255, 255, 0.3)'; this.style.background='#ffffff'; this.style.color='#000000';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 0 0 rgba(255, 255, 255, 0)'; this.style.background='transparent'; this.style.color='#ffffff';">
+                    <span style="position: relative; z-index: 1;">Enter Here</span>
+                  </a>
                 </div>
-                <div class="rs-meta" style="display: flex; gap: 16px; align-items: center;">
-                  <div style="font-size: 14px; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;" id="rsEventLocation">--</div>
-                  <div style="width: 3px; height: 16px; background: rgba(14, 165, 233, 0.5);"></div>
-                  <div style="font-size: 14px; color: rgba(255,255,255,0.95); font-weight: 600; letter-spacing: 0.05em;" id="rsEventDate">--</div>
+                
+                <!-- Right: Registration Status -->
+                <div id="rsStatusBox" class="rs-status-box" style="min-width: 200px; text-align: right;">
+                  <!-- Status Label -->
+                  <div id="rsRegistrationLabel" style="font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 12px;">
+                    Registration Status
+                  </div>
+                  
+                  <!-- Status Text & Indicator -->
+                  <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 8px;">
+                    <div id="rsStatusText" style="font-size: 32px; color: #ef4444; font-weight: 900; letter-spacing: -0.02em; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+                      CLOSED
+                    </div>
+                    <div id="rsStatusIndicator" style="width: 12px; height: 12px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 24px #ef4444, 0 0 8px rgba(239, 68, 68, 0.8); animation: pulse 2s ease-in-out infinite;"></div>
+                  </div>
+                  
+                  <!-- Countdown or additional info -->
+                  <div style="font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 500; letter-spacing: 0.05em;">
+                    Check back soon
+                  </div>
                 </div>
               </div>
             </div>
             
-            <!-- Registration Status -->
-            <div id="rsStatusBox" class="rs-status-box" style="background: linear-gradient(135deg, #111827 0%, #1f2937 100%); padding: 36px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-width: 240px; position: relative; border-left: 3px solid rgba(14, 165, 233, 0.4);">
-              <!-- Glow effect behind indicator -->
-              <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%); width: 80px; height: 80px; background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%); filter: blur(20px);"></div>
-              
-              <div id="rsStatusIndicator" style="width: 18px; height: 18px; border-radius: 50%; background: #ef4444; margin-bottom: 12px; box-shadow: 0 0 20px #ef4444, 0 0 40px rgba(239, 68, 68, 0.5); position: relative; z-index: 1; animation: pulse 2s ease-in-out infinite;"></div>
-              <div id="rsRegistrationLabel" style="font-size: 11px; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 6px;">Registration</div>
-              <div id="rsStatusText" style="font-size: 26px; color: #ef4444; font-weight: 900; margin-bottom: 16px; text-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);">NOT OPEN</div>
-              <a href="driver_portal.html" class="rs-enter-btn" style="padding: 12px 28px; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; text-decoration: none; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; border-radius: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4), 0 2px 4px rgba(0,0,0,0.2); position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-2px) scale(1.02)'; this.style.boxShadow='0 8px 20px rgba(14, 165, 233, 0.6), 0 4px 8px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 12px rgba(14, 165, 233, 0.4), 0 2px 4px rgba(0,0,0,0.2)'">
-                ENTER NOW
-              </a>
-            </div>
+            <!-- Bottom border -->
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);"></div>
           </div>
 
-          <!-- Documents Box - Full Width with Premium Styling -->
-          <div style="background: #111827; border-radius: 0; padding: 0; min-height: 380px; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.2); position: relative; overflow: hidden;">
-            
-            <!-- Top accent bar -->
-            <div style="height: 5px; background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 50%, #0ea5e9 100%); background-size: 200% 100%; animation: shimmer 3s linear infinite;"></div>
+          <!-- Documents Box -->
+          <div style="background: #000000; padding: 0; min-height: 380px; display: flex; flex-direction: column; position: relative; overflow: hidden; border-top: 1px solid rgba(255, 255, 255, 0.1);">
             
             <!-- Header -->
-            <div style="padding: 24px 32px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(2, 132, 199, 0.1) 100%); border-bottom: 2px solid rgba(14, 165, 233, 0.2);">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <svg width="24" height="24" fill="#0ea5e9" viewBox="0 0 24 24"><path d="M7 18h2V6H7v12zm4 4h2V2h-2v20zm4-8h2V6h-2v8z"/></svg>
-                <div style="font-size: 15px; color: #0ea5e9; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em;">Event Documents</div>
+            <div style="max-width: 1200px; margin: 0 auto; width: 100%; padding: 32px 32px 24px;">
+              <div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 8px;">
+                  Race Documentation
+                </div>
+                <div style="font-size: 28px; color: #ffffff; font-weight: 800; letter-spacing: -0.02em;">
+                  Event Documents
+                </div>
               </div>
             </div>
             
             <!-- Documents content -->
-            <div id="rsEventDocuments" style="flex: 1; padding: 32px; overflow-y: auto; background: #ffffff; position: relative;">
-              <div style="color: #6b7280; text-align: center; font-size: 14px; padding: 40px 0;">Loading...</div>
+            <div id="rsEventDocuments" style="flex: 1; padding: 0 40px 40px; overflow-y: auto; background: #000000; position: relative; max-width: 1200px; margin: 0 auto; width: 100%;">
+              <!-- Initial state will be replaced by loadRaceSpecificData() -->
             </div>
             
             <!-- Scroll Indicator (Mobile Only) -->
@@ -5156,6 +5849,23 @@ the paddock quickly and consistently.
           50% { transform: scale(1.1); opacity: 0.8; }
         }
         
+        /* Folder hover effects and animations */
+        .folder-item:hover {
+          transform: translateY(-4px) scale(1.02);
+        }
+        
+        .folder-item:hover > div:last-child {
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .folder-item:hover > div:first-child {
+          box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .folder-item:active {
+          transform: translateY(-2px) scale(0.98);
+        }
+        
         @keyframes folderPopIn {
           0% {
             opacity: 0;
@@ -5177,7 +5887,7 @@ the paddock quickly and consistently.
         
         .scroll-indicator {
           display: none;
-          position: fixed;
+          position: absolute;
           bottom: 20px;
           left: 50%;
           transform: translateX(-50%);
@@ -5200,92 +5910,84 @@ the paddock quickly and consistently.
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
           #infoTabRaceSpecific {
-            padding: 16px !important;
+            padding: 0 !important;
+          }
+          
+          .folder-grid {
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+            gap: 12px !important;
           }
           
           .rs-container {
             max-width: 100% !important;
           }
           
-          /* Stack event box vertically */
-          .rs-event-box {
-            flex-direction: column !important;
+          /* Hero section mobile adjustments */
+          .rs-event-box > div {
+            padding: 32px 20px 24px !important;
           }
           
-          /* Event info adjustments */
-          .rs-event-info {
-            padding: 24px 20px !important;
-            gap: 16px !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
+          .rs-event-box > div > div {
+            grid-template-columns: 1fr !important;
+            gap: 40px !important;
           }
           
-          .rs-logo {
-            height: 50px !important;
-            align-self: center !important;
+          /* Show mobile logo, hide large floating one */
+          .rs-logo-mobile {
+            display: block !important;
           }
           
-          .rs-title-row {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 12px !important;
-            width: 100%;
+          .rs-event-box > div > div:first-child {
+            position: static !important;
+            opacity: 1 !important;
           }
           
+          .rs-event-box > div > div:first-child img {
+            height: 120px !important;
+            opacity: 0.1 !important;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+          }
+          
+          /* Event name smaller */
           #rsEventName {
-            font-size: 20px !important;
+            font-size: 32px !important;
           }
           
-          .rs-meta {
-            flex-direction: column !important;
-            gap: 8px !important;
-            align-items: flex-start !important;
+          #rsEventLocation,
+          #rsEventDate {
+            font-size: 14px !important;
           }
           
-          .rs-meta div[style*="width: 3px"] {
-            display: none !important;
-          }
-          
-          /* Status box adjustments */
+          /* Status box left-aligned */
           .rs-status-box {
-            border-left: none !important;
-            border-top: 3px solid rgba(14, 165, 233, 0.4) !important;
-            padding: 24px 20px !important;
+            text-align: left !important;
             min-width: unset !important;
-            flex-direction: row !important;
-            justify-content: space-between !important;
-            gap: 16px;
           }
           
-          .rs-status-box > div[style*="position: absolute"] {
-            display: none !important;
-          }
-          
-          #rsStatusIndicator {
-            margin-bottom: 0 !important;
-            margin-right: 8px !important;
-          }
-          
-          .rs-status-box > div:first-of-type {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-          }
-          
-          #rsRegistrationLabel {
-            margin-bottom: 0 !important;
+          .rs-status-box > div:nth-child(2) {
+            justify-content: flex-start !important;
           }
           
           #rsStatusText {
-            margin-bottom: 0 !important;
-            font-size: 20px !important;
+            font-size: 24px !important;
           }
           
           .rs-enter-btn {
-            padding: 10px 20px !important;
+            padding: 14px 32px !important;
             font-size: 12px !important;
-            white-space: nowrap !important;
+            width: 100%;
+            text-align: center;
+          }
+          
+          /* Documents header */
+          div[style*="Race Documentation"] {
+            padding: 24px 20px 20px !important;
+          }
+          
+          #rsEventDocuments {
+            padding: 0 20px 24px !important;
           }
           
           /* Show scroll indicator on mobile */
@@ -5307,28 +6009,34 @@ the paddock quickly and consistently.
         }
         
         @media (max-width: 480px) {
+          .rs-event-box > div {
+            padding: 24px 16px 20px !important;
+          }
+          
           #rsEventName {
-            font-size: 18px !important;
+            font-size: 28px !important;
           }
           
           #rsEventLocation,
           #rsEventDate {
-            font-size: 12px !important;
+            font-size: 13px !important;
           }
           
-          .rs-status-box {
-            flex-direction: column !important;
-            align-items: center !important;
+          #rsStatusText {
+            font-size: 20px !important;
           }
           
-          .rs-status-box > div:first-of-type {
-            flex-direction: column;
-            text-align: center;
+          .rs-enter-btn {
+            padding: 12px 24px !important;
           }
           
-          #rsStatusIndicator {
-            margin-right: 0 !important;
-            margin-bottom: 8px !important;
+          /* Tighter header on small mobile */
+          div[style*="Race Documentation"] {
+            padding: 20px 16px 16px !important;
+          }
+          
+          div[style*="Race Documentation"] div[style*="font-size: 28px"] {
+            font-size: 24px !important;
           }
           
           .folder-item {
@@ -5417,58 +6125,58 @@ the paddock quickly and consistently.
             NEW YEAR. NEW FORMAT. NEW STAKES.
           </div>
 
-          <section class="nats-panel nats-panel--summer" aria-label="Summer NATS — Red Star">
+          <section class="nats-panel nats-panel--summer" aria-label="Summer NATS - Red Star">
             <div class="nats-lockup">
               <div class="nats-kicker">
-                ROK CUP SOUTH AFRICA · NATIONAL ROUNDS 1 &amp; 2
+                ROK CUP SOUTH AFRICA - NATIONAL ROUNDS 1 &amp; 2
               </div>
               <div class="nats-title">
                 SUMMER NATS
               </div>
               <div class="nats-meta">
-                RED STAR RACEWAY · 20–22 MARCH 2026 · DOUBLE NATIONAL WEEKEND
+                RED STAR RACEWAY - 20-22 MARCH 2026 - DOUBLE NATIONAL WEEKEND
               </div>
             </div>
           </section>
 
-          <section class="nats-panel nats-panel--spring" aria-label="Spring NATS — Killarney">
+          <section class="nats-panel nats-panel--spring" aria-label="Spring NATS - Killarney">
             <div class="nats-lockup">
               <div class="nats-kicker">
-                ROK CUP SOUTH AFRICA · NATIONAL ROUNDS 7 &amp; 8
+                ROK CUP SOUTH AFRICA - NATIONAL ROUNDS 7 &amp; 8
               </div>
               <div class="nats-title">
                 SPRING NATS
               </div>
               <div class="nats-meta">
-                KILLARNEY INTERNATIONAL RACEWAY · 10–12 SEPTEMBER 2026 · DOUBLE NATIONAL WEEKEND
+                KILLARNEY INTERNATIONAL RACEWAY - 10-12 SEPTEMBER 2026 - DOUBLE NATIONAL WEEKEND
               </div>
             </div>
           </section>
 
-          <section class="nats-panel nats-panel--winter" aria-label="Winter NATS — Formula K">
+          <section class="nats-panel nats-panel--winter" aria-label="Winter NATS - Formula K">
             <div class="nats-lockup">
               <div class="nats-kicker">
-                ROK CUP SOUTH AFRICA · NATIONAL ROUNDS 5 &amp; 6
+                ROK CUP SOUTH AFRICA - NATIONAL ROUNDS 5 &amp; 6
               </div>
               <div class="nats-title">
                 WINTER NATS
               </div>
               <div class="nats-meta">
-                FORMULA K RACEWAY · 10–12 JULY 2026 · DOUBLE NATIONAL WEEKEND
+                FORMULA K RACEWAY - 10-12 JULY 2026 - DOUBLE NATIONAL WEEKEND
               </div>
             </div>
           </section>
 
-          <section class="nats-panel nats-panel--autumn" aria-label="Autumn NATS — iDube">
+          <section class="nats-panel nats-panel--autumn" aria-label="Autumn NATS - iDube">
             <div class="nats-lockup">
               <div class="nats-kicker">
-                ROK CUP SOUTH AFRICA · NATIONAL ROUNDS 3 &amp; 4
+                ROK CUP SOUTH AFRICA - NATIONAL ROUNDS 3 &amp; 4
               </div>
               <div class="nats-title">
                 AUTUMN NATS
               </div>
               <div class="nats-meta">
-                IDUBE RACEWAY · 08-10 MAY 2026 · DOUBLE NATIONAL WEEKEND
+                IDUBE RACEWAY - 08-10 MAY 2026 - DOUBLE NATIONAL WEEKEND
               </div>
             </div>
           </section>
@@ -5483,11 +6191,11 @@ the paddock quickly and consistently.
             </div>
             <div class="weekend-line weekend-line--sat">
               <span class="label">SATURDAY&nbsp;&middot;&nbsp;</span>
-              <span class="detail">PRACTICE · QUALIFYING · HEATS 1, 2 &amp; 3 · PRIZEGIVING</span>
+              <span class="detail">PRACTICE - QUALIFYING - HEATS 1, 2 &amp; 3 - PRIZEGIVING</span>
             </div>
             <div class="weekend-line weekend-line--sun">
               <span class="label">SUNDAY&nbsp;&middot;&nbsp;</span>
-              <span class="detail">PRACTICE · QUALIFYING · HEATS 1, 2 &amp; 3 · PRIZEGIVING</span>
+              <span class="detail">PRACTICE - QUALIFYING - HEATS 1, 2 &amp; 3 - PRIZEGIVING</span>
             </div>
           </div>
 
@@ -5537,7 +6245,7 @@ the paddock quickly and consistently.
                 <ul class="class-points">
                   <li><strong>R100&nbsp;000 IN MSA4 TYRES FOR THE NATIONAL CHAMPTION IN MSA4 FOR 2027. SUPPORTING THE PROGRESS FROM KARTING INTO SINGLE SEATERS</strong></li>
                   <li>FIA SENIOR EUROPEAN ACADEMY SEAT</li>
-                  <li>SUPERFINAL TICKET · NATIONAL CHAMPION TITLE</li>
+                  <li>SUPERFINAL TICKET - NATIONAL CHAMPION TITLE</li>
                 </ul>
               </div>
             </section>
@@ -5545,11 +6253,11 @@ the paddock quickly and consistently.
             <section class="class-tile class-tile--okj" aria-label="OK-J prize structure">
               <div class="class-heading-bar">OK-J</div>
               <div class="class-body">
-                <div class="class-meta">11–14 YEARS</div>
+                <div class="class-meta">11-14 YEARS</div>
                 <ul class="class-points">
                   <li><strong>R25K MSA4 / GINETTA TESTING DAYS PER NATS WEEKEND CHAMP</strong></li>
                   <li>2027 FIA JUNIOR EUROPEAN ACADEMY SEAT</li>
-                  <li>SUPERFINAL TICKET · FIA OK-NJ WORLD CUP SEAT</li>
+                  <li>SUPERFINAL TICKET - FIA OK-NJ WORLD CUP SEAT</li>
                 </ul>
               </div>
             </section>
@@ -5557,10 +6265,10 @@ the paddock quickly and consistently.
             <section class="class-tile class-tile--mini" aria-label="Mini Rok prize structure">
               <div class="class-heading-bar">MINI ROK</div>
               <div class="class-body">
-                <div class="class-meta">MINI ROK 8–12 · MINI ROK U/10 7–10</div>
+                <div class="class-meta">MINI ROK 8-12 - MINI ROK U/10 7-10</div>
                 <ul class="class-points">
                   <li><strong>R25K CASH PER NATS WEEKEND WINNER IN EACH CLASS</strong></li>
-                  <li>SUPERFINAL TICKET · NATIONAL CHAMPION TITLE</li>
+                  <li>SUPERFINAL TICKET - NATIONAL CHAMPION TITLE</li>
                 </ul>
               </div>
             </section>
@@ -5568,7 +6276,7 @@ the paddock quickly and consistently.
             <section class="class-tile class-tile--cadet" aria-label="Cadet prize structure">
               <div class="class-heading-bar">CADET</div>
               <div class="class-body">
-                <div class="class-meta">5–8 YEARS</div>
+                <div class="class-meta">5-8 YEARS</div>
                 <ul class="class-points">
                   <li><strong>R25K CASH PER NATS WEEKEND WINNER</strong></li>
                   <li>TILLOTSON T4 WORLD FINAL TICKET</li>
@@ -5582,19 +6290,19 @@ the paddock quickly and consistently.
             <div class="final-logo-grid">
               <div class="final-logo-tile final-logo-tile--summer">
                 <div class="final-logo-title">SUMMER NATS</div>
-                <div class="final-logo-meta">RED STAR · 20–22 MAR</div>
+                <div class="final-logo-meta">RED STAR - 20-22 MAR</div>
               </div>
               <div class="final-logo-tile final-logo-tile--autumn">
                 <div class="final-logo-title">AUTUMN NATS</div>
-                <div class="final-logo-meta">IDUBE · 08–10 MAY</div>
+                <div class="final-logo-meta">IDUBE - 08-10 MAY</div>
               </div>
               <div class="final-logo-tile final-logo-tile--winter">
                 <div class="final-logo-title">WINTER NATS</div>
-                <div class="final-logo-meta">FORMULA K · 10–12 JUL</div>
+                <div class="final-logo-meta">FORMULA K - 10-12 JUL</div>
               </div>
               <div class="final-logo-tile final-logo-tile--spring">
                 <div class="final-logo-title">SPRING NATS</div>
-                <div class="final-logo-meta">KILLARNEY · 10–12 SEP</div>
+                <div class="final-logo-meta">KILLARNEY - 10-12 SEP</div>
               </div>
             </div>
 
@@ -5606,16 +6314,16 @@ the paddock quickly and consistently.
             </div>
 
             <div class="final-line" style="animation-delay: calc(var(--summary-start) + var(--summary-step) * 3);">
-              SUMMER NATS · RED STAR RACEWAY · 20–22 MARCH 2026 · DOUBLE NATIONAL WEEKEND
+              SUMMER NATS - RED STAR RACEWAY - 20-22 MARCH 2026 - DOUBLE NATIONAL WEEKEND
             </div>
             <div class="final-line" style="animation-delay: calc(var(--summary-start) + var(--summary-step) * 4);">
-              AUTUMN NATS · IDUBE RACEWAY · 08–10 MAY 2026 · DOUBLE NATIONAL WEEKEND
+              AUTUMN NATS - IDUBE RACEWAY - 08-10 MAY 2026 - DOUBLE NATIONAL WEEKEND
             </div>
             <div class="final-line" style="animation-delay: calc(var(--summary-start) + var(--summary-step) * 5);">
-              WINTER NATS · FORMULA K RACEWAY · 10–12 JULY 2026 · DOUBLE NATIONAL WEEKEND
+              WINTER NATS - FORMULA K RACEWAY - 10-12 JULY 2026 - DOUBLE NATIONAL WEEKEND
             </div>
             <div class="final-line" style="animation-delay: calc(var(--summary-start) + var(--summary-step) * 6);">
-              SPRING NATS · KILLARNEY INTERNATIONAL RACEWAY · 10–12 SEPTEMBER 2026 · DOUBLE NATIONAL WEEKEND
+              SPRING NATS - KILLARNEY INTERNATIONAL RACEWAY - 10-12 SEPTEMBER 2026 - DOUBLE NATIONAL WEEKEND
             </div>
 
             <div class="final-line" style="animation-delay: calc(var(--summary-start) + var(--summary-step) * 7);">
@@ -5669,31 +6377,31 @@ the paddock quickly and consistently.
         </section>
 
         <section class="mobile-block">
-          <h3><span class="mobile-tag mobile-tag--summer">Summer Nats — Red Star Raceway</span></h3>
-          <p>National Rounds 1 &amp; 2 · 20–22 March 2026 · Double National Weekend.</p>
+          <h3><span class="mobile-tag mobile-tag--summer">Summer Nats - Red Star Raceway</span></h3>
+          <p>National Rounds 1 &amp; 2 - 20-22 March 2026 - Double National Weekend.</p>
         </section>
 
         <section class="mobile-block">
-          <h3><span class="mobile-tag mobile-tag--autumn">Autumn Nats — iDube Raceway</span></h3>
-          <p>National Rounds 3 &amp; 4 · 08–10 May 2026 · Double National Weekend.</p>
+          <h3><span class="mobile-tag mobile-tag--autumn">Autumn Nats - iDube Raceway</span></h3>
+          <p>National Rounds 3 &amp; 4 - 08-10 May 2026 - Double National Weekend.</p>
         </section>
 
         <section class="mobile-block">
-          <h3><span class="mobile-tag mobile-tag--winter">Winter Nats — Formula K Raceway</span></h3>
-          <p>National Rounds 5 &amp; 6 · 10–12 July 2026 · Double National Weekend.</p>
+          <h3><span class="mobile-tag mobile-tag--winter">Winter Nats - Formula K Raceway</span></h3>
+          <p>National Rounds 5 &amp; 6 - 10-12 July 2026 - Double National Weekend.</p>
         </section>
 
         <section class="mobile-block">
-          <h3><span class="mobile-tag mobile-tag--spring">Spring Nats — Killarney Raceway</span></h3>
-          <p>National Rounds 7 &amp; 8 · 10–12 September 2026 · Double National Weekend.</p>
+          <h3><span class="mobile-tag mobile-tag--spring">Spring Nats - Killarney Raceway</span></h3>
+          <p>National Rounds 7 &amp; 8 - 10-12 September 2026 - Double National Weekend.</p>
         </section>
 
         <section class="mobile-block">
           <h3>Each Nats Weekend</h3>
           <ul>
             <li><span class="day-label day-label--fri">Friday:</span> Official practice.</li>
-            <li><span class="day-label day-label--sat">Saturday:</span> Practice · Qualifying · Heats 1, 2 &amp; 3 · Prizegiving.</li>
-            <li><span class="day-label day-label--sun">Sunday:</span> Practice · Qualifying · Heats 1, 2 &amp; 3 · Prizegiving.</li>
+            <li><span class="day-label day-label--sat">Saturday:</span> Practice - Qualifying - Heats 1, 2 &amp; 3 - Prizegiving.</li>
+            <li><span class="day-label day-label--sun">Sunday:</span> Practice - Qualifying - Heats 1, 2 &amp; 3 - Prizegiving.</li>
           </ul>
         </section>
 
@@ -5718,16 +6426,16 @@ the paddock quickly and consistently.
             <ul>
               <li>  R100 000 in Tyres for the National Champion in MSA4 2027.</li>
               <li>FIA Senior Academy seat.</li>
-               <li>Superfinal ticket · FIA OK-N World Cup seat.</li>
+               <li>Superfinal ticket - FIA OK-N-World-Cup-seat.</li>
             </ul>
           </div>
 
           <div class="mobile-class">
-            <h4>OK-J (11–14 years)</h4>
+            <h4>OK-J (11-14 years)</h4>
             <ul>
               <li>R25k MSA4 / Ginetta testing days per Nats weekend champion.</li>
               <li>FIA Junior Academy seat.</li>
-              <li>Superfinal ticket · FIA OK-NJ World Cup seat.</li>
+              <li>Superfinal ticket - FIA OK-NJ World Cup seat.</li>
             </ul>
           </div>
 
@@ -5735,12 +6443,12 @@ the paddock quickly and consistently.
             <h4>Mini Rok &amp; Mini Rok U/10</h4>
             <ul>
               <li>R25k cash per Nats weekend winner in each Mini class.</li>
-              <li>Superfinal ticket · National champion title.</li>
+              <li>Superfinal ticket - National champion title.</li>
             </ul>
           </div>
 
           <div class="mobile-class">
-            <h4>Cadet (5–8 years)</h4>
+            <h4>Cadet (5-8 years)</h4>
             <ul>
               <li>R25k cash per Nats weekend winner.</li>
               <li>Tilllotson T4 World Final ticket.</li>
@@ -5756,7 +6464,7 @@ the paddock quickly and consistently.
             <li>8 rounds and 24 heats across the season.</li>
             <li>A competitor can drop one heat on a weekend.</li>
             <li>More racing means more exposure to pool engines and averaging of odds.</li>
-            <li>Pool engines level the field – kids race, not dads’ cheque books.</li>
+            <li>Pool engines level the field - kids race, not dads- cheque books.</li>
             <li>FIA Junior &amp; Senior Academy seats are up for grabs.</li>
             <li>Onboard cameras on every kart will be mandatory for 2026.</li>
           </ul>
@@ -5773,23 +6481,23 @@ the paddock quickly and consistently.
 (function () {
     const seasons = [
       { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'REDSTAR RACEWAY',   dates: '14 FEB 2026' },
-      { id: 'summer',   name: 'SUMMER NATS',            rounds: '1&2',      track: 'REDSTAR RACEWAY',   dates: '20–22 MAR 2026' },
+      { id: 'summer',   name: 'SUMMER NATS',            rounds: '1&2',      track: 'REDSTAR RACEWAY',   dates: '20-22 MAR 2026' },
       { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'VKC',               dates: '11 APR 2026' },
-      { id: 'autumn',   name: 'AUTUMN NATS',            rounds: '3&4',      track: 'IDUBE RACEWAY',     dates: '08–10 MAY 2026' },
-      { id: 'winter',   name: 'WINTER NATS',            rounds: '5&6',      track: 'FORMULA K',         dates: '10–12 JULY 2026' },
-      { id: 'spring',   name: 'SPRING NATS',            rounds: '7&8',      track: 'KILLARNEY RACEWAY', dates: '10–12 SEP 2026' },
+      { id: 'autumn',   name: 'AUTUMN NATS',            rounds: '3&4',      track: 'IDUBE RACEWAY',     dates: '08-10 MAY 2026' },
+      { id: 'winter',   name: 'WINTER NATS',            rounds: '5&6',      track: 'FORMULA K',         dates: '10-12 JULY 2026' },
+      { id: 'spring',   name: 'SPRING NATS',            rounds: '7&8',      track: 'KILLARNEY RACEWAY', dates: '10-12 SEP 2026' },
       { id: 'northern', name: 'NORTHERN REGIONS CROWN', rounds: 'REGIONAL', track: 'REDSTAR RACEWAY',   dates: '07 NOV 2026' }
     ];
 
     // All races with dates for "next race" logic - pageIndex matches the seasons array index
     const allRaces = [
-      { pageIndex: 0, date: new Date(2026, 1, 14), displayDate: '14 FEB – REDSTAR' },
-      { pageIndex: 1, date: new Date(2026, 2, 20), displayDate: '20–22 MAR' },
-      { pageIndex: 2, date: new Date(2026, 3, 11), displayDate: '11 APR – VKC' },
-      { pageIndex: 3, date: new Date(2026, 4, 8),  displayDate: '08–10 MAY' },
-      { pageIndex: 4, date: new Date(2026, 6, 10), displayDate: '10–12 JULY' },
-      { pageIndex: 5, date: new Date(2026, 8, 10), displayDate: '10–12 SEP' },
-      { pageIndex: 6, date: new Date(2026, 10, 7), displayDate: '07 NOV – REDSTAR' }
+      { pageIndex: 0, date: new Date(2026, 1, 14), displayDate: '14 FEB - REDSTAR' },
+      { pageIndex: 1, date: new Date(2026, 2, 20), displayDate: '20-22 MAR' },
+      { pageIndex: 2, date: new Date(2026, 3, 11), displayDate: '11 APR - VKC' },
+      { pageIndex: 3, date: new Date(2026, 4, 8),  displayDate: '08-10 MAY' },
+      { pageIndex: 4, date: new Date(2026, 6, 10), displayDate: '10-12 JULY' },
+      { pageIndex: 5, date: new Date(2026, 8, 10), displayDate: '10-12 SEP' },
+      { pageIndex: 6, date: new Date(2026, 10, 7), displayDate: '07 NOV - REDSTAR' }
     ];
 
     function getNextRace() {
@@ -5885,7 +6593,7 @@ the paddock quickly and consistently.
 
       function showLoader(){
         if(loader) loader.classList.remove('is-hidden');
-        setState('loading', 'Connecting…');
+        setState('loading', 'Connecting-');
       }
 
       function hideLoader(){
@@ -5912,7 +6620,7 @@ the paddock quickly and consistently.
         // Fallback state if slow / blocked
         window.setTimeout(() => {
           if(shell.getAttribute('data-portal-state') !== 'live'){
-            setState('slow', 'Still loading…');
+            setState('slow', 'Still loading-');
             if(loader) loader.classList.remove('is-hidden');
           }
         }, 10000);
@@ -5957,7 +6665,7 @@ the paddock quickly and consistently.
         eventDatesMain.classList.remove('northern-dates');
       }
       titleText.textContent       = season.name;
-      infoModalTitle.textContent  = `${season.name} · INFORMATION`;
+      infoModalTitle.textContent  = `${season.name} - INFORMATION`;
       enterModalTitle.textContent = `ENTER ${season.name}`;
       eventMetaMain.textContent   = season.track;
       eventDatesMain.textContent  = season.dates;
@@ -5981,6 +6689,13 @@ the paddock quickly and consistently.
       overlay.classList.add('active');
       modal.classList.add('active');
       modal.setAttribute('aria-hidden', 'false');
+
+      // Apply seasonal theme to modal
+      const currentSeason = seasons[currentIndex].id;
+      modal.classList.remove('modal--summer', 'modal--autumn', 'modal--winter', 'modal--spring');
+      if (currentSeason === 'summer' || currentSeason === 'autumn' || currentSeason === 'winter' || currentSeason === 'spring') {
+        modal.classList.add(`modal--${currentSeason}`);
+      }
 
       if (modal === enterModal) {
         ensurePortalLoaded('enter');
@@ -6009,15 +6724,104 @@ the paddock quickly and consistently.
       });
 
       // Show/hide content
-      document.getElementById('infoTabGeneral').style.display = tab === 'general' ? 'block' : 'none';
-      document.getElementById('infoTabRaceSpecific').style.display = tab === 'race-specific' ? 'block' : 'none';
+      document.getElementById('infoTabGeneral').style.display = tab === 'general' ? 'flex' : 'none';
+      document.getElementById('infoTabRaceSpecific').style.display = tab === 'race-specific' ? 'flex' : 'none';
 
       // Load race-specific data when switching to that tab
       if (tab === 'race-specific') {
+        // Set initial red pulse immediately (before API call)
+        const raceSpecificTab = document.querySelector('.info-top-tab[data-info-tab="race-specific"]');
+        if (raceSpecificTab) {
+          raceSpecificTab.classList.remove('pulse-green', 'pulse-red');
+          raceSpecificTab.classList.add('pulse-red'); // Default to red, will update if registration is open
+        }
         loadRaceSpecificData();
         initScrollIndicator();
       }
     };
+
+    // Mobile Navigation Toggle - Initialize immediately and on modal open
+    function initMobileNav() {
+      const navToggle = document.querySelector('.info-top-tab--menu');
+      const nav = document.querySelector('.info-nav');
+      const backdrop = document.querySelector('.nav-backdrop');
+      
+      console.log('initMobileNav:', { navToggle, nav, backdrop });
+      
+      if (!navToggle || !nav || !backdrop) {
+        console.log('Missing elements, will retry');
+        return;
+      }
+      
+      // Remove existing listeners to prevent duplicates
+      const newToggle = navToggle.cloneNode(true);
+      navToggle.parentNode.replaceChild(newToggle, navToggle);
+      
+      function openNav() {
+        console.log('Opening nav');
+        nav.classList.add('active');
+        backdrop.classList.add('active');
+        backdrop.style.display = 'block';
+        newToggle.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+      
+      function closeNav() {
+        console.log('Closing nav');
+        nav.classList.remove('active');
+        backdrop.classList.remove('active');
+        newToggle.classList.remove('active');
+        document.body.style.overflow = '';
+        setTimeout(() => {
+          if (!backdrop.classList.contains('active')) {
+            backdrop.style.display = 'none';
+          }
+        }, 300);
+      }
+      
+      newToggle.addEventListener('click', function(e) {
+        console.log('Toggle clicked');
+        e.stopPropagation();
+        if (nav.classList.contains('active')) {
+          closeNav();
+        } else {
+          openNav();
+        }
+      });
+      
+      backdrop.addEventListener('click', closeNav);
+      
+      // Close nav when clicking on a nav item
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+          if (window.innerWidth <= 968) {
+            closeNav();
+          }
+        });
+      });
+      
+      // Close nav on window resize if going to desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth > 968) {
+          closeNav();
+        }
+      });
+    }
+    
+    // Initialize on load and when modal opens
+    document.addEventListener('DOMContentLoaded', initMobileNav);
+    
+    // Re-initialize when modal becomes visible (using existing infoModal variable)
+    if (infoModal) {
+      const modalObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.attributeName === 'class' && infoModal.classList.contains('active')) {
+            setTimeout(initMobileNav, 100);
+          }
+        });
+      });
+      modalObserver.observe(infoModal, { attributes: true });
+    }
 
     function initScrollIndicator() {
       const indicator = document.querySelector('.scroll-indicator');
@@ -6046,6 +6850,10 @@ the paddock quickly and consistently.
     }
 
     async function loadRaceSpecificData() {
+      // Show skeleton/loading state immediately
+      const documentsContainer = document.getElementById('rsEventDocuments');
+      documentsContainer.innerHTML = buildLoadingFolderStructure();
+      
       // Get current season from the landing page
       const currentSeason = seasons[currentIndex];
       
@@ -6130,37 +6938,49 @@ the paddock quickly and consistently.
             const deadline = matchingEvent.registration_deadline ? new Date(matchingEvent.registration_deadline) : null;
             const isOpen = matchingEvent.registration_open !== false && (!deadline || deadline > now);
             
+            // Update the race-specific tab pulse color based on registration status
+            const raceSpecificTab = document.querySelector('.info-top-tab[data-info-tab="race-specific"]');
+            if (raceSpecificTab) {
+              raceSpecificTab.classList.remove('pulse-green', 'pulse-red');
+              if (isOpen) {
+                raceSpecificTab.classList.add('pulse-green');
+              } else {
+                raceSpecificTab.classList.add('pulse-red');
+              }
+            }
+            
             if (isOpen) {
               statusIndicator.style.background = '#22c55e';
-              statusIndicator.style.boxShadow = '0 0 10px #22c55e';
+              statusIndicator.style.boxShadow = '0 0 24px #22c55e, 0 0 8px rgba(34, 197, 94, 0.8)';
               statusText.style.color = '#22c55e';
               statusText.textContent = 'OPEN';
             } else {
-              statusIndicator.style.background = '#6b7280';
-              statusIndicator.style.boxShadow = '0 0 10px #6b7280';
-              statusText.style.color = '#6b7280';
+              statusIndicator.style.background = '#ef4444';
+              statusIndicator.style.boxShadow = '0 0 24px #ef4444, 0 0 8px rgba(239, 68, 68, 0.8)';
+              statusText.style.color = '#ef4444';
               statusText.textContent = 'CLOSED';
             }
 
             // Load event documents
             loadRsEventDocuments(matchingEvent.event_id);
-            
-            // Load event notifications
-            loadRsEventNotifications(matchingEvent.event_id);
           } else {
             // No events - show coming soon and empty folder structure
             document.getElementById('rsStatusText').textContent = 'COMING SOON';
             document.getElementById('rsStatusText').style.color = '#fbbf24';
             document.getElementById('rsStatusIndicator').style.background = '#fbbf24';
-            document.getElementById('rsEventDocuments').innerHTML = buildEmptyFolderStructure();
-            document.getElementById('rsEventNotifications').innerHTML = '<div style="color: #6b7280; text-align: center; font-size: 13px; padding: 20px 0;">No updates yet</div>';
+            const docsContainer = document.getElementById('rsEventDocuments');
+            if (docsContainer) {
+              docsContainer.innerHTML = buildEmptyFolderStructure();
+            }
           }
         }
       } catch (error) {
         console.error('Error loading race specific data:', error);
         // Show empty folder structure on error
-        document.getElementById('rsEventDocuments').innerHTML = buildEmptyFolderStructure();
-        document.getElementById('rsEventNotifications').innerHTML = '<div style="color: #6b7280; text-align: center; font-size: 13px; padding: 20px 0;">No updates yet</div>';
+        const docsContainer = document.getElementById('rsEventDocuments');
+        if (docsContainer) {
+          docsContainer.innerHTML = buildEmptyFolderStructure();
+        }
       }
     }
 
@@ -6169,6 +6989,7 @@ the paddock quickly and consistently.
       
       // Define class categories for organizing documents
       const classCategories = [
+        { id: 'official', name: 'OFFICIAL', keywords: ['official', 'mandate', 'regulation', 'rule', 'declaration', 'announcement', 'permit'] },
         { id: 'general', name: 'General', keywords: ['sr', 'supplementary', 'timetable', 'entry', 'track', 'map', 'bulletin', 'result', 'final'] },
         { id: 'cadet', name: 'Cadet', keywords: ['cadet'] },
         { id: 'miniu10', name: 'Mini ROK U10', keywords: ['u10', 'under 10', 'under10'] },
@@ -6201,33 +7022,86 @@ the paddock quickly and consistently.
             });
             
             // Build folder grid with popups
-            let html = '<div class="folder-grid" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">';
+            let html = '<div class="folder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 100%; padding: 0;">';
             classCategories.forEach((cat, idx) => {
               const count = grouped[cat.id].length;
               const isEmpty = count === 0;
+              // Color scheme: Official = yellow, General = green, others = blue
+              let folderColor = '#0ea5e9'; // Default blue
+              let textColor = 'rgba(255,255,255,0.95)';
+              if (cat.id === 'official') {
+                folderColor = '#fbbf24'; // Summer yellow
+                textColor = 'rgba(0,0,0,0.9)';
+              } else if (cat.id === 'general') {
+                folderColor = '#22c55e'; // Spring green
+              }
+              const opacity = isEmpty ? '0.6' : '1';
               
               html += '<div class="folder-item" data-folder-id="' + cat.id + '" onclick="toggleFolder(this)" style="' +
-                'display: flex; align-items: center; justify-content: space-between; ' +
-                'padding: 14px 20px; ' +
-                'width: 180px; ' +
-                'background: #1a1a1a; ' +
-                'border: 2px solid #2a2a2a; ' +
-                'border-radius: 0; ' +
-                'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); ' +
-                'transition: all 0.3s ease; ' +
-                'cursor: pointer;' +
-                'position: relative;' +
+                'position: relative; ' +
+                'cursor: pointer; ' +
+                'transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); ' +
+                'transform-style: preserve-3d; ' +
+                'opacity: ' + opacity + ';' +
               '">' +
-                '<span style="color: #ffffff; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">' + cat.name + '</span>' +
-                '<span style="' +
-                  'width: 20px; height: 20px; ' +
-                  'display: flex; align-items: center; justify-content: center; ' +
-                  'background: #2a2a2a; ' +
-                  'border-radius: 0; ' +
-                  'font-size: 10px; ' +
-                  'color: ' + (isEmpty ? '#6b7280' : '#0ea5e9') + '; ' +
-                  'font-weight: 700;' +
-                '">' + count + '</span>';
+                // Folder tab
+                '<div style="' +
+                  'position: absolute; ' +
+                  'top: -8px; ' +
+                  'left: 12px; ' +
+                  'width: 50px; ' +
+                  'height: 12px; ' +
+                  'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + '99 100%); ' +
+                  'border-radius: 4px 4px 0 0; ' +
+                  'box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);' +
+                '"></div>' +
+                // Main folder body
+                '<div style="' +
+                  'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + 'dd 100%); ' +
+                  'border-radius: 0 8px 8px 8px; ' +
+                  'padding: 20px 16px 16px 16px; ' +
+                  'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2); ' +
+                  'min-height: 80px; ' +
+                  'display: flex; ' +
+                  'flex-direction: column; ' +
+                  'gap: 8px; ' +
+                  'position: relative; ' +
+                  'overflow: hidden;' +
+                '">' +
+                  // Shine effect
+                  '<div style="' +
+                    'position: absolute; ' +
+                    'top: 0; ' +
+                    'left: -100%; ' +
+                    'width: 50%; ' +
+                    'height: 100%; ' +
+                    'background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); ' +
+                    'transition: left 0.5s;' +
+                  '"></div>' +
+                  // Folder icon and name
+                  '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
+                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + textColor + '">' +
+                      '<path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>' +
+                    '</svg>' +
+                    '<span style="color: ' + textColor + '; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + cat.name + '</span>' +
+                  '</div>' +
+                  // Document count badge
+                  '<div style="' +
+                    'display: flex; ' +
+                    'align-items: center; ' +
+                    'gap: 6px; ' +
+                    'padding: 6px 10px; ' +
+                    'background: ' + (cat.id === 'official' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)') + '; ' +
+                    'border-radius: 20px; ' +
+                    'backdrop-filter: blur(10px); ' +
+                    'align-self: flex-start;' +
+                  '">' +
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="' + textColor + '">' +
+                      '<path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>' +
+                    '</svg>' +
+                    '<span style="color: ' + textColor + '; font-size: 11px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + count + ' ' + (count === 1 ? 'doc' : 'docs') + '</span>' +
+                  '</div>' +
+                '</div>';
               
               // Popup with file list
               if (count > 0) {
@@ -6308,8 +7182,9 @@ the paddock quickly and consistently.
       }
     }
     
-    function buildEmptyFolderStructure() {
+    function buildLoadingFolderStructure() {
       const classCategories = [
+        { name: 'OFFICIAL', id: 'official' },
         { name: 'General', id: 'general' },
         { name: 'Cadet', id: 'cadet' },
         { name: 'Mini ROK U10', id: 'miniu10' },
@@ -6318,30 +7193,131 @@ the paddock quickly and consistently.
         { name: 'OK-N', id: 'okn' }
       ];
       
-      let html = '<div class="folder-grid" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">';
+      let html = '<style>@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }</style>';
+      html += '<div class="folder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 100%; padding: 0;">';
       classCategories.forEach((cat, idx) => {
-        html += '<div class="folder-item" data-folder-id="' + cat.id + '" onclick="toggleFolder(this)" style="' +
-          'display: flex; align-items: center; justify-content: space-between; ' +
-          'padding: 14px 20px; ' +
-          'width: 180px; ' +
-          'background: #1a1a1a; ' +
-          'border: 2px solid #2a2a2a; ' +
-          'border-radius: 0; ' +
-          'box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); ' +
-          'transition: all 0.3s ease; ' +
-          'cursor: pointer;' +
-          'position: relative;' +
+        // Color scheme: Official = yellow, General = green, others = blue
+        let folderColor = '#0ea5e9';
+        let textColor = 'rgba(255,255,255,0.95)';
+        if (cat.name === 'OFFICIAL') {
+          folderColor = '#fbbf24';
+          textColor = 'rgba(0,0,0,0.9)';
+        } else if (cat.name === 'General') {
+          folderColor = '#22c55e';
+        }
+        
+        html += '<div class="folder-item" style="' +
+          'position: relative; ' +
+          'animation: skeletonPulse 1.5s ease-in-out infinite; ' +
+          'animation-delay: ' + (idx * 0.1) + 's;' +
         '">' +
-          '<span style="color: #ffffff; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">' + cat.name + '</span>' +
-          '<span style="' +
-            'width: 20px; height: 20px; ' +
-            'display: flex; align-items: center; justify-content: center; ' +
-            'background: #2a2a2a; ' +
-            'border-radius: 0; ' +
-            'font-size: 10px; ' +
-            'color: #6b7280; ' +
-            'font-weight: 700;' +
-          '">0</span>' +
+          '<div style="' +
+            'position: absolute; ' +
+            'top: -8px; ' +
+            'left: 12px; ' +
+            'width: 50px; ' +
+            'height: 12px; ' +
+            'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + '99 100%); ' +
+            'border-radius: 4px 4px 0 0; ' +
+            'box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);' +
+          '"></div>' +
+          '<div style="' +
+            'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + 'dd 100%); ' +
+            'border-radius: 0 8px 8px 8px; ' +
+            'padding: 20px 16px 16px 16px; ' +
+            'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2); ' +
+            'min-height: 80px; ' +
+            'display: flex; ' +
+            'flex-direction: column; ' +
+            'gap: 8px;' +
+          '">' +
+            '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + textColor + '">' +
+                '<path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>' +
+              '</svg>' +
+              '<span style="color: ' + textColor + '; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + cat.name + '</span>' +
+            '</div>' +
+            '<div style="' +
+              'padding: 6px 10px; ' +
+              'background: ' + (cat.name === 'OFFICIAL' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)') + '; ' +
+              'border-radius: 20px; ' +
+              'backdrop-filter: blur(10px); ' +
+              'align-self: flex-start;' +
+            '">' +
+              '<span style="color: ' + textColor + '; font-size: 11px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">&bull;</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+      html += '<div style="margin-top: 24px; text-align: center; color: #6b7280; font-size: 13px; animation: skeletonPulse 1.5s ease-in-out infinite;">Loading event documents</div>';
+      return html;
+    }
+    
+    function buildEmptyFolderStructure() {
+      const classCategories = [
+        { name: 'OFFICIAL', id: 'official' },
+        { name: 'General', id: 'general' },
+        { name: 'Cadet', id: 'cadet' },
+        { name: 'Mini ROK U10', id: 'miniu10' },
+        { name: 'Mini ROK', id: 'mini' },
+        { name: 'OK-J', id: 'okj' },
+        { name: 'OK-N', id: 'okn' }
+      ];
+      
+      let html = '<div class="folder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 100%; padding: 0;">';
+      classCategories.forEach((cat, idx) => {
+        // Color scheme: Official = yellow, General = green, others = blue
+        let folderColor = '#0ea5e9';
+        let textColor = 'rgba(255,255,255,0.7)';
+        if (cat.name === 'OFFICIAL') {
+          folderColor = '#fbbf24';
+          textColor = 'rgba(0,0,0,0.7)';
+        } else if (cat.name === 'General') {
+          folderColor = '#22c55e';
+        }
+        
+        html += '<div class="folder-item" data-folder-id="' + cat.id + '" onclick="toggleFolder(this)" style="' +
+          'position: relative; ' +
+          'cursor: pointer; ' +
+          'opacity: 0.6; ' +
+          'transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);' +
+        '">' +
+          '<div style="' +
+            'position: absolute; ' +
+            'top: -8px; ' +
+            'left: 12px; ' +
+            'width: 50px; ' +
+            'height: 12px; ' +
+            'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + '99 100%); ' +
+            'border-radius: 4px 4px 0 0; ' +
+            'box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);' +
+          '"></div>' +
+          '<div style="' +
+            'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + 'dd 100%); ' +
+            'border-radius: 0 8px 8px 8px; ' +
+            'padding: 20px 16px 16px 16px; ' +
+            'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2); ' +
+            'min-height: 80px; ' +
+            'display: flex; ' +
+            'flex-direction: column; ' +
+            'gap: 8px;' +
+          '">' +
+            '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + textColor + '">' +
+                '<path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>' +
+              '</svg>' +
+              '<span style="color: ' + textColor + '; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;">' + cat.name + '</span>' +
+            '</div>' +
+            '<div style="' +
+              'padding: 6px 10px; ' +
+              'background: ' + (cat.name === 'OFFICIAL' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)') + '; ' +
+              'border-radius: 20px; ' +
+              'align-self: flex-start;' +
+            '">' +
+              '<span style="color: ' + textColor + '; font-size: 11px; font-weight: 700;">0 docs</span>' +
+            '</div>' +
+          '</div>' +
           '<div class="folder-popup" style="' +
             'display: none; ' +
             'position: absolute; ' +
@@ -6536,7 +7512,7 @@ function closeModals() {
 
 
 
-        'Select “Summer Nats” to access the entry portal.'
+        'Select -Summer Nats- to access the entry portal.'
 
   });
 

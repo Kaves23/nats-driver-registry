@@ -37,25 +37,36 @@
     "regulations": [
       {
         "id": "DOC004",
-        "name": "MSA ROK National Regulations 2026",
+        "name": "2026 MSA National ROK Karting Technical Regulations",
         "section": "regs",
-        "filePath": "/docs/rok-msa-2026-national-regs.pdf",
-        "status": "missing",
-        "version": 0,
-        "googleDriveUrl": "",
+        "filePath": "/docs/rok-msa-2026-technical-regs.pdf",
+        "status": "uploaded",
+        "version": 1,
+        "googleDriveUrl": "https://drive.google.com/file/d/11ySOTlULk3TKZP2HbaklfddOH-hChTI6/view",
         "priority": "CRITICAL",
-        "notes": "Full sporting & technical regulations for 2026"
+        "notes": "Technical specifications & regulations for 2026"
+      },
+      {
+        "id": "DOC005",
+        "name": "2026 MSA National Rok Sporting Regulations",
+        "section": "regs",
+        "filePath": "/docs/rok-msa-2026-sporting-regs.pdf",
+        "status": "uploaded",
+        "version": 1,
+        "googleDriveUrl": "https://drive.google.com/file/d/1Exgs-F4dqkeM25gb6FR-zzNeTtUcizc1/view",
+        "priority": "CRITICAL",
+        "notes": "Sporting rules & procedures for 2026"
       },
       {
         "id": "DOC006",
-        "name": "Regional Regulations",
+        "name": "2026 MSA NR Regional Rok Karting Championship Regulations",
         "section": "regs",
         "filePath": "/docs/rok-2026-regional-regs.pdf",
-        "status": "missing",
-        "version": 0,
-        "googleDriveUrl": "",
-        "priority": "MEDIUM",
-        "notes": "Provincial/regional specific rules"
+        "status": "uploaded",
+        "version": 1,
+        "googleDriveUrl": "https://drive.google.com/file/d/1Eq_XV5JkMwmqbZAeumCpokJycGZ6WxB-/view",
+        "priority": "CRITICAL",
+        "notes": "Regional championship specific rules"
       }
     ],
     

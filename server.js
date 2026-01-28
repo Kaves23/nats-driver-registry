@@ -2143,6 +2143,35 @@ app.post('/api/getAllPayments', async (req, res) => {
       LIMIT 500
     `);
     
+    // Get direct payments from payments table (e.g., season packages, direct PayFast payments)
+    let directPayments = [];
+    try {
+      const paymentsResult = await pool.query(`
+        SELECT 
+          p.payment_id,
+          p.driver_id,
+          p.merchant_payment_id as payment_reference,
+          p.payment_status,
+          p.amount_gross,
+          p.amount_net,
+          p.item_name,
+          p.item_description,
+          p.created_at,
+          p.completed_at,
+          d.first_name,
+          d.last_name,
+          c.email
+        FROM payments p
+        LEFT JOIN drivers d ON p.driver_id = d.driver_id
+        LEFT JOIN contacts c ON p.driver_id = c.driver_id
+        ORDER BY p.created_at DESC
+        LIMIT 100
+      `);
+      directPayments = paymentsResult.rows;
+    } catch (paymentsErr) {
+      console.log('Direct payments query error:', paymentsErr.message);
+    }
+    
     // Also get pool engine rentals
     let poolRentals = [];
     try {
@@ -2159,23 +2188,25 @@ app.post('/api/getAllPayments', async (req, res) => {
           per.created_at,
           d.first_name,
           d.last_name,
-          d.email
+          c.email
         FROM pool_engine_rentals per
         LEFT JOIN drivers d ON per.driver_id = d.driver_id
+        LEFT JOIN contacts c ON per.driver_id = c.driver_id
         ORDER BY per.created_at DESC
         LIMIT 100
       `);
       poolRentals = poolResult.rows;
     } catch (poolErr) {
-      console.log('Pool engine rentals table may not exist:', poolErr.message);
+      console.log('Pool engine rentals query error:', poolErr.message);
     }
 
-    console.log(`✅ Retrieved ${result.rows.length} payment records, ${poolRentals.length} pool rentals`);
+    console.log(`✅ Retrieved ${result.rows.length} race entries, ${directPayments.length} direct payments, ${poolRentals.length} pool rentals`);
     
     res.json({
       success: true,
       data: { 
         payments: result.rows,
+        directPayments: directPayments,
         poolRentals: poolRentals
       }
     });
@@ -4976,8 +5007,8 @@ app.put('/api/emergency-contacts/:contactId', async (req, res) => {
 app.get('/api/getAllEvents', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT e.event_id, e.event_name, e.event_date, e.location, e.entry_fee, 
-              e.registration_deadline, e.created_at,
+      `SELECT e.event_id, e.event_name, e.event_date, e.start_date, e.end_date, e.location, e.entry_fee, 
+              e.registration_deadline, e.registration_open, e.created_at,
               COUNT(r.entry_id) AS registration_count
        FROM events e
        LEFT JOIN race_entries r ON e.event_id = r.event_id

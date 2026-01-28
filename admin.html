@@ -1096,6 +1096,10 @@
           <option value="Failed">Failed</option>
         </select>
         <input type="text" id="paymentSearchDriver" placeholder="Search driver name...">
+        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: white; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+          <input type="checkbox" id="hideZeroPayments" onchange="displayPayments(allPaymentsData)" style="cursor: pointer;">
+          <span style="font-size: 14px;">Hide R0 payments</span>
+        </label>
         <button class="search-btn" onclick="loadPayments()">Refresh</button>
         <button class="search-btn" onclick="exportPaymentsCSV()" style="background: #4caf50;">Export CSV</button>
       </div>
@@ -2621,11 +2625,30 @@
         if (!result.success) throw new Error(result.error?.message || 'Failed to load payments');
 
         const payments = result.data.payments || [];
+        const directPayments = result.data.directPayments || [];
         const poolRentals = result.data.poolRentals || [];
         
-        // Combine and mark type
+        // Combine and mark type - categorize based on item_name
         const combined = [
           ...payments.map(p => ({ ...p, type: 'Race Entry' })),
+          ...directPayments.map(p => {
+            // Determine type based on item_name
+            let paymentType = 'Direct Payment';
+            if (p.item_name && p.item_name.toLowerCase().includes('engine rental')) {
+              paymentType = 'Pool Engine';
+            } else if (p.item_name && (p.item_name.toLowerCase().includes('all-in') || p.item_name.toLowerCase().includes('season package'))) {
+              paymentType = 'NATS';
+            }
+            
+            return {
+              ...p,
+              type: paymentType,
+              event_name: p.item_name || 'Season Package',
+              race_class: p.item_description || '-',
+              amount_paid: p.amount_gross || p.amount_net,
+              payment_reference: p.payment_reference || p.payment_id
+            };
+          }),
           ...poolRentals.map(p => ({ 
             ...p, 
             type: 'Pool Engine',
@@ -2647,6 +2670,7 @@
       const tbody = document.getElementById('paymentsTable');
       const statusFilter = document.getElementById('paymentStatusFilter').value;
       const searchTerm = document.getElementById('paymentSearchDriver').value.toLowerCase();
+      const hideZero = document.getElementById('hideZeroPayments')?.checked || false;
       
       // Apply filters
       let filtered = payments;
@@ -2658,6 +2682,9 @@
           const name = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase();
           return name.includes(searchTerm) || (p.email || '').toLowerCase().includes(searchTerm);
         });
+      }
+      if (hideZero) {
+        filtered = filtered.filter(p => parseFloat(p.amount_paid || p.amount_gross || 0) > 0);
       }
       
       // Calculate totals
@@ -2679,9 +2706,12 @@
         const driverName = `${payment.first_name || ''} ${payment.last_name || ''}`.trim() || 'Unknown';
         const eventName = payment.event_name || '-';
         const amount = payment.amount_paid ? `R${parseFloat(payment.amount_paid).toFixed(2)}` : '-';
-        const statusColor = payment.payment_status === 'Completed' ? '#10b981' : 
+        const statusColor = payment.payment_status === 'Completed' || payment.payment_status === 'COMPLETE' ? '#10b981' : 
                            payment.payment_status === 'Pending' ? '#f59e0b' : '#ef4444';
-        const typeColor = payment.type === 'Race Entry' ? '#3b82f6' : '#8b5cf6';
+        const typeColor = payment.type === 'Race Entry' ? '#3b82f6' : 
+                         payment.type === 'NATS' ? '#ff6b00' :
+                         payment.type === 'Pool Engine' ? '#8b5cf6' : '#6b7280';
+        const typeLabel = payment.type;
         
         return `
           <tr>
@@ -2692,7 +2722,7 @@
             <td>${payment.race_class || '-'}</td>
             <td style="font-weight: 600;">${amount}</td>
             <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${payment.payment_status || 'Unknown'}</span></td>
-            <td><span style="background: ${typeColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${payment.type}</span></td>
+            <td><span style="background: ${typeColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${typeLabel}</span></td>
           </tr>
         `;
       }).join('');
