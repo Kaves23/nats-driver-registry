@@ -1178,6 +1178,11 @@
   letter-spacing: .01em;
   text-transform: none;
 }
+    /* Mobile nav buttons - original white styling */
+    body .mobile-season-nav .mobile-nav-btn{
+      color: #fff;
+      border-color: rgba(255,255,255,.85);
+    }
     /* Summer Nats uses black text for contrast with yellow background */
     body[data-season="summer"] .mobile-season-nav .mobile-nav-btn{
       color: #111827;
@@ -1265,7 +1270,7 @@
       line-height: 1;
       color: #ffffff;
       position: absolute;
-      right: 32px;
+      right: 16px;
       top: 50%;
       transform: translateY(-50%);
       transition: color 0.3s ease, transform 0.2s ease;
@@ -1277,8 +1282,25 @@
       justify-content: center;
     }
 
+    /* Seasonal colors for close button */
+    body[data-season="summer"] .modal-close {
+      color: #facc15 !important;
+    }
+    body[data-season="autumn"] .modal-close {
+      color: #f97316 !important;
+    }
+    body[data-season="winter"] .modal-close {
+      color: #0ea5e9 !important;
+    }
+    body[data-season="spring"] .modal-close {
+      color: #4ade80 !important;
+    }
+    body[data-season="northern"] .modal-close {
+      color: #0ea5e9 !important;
+    }
+
     .modal-close:hover {
-      color: #0ea5e9;
+      opacity: 0.7;
       transform: translateY(-50%) rotate(90deg);
     }
 
@@ -1940,6 +1962,23 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+    }
+
+    /* Seasonal colors for hamburger menu icon */
+    body[data-season="summer"] .info-top-tab--menu {
+      color: #facc15 !important;
+    }
+    body[data-season="autumn"] .info-top-tab--menu {
+      color: #f97316 !important;
+    }
+    body[data-season="winter"] .info-top-tab--menu {
+      color: #0ea5e9 !important;
+    }
+    body[data-season="spring"] .info-top-tab--menu {
+      color: #4ade80 !important;
+    }
+    body[data-season="northern"] .info-top-tab--menu {
+      color: #0ea5e9 !important;
     }
 
     .nav-toggle-icon span {

@@ -1121,6 +1121,20 @@
       display: block;
     }
 
+    /* Seasonal colors for hamburger menu */
+    body[data-season="summer"] .portal-nav-toggle-icon span {
+      background: #facc15 !important;
+    }
+    body[data-season="autumn"] .portal-nav-toggle-icon span {
+      background: #f97316 !important;
+    }
+    body[data-season="winter"] .portal-nav-toggle-icon span {
+      background: #0ea5e9 !important;
+    }
+    body[data-season="spring"] .portal-nav-toggle-icon span {
+      background: #4ade80 !important;
+    }
+
     .portal-nav-toggle.active .portal-nav-toggle-icon span:nth-child(1) {
       transform: translateY(6px) rotate(45deg);
     }
@@ -1586,7 +1600,7 @@
       text-transform: uppercase;
       color: var(--muted);
       font-weight: 900;
-      background: #f9fafb;
+      background: #0a0a0a;
     }
 
     /* Portal Status card */
@@ -2105,10 +2119,10 @@
         display: block;
         margin-bottom: 16px;
         padding: 16px;
-        background: white !important;
-        border: 2px solid #e5e7eb !important;
+        background: #0a0a0a !important;
+        border: 2px solid #1f1f1f !important;
         border-radius: 12px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
       }
       
       .table td {
@@ -4375,9 +4389,9 @@
           </div>
           
           <div style="overflow-x: auto;">
-            <table class="table" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; box-shadow: var(--shadow);">
+            <table class="table" style="width: 100%; border-collapse: collapse; background: #0a0a0a; border-radius: 8px; box-shadow: var(--shadow);">
               <thead>
-                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                <tr style="background: #0f0f0f; border-bottom: 2px solid #1f1f1f;">
                   <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Event</th>
                   <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Class</th>
                   <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Quali</th>
