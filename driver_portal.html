@@ -23,16 +23,16 @@
       --winter:#0ea5e9;
       --spring:#4ade80;
 
-      --bg: var(--summer);
-      --panel-bg:#ffffff;
-      --ink:#111827;
-      --muted:#6b7280;
+      --bg: #000000;
+      --panel-bg:#0a0a0a;
+      --ink:#ffffff;
+      --muted:#9ca3af;
 
-      --border-soft: rgba(15,23,42,0.12);
-      --border-strong: rgba(15,23,42,0.35);
+      --border-soft: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.15);
 
-      --shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05);
-      --shadow-strong: 0 30px 90px rgba(15,23,42,0.30), 0 0 0 1px rgba(15,23,42,0.18);
+      --shadow: 0 18px 40px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.05);
+      --shadow-strong: 0 30px 90px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.08);
 
       --radius:0px;
     }
@@ -40,12 +40,12 @@
     *{ box-sizing:border-box; margin:0; padding:0; }
 
     html{
-      background: var(--summer);
+      background: #000000;
     }
 
     body{
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      background: var(--summer);
+      background: #000000;
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
       padding: 24px 18px;
@@ -100,9 +100,79 @@
 
     .wrap{ width:min(1180px, 100%); margin: 0 auto; position:relative; }
 
+    /* ============= SEASONAL COLOR THEMING ============= */
+    /* Body gets data-season attribute set by JavaScript */
+    body[data-season="summer"] .tab.active,
+    body[data-season="summer"] .tab.active::after {
+      border-bottom-color: var(--summer) !important;
+      color: var(--summer) !important;
+    }
+    body[data-season="summer"] .tab.active::after {
+      background: var(--summer) !important;
+    }
+    body[data-season="summer"] .accentBar {
+      background: var(--summer) !important;
+    }
+    body[data-season="summer"] .statusChip.wait {
+      border-color: var(--summer) !important;
+      color: var(--summer) !important;
+      box-shadow: 0 0 24px rgba(250, 204, 21, 0.60) !important;
+    }
+
+    body[data-season="autumn"] .tab.active,
+    body[data-season="autumn"] .tab.active::after {
+      border-bottom-color: var(--autumn) !important;
+      color: var(--autumn) !important;
+    }
+    body[data-season="autumn"] .tab.active::after {
+      background: var(--autumn) !important;
+    }
+    body[data-season="autumn"] .accentBar {
+      background: var(--autumn) !important;
+    }
+    body[data-season="autumn"] .statusChip.wait {
+      border-color: var(--autumn) !important;
+      color: var(--autumn) !important;
+      box-shadow: 0 0 24px rgba(249, 115, 22, 0.60) !important;
+    }
+
+    body[data-season="winter"] .tab.active,
+    body[data-season="winter"] .tab.active::after {
+      border-bottom-color: var(--winter) !important;
+      color: var(--winter) !important;
+    }
+    body[data-season="winter"] .tab.active::after {
+      background: var(--winter) !important;
+    }
+    body[data-season="winter"] .accentBar {
+      background: var(--winter) !important;
+    }
+    body[data-season="winter"] .statusChip.wait {
+      border-color: var(--winter) !important;
+      color: var(--winter) !important;
+      box-shadow: 0 0 24px rgba(14, 165, 233, 0.60) !important;
+    }
+
+    body[data-season="spring"] .tab.active,
+    body[data-season="spring"] .tab.active::after {
+      border-bottom-color: var(--spring) !important;
+      color: var(--spring) !important;
+    }
+    body[data-season="spring"] .tab.active::after {
+      background: var(--spring) !important;
+    }
+    body[data-season="spring"] .accentBar {
+      background: var(--spring) !important;
+    }
+    body[data-season="spring"] .statusChip.wait {
+      border-color: var(--spring) !important;
+      color: var(--spring) !important;
+      box-shadow: 0 0 24px rgba(74, 222, 128, 0.60) !important;
+    }
+
     .shell{
       position: relative;
-      background: #fff;
+      background: #0f0f0f;
       border-radius: var(--radius);
       box-shadow: var(--shadow-strong);
       border: 1px solid var(--border-strong);
@@ -182,54 +252,106 @@
 
     .tabs{
       display:flex;
-      gap:10px;
-      flex-wrap: wrap;
+      gap:0;
+      flex-wrap: nowrap;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 24px;
+    }
+
+    /* Hide carousel on desktop */
+    .tabs-carousel-container,
+    .carousel-indicator {
+      display: none !important;
     }
 
     .tab{
-      border:1px solid var(--border-soft);
-      background:#fff;
-      border-radius: var(--radius);
-      padding: 10px 12px 9px;
-      box-shadow: 0 14px 30px rgba(15,23,42,0.09);
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      cursor:pointer;
-      color: var(--ink);
-      position: relative;
-      overflow: hidden;
+      border: none !important;
+      background: transparent !important;
+      border-radius: 0 !important;
+      padding: 0 32px !important;
+      height: 64px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: none !important;
+      font-size: 15px !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase !important;
+      cursor: pointer !important;
+      color: #6b7280 !important;
+      position: relative !important;
+      overflow: visible !important;
+      font-weight: 600 !important;
+      transition: all 0.2s ease-out !important;
+      border-bottom: 3px solid transparent !important;
     }
 
-    .tab::after{
-      content:"";
-      position:absolute;
-      inset:auto 0 0 0;
-      height: 3px;
-      background: transparent;
-      opacity: .95;
+    .tab:hover{
+      color: #9ca3af !important;
+      background: transparent !important;
     }
-    .tab[data-tab="portal"]::after{ background: var(--winter); }
-    .tab[data-tab="register"]::after{ background: var(--spring); }
 
     .tab.active{
-      border-color: rgba(15,23,42,0.55);
-      box-shadow: 0 18px 40px rgba(15,23,42,0.12);
+      color: #ffffff !important;
+      border-bottom-color: var(--winter);
+      background: transparent !important;
     }
 
-    /* Mobile: 3D Flip Carousel */
+    .tab.active::after{
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--winter);
+      animation: tabSlideIn 0.3s ease-out;
+    }
+
+    @keyframes tabSlideIn {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    .tab[data-tab="portal"].active::after,
+    .tab[data-tab="portal"].active{
+      border-bottom-color: var(--winter);
+    }
+    .tab[data-tab="portal"].active::after{
+      background: var(--winter);
+    }
+
+    .tab[data-tab="register"].active::after,
+    .tab[data-tab="register"].active{
+      border-bottom-color: var(--spring);
+    }
+    .tab[data-tab="register"].active::after{
+      background: var(--spring);
+    }
+
+    /* Mobile: Show tabs in responsive layout */
     @media (max-width: 480px){
-      .tabs{
-        display: flex;
+      .shell .tabs{
+        display: flex !important;
+        gap: 0 !important;
+        width: 100% !important;
+        margin-bottom: 16px !important;
+      }
+
+      .shell .tab{
+        flex: 1 !important;
+        padding: 0 16px !important;
+        height: 56px !important;
+        font-size: 13px !important;
+        min-width: 0 !important;
       }
 
       .tabs-carousel-container{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 14px;
-        perspective: 1200px;
+        display: none !important;
       }
 
       .tabs-carousel{
@@ -423,13 +545,14 @@
     }
 
     .panelTitle{
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: 0.18em;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       display:flex;
       align-items:center;
       gap: 10px;
+      color: #ffffff;
     }
 
     .accentBar{ width: 4px; height: 14px; background: var(--summer); display:inline-block; }
@@ -441,24 +564,33 @@
     }
 
     label{
-      font-size: 10px;
-      letter-spacing: 0.16em;
+      font-size: 11px;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 900;
+      color: #9ca3af;
+      font-weight: 700;
       display:block;
       margin-bottom: 6px;
     }
 
     input, select, textarea{
       width:100%;
-      border: 1px solid var(--border-soft);
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: var(--radius);
       padding: 10px 10px;
       font-size: 13px;
-      background: #f9fafb;
-      color: var(--ink);
+      background: rgba(255,255,255,0.05);
+      color: #ffffff;
       outline: none;
+    }
+    select option{
+      background: #1f2937;
+      color: #ffffff;
+      padding: 8px;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.08);
     }
     textarea{ min-height: 90px; resize: vertical; }
 
@@ -471,22 +603,31 @@
     .btnbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
     .btn{
-      border: 1px solid rgba(15,23,42,0.65);
+      border: 1px solid rgba(255,255,255,0.15);
       border-radius: var(--radius);
       background: transparent;
-      color: var(--ink);
+      color: #ffffff;
       padding: 10px 14px 9px;
       font-size: 11px;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       cursor:pointer;
       position: relative;
       overflow:hidden;
+      font-weight: 600;
+      transition: all 0.2s ease-out;
+    }
+    .btn:hover{
+      border-color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.05);
     }
     .btn.primary{
-      background: var(--ink);
-      color: #fff;
-      border-color: var(--ink);
+      background: #ffffff;
+      color: #000000;
+      border-color: #ffffff;
+    }
+    .btn.primary:hover{
+      background: rgba(255,255,255,0.9);
     }
     .btn:disabled{ opacity: .45; cursor: default; }
 
@@ -542,8 +683,8 @@
       transition: all 0.2s ease;
       font-weight: 600;
       font-size: 13px;
-      background: #f9fafb;
-      color: var(--ink);
+      background: rgba(255,255,255,0.05);
+      color: #ffffff;
     }
     .champ-option:first-child{
       border-radius: var(--radius) var(--radius) 0 0;
@@ -791,10 +932,11 @@
 
     .toast{
       border: 1px solid var(--border-soft);
-      background: #fff;
+      background: rgba(0,0,0,0.5);
       padding: 10px 12px;
       font-size: 12px;
       line-height: 1.6;
+      color: #ffffff;
     }
     .toast.good{ border-left: 4px solid var(--spring); }
     .toast.bad{ border-left: 4px solid #ef4444; }
@@ -876,22 +1018,22 @@
       gap:10px;
       flex-wrap:wrap;
       border: 1px solid var(--border-soft);
-      background:#fff;
+      background: #0a0a0a;
       padding: 10px;
       border-radius: var(--radius);
-      box-shadow: 0 14px 30px rgba(15,23,42,0.09);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.5);
     }
 
     .ptab{
       border: 1px solid var(--border-soft);
-      background:#fff;
+      background: transparent;
       border-radius: var(--radius);
       padding: 10px 12px 9px;
       font-size: 11px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       cursor:pointer;
-      color: var(--ink);
+      color: #ffffff;
       position: relative;
       overflow:hidden;
       min-width: 160px;
@@ -911,15 +1053,15 @@
     .ptab[data-accent="winter"] .tabBar{ background: var(--winter); }
     .ptab[data-accent="spring"] .tabBar{ background: var(--spring); }
 
-    /* Action tabs (Logout, Home) - distinct styling */
+    /* Action tabs (Logout, Home) - dark styling */
     .ptab-action {
-      background: var(--ink) !important;
-      color: #fff !important;
-      border-color: var(--ink) !important;
+      background: transparent !important;
+      color: #ffffff !important;
+      border-color: rgba(255,255,255,0.08) !important;
       min-width: 80px !important;
     }
     .ptab-action:hover {
-      background: #1e293b !important;
+      background: rgba(255,255,255,0.05) !important;
     }
 
     /* Glow accents on active portal tabs */
@@ -935,17 +1077,170 @@
     .ptab.active[data-accent="winter"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(14,165,233,0.35); }
     .ptab.active[data-accent="spring"]{ box-shadow: 0 18px 40px rgba(15,23,42,0.10), 0 0 0 1px rgba(15,23,42,0.05), 0 0 22px rgba(34,197,94,0.35); }
 
+    /* Mobile Portal Sidebar Navigation */
+    .portal-nav-toggle {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 102;
+      width: 48px;
+      height: 48px;
+      background: #0a0a0a;
+      border: 1px solid #1f1f1f;
+      border-radius: 0;
+      cursor: pointer;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .portal-nav-toggle:hover {
+      background: #111111;
+      border-color: var(--spring);
+    }
+
+    .portal-nav-toggle-icon {
+      width: 20px;
+      height: 14px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .portal-nav-toggle-icon span {
+      width: 100%;
+      height: 2px;
+      background: #ffffff;
+      transition: all 0.3s ease;
+      display: block;
+    }
+
+    .portal-nav-toggle.active .portal-nav-toggle-icon span:nth-child(1) {
+      transform: translateY(6px) rotate(45deg);
+    }
+
+    .portal-nav-toggle.active .portal-nav-toggle-icon span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .portal-nav-toggle.active .portal-nav-toggle-icon span:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg);
+    }
+
+    .portal-nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .portal-nav-backdrop.active {
+      opacity: 1;
+    }
+
+    .portal-sidebar {
+      position: fixed;
+      top: 0;
+      left: -100%;
+      width: 280px;
+      height: 100vh;
+      background: #0a0a0a;
+      border-right: 1px solid #1f1f1f;
+      box-shadow: 8px 0 24px rgba(0, 0, 0, 0.5);
+      transition: left 0.3s ease;
+      overflow-y: auto;
+      padding: 80px 0 20px;
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .portal-sidebar.active {
+      left: 0;
+    }
+
+    .portal-sidebar-item {
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border: none;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      color: #9ca3af;
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease-out;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .portal-sidebar-item:hover {
+      color: #ffffff;
+      transform: translateX(4px);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .portal-sidebar-item.active {
+      color: #ffffff;
+      background: #111111;
+    }
+
+    /* Color-coded left borders */
+    .portal-sidebar-item[data-accent="summer"]:hover,
+    .portal-sidebar-item[data-accent="summer"].active {
+      border-left-color: #facc15;
+    }
+
+    .portal-sidebar-item[data-accent="autumn"]:hover,
+    .portal-sidebar-item[data-accent="autumn"].active {
+      border-left-color: #f97316;
+    }
+
+    .portal-sidebar-item[data-accent="winter"]:hover,
+    .portal-sidebar-item[data-accent="winter"].active {
+      border-left-color: #0ea5e9;
+    }
+
+    .portal-sidebar-item[data-accent="spring"]:hover,
+    .portal-sidebar-item[data-accent="spring"].active {
+      border-left-color: #4ade80;
+    }
+
+    /* Action items (Logout, Home) */
+    .portal-sidebar-item.portal-sidebar-action {
+      margin-top: 8px;
+      padding-top: 16px;
+      border-top: 1px solid #1f1f1f;
+    }
+
+    .portal-sidebar-item.portal-sidebar-action:hover {
+      border-left-color: #ef4444;
+    }
+
     /* Mobile Portal Menu - FAB + Expandable Accordion */
     @media (max-width: 768px){
       .portalTabs{
         display: none !important;
       }
 
+      .portal-nav-toggle {
+        display: flex;
+      }
+
       #portalTabsCarousel{
-        display: flex !important;
-        flex-direction: column;
-        gap: 0;
-        margin-top: 14px;
+        display: none !important;
       }
 
       .portalTab-current{
@@ -1298,7 +1593,7 @@
       gap:10px;
       padding: 12px;
       border: 1px solid var(--border-soft);
-      background: #f9fafb;
+      background: #000000;
     }
     .statusTop{
       display:flex;
@@ -1322,40 +1617,67 @@
       font-weight: 900;
       border: 1px solid var(--border-soft);
       padding: 8px 10px 7px;
-      background: #fff;
+      background: rgba(0,0,0,0.3);
       white-space: nowrap;
       display:flex;
       align-items:center;
       gap:8px;
+      color: #ffffff;
     }
-    .statusChip.ok{ border-color: rgba(34,197,94,0.55); box-shadow: 0 0 20px rgba(34,197,94,0.40), 0 0 40px rgba(34,197,94,0.25); }
-    .statusChip.wait{ border-color: rgba(14,165,233,0.55); box-shadow: 0 0 18px rgba(14,165,233,0.22); }
-    .statusChip.bad{ border-color: rgba(239,68,68,0.55); box-shadow: 0 0 18px rgba(239,68,68,0.18); }
+    .statusChip.ok{ 
+      border-color: #22c55e; 
+      box-shadow: 0 0 20px rgba(34,197,94,0.50), 0 0 40px rgba(34,197,94,0.30);
+      color: #22c55e;
+    }
+    .statusChip.wait{ 
+      border-color: #0ea5e9; 
+      box-shadow: 0 0 24px rgba(14,165,233,0.60);
+      color: #0ea5e9;
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+    .statusChip.bad{ 
+      border-color: #ef4444; 
+      box-shadow: 0 0 24px rgba(239,68,68,0.60);
+      color: #ef4444;
+      animation: statusPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% {
+        box-shadow: 0 0 24px rgba(14,165,233,0.40);
+      }
+      50% {
+        box-shadow: 0 0 32px rgba(14,165,233,0.70), 0 0 48px rgba(14,165,233,0.40);
+      }
+    }
 
     .statusBody{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      display:flex;
+      gap: 20px;
+      flex-wrap: wrap;
     }
     .kv{
-      border: 1px solid var(--border-soft);
-      background:#fff;
-      padding: 10px 10px 9px;
+      border: none;
+      background:transparent;
+      padding: 0;
+      display: flex;
+      gap: 6px;
+      align-items: center;
     }
     .kv .k{
       font-size: 10px;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 900;
-      margin-bottom: 6px;
+      color: #6b7280;
+      font-weight: 700;
+      margin-bottom: 0;
     }
     .kv .v{
-      font-size: 13px;
-      letter-spacing: 0.02em;
-      font-weight: 800;
-      color: var(--ink);
-      line-height: 1.35;
+      font-size: 12px;
+      letter-spacing: 0;
+      font-weight: 600;
+      color: #ffffff;
+      line-height: 1;
       word-break: break-word;
     }
     .kv .v span{
@@ -1379,16 +1701,17 @@
       overflow-y: auto;
     }
     .notification-item {
-      background: #fff;
-      border: 1px solid var(--border-soft);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
       padding: 14px;
       margin-bottom: 12px;
       transition: all 0.2s ease;
     }
     .notification-item:hover {
-      border-color: #3b82f6;
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+      border-color: #0ea5e9;
+      box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+      background: rgba(255,255,255,0.05);
     }
     .notification-item-header {
       display: flex;
@@ -1398,7 +1721,7 @@
     }
     .notification-item-title {
       font-weight: 600;
-      color: var(--ink);
+      color: #ffffff;
       font-size: 14px;
     }
     .notification-item-badge {
@@ -1409,13 +1732,13 @@
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
-    .notification-item-badge.event { background: #dbeafe; color: #1d4ed8; }
-    .notification-item-badge.registration { background: #d1fae5; color: #059669; }
-    .notification-item-badge.payment { background: #fef3c7; color: #d97706; }
-    .notification-item-badge.general { background: #e5e7eb; color: #374151; }
+    .notification-item-badge.event { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .notification-item-badge.registration { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .notification-item-badge.payment { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .notification-item-badge.general { background: rgba(156, 163, 175, 0.2); color: #9ca3af; border: 1px solid rgba(156, 163, 175, 0.3); }
     .notification-item-body {
       font-size: 13px;
-      color: var(--muted);
+      color: #9ca3af;
       line-height: 1.5;
       margin-bottom: 8px;
     }
@@ -1424,22 +1747,23 @@
       justify-content: space-between;
       align-items: center;
       font-size: 11px;
-      color: #9ca3af;
+      color: #6b7280;
     }
     .notification-item-event {
-      background: #f3f4f6;
+      background: rgba(255,255,255,0.05);
       padding: 2px 8px;
       border-radius: 4px;
+      color: #9ca3af;
     }
     .notification-group-header {
       font-size: 12px;
       font-weight: 700;
-      color: var(--muted);
+      color: #ffffff;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       padding: 10px 0;
       margin-top: 16px;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     .notification-group-header:first-child {
       margin-top: 0;
@@ -1447,7 +1771,7 @@
     .notification-empty {
       text-align: center;
       padding: 40px 20px;
-      color: var(--muted);
+      color: #9ca3af;
     }
     .notification-empty-icon {
       font-size: 48px;
@@ -1480,9 +1804,13 @@
       border-color: #0f172a;
     }
     
-    /* ROK logo - hidden on desktop by default, shown on mobile when logged in */
+    /* ROK logo - top right corner, always visible */
     .mobile-rok-logo {
-      display: none;
+      display: block;
+      width: 60px;
+      height: auto;
+      object-fit: contain;
+      opacity: 0.85;
     }
 
     /* Payment Cards */
@@ -1541,7 +1869,6 @@
       .header{ flex-direction:column; align-items:flex-start; }
       .header-right{ text-align:left; }
       .ptab{ min-width: 0; width: 100%; }
-      .statusBody{ grid-template-columns: 1fr; }
       
       /* Reduce sizes on mobile for better fit on larger phones */
       .shell{ padding: 12px !important; }
@@ -1553,6 +1880,21 @@
       .statusCard{ padding: 14px !important; }
       .statusTitle{ font-size: 13px !important; }
       .statusChip{ font-size: 11px !important; padding: 4px 10px !important; }
+      .statusBody{ 
+        flex-direction: column; 
+        gap: 8px;
+      }
+      .kv{
+        flex-direction: row;
+        gap: 6px;
+      }
+      .kv .k{
+        font-size: 9px;
+        min-width: 60px;
+      }
+      .kv .v{
+        font-size: 11px;
+      }
       .kv .k{ font-size: 11px !important; }
       .kv .v{ font-size: 13px !important; }
       .statusNote{ font-size: 12px !important; }
@@ -1560,7 +1902,12 @@
       
       /* Hide championship buttons on mobile, show dropdown */
       #champ-buttons-container{ display: none !important; }
-      #champ-select{ display: block !important; }
+      #champ-select{ 
+        display: block !important; 
+        border: 1px solid var(--winter) !important;
+        background: rgba(255,255,255,0.05) !important;
+        color: #ffffff !important;
+      }
       
       /* Hide desktop back-link-wrap on mobile */
       .back-link-wrap{ 
@@ -1666,19 +2013,11 @@
       
       /* Mobile ROK logo in top right */
       .mobile-rok-logo {
-        display: none;
-        position: fixed;
-        top: 12px;
-        right: 12px;
-        z-index: 100;
+        display: block;
         width: 45px;
         height: auto;
         object-fit: contain;
         opacity: 0.9;
-      }
-      
-      body.logged-in .mobile-rok-logo {
-        display: block !important;
       }
     }
 
@@ -1831,13 +2170,37 @@
 </head>
 
 <body>
+  <!-- Mobile Portal Navigation -->
+  <button class="portal-nav-toggle" type="button" aria-label="Toggle navigation menu">
+    <div class="portal-nav-toggle-icon">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </button>
+  
+  <div class="portal-nav-backdrop"></div>
+  
+  <nav class="portal-sidebar" aria-label="Driver portal navigation">
+    <button class="portal-sidebar-item active" data-ptab="driver" data-accent="summer" type="button">Driver Profile</button>
+    <button class="portal-sidebar-item" data-ptab="contacts" data-accent="autumn" type="button">Entrant Details</button>
+    <button class="portal-sidebar-item" data-ptab="medical" data-accent="winter" type="button">Medical & Consent</button>
+    <button class="portal-sidebar-item" data-ptab="events" data-accent="spring" type="button">My Events</button>
+    <button class="portal-sidebar-item" data-ptab="points" data-accent="spring" type="button">Points</button>
+    <button class="portal-sidebar-item" data-ptab="payments" data-accent="spring" type="button">Entries & Rentals</button>
+    <button class="portal-sidebar-item" data-ptab="msa" data-accent="spring" type="button">MSA License</button>
+    <button class="portal-sidebar-item" data-ptab="notifications" data-accent="winter" type="button">Notifications</button>
+    <button class="portal-sidebar-item" data-ptab="requests" data-accent="autumn" type="button">Contact Admin</button>
+    <button class="portal-sidebar-item portal-sidebar-action" onclick="document.getElementById('btnLogout').click()" type="button">Logout</button>
+    <button class="portal-sidebar-item portal-sidebar-action" onclick="window.location.href='index.html'" type="button">Home</button>
+  </nav>
+
   <div class="wrap">
     <div class="shell">
       <div class="content">
 
         <div class="header">
           <div>
-            <div class="kicker">ROK CUP SOUTH AFRICA</div>
             <div class="title">ROK CUP SOUTH AFRICA</div>
             <div class="sub">Driver Portal and Registration</div>
           </div>
@@ -1900,44 +2263,26 @@
                 <div class="hint">Enter your email and password to access your driver portal.</div>
               </div>
 
-              <div class="panel" id="portalStatusPanel">
-                <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Portal Status</div>
+              <div class="panel" id="portalStatusPanel" style="padding: 16px; background: #000000;">
+                <div class="panelTitle" style="margin-bottom: 12px;"><span class="accentBar" style="background:var(--spring)"></span>Session</div>
                 <div id="portalStatus">
                   <div id="toast"></div>
-                  <div class="statusCard">
-                    <div class="statusTop">
-                      <div class="statusTitle">Session</div>
-                      <div class="status-inline-buttons" id="statusInlineButtons" style="display: none;">
-                        <button class="btn" onclick="document.getElementById('btnLogout').click()" type="button">Logout</button>
-                        <button class="btn" onclick="window.location.href='index.html'" type="button">Home</button>
+                  <div class="statusCard" style="display: flex; align-items: center; gap: 16px; padding: 0; border: none; background: transparent;">
+                    <div class="statusChip wait" style="flex-shrink: 0;">Not logged in</div>
+                    <div class="statusBody" style="display: flex; gap: 20px; flex: 1; grid-template-columns: none; font-size: 12px;">
+                      <div class="kv" style="display: flex; gap: 6px; align-items: center;">
+                        <div class="k" style="color: #6b7280; font-size: 10px;">NAME:</div>
+                        <div class="v" style="color: #ffffff; font-weight: 600;">—</div>
                       </div>
-                      <div class="statusChip wait">Not logged in</div>
-                    </div>
-                    <div class="statusBody">
-                      <div class="kv">
-                        <div class="k">Driver</div>
-                        <div class="v">—</div>
+                      <div class="kv" style="display: flex; gap: 6px; align-items: center;">
+                        <div class="k" style="color: #6b7280; font-size: 10px;">CLASS:</div>
+                        <div class="v" style="color: #ffffff; font-weight: 600;">—</div>
                       </div>
-                      <div class="kv">
-                        <div class="k">Class</div>
-                        <div class="v">—</div>
-                      </div>
-                      <div class="kv">
-                        <div class="k">Driver ID / Email</div>
-                        <div class="v">—</div>
-                      </div>
-                      <div class="kv">
-                        <div class="k">Status</div>
-                        <div class="v">—</div>
+                      <div class="kv" style="display: flex; gap: 6px; align-items: center;">
+                        <div class="k" style="color: #6b7280; font-size: 10px;">ID:</div>
+                        <div class="v" style="color: #ffffff; font-weight: 600; font-size: 11px;">—</div>
                       </div>
                     </div>
-                    <div class="statusNote">Log in to load your portal. You will see your profile, entrant details, and NAT entry controls.</div>
-                  </div>
-                  
-                  <!-- Action Buttons (visible when logged in) -->
-                  <div class="portal-status-buttons" id="portalStatusButtons" style="display: none;">
-                    <button class="btn" id="btnStatusLogout" type="button">Logout</button>
-                    <button class="btn" onclick="window.location.href='index.html'" type="button">Home</button>
                   </div>
                 </div>
               </div>
@@ -1953,10 +2298,10 @@
               <button class="ptab" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
               <button class="ptab" data-ptab="msa" data-accent="spring" type="button"><span class="tabBar"></span>MSA License</button>
               <button class="ptab" data-ptab="notifications" data-accent="winter" type="button"><span class="tabBar"></span>Notifications</button>
-              <!-- Logout and Home in portal tabs (always visible when tabs show) -->
+              <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
+              <!-- Logout and Home at end of portal tabs -->
               <button class="ptab ptab-action" onclick="document.getElementById('btnLogout').click()" type="button"><span class="tabBar" style="background:#ef4444"></span>Logout</button>
               <button class="ptab ptab-action" onclick="window.location.href='index.html'" type="button"><span class="tabBar" style="background:#3b82f6"></span>Home</button>
-              <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
             </div>
 
             <!-- Portal tabs - Mobile 3D carousel -->
@@ -2209,9 +2554,9 @@
               </div>
 
               <div class="portalSection" data-psection="payments">
-                <!-- ENTER A RACE BUTTON - BLUE GLOWING CONTAINER -->
+                <!-- ENTER A RACE BUTTON - BLACK GLOWING CONTAINER -->
                 <div class="panel">
-                  <div id="enterRaceBox" style="padding: 20px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 8px; border: 2px solid #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);">
+                  <div id="enterRaceBox" style="padding: 20px; background: #000000; border-radius: 8px; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);">
                     <button id="btnQuickEntry" type="button" style="width: 100%; padding: 16px 24px; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: none; background: #3b82f6; color: white; border-radius: 6px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); position: relative; overflow: hidden; animation: slideInDown 0.5s ease-out;">
                       ENTER A RACE
                     </button>
@@ -2244,35 +2589,35 @@
                 <!-- NEXT RACE DETAILS SECTION -->
                 <div class="panel">
                   <div class="panelTitle"><span class="accentBar" id="nextRaceAccentBar" style="background:#ef4444"></span>Next Race</div>
-                  <div id="nextRaceBox" style="padding: 20px; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-radius: 8px; border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);">
+                  <div id="nextRaceBox" style="padding: 20px; background: #000000; border-radius: 8px; border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);">
                     <div style="margin-bottom: 16px;">
-                      <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Upcoming Event</div>
-                      <div style="font-size: 20px; font-weight: 700; color: #1f2937; text-transform: uppercase;" id="nextRaceTitle">14 FEBRUARY 2026 - REDSTAR RACEWAY (NORTHERN REGIONS CROWN)</div>
+                      <div style="font-size: 12px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Upcoming Event</div>
+                      <div style="font-size: 20px; font-weight: 700; color: #ffffff; text-transform: uppercase;" id="nextRaceTitle">14 FEBRUARY 2026 - REDSTAR RACEWAY (NORTHERN REGIONS CROWN)</div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                       <div>
-                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Location</div>
-                        <div style="font-size: 14px; color: #374151;" id="nextRaceLocation">Redstar Raceway</div>
+                        <div style="font-size: 12px; color: #9ca3af; margin-bottom: 4px; font-weight: 600;">Location</div>
+                        <div style="font-size: 14px; color: #ffffff;" id="nextRaceLocation">Redstar Raceway</div>
                       </div>
                       <div>
-                        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Entry Status</div>
+                        <div style="font-size: 12px; color: #9ca3af; margin-bottom: 4px; font-weight: 600;">Entry Status</div>
                         <div id="nextRaceStatusBox" style="display: flex; align-items: center; gap: 8px;">
                           <div id="nextRaceStatusDot" style="width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);"></div>
-                          <span id="nextRaceStatusText" style="font-size: 14px; color: #374151; font-weight: 600;">Not Registered</span>
+                          <span id="nextRaceStatusText" style="font-size: 14px; color: #ffffff; font-weight: 600;">Not Registered</span>
                         </div>
                       </div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                      <div style="padding: 12px; border: 1px solid #fca5a5; border-radius: 6px; background: white;">
-                        <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">ENTRY</div>
-                        <div style="font-size: 12px; color: #374151; font-weight: 600;" id="nextRaceEntryStatus">Not Registered</div>
+                      <div style="padding: 12px; border: 1px solid rgba(252, 165, 165, 0.3); border-radius: 6px; background: rgba(255,255,255,0.03);">
+                        <div style="font-size: 11px; color: #9ca3af; font-weight: 600; margin-bottom: 4px;">ENTRY</div>
+                        <div style="font-size: 12px; color: #ffffff; font-weight: 600;" id="nextRaceEntryStatus">Not Registered</div>
                       </div>
-                      <div style="padding: 12px; border: 1px solid #fca5a5; border-radius: 6px; background: white;">
-                        <div style="font-size: 11px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">ENGINE RENTAL</div>
-                        <div style="font-size: 12px; color: #374151; font-weight: 600;" id="nextRaceEngineStatus">No</div>
+                      <div style="padding: 12px; border: 1px solid rgba(252, 165, 165, 0.3); border-radius: 6px; background: rgba(255,255,255,0.03);">
+                        <div style="font-size: 11px; color: #9ca3af; font-weight: 600; margin-bottom: 4px;">ENGINE RENTAL</div>
+                        <div style="font-size: 12px; color: #ffffff; font-weight: 600;" id="nextRaceEngineStatus">No</div>
                       </div>
                     </div>
-                    <div id="nextRaceEntryDate" style="font-size: 11px; color: #6b7280; margin-bottom: 12px;"></div>
+                    <div id="nextRaceEntryDate" style="font-size: 11px; color: #9ca3af; margin-bottom: 12px;"></div>
                   </div>
                 </div>
 
@@ -2280,41 +2625,41 @@
                 <div class="panel" style="margin-top: 16px;">
                   <div class="panelTitle"><span class="accentBar" style="background:#3b82f6"></span>Payment & Entry Status</div>
                   
-                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Engine Rental (Pool)</div>
+                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.03);">
+                    <div style="font-size: 12px; color: #ffffff; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Engine Rental (Pool)</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div style="font-size: 14px; color: #9ca3af;">Status:</div>
                       <div id="p_season_engine_rental_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
                         Not Registered
                       </div>
                     </div>
                   </div>
 
-                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Entry</div>
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">(All entries, engine rental, tyres, fuel for all 8 rounds)</div>
+                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.03);">
+                    <div style="font-size: 12px; color: #ffffff; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Season Entry</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin-bottom: 8px;">(All entries, engine rental, tyres, fuel for all 8 rounds)</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div style="font-size: 14px; color: #9ca3af;">Status:</div>
                       <div id="p_season_entry_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
                         Not Registered
                       </div>
                     </div>
                   </div>
 
-                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;" id="nextRaceLabel">Next Race Entry</div>
+                  <div style="padding: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.03);">
+                    <div style="font-size: 12px; color: #ffffff; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;" id="nextRaceLabel">Next Race Entry</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div style="font-size: 14px; color: #9ca3af;">Status:</div>
                       <div id="p_next_race_entry_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
                         Not Registered
                       </div>
                     </div>
                   </div>
 
-                  <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;">
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Next Race Engine Rental</div>
+                  <div style="padding: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.03);">
+                    <div style="font-size: 12px; color: #ffffff; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Next Race Engine Rental</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="font-size: 14px; color: #6b7280;">Status:</div>
+                      <div style="font-size: 14px; color: #9ca3af;">Status:</div>
                       <div id="p_engine_rental_status" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; color: white; background: #ef4444; display: inline-block;">
                         No
                       </div>
@@ -2337,7 +2682,7 @@
                   <div class="panelTitle"><span class="accentBar" style="background:#22c55e"></span>Payment History</div>
                   <div class="hint">Track all your payment transactions and statuses.</div>
                   <div id="paymentHistoryContainer" style="margin-top: 16px;">
-                    <div style="color: #6b7280; text-align: center; padding: 20px;">Loading payment history...</div>
+                    <div style="color: #9ca3af; text-align: center; padding: 20px;">Loading payment history...</div>
                   </div>
                 </div>
               </div>
@@ -2347,25 +2692,25 @@
                   <div class="panelTitle"><span class="accentBar" style="background:#8b5cf6"></span>MSA License Upload</div>
                   <div class="hint">Upload your Motor Sport Association license document. This helps us verify your racing credentials and maintains compliance records.</div>
                   
-                  <div style="margin-top: 20px; padding: 20px; border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; text-align: center;">
+                  <div style="margin-top: 20px; padding: 20px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.03); text-align: center;">
                     <input type="file" id="msaFileInput" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;" onchange="handleMSAFileSelect(event)" />
                     <button class="btn primary" type="button" onclick="document.getElementById('msaFileInput').click()" style="margin-bottom: 12px;">
-                      📁 Choose MSA License File
+                      📁 Choose File
                     </button>
-                    <div style="font-size: 12px; color: #6b7280;">PDF, Images, or Documents (Max 10MB)</div>
-                    <div id="selectedFileName" style="margin-top: 12px; font-weight: 600; color: #374151; min-height: 20px;"></div>
+                    <div style="font-size: 12px; color: #9ca3af; word-wrap: break-word;">PDF, Images, or Documents<br>(Max 10MB)</div>
+                    <div id="selectedFileName" style="margin-top: 12px; font-weight: 600; color: #ffffff; min-height: 20px; word-wrap: break-word; overflow-wrap: break-word;"></div>
                   </div>
 
                   <div class="btnbar" style="margin-top: 16px;">
-                    <button class="btn primary" id="btnUploadMSA" type="button" disabled>Upload MSA License</button>
+                    <button class="btn primary" id="btnUploadMSA" type="button" disabled>Upload License</button>
                   </div>
 
                   <div id="msaUploadStatus" style="margin-top: 16px; padding: 12px; border-radius: 6px; display: none; font-size: 14px;"></div>
 
                   <div style="margin-top: 24px;">
-                    <div style="font-weight: 600; margin-bottom: 12px; color: #1f2937;">Current MSA License:</div>
-                    <div id="msaDocumentsList" style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; min-height: 60px;">
-                      <div style="color: #6b7280; text-align: center;">No document uploaded yet</div>
+                    <div style="font-weight: 600; margin-bottom: 12px; color: #ffffff; font-size: 13px; letter-spacing: 0.05em;">CURRENT LICENSE:</div>
+                    <div id="msaDocumentsList" style="padding: 16px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.03); min-height: 60px;">
+                      <div style="color: #9ca3af; text-align: center; font-size: 13px;">No document uploaded yet</div>
                     </div>
                   </div>
                 </div>
@@ -2407,6 +2752,15 @@
                   <label>Gender (optional)</label>
                   <input id="r_gender" placeholder="Optional" />
                 </div>
+              </div>
+              <div class="row">
+                <div>
+                  <label>Driver Email *</label>
+                  <input id="c_email" placeholder="driver@example.com" />
+                </div>
+              </div>
+              <div class="hint" style="padding: 10px; background: rgba(250, 204, 21, 0.1); border-left: 3px solid #facc15; color: #9ca3af;">
+                📧 Driver email is required for identity verification and communication
               </div>
             </div>
 
@@ -2509,13 +2863,6 @@
 
             <div class="panel">
               <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Medical & Consent</div>
-              <div class="hint" style="margin-bottom: 12px; padding: 10px; background: #fef3c7; border-left: 3px solid #f59e0b;">📧 Driver email is required for identity verification and communication</div>
-              <div class="row">
-                <div>
-                  <label>Driver Email *</label>
-                  <input id="c_email" placeholder="driver@example.com" />
-                </div>
-              </div>
               <div class="row">
                 <div>
                   <label>Allergies</label>
@@ -3240,7 +3587,9 @@
     function setPortalTab(key){
       document.querySelectorAll(".ptab").forEach(b=>b.classList.remove("active"));
       const btn = document.querySelector(`.ptab[data-ptab="${key}"]`);
-      if(btn) btn.classList.add("active");
+      if(btn) {
+        btn.classList.add("active");
+      }
 
       // Update mobile menu
       document.querySelectorAll(".portalTab-option").forEach(b=>b.classList.remove("active"));
@@ -3272,8 +3621,93 @@
 
       document.querySelectorAll(".portalSection").forEach(s=>s.classList.remove("active"));
       const sec = document.querySelector(`.portalSection[data-psection="${key}"]`);
-      if(sec) sec.classList.add("active");
+      if(sec) {
+        sec.classList.add("active");
+      }
     }
+
+    /* Mobile Portal Sidebar Navigation */
+    function initPortalSidebar() {
+      const toggle = document.querySelector('.portal-nav-toggle');
+      const sidebar = document.querySelector('.portal-sidebar');
+      const backdrop = document.querySelector('.portal-nav-backdrop');
+      const sidebarItems = document.querySelectorAll('.portal-sidebar-item[data-ptab]');
+      
+      if (!toggle || !sidebar || !backdrop) return;
+      
+      function openSidebar() {
+        sidebar.classList.add('active');
+        backdrop.classList.add('active');
+        backdrop.style.display = 'block';
+        toggle.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+      
+      function closeSidebar() {
+        sidebar.classList.remove('active');
+        backdrop.classList.remove('active');
+        toggle.classList.remove('active');
+        document.body.style.overflow = '';
+        setTimeout(() => {
+          if (!backdrop.classList.contains('active')) {
+            backdrop.style.display = 'none';
+          }
+        }, 300);
+      }
+      
+      toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (sidebar.classList.contains('active')) {
+          closeSidebar();
+        } else {
+          openSidebar();
+        }
+      });
+      
+      backdrop.addEventListener('click', closeSidebar);
+      
+      // Handle sidebar item clicks
+      sidebarItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const ptab = this.getAttribute('data-ptab');
+          if (ptab) {
+            // Update active state in sidebar
+            document.querySelectorAll('.portal-sidebar-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Switch to the tab
+            setPortalTab(ptab);
+            
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+              closeSidebar();
+            }
+          }
+        });
+      });
+      
+      // Close sidebar when window is resized to desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+          closeSidebar();
+        }
+      });
+      
+      // Sync sidebar active state when desktop tabs are clicked
+      document.querySelectorAll('.ptab[data-ptab]').forEach(tab => {
+        tab.addEventListener('click', function() {
+          const ptab = this.getAttribute('data-ptab');
+          if (ptab) {
+            document.querySelectorAll('.portal-sidebar-item').forEach(i => i.classList.remove('active'));
+            const sidebarItem = document.querySelector(`.portal-sidebar-item[data-ptab="${ptab}"]`);
+            if (sidebarItem) sidebarItem.classList.add('active');
+          }
+        });
+      });
+    }
+    
+    // Initialize sidebar on page load
+    document.addEventListener('DOMContentLoaded', initPortalSidebar);
 
     /* Class colors mapping */
     const classColors = {
@@ -3411,6 +3845,9 @@
       // Show inline status buttons (Logout/Home in status card header)
       const inlineBtns = document.getElementById("statusInlineButtons");
       if (inlineBtns) inlineBtns.style.display = "flex";
+      
+      // Set the first portal tab active (Driver tab)
+      setPortalTab("driver");
       
       // Load notification history when logged in
       loadNotificationHistory();
@@ -3705,61 +4142,62 @@
           // Check if event is in the past
           const isPast = event.event_date && new Date(event.event_date) < new Date();
           const glowColor = isPast ? '#6b7280' : status.glow;
-          const rowBg = isPast ? 'rgba(107, 114, 128, 0.03)' : `${status.bg}15`;
+          const rowBg = isPast ? 'rgba(107, 114, 128, 0.05)' : 'rgba(255,255,255,0.03)';
+          const hoverBg = isPast ? 'rgba(107, 114, 128, 0.1)' : 'rgba(255,255,255,0.08)';
           
           const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString('en-ZA', { 
             day: '2-digit', month: 'short' 
           }) : 'TBA';
           
           return `
-            <tr style="border-bottom: 1px solid #e5e7eb; border-left: 4px solid ${glowColor}; background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${status.bg}40'; this.style.transform='translateX(4px)'" onmouseout="this.style.background='${rowBg}'; this.style.transform='translateX(0)'">
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${glowColor}; background: ${rowBg}; transition: all 0.2s;" onmouseover="this.style.background='${hoverBg}'; this.style.transform='translateX(4px)'" onmouseout="this.style.background='${rowBg}'; this.style.transform='translateX(0)'">
               <td data-label="Event" style="padding: 12px 8px;">
-                <div style="font-weight: 600; color: ${isPast ? '#9ca3af' : 'var(--ink)'}; font-size: 14px;">${escapeHtml(event.event_name || 'Event')}${isPast ? ' <span style="font-size: 11px; color: #6b7280; font-weight: 400;">(Past)</span>' : ''}</div>
+                <div style="font-weight: 600; color: ${isPast ? '#6b7280' : '#ffffff'}; font-size: 14px;">${escapeHtml(event.event_name || 'Event')}${isPast ? ' <span style="font-size: 11px; color: #6b7280; font-weight: 400;">(Past)</span>' : ''}</div>
               </td>
               <td data-label="Date" style="padding: 12px 8px; white-space: nowrap;">
-                <div style="font-size: 13px; color: ${isPast ? '#9ca3af' : 'var(--muted)'};">${eventDate}</div>
+                <div style="font-size: 13px; color: ${isPast ? '#6b7280' : '#9ca3af'};">${eventDate}</div>
               </td>
               <td data-label="Location" style="padding: 12px 8px;">
-                <div style="font-size: 13px; color: ${isPast ? '#9ca3af' : 'var(--muted)'};">${escapeHtml(event.location || 'TBA')}</div>
+                <div style="font-size: 13px; color: ${isPast ? '#6b7280' : '#9ca3af'};">${escapeHtml(event.location || 'TBA')}</div>
               </td>
               <td data-label="Status" style="padding: 12px 8px; text-align: center;">
-                <div style="display: inline-block; padding: 4px 10px; background: ${isPast ? '#e5e7eb' : status.bg}; color: ${isPast ? '#6b7280' : status.text}; font-size: 11px; font-weight: 700; border-radius: 4px; white-space: nowrap;">
+                <div style="display: inline-block; padding: 4px 10px; background: ${isPast ? 'rgba(107, 114, 128, 0.2)' : status.glow}; color: #ffffff; font-size: 11px; font-weight: 700; border-radius: 4px; white-space: nowrap; box-shadow: 0 0 8px ${isPast ? 'rgba(107, 114, 128, 0.3)' : `${status.glow}80`};">
                   ${isPast ? '🕐 Past' : status.label}
                 </div>
               </td>
               <td data-label="Payment" style="padding: 12px 8px; text-align: center;">
-                <div style="color: ${isPast ? '#9ca3af' : payment.text}; font-size: 14px; font-weight: 600;">
+                <div style="color: ${isPast ? '#6b7280' : payment.text}; font-size: 14px; font-weight: 600;">
                   ${payment.icon} ${event.payment_status || 'Pending'}
                 </div>
               </td>
               <td data-label="Class" style="padding: 12px 8px; text-align: center;">
-                <div style="font-weight: 600; color: ${isPast ? '#9ca3af' : 'var(--ink)'}; font-size: 13px;">${escapeHtml(event.race_class || 'N/A')}</div>
+                <div style="font-weight: 600; color: ${isPast ? '#6b7280' : '#ffffff'}; font-size: 13px;">${escapeHtml(event.race_class || 'N/A')}</div>
               </td>
               <td data-label="Race #" style="padding: 12px 8px; text-align: center;">
-                <div style="font-weight: 600; color: ${isPast ? '#9ca3af' : 'var(--muted)'}; font-size: 13px;">${event.race_number ? '#' + escapeHtml(event.race_number) : '-'}</div>
+                <div style="font-weight: 600; color: ${isPast ? '#6b7280' : '#9ca3af'}; font-size: 13px;">${event.race_number ? '#' + escapeHtml(event.race_number) : '-'}</div></div>
               </td>
             </tr>
           `;
         }).join('');
         
         container.innerHTML = `
-          <div style="margin-bottom: 16px; padding: 12px 16px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-radius: var(--radius); border: 2px solid #3b82f6; display: flex; align-items: center; gap: 8px;">
+          <div style="margin-bottom: 16px; padding: 12px 16px; background: #000000; border-radius: var(--radius); border: 2px solid #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 18px;">ℹ️</span>
-            <div style="font-size: 14px; color: #1e40af; font-weight: 600;">
+            <div style="font-size: 14px; color: #3b82f6; font-weight: 600;">
               You have <strong>${data.events.length}</strong> event registration${data.events.length !== 1 ? 's' : ''}
             </div>
           </div>
           <div style="overflow-x: auto;">
-            <table class="table" style="width: 100%; border-collapse: collapse; background: white; border-radius: var(--radius); box-shadow: var(--shadow);">
+            <table class="table" style="width: 100%; border-collapse: collapse; background: #000000; border-radius: var(--radius); box-shadow: var(--shadow);">
               <thead>
-                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
-                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Event</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Date</th>
-                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Location</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Status</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Payment</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Class</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 12px; text-transform: uppercase;">Race #</th>
+                <tr style="background: rgba(255,255,255,0.05); border-bottom: 2px solid rgba(255,255,255,0.1);">
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: #ffffff; font-size: 12px; text-transform: uppercase;">Event</th>
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: #ffffff; font-size: 12px; text-transform: uppercase;">Date</th>
+                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: #ffffff; font-size: 12px; text-transform: uppercase;">Location</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: #ffffff; font-size: 12px; text-transform: uppercase;">Status</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: #ffffff; font-size: 12px; text-transform: uppercase;">Payment</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: #ffffff; font-size: 12px; text-transform: uppercase;">Class</th>
+                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: #ffffff; font-size: 12px; text-transform: uppercase;">Race #</th>
                 </tr>
               </thead>
               <tbody>
@@ -4132,18 +4570,18 @@
       
       if (entryStatus === 'Registered' || entryStatus === 'Confirmed') {
         // Green for registered
-        boxBg = 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)';
+        boxBg = '#000000';
         boxBorder = '#22c55e';
         accentColor = '#22c55e';
         statusText = '✓ Registered';
-        statusColor = '#16a34a';
+        statusColor = '#22c55e';
       } else {
         // Orange for pending or not registered
-        boxBg = 'linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%)';
+        boxBg = '#000000';
         boxBorder = '#fb923c';
         accentColor = '#fb923c';
         statusText = '⧖ Not Registered';
-        statusColor = '#ea580c';
+        statusColor = '#fb923c';
       }
       
       // Update the Next Race box
@@ -4643,16 +5081,16 @@
             const paidOption = options.find(opt => opt.type === highestPaidRental.rental_type);
             
             html += `
-              <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 3px solid #10b981; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">
+              <div style="background: #000000; border: 3px solid #10b981; border-radius: 8px; padding: 20px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                   <span style="font-size: 24px;">✓</span>
-                  <div style="font-weight: 800; font-size: 16px; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">${paidOption.type}</div>
+                  <div style="font-weight: 800; font-size: 16px; color: #10b981; text-transform: uppercase; letter-spacing: 0.05em;">${paidOption.type}</div>
                 </div>
-                <div style="color: #047857; font-size: 13px; margin-bottom: 16px; font-weight: 500;">${paidOption.description}</div>
-                <div style="background: rgba(16, 185, 129, 0.15); padding: 12px; border-radius: 6px; text-align: center;">
-                  <div style="color: #065f46; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">PAID & REGISTERED</div>
-                  <div style="color: #047857; font-size: 12px; margin-top: 4px;">You're all set for this rental</div>
-                  <div style="color: #059669; font-size: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(16, 185, 129, 0.2); line-height: 1.4;">Stand-alone northern regions races not included: 14 Feb & 7 Sep (Redstar), 11 Apr (VKC)</div>
+                <div style="color: #22c55e; font-size: 13px; margin-bottom: 16px; font-weight: 500;">${paidOption.description}</div>
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 12px; border-radius: 6px; text-align: center;">
+                  <div style="color: #10b981; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">PAID & REGISTERED</div>
+                  <div style="color: #22c55e; font-size: 12px; margin-top: 4px;">You're all set for this rental</div>
+                  <div style="color: #4ade80; font-size: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(16, 185, 129, 0.2); line-height: 1.4;">Stand-alone northern regions races not included: 14 Feb & 7 Sep (Redstar), 11 Apr (VKC)</div>
                 </div>
               </div>
             `;
@@ -4660,14 +5098,14 @@
             // Show all options if nothing is paid
             options.forEach(option => {
               html += `
-                <div style="background: #f9fafb; border-left: 4px solid #d1d5db; border-radius: 6px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #1f2937;">${option.type}</div>
-                  <div style="color: #6b7280; font-size: 12px; margin-bottom: 12px;">${option.description}</div>
+                <div style="background: #000000; border: 2px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 16px; box-shadow: 0 0 15px rgba(255,255,255,0.05);">
+                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: #ffffff;">${option.type}</div>
+                  <div style="color: #9ca3af; font-size: 12px; margin-bottom: 12px;">${option.description}</div>
                   <div style="font-size: 18px; font-weight: 700; color: #ef4444; margin-bottom: 12px;">R${option.price.toLocaleString('en-ZA')}</div>
                   <div style="margin-bottom: 12px; font-size: 12px;">
-                    <span style="color: #6b7280; font-weight: 600; font-size: 12px;">Not yet registered</span>
+                    <span style="color: #9ca3af; font-weight: 600; font-size: 12px;">Not yet registered</span>
                   </div>
-                  <button type="button" class="poolEngineRentalBtn" data-class="${driverClass}" data-type="${option.type}" data-price="${option.price}" style="width: 100%; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: background 0.2s;">
+                  <button type="button" class="poolEngineRentalBtn" data-class="${driverClass}" data-type="${option.type}" data-price="${option.price}" style="width: 100%; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: background 0.2s; box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);">
                     Pay Now
                   </button>
                 </div>
@@ -4988,54 +5426,18 @@
         // Call new loginWithPassword endpoint
         const profile = await api('loginWithPassword', { email, password });
         
-        console.log('🔐 ===== LOGIN RESPONSE ANALYSIS =====');
-        console.log('📦 Full profile object:', profile);
-        console.log('📦 typeof profile:', typeof profile);
-        console.log('📦 profile === null:', profile === null);
-        console.log('📦 profile === undefined:', profile === undefined);
-        console.log('📦 Object.keys(profile):', Object.keys(profile || {}));
-        
-        if (profile && profile.driver) {
-          console.log('\n👤 DRIVER OBJECT FOUND');
-          console.log('   typeof profile.driver:', typeof profile.driver);
-          console.log('   Object.keys(profile.driver):', Object.keys(profile.driver));
-          console.log('   profile.driver (full):', JSON.stringify(profile.driver, null, 2));
-          
-          // Check for all possible ID field names
-          const idCandidates = ['driver_id', 'id', 'driverId', 'driver_ID', 'DriverId'];
-          console.log('\n🔍 Checking for ID fields:');
-          idCandidates.forEach(key => {
-            const value = profile.driver[key];
-            console.log(`   profile.driver.${key}: ${value} (exists: ${value !== undefined})`);
-          });
-        } else {
-          console.log('❌ NO DRIVER OBJECT FOUND IN PROFILE');
-          console.log('   profile.driver:', profile?.driver);
-        }
-        
         // Try to get driver_id from profile.driver or profile.driver_id or profile.id
         let driverId = "";
         if (profile && profile.driver && profile.driver.driver_id) {
           driverId = String(profile.driver.driver_id);
-          console.log('✅ Found driver_id at profile.driver.driver_id:', driverId);
         } else if (profile && profile.driver_id) {
           driverId = String(profile.driver_id);
-          console.log('✅ Found driver_id at profile.driver_id:', driverId);
         } else if (profile && profile.id) {
           driverId = String(profile.id);
-          console.log('✅ Found driver_id at profile.id:', driverId);
-        } else {
-          console.log('❌ COULD NOT FIND DRIVER_ID IN PROFILE!');
-          if (profile && profile.driver) {
-            console.log('   Checked: profile.driver.driver_id, profile.driver_id, profile.id');
-            console.log('   All returned undefined');
-            console.log('   Available driver keys:', Object.keys(profile.driver).join(', '));
-          }
         }
         
         window.currentDriverId = driverId;
         currentDriverId = driverId;  // Keep local scope version too for backwards compatibility
-        console.log('🔐 ===== END LOGIN ANALYSIS =====\n');
         
         currentEmail = email;
         currentPassword = password;
@@ -5173,10 +5575,13 @@
       toast("good", "Logged out.");
     });
     
-    // Portal Status logout button (moved from bottom action buttons)
-    document.getElementById("btnStatusLogout").addEventListener("click", ()=>{
-      document.getElementById("btnLogout").click();
-    });
+    // Portal Status logout button (moved from bottom action buttons) - only if element exists
+    const btnStatusLogout = document.getElementById("btnStatusLogout");
+    if (btnStatusLogout) {
+      btnStatusLogout.addEventListener("click", ()=>{
+        document.getElementById("btnLogout").click();
+      });
+    }
 
     /* SAVE PROFILE */
     /* SEND REQUEST TO ADMIN */
@@ -5631,7 +6036,7 @@
         <!-- Header -->
         <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #1f2937;">Enter Race</h2>
+            <h2 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #1f2937;">ENTER A RACE</h2>
             <div style="font-size: 12px; color: #6b7280;">Class: <strong id="modalRaceClass">CADET</strong></div>
           </div>
           <button type="button" onclick="closeRaceEntryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">×</button>
@@ -6342,6 +6747,24 @@
 
     // Attach event listener to upload button
     document.addEventListener('DOMContentLoaded', () => {
+      // Apply seasonal theming based on current date
+      const now = new Date();
+      const month = now.getMonth(); // 0-11
+      let season = 'winter'; // default
+      
+      // Determine season based on approximate NATS calendar
+      if (month >= 2 && month <= 3) {
+        season = 'summer'; // March-April (Summer NATS)
+      } else if (month >= 4 && month <= 5) {
+        season = 'autumn'; // May-June (Autumn NATS)
+      } else if (month >= 6 && month <= 7) {
+        season = 'winter'; // July-August (Winter NATS)
+      } else if (month >= 8 && month <= 9) {
+        season = 'spring'; // September-October (Spring NATS)
+      }
+      
+      document.body.setAttribute('data-season', season);
+      
       const uploadBtn = document.getElementById('btnUploadMSA');
       if (uploadBtn) {
         uploadBtn.addEventListener('click', uploadMSALicense);
