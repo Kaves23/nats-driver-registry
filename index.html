@@ -3701,6 +3701,18 @@ body[data-season="spring"] .info-section-select {
         transform: none;
         padding: 1.25rem 1rem 2rem;
       }
+
+      /* Prevent any element from causing horizontal overflow */
+      * {
+        max-width: 100%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+
+      /* Ensure containers don't overflow */
+      div, section, article, main {
+        max-width: 100vw;
+      }
     }
  .nats-timetable {
     margin-top: 2.5rem;
@@ -5785,7 +5797,7 @@ the paddock quickly and consistently.
                 </div>
                 
                 <!-- Right: Registration Status -->
-                <div id="rsStatusBox" class="rs-status-box" style="min-width: 200px; text-align: right;">
+                <div id="rsStatusBox" class="rs-status-box" style="min-width: 0; max-width: 100%; text-align: right;">
                   <!-- Status Label -->
                   <div id="rsRegistrationLabel" style="font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 12px;">
                     Registration Status
