@@ -41,6 +41,7 @@
 
     html{
       background: #000000;
+      overscroll-behavior-y: none;
     }
 
     body{
@@ -50,6 +51,7 @@
       -webkit-font-smoothing: antialiased;
       padding: 24px 18px;
       min-height: 100vh;
+      touch-action: pan-y;
     }
 
     /* Mobile optimizations */
@@ -3249,6 +3251,8 @@
         if (portalSections.scrollTop === 0) {
           startY = e.touches[0].clientY;
           isDragging = true;
+        } else {
+          isDragging = false;
         }
       }, { passive: true });
       
@@ -3258,7 +3262,8 @@
         currentY = e.touches[0].clientY;
         const pullDistance = currentY - startY;
         
-        if (pullDistance > 0 && portalSections.scrollTop === 0) {
+        // Only activate if pulling DOWN (positive distance) AND at the very top
+        if (pullDistance > 10 && portalSections.scrollTop === 0) {
           // Prevent default scroll
           e.preventDefault();
           
