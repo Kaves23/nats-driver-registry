@@ -604,20 +604,29 @@
       right: 20px;
       padding: 15px 20px;
       border-radius: 8px;
-      color: white;
+      color: #1a1a1a;
       z-index: 2000;
       animation: slideIn 0.3s ease-out;
       font-size: 14px;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
     .toast.success {
       background: #27ae60;
+      color: white;
     }
 
     .toast.error {
       background: #e74c3c;
+      color: white;
+    }
+
+    .toast.info {
+      background: #f0f0f0;
+      color: #1a1a1a;
+      border: 2px solid #666;
     }
 
     .row-inactive {
@@ -681,7 +690,7 @@
     <div class="admin-tabs">
       <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
       <button class="tab-btn" onclick="switchTab('events')">Events</button>
-      <button class="tab-btn" onclick="switchTab('raceEntries')">Race Entries</button>
+      <button class="tab-btn" onclick="switchTab('raceEntries')" style="background: linear-gradient(135deg, #059669, #047857);">Race Entries</button>
       <button class="tab-btn" onclick="switchTab('payments')">Payments</button>
       <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
@@ -770,6 +779,7 @@
         </select>
         <button class="search-btn" onclick="loadRaceEntries()">Load Entries</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
+        <button class="search-btn" onclick="exportRaceEntriesPDF()" style="background: #2563eb;">Export PDF with Barcodes</button>
       </div>
 
       <div class="table-wrapper">
@@ -3460,7 +3470,323 @@
     
     // ============= END PUSH NOTIFICATIONS FUNCTIONS =============
 
+  </script>
+  
+  <!-- html2pdf library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <!-- JsBarcode library for barcode generation -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  
+  <script>
+    // Function to load and convert logo to base64
+    async function getLogoAsBase64() {
+      return new Promise((resolve) => {
+        const img = new Image();
+        // No need for crossOrigin when loading from same server
+        
+        img.onload = function() {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const dataURL = canvas.toDataURL('image/png');
+            console.log('✅ Logo converted to base64 successfully');
+            resolve(dataURL);
+          } catch (err) {
+            console.error('❌ Failed to convert logo:', err);
+            resolve('');
+          }
+        };
+        
+        img.onerror = function(err) {
+          console.error('❌ Failed to load logo image:', err);
+          resolve('');
+        };
+        
+        // Load from local server to avoid CORS issues
+        img.src = '/images/rok-logo.png';
+        
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          if (!img.complete) {
+            console.warn('⚠️ Logo loading timeout');
+            resolve('');
+          }
+        }, 5000);
+      });
+    }
     
+    // Export Race Entries PDF with Barcodes (needs html2pdf library loaded)
+    async function exportRaceEntriesPDF() {
+      console.log('🎯 exportRaceEntriesPDF called!');
+      try {
+        // Check if html2pdf is loaded
+        if (typeof html2pdf === 'undefined') {
+          console.error('❌ html2pdf library not loaded!');
+          showToast('PDF library not loaded. Please refresh the page.', 'error');
+          return;
+        }
+        console.log('✅ html2pdf library is available');
+
+        const race = document.getElementById('filterRace').value;
+        console.log('🎯 Selected race:', race);
+        if (!race) {
+          showToast('Please select a race', 'info');
+          return;
+        }
+
+        showToast('Preparing PDF export with barcodes...', 'info');
+
+        console.log('📡 Fetching race entries for:', race);
+        
+        // Load ROK logo as base64
+        const logoBase64 = await getLogoAsBase64();
+        console.log('🖼️ Logo loaded:', logoBase64 ? 'Yes' : 'No');
+        
+        // Fetch race entries data
+        const response = await fetch('/api/getRaceEntries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId: race })
+        });
+
+        console.log('📡 Response received, status:', response.status);
+        
+        if (!response.ok) throw new Error('Failed to load race entries');
+        
+        const result = await response.json();
+        console.log('📡 Result parsed:', result);
+        console.log('📡 Result type:', typeof result);
+        console.log('📡 Result keys:', Object.keys(result));
+        console.log('📡 Is result an array?', Array.isArray(result));
+        console.log('📡 result.data exists?', result.data !== undefined);
+        console.log('📡 result.data type:', typeof result.data);
+        if (result.data) {
+          console.log('📡 result.data keys:', Object.keys(result.data));
+          console.log('📡 result.data content:', result.data);
+        }
+        console.log('📡 result.data is array?', Array.isArray(result.data));
+        console.log('📡 result.entries exists?', result.entries !== undefined);
+        console.log('📡 result.entries is array?', Array.isArray(result.entries));
+        
+        // Handle different response structures
+        let entries = [];
+        if (Array.isArray(result)) {
+          entries = result;
+          console.log('✅ Using result directly as array');
+        } else if (result.data && result.data.entries && Array.isArray(result.data.entries)) {
+          entries = result.data.entries;
+          console.log('✅ Using result.data.entries');
+        } else if (result.entries && Array.isArray(result.entries)) {
+          entries = result.entries;
+          console.log('✅ Using result.entries');
+        } else if (result.data && Array.isArray(result.data)) {
+          entries = result.data;
+          console.log('✅ Using result.data');
+        } else if (result.success && result.data && Array.isArray(result.data)) {
+          entries = result.data;
+          console.log('✅ Using result.success.data');
+        }
+
+        console.log('📊 Final entries array length:', entries.length);
+        
+        if (!Array.isArray(entries) || entries.length === 0) {
+          showToast('No entries found for this race', 'info');
+          console.error('❌ No valid entries array found');
+          return;
+        }
+
+        console.log('📋 Generating PDF for', entries.length, 'entries');
+
+        // Generate barcode as base64 image using JsBarcode
+        const generateBarcodeImage = (text) => {
+          if (!text || typeof JsBarcode === 'undefined') return '';
+          try {
+            const canvas = document.createElement('canvas');
+            // Use full ticket reference (e.g., ENG1234, TYR5678)
+            JsBarcode(canvas, text, {
+              format: 'CODE39',
+              width: 2.5,
+              height: 50,
+              displayValue: false,
+              margin: 5,
+              fontSize: 12,
+              background: '#ffffff',
+              lineColor: '#000000'
+            });
+            return canvas.toDataURL('image/png');
+          } catch (err) {
+            console.error('Barcode generation error:', err);
+            return '';
+          }
+        };
+
+        // Create PDF container
+        const element = document.createElement('div');
+        element.style.padding = '0';
+        element.style.backgroundColor = 'white';
+        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.fontSize = '8px';
+        element.style.lineHeight = '1.2';
+
+        // Header
+        const headerHTML = `
+          <div style="margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 3px solid #059669;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 6px 12px; border-radius: 3px;">
+                  <span style="font-size: 20px; font-weight: 900; letter-spacing: -1px;">ROK</span>
+                  <span style="font-size: 12px; font-weight: 600; margin-left: 2px;">CUP</span>
+                </div>
+                <div style="font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Race Entries</div>
+              </div>
+              ${logoBase64 ? `<div style="text-align: center;"><img src="${logoBase64}" style="height: 35px; width: auto;" /></div>` : '<div style="text-align: center; font-size: 16px; font-weight: 800; color: #059669;">ROK CUP</div>'}
+              <div style="text-align: right; min-width: 80px;">
+                <div style="font-size: 18px; font-weight: 800; color: #059669; letter-spacing: 2px;">NATS</div>
+                <div style="font-size: 7px; color: #666; text-transform: uppercase;">Admin Export</div>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; padding-bottom: 6px; border-bottom: 1px solid #eee;">
+              <div>
+                <div style="font-size: 16px; font-weight: 700; color: #059669;">RACE ENTRIES WITH BARCODES</div>
+                <div style="font-size: 9px; color: #666; margin-top: 2px;">${race}</div>
+              </div>
+              <div style="text-align: right; font-size: 8px; color: #666;">
+                <div><strong>Issued:</strong> ${new Date().toLocaleDateString('en-ZA')} ${new Date().toLocaleTimeString('en-ZA', {hour: '2-digit', minute: '2-digit'})}</div>
+                <div><strong>Total Entries:</strong> ${entries.length}</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Generate table rows
+        console.log('🔨 Building table rows...');
+        const rows = entries.map((entry, idx) => {
+          const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
+          const raceClass = entry.race_class || entry.driver_class || '-';
+          const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
+          
+          // Parse items to check what was purchased
+          const itemsArray = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
+          const itemContains = (searchText) => itemsArray.some(i => {
+            const itemName = typeof i === 'string' ? i : (i.name || '');
+            return itemName.toLowerCase().includes(searchText.toLowerCase());
+          });
+          
+          const hasEngine = itemContains('engine') || entry.engine === 1 || entry.engine === '1';
+          const hasTyres = itemContains('tyre');
+          const hasTransponder = itemContains('transponder');
+          const hasFuel = itemContains('fuel');
+          
+          // Log first entry to see ticket refs
+          if (idx === 0) {
+            console.log('🎫 First entry ticket refs:', {
+              ticket_engine_ref: entry.ticket_engine_ref,
+              ticket_tyres_ref: entry.ticket_tyres_ref,
+              ticket_transponder_ref: entry.ticket_transponder_ref,
+              ticket_fuel_ref: entry.ticket_fuel_ref,
+              hasEngine,
+              hasTyres,
+              hasTransponder,
+              hasFuel
+            });
+          }
+          
+          // Create ticket cells with barcode image and text
+          const createTicketCell = (ticketRef, hasItem) => {
+            if (!hasItem || !ticketRef) {
+              return '<span style="color: #999; font-size: 7px;">-</span>';
+            }
+            const barcodeImg = generateBarcodeImage(ticketRef);
+            if (barcodeImg) {
+              return `
+                <div style="text-align: center; padding: 2px;">
+                  <img src="${barcodeImg}" style="width: 100%; height: auto; max-height: 45px; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
+                  <div style="font-family: 'Courier New', monospace; font-size: 8px; color: #000; font-weight: 700; margin-top: 2px;">${ticketRef}</div>
+                </div>
+              `;
+            } else {
+              return `
+                <div style="text-align: center; background: #f8f9fa; padding: 4px 2px; border-radius: 3px; border: 1px solid #dee2e6;">
+                  <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #000; font-weight: 700; letter-spacing: 0.5px;">${ticketRef}</div>
+                </div>
+              `;
+            }
+          };
+          
+          return `
+            <tr style="background-color: ${bgColor}; page-break-inside: avoid;">
+              <td style="border: 1px solid #dee2e6; padding: 4px 6px; font-weight: 600; color: #1a1a2e; font-size: 8px;">${driverName}</td>
+              <td style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-size: 8px; color: #1a1a2e;">${raceClass}</td>
+              <td style="border: 1px solid #dee2e6; padding: 4px 6px; font-family: monospace; font-size: 7px; color: #666;">${entry.driver_email || '-'}</td>
+              <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_engine_ref, hasEngine)}</td>
+              <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_tyres_ref, hasTyres)}</td>
+              <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_transponder_ref, hasTransponder)}</td>
+              <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_fuel_ref, hasFuel)}</td>
+              <td style="border: 1px solid #dee2e6; padding: 4px 6px; font-size: 7px; color: #666;">&nbsp;</td>
+            </tr>
+          `;
+        }).join('');
+
+        const tableHTML = `
+          <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
+            <thead>
+              <tr style="background: linear-gradient(180deg, #059669 0%, #047857 100%); color: white;">
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 12%;">Driver Name</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 7%;">Class</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 12%;">Email</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Engine</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Tyres</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Transponder</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Fuel</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 17%;">Comments</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        `;
+
+        const footerHTML = `
+          <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #059669;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7px; color: #666;">
+              <div>ROK Cup NATS • www.rokthenats.co.za • Internal Use Only</div>
+              <div>Enter ticket codes to validate purchases</div>
+            </div>
+          </div>
+        `;
+
+        element.innerHTML = headerHTML + tableHTML + footerHTML;
+
+        console.log('📄 HTML generated, creating PDF...');
+        
+        // Generate PDF in landscape
+        const opt = {
+          margin: [6, 6, 6, 6],
+          filename: `${race.replace(/[^a-zA-Z0-9]/g, '_')}_Race_Entries_Barcodes_${new Date().toISOString().slice(0,10)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 4, useCORS: true, logging: false },
+          jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+        };
+
+        console.log('🚀 Calling html2pdf...');
+        html2pdf().set(opt).from(element).save().then(() => {
+          console.log('✅ PDF saved successfully');
+          showToast('PDF with barcodes exported successfully!', 'success');
+        }).catch((pdfErr) => {
+          console.error('❌ html2pdf error:', pdfErr);
+          showToast('Error generating PDF: ' + pdfErr.message, 'error');
+        });
+      } catch (err) {
+        console.error('❌ exportRaceEntriesPDF error:', err);
+        showToast('Error generating PDF: ' + err.message, 'error');
+      }
+    }
+
     const adminPasswordEl = document.getElementById('adminPassword');
     if (adminPasswordEl) {
       adminPasswordEl.addEventListener('keypress', function(e) {

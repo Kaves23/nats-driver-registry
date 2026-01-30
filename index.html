@@ -1904,6 +1904,22 @@
       }
     }
     
+    /* Flash animation for register button */
+    @keyframes flashButton {
+      0%, 100% { 
+        transform: scale(1); 
+        box-shadow: 0 0 0 rgba(255,255,255,0); 
+      }
+      25% { 
+        transform: scale(1.08); 
+        box-shadow: 0 0 25px rgba(255,255,255,0.8); 
+      }
+      50% { 
+        transform: scale(1); 
+        box-shadow: 0 0 0 rgba(255,255,255,0); 
+      }
+    }
+    
     /* Pulse animation for race-specific tab - Red when registration closed */
     @keyframes pulse-glow-red {
       0%, 100% { 
@@ -3575,12 +3591,9 @@ body[data-season="spring"] .info-section-select {
         display: none;
       }
 
+      /* MOBILE NATS OVERVIEW - HIDDEN */
       .overview-animation--mobile {
-        display: block;
-        height: auto;
-        transform: none;
-        padding: 1.25rem 1rem 2rem;
-        background: #ffffff;
+        display: none !important;
       }
 
       .modal-body {
@@ -4291,7 +4304,7 @@ body[data-season="spring"] .info-section-select {
     <div class="actions">
       <button class="btn btn--next-race" id="btnNextRace">NEXT RACE</button>
       <button class="btn" id="btnMoreInfo">MORE INFO</button>
-      <button class="btn" id="btnEnterNow">REGISTER HERE</button>
+      <button class="btn" id="btnEnterNow" style="animation: flashButton 0.6s ease-in-out 4;">ENTER NOW</button>
     </div>
   </div>
 
@@ -6730,12 +6743,43 @@ the paddock quickly and consistently.
         seasonSelect.value = String(index);
       }
 
+      // Update Next Race button state
+      updateNextRaceButton(index);
+
       if (season.id === 'summer') {
-        btnEnterNow.textContent = 'REGISTER HERE';
+        btnEnterNow.textContent = 'ENTER NOW';
         btnEnterNow.classList.remove('btn--disabled');
       } else {
-        btnEnterNow.textContent = 'REGISTER HERE';
+        btnEnterNow.textContent = 'ENTER NOW';
         btnEnterNow.classList.remove('btn--disabled');
+      }
+    }
+
+    function updateNextRaceButton(currentPageIndex) {
+      const nextRace = getNextRace();
+      
+      if (nextRace && nextRace.pageIndex === currentPageIndex) {
+        // We are on the next race page - show countdown, disable button
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const raceDate = new Date(nextRace.date);
+        raceDate.setHours(0, 0, 0, 0);
+        const daysUntil = Math.ceil((raceDate - today) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntil > 0) {
+          btnNextRace.textContent = `${daysUntil} DAY${daysUntil === 1 ? '' : 'S'}`;
+        } else if (daysUntil === 0) {
+          btnNextRace.textContent = 'TODAY';
+        } else {
+          btnNextRace.textContent = 'PASSED';
+        }
+        btnNextRace.style.pointerEvents = 'none';
+        btnNextRace.style.opacity = '1';
+      } else {
+        // Different page - show NEXT RACE button
+        btnNextRace.textContent = 'NEXT RACE';
+        btnNextRace.style.pointerEvents = 'auto';
+        btnNextRace.style.opacity = '1';
       }
     }
 
@@ -7638,10 +7682,10 @@ function closeModals() {
       });
     }
 
-    // --- OVERVIEW MODAL (OPEN ON LOAD) ---
+    // --- OVERVIEW MODAL (DISABLED - NO AUTO OPEN) ---
 
-    // Open overview on load
-    openModal(overviewModal);
+    // Modal disabled - skip straight to main page
+    // openModal(overviewModal);
 
     // ENTER buttons inside overview (top + bottom on mobile)
     const overviewEnterButtons = overviewModal

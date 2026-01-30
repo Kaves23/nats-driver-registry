@@ -58,6 +58,9 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Serve static files from images directory
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 // =========================================================
 // GLOBAL ERROR HANDLERS - Prevent server crashes
 // =========================================================
@@ -635,17 +638,16 @@ function generateRaceTicketHTML(ticketData) {
 // Generate ENGINE RENTAL ticket HTML - Vortex Engines
 // Generate unique ticket reference with barcode
 function generateUniqueTicketRef(type, driverId, eventId) {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const random4Digit = Math.floor(1000 + Math.random() * 9000); // Random number between 1000-9999
   const typeCode = {
     'engine': 'ENG',
     'tyres': 'TYR',
-    'transponder': 'TRN',
-    'fuel': 'FUL'
+    'transponder': 'TX',
+    'fuel': 'GAS'
   }[type] || 'TKT';
   
-  // Format: TYPE-TIMESTAMP-RANDOM (e.g., ENG-1737900123456-ABC123)
-  return `${typeCode}-${timestamp}-${random}`;
+  // Format: TYPEXXXX (e.g., ENG1234, TYR5678, TX9012, GAS3456)
+  return `${typeCode}${random4Digit}`;
 }
 
 function generateEngineRentalTicketHTML(ticketData) {
@@ -3610,7 +3612,9 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     }
 
     const entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    const reference = `RACE-FREE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    // Use TEAM in reference if team code is provided, otherwise FREE
+    const referenceType = teamCode ? 'TEAM' : 'FREE';
+    const reference = `RACE-${referenceType}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
     // Format selected items as JSON (entry_items column expects JSON format)
     const selectedItemsJson = selectedItems ? JSON.stringify(selectedItems) : JSON.stringify([]);
@@ -5226,6 +5230,10 @@ app.post('/api/getRaceEntries', async (req, res) => {
     const result = await pool.query(
       `SELECT 
         r.*,
+        r.ticket_engine_ref,
+        r.ticket_tyres_ref,
+        r.ticket_transponder_ref,
+        r.ticket_fuel_ref,
         d.first_name AS driver_first_name,
         d.last_name AS driver_last_name,
         d.transponder_number,
@@ -5554,14 +5562,43 @@ app.post('/api/exportRaceEntriesCSV', async (req, res) => {
   try {
     const { race_event } = req.body;
 
+    console.log('📥 Timing sheet export request for event:', race_event);
+
     if (!race_event) {
       throw new Error('Race event is required');
     }
 
+    // Helper function to escape CSV values
+    const escapeCSV = (value) => {
+      if (value === null || value === undefined) return '';
+      const stringValue = String(value);
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    // Query with JOIN to get driver details
     const result = await pool.query(
-      `SELECT * FROM race_entries WHERE race_event = $1 ORDER BY created_at DESC`,
+      `SELECT 
+        r.*,
+        d.first_name,
+        d.last_name,
+        d.transponder_number,
+        d.license_number,
+        d.kart_brand,
+        d.team_name,
+        d.nationality,
+        d.championship,
+        d.race_number as driver_race_number
+       FROM race_entries r
+       LEFT JOIN drivers d ON r.driver_id = d.driver_id
+       WHERE r.event_id = $1 AND r.entry_status != 'cancelled'
+       ORDER BY r.race_class, r.race_number`,
       [race_event]
     );
+
+    console.log(`📋 Found ${result.rows.length} entries for timing sheet export`);
 
     const entries = result.rows;
 
@@ -5570,37 +5607,87 @@ app.post('/api/exportRaceEntriesCSV', async (req, res) => {
       return;
     }
 
-    // Build CSV
-    const headers = ['Race Event', 'Driver Email', 'Driver Name', 'Race Class', 'Entry Fee', 'Selected Items', 'Total Amount', 'Payment Status', 'Payment Reference', 'Team Code', 'Created At'];
+    // Country code mapping (ISO 3166-1 alpha-3)
+    const countryCodeMap = {
+      'South Africa': 'RSA',
+      'Zimbabwe': 'ZWE',
+      'Mozambique': 'MOZ',
+      'Namibia': 'NAM',
+      'Botswana': 'BWA',
+      'Zambia': 'ZMB',
+      'United Kingdom': 'GBR',
+      'USA': 'USA',
+      'United States': 'USA',
+      'Australia': 'AUS',
+      'New Zealand': 'NZL'
+    };
+
+    // Build timing sheet CSV with exact format required
+    const headers = ['txp short', 'txpLong', 'Class', 'Race#', 'First Name', 'Last Name', 'License#', 'Chassis', 'Engine', 'Tyres', 'Image', 'Team', 'Country', 'Scoring'];
+    
     const rows = entries.map(entry => {
-      const items = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
-      const itemNames = items.map(i => i.name).join('; ');
+      // Determine engine type based on class
+      const raceClass = (entry.race_class || '').toUpperCase();
+      const isCadet = raceClass.includes('CADET');
+      const engine = isCadet ? 'Tillotson' : 'Vortex';
+      
+      // Determine tyre brand based on class
+      const tyres = isCadet ? 'XXXX' : 'Levanto';
+      
+      // Create image name (firstname + lastname, no spaces)
+      const firstName = entry.first_name || '';
+      const lastName = entry.last_name || '';
+      const imageName = (firstName + lastName).replace(/\s+/g, '');
+      
+      // Get country code (default to RSA if not found)
+      const countryCode = countryCodeMap[entry.nationality] || 'RSA';
+      
+      // Determine scoring category based on championship field
+      let scoring = '';
+      if (entry.championship) {
+        const champ = entry.championship.toUpperCase();
+        if (champ.includes('NATIONAL') && champ.includes('REGIONAL')) {
+          scoring = 'Nat + Reg';
+        } else if (champ.includes('NATIONAL')) {
+          scoring = 'Nat only';
+        } else if (champ.includes('REGIONAL')) {
+          scoring = 'Reg only';
+        } else {
+          scoring = 'Nat only'; // Default
+        }
+      } else {
+        scoring = 'Nat only'; // Default if no championship specified
+      }
       
       return [
-        escapeCSV(entry.race_event),
-        escapeCSV(entry.driver_email),
-        escapeCSV(entry.driver_name),
-        escapeCSV(entry.race_class),
-        entry.entry_fee || '0',
-        escapeCSV(itemNames),
-        entry.total_amount || '0',
-        escapeCSV(entry.payment_status),
-        escapeCSV(entry.payment_reference),
-        entry.team_code ? 'Yes' : 'No',
-        entry.created_at
+        '', // txp short - leave blank as requested
+        escapeCSV(entry.transponder_number || ''),
+        escapeCSV(entry.race_class || ''),
+        escapeCSV(entry.race_number || entry.driver_race_number || ''),
+        escapeCSV(firstName),
+        escapeCSV(lastName),
+        escapeCSV(entry.license_number || ''),
+        escapeCSV(entry.kart_brand || ''),
+        escapeCSV(engine),
+        escapeCSV(tyres),
+        escapeCSV(imageName),
+        escapeCSV(entry.team_name || ''),
+        countryCode,
+        escapeCSV(scoring)
       ].join(',');
     });
 
     const csv = [headers.join(','), ...rows].join('\n');
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="race-entries-${race_event.replace(/[\/\s]/g, '-')}-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="timing-sheet-${race_event.replace(/[\/\s]/g, '-')}-${new Date().toISOString().split('T')[0]}.csv"`);
 
-    console.log(`✅ Race entries CSV export ready: ${entries.length} entries`);
+    console.log(`✅ Timing sheet CSV export ready: ${entries.length} entries`);
 
     res.send(csv);
   } catch (err) {
     console.error('❌ exportRaceEntriesCSV error:', err.message);
+    console.error('❌ Stack trace:', err.stack);
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -6325,23 +6412,31 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         d.driver_id,
         d.first_name,
         d.last_name,
-        d.email,
-        d.phone,
-        d.championship_class,
+        c.email,
+        c.phone_mobile,
+        d.class,
         d.date_of_birth,
         d.season_engine_rental,
-        re.race_entry_id,
+        re.entry_id,
         re.engine,
         re.team_code,
-        c.transponder_number,
-        mc.medical_notes
+        d.transponder_number,
+        mc.medical_conditions,
+        d.race_number,
+        re.race_class,
+        re.race_number as entry_race_number,
+        d.license_number,
+        d.kart_brand,
+        d.team_name,
+        d.nationality,
+        d.championship
       FROM race_entries re
       JOIN drivers d ON re.driver_id = d.driver_id
       LEFT JOIN contacts c ON d.driver_id = c.driver_id
       LEFT JOIN medical_consent mc ON d.driver_id = mc.driver_id
       WHERE re.event_id = $1
       AND re.entry_status IN ('confirmed', 'pending')
-      ORDER BY d.championship_class, d.first_name, d.last_name
+      ORDER BY d.class, d.first_name, d.last_name
     `, [event.event_id]);
 
     const drivers = driversResult.rows;
@@ -6349,49 +6444,121 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
 
     if (format === 'drivers') {
       // Full driver list
-      const headers = ['Driver Name', 'Email', 'Phone', 'Class', 'Team Code', 'Transponder', 'Engine Rental', 'Medical Notes', 'DOB'];
+      const headers = ['Driver Name', 'Entrant Name', 'Email', 'Phone', 'Class', 'Transponder', 'Engine Rental', 'DOB'];
       const rows = drivers.map(d => [
         `${d.first_name} ${d.last_name}`,
+        d.team_name || '',
         d.email || '',
-        d.phone || '',
-        d.championship_class || '',
-        d.team_code || '',
+        d.phone_mobile || '',
+        d.class || '',
         d.transponder_number || 'REQUIRED',
         (d.engine === 1 || d.engine === '1' || d.season_engine_rental === 'Y') ? 'Yes' : 'No',
-        d.medical_notes || '',
         d.date_of_birth ? new Date(d.date_of_birth).toLocaleDateString('en-ZA') : ''
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
       csv = [headers.join(','), ...rows].join('\n');
     } else if (format === 'signon') {
-      // Sign-on sheet format (simplified for printing)
-      const headers = ['Entry #', 'Driver Name', 'Class', 'Team Code', 'Transponder', 'Signature'];
+      // Sign-on sheet format (simplified for printing with signature space)
+      const headers = ['#', 'Driver Name', 'Entrant Name', 'Class', 'Race#', 'Transponder', 'Signature'];
       const rows = drivers.map((d, idx) => [
         idx + 1,
         `${d.first_name} ${d.last_name}`,
-        d.championship_class || '',
-        d.team_code || '',
-        d.transponder_number || 'REQUIRED',
+        d.team_name || '',
+        d.class || '',
+        d.entry_race_number || d.race_number || '',
+        d.transponder_number || '',
         ''
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
       csv = [headers.join(','), ...rows].join('\n');
     } else if (format === 'timing') {
-      // Timing system format (transponder and class focused)
-      const headers = ['Transponder', 'Driver Name', 'Class', 'Team Code'];
+      // Helper function to escape CSV values
+      const escapeCSV = (value) => {
+        if (value === null || value === undefined) return '';
+        const stringValue = String(value);
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      // Country code mapping (ISO 3166-1 alpha-3)
+      const countryCodeMap = {
+        'South Africa': 'RSA',
+        'Zimbabwe': 'ZWE',
+        'Mozambique': 'MOZ',
+        'Namibia': 'NAM',
+        'Botswana': 'BWA',
+        'Zambia': 'ZMB',
+        'United Kingdom': 'GBR',
+        'USA': 'USA',
+        'United States': 'USA',
+        'Australia': 'AUS',
+        'New Zealand': 'NZL'
+      };
+
+      // Timing system format - full 14 column format
+      const headers = ['txp short', 'txpLong', 'Class', 'Race#', 'First Name', 'Last Name', 'License#', 'Chassis', 'Engine', 'Tyres', 'Image', 'Team', 'Country', 'Scoring'];
       const rows = drivers
         .filter(d => d.transponder_number) // Only drivers with transponders
-        .map(d => [
-          d.transponder_number,
-          `${d.first_name} ${d.last_name}`,
-          d.championship_class || '',
-          d.team_code || ''
-        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        .map(d => {
+          // Determine engine type based on class
+          const raceClass = (d.race_class || d.class || '').toUpperCase();
+          const isCadet = raceClass.includes('CADET');
+          const engine = isCadet ? 'Tillotson' : 'Vortex';
+          
+          // Determine tyre brand based on class
+          const tyres = isCadet ? 'XXXX' : 'Levanto';
+          
+          // Create image name (firstname + lastname, no spaces)
+          const firstName = d.first_name || '';
+          const lastName = d.last_name || '';
+          const imageName = (firstName + lastName).replace(/\s+/g, '');
+          
+          // Get country code (default to RSA if not found)
+          const countryCode = countryCodeMap[d.nationality] || 'RSA';
+          
+          // Determine scoring category based on championship field
+          let scoring = '';
+          if (d.championship) {
+            const champ = d.championship.toUpperCase();
+            if (champ.includes('NATIONAL') && champ.includes('REGIONAL')) {
+              scoring = 'Nat + Reg';
+            } else if (champ.includes('NATIONAL')) {
+              scoring = 'Nat only';
+            } else if (champ.includes('REGIONAL')) {
+              scoring = 'Reg only';
+            } else {
+              scoring = 'Nat only';
+            }
+          } else {
+            scoring = 'Nat only';
+          }
+          
+          return [
+            '', // txp short - leave blank
+            escapeCSV(d.transponder_number || ''),
+            escapeCSV(d.race_class || d.class || ''),
+            escapeCSV(d.entry_race_number || d.race_number || ''),
+            escapeCSV(firstName),
+            escapeCSV(lastName),
+            escapeCSV(d.license_number || ''),
+            escapeCSV(d.kart_brand || ''),
+            escapeCSV(engine),
+            escapeCSV(tyres),
+            escapeCSV(imageName),
+            escapeCSV(d.team_name || ''),
+            countryCode,
+            escapeCSV(scoring)
+          ].join(',');
+        });
       csv = [headers.join(','), ...rows].join('\n');
     }
 
-    // Set response headers for file download
-    const filename = format === 'drivers' ? 'drivers-list.csv'
-                   : format === 'signon' ? 'entry-sign-on.csv'
-                   : 'timing-system.csv';
+    // Set response headers for file download with event name
+    const eventNameSafe = event.event_name.replace(/[^a-zA-Z0-9-]/g, '-').replace(/--+/g, '-');
+    const dateStr = new Date().toISOString().split('T')[0];
+    const filename = format === 'drivers' ? `${eventNameSafe}-drivers-list-${dateStr}.csv`
+                   : format === 'signon' ? `${eventNameSafe}-sign-on-${dateStr}.csv`
+                   : `${eventNameSafe}-timing-sheet-${dateStr}.csv`;
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -6751,9 +6918,10 @@ app.get('/api/push/subscribers', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT ps.id, ps.driver_id, ps.endpoint, ps.created_at, ps.last_used,
-             d.first_name, d.last_name, d.email, d.racing_class
+             d.first_name, d.last_name, c.email, d.class AS racing_class
       FROM push_subscriptions ps
-      LEFT JOIN drivers d ON ps.driver_id::text = d.id::text
+      LEFT JOIN drivers d ON ps.driver_id = d.driver_id
+      LEFT JOIN contacts c ON d.driver_id = c.driver_id
       ORDER BY ps.created_at DESC
     `);
     

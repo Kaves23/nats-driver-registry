@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
   <title>NATS Driver Registry</title>
   
   <!-- PWA Meta Tags -->
@@ -581,10 +581,21 @@
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: var(--radius);
       padding: 10px 10px;
-      font-size: 13px;
-      background: rgba(255,255,255,0.05);
-      color: #ffffff;
+      font-size: 16px;
+      background: #0a0a0a !important;
+      color: #ffffff !important;
       outline: none;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+    /* Override browser autofill styles */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 30px #0a0a0a inset !important;
+      -webkit-text-fill-color: #ffffff !important;
+      caret-color: #ffffff !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
     }
     select option{
       background: #1f2937;
@@ -593,7 +604,7 @@
     }
     input:focus, select:focus, textarea:focus{
       border-color: rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.08);
+      background: #0a0a0a !important;
     }
     textarea{ min-height: 90px; resize: vertical; }
 
@@ -1257,6 +1268,11 @@
       }
 
       #portalTabsCarousel{
+        display: none !important;
+      }
+      
+      /* Keep mobile carousel permanently hidden */
+      body.logged-in #portalTabsCarousel {
         display: none !important;
       }
 
@@ -1975,10 +1991,9 @@
         display: contents !important;
       }
       
-      /* Portal tabs carousel (Options button) at very top */
+      /* Portal tabs carousel (Options button) - HIDDEN */
       body.logged-in #portalTabsCarousel {
-        order: 1 !important;
-        margin-top: 0 !important;
+        display: none !important;
       }
       
       /* Portal sections (content) second */
@@ -2210,12 +2225,12 @@
   <div class="portal-nav-backdrop"></div>
   
   <nav class="portal-sidebar" aria-label="Driver portal navigation">
-    <button class="portal-sidebar-item active" data-ptab="driver" data-accent="summer" type="button">Driver Profile</button>
+    <button class="portal-sidebar-item" data-ptab="driver" data-accent="summer" type="button">Driver Profile</button>
     <button class="portal-sidebar-item" data-ptab="contacts" data-accent="autumn" type="button">Entrant Details</button>
     <button class="portal-sidebar-item" data-ptab="medical" data-accent="winter" type="button">Medical & Consent</button>
     <button class="portal-sidebar-item" data-ptab="events" data-accent="spring" type="button">My Events</button>
     <button class="portal-sidebar-item" data-ptab="points" data-accent="spring" type="button">Points</button>
-    <button class="portal-sidebar-item" data-ptab="payments" data-accent="spring" type="button">Entries & Rentals</button>
+    <button class="portal-sidebar-item active" data-ptab="payments" data-accent="spring" type="button">Entries & Rentals</button>
     <button class="portal-sidebar-item" data-ptab="msa" data-accent="spring" type="button">MSA License</button>
     <button class="portal-sidebar-item" data-ptab="notifications" data-accent="winter" type="button">Notifications</button>
     <button class="portal-sidebar-item" data-ptab="requests" data-accent="autumn" type="button">Contact Admin</button>
@@ -2318,12 +2333,12 @@
 
             <!-- Portal tabs -->
             <div id="portalTabs" class="portalTabs" style="display:none; margin-top:14px;">
-              <button class="ptab active" data-ptab="driver" data-accent="summer" type="button"><span class="tabBar"></span>Driver</button>
+              <button class="ptab" data-ptab="driver" data-accent="summer" type="button"><span class="tabBar"></span>Driver</button>
               <button class="ptab" data-ptab="contacts" data-accent="autumn" type="button"><span class="tabBar"></span>Entrant Details</button>
               <button class="ptab" data-ptab="medical" data-accent="winter" type="button"><span class="tabBar"></span>Medical & Consent</button>
               <button class="ptab" data-ptab="events" data-accent="spring" type="button"><span class="tabBar"></span>My Events</button>
               <button class="ptab" data-ptab="points" data-accent="spring" type="button"><span class="tabBar"></span>Points</button>
-              <button class="ptab" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
+              <button class="ptab active" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
               <button class="ptab" data-ptab="msa" data-accent="spring" type="button"><span class="tabBar"></span>MSA License</button>
               <button class="ptab" data-ptab="notifications" data-accent="winter" type="button"><span class="tabBar"></span>Notifications</button>
               <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
@@ -2336,7 +2351,7 @@
             <div id="portalTabsCarousel" class="portalTabs-carousel-container" style="display:none;">
               <!-- Current tab display -->
               <div class="portalTab-current">
-                <span class="portalTab-current-label">Driver</span>
+                <span class="portalTab-current-label">Entries & Rentals</span>
                 <button class="portalTab-fab" aria-label="Options">
                   <span class="portalTab-fab-icon">Options</span>
                 </button>
@@ -2346,7 +2361,7 @@
               <div class="portalTab-menu">
                 <div class="portalTab-menu-backdrop"></div>
                 <div class="portalTab-menu-grid">
-                  <button class="portalTab-option active" data-ptab="driver">
+                  <button class="portalTab-option" data-ptab="driver">
                     <span class="portalTab-option-label">Driver Profile</span>
                   </button>
                   <button class="portalTab-option" data-ptab="contacts">
@@ -2361,7 +2376,7 @@
                   <button class="portalTab-option" data-ptab="points">
                     <span class="portalTab-option-label">Points</span>
                   </button>
-                  <button class="portalTab-option" data-ptab="payments">
+                  <button class="portalTab-option active" data-ptab="payments">
                     <span class="portalTab-option-label">Entries & Rentals</span>
                   </button>
                   <button class="portalTab-option" data-ptab="msa">
@@ -2380,7 +2395,7 @@
             <!-- Portal sections -->
             <div id="portalSections" style="display:none; margin-top:14px;">
 
-              <div class="portalSection active" data-psection="driver">
+              <div class="portalSection" data-psection="driver">
                 <div class="panel">
                   <div class="panelTitle"><span class="accentBar" style="background:var(--summer)"></span>Driver Profile</div>
                   <div class="hint">View your registered driver information. Contact admin for updates to identity or competition details.</div>
@@ -2581,7 +2596,7 @@
                 </div>
               </div>
 
-              <div class="portalSection" data-psection="payments">
+              <div class="portalSection active" data-psection="payments">
                 <!-- ENTER A RACE BUTTON - BLACK GLOWING CONTAINER -->
                 <div class="panel">
                   <div id="enterRaceBox" style="padding: 20px; background: #000000; border-radius: 8px; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);">
@@ -3001,6 +3016,14 @@
   </div>
 
   <script>
+  
+    // Suppress browser extension message channel errors (harmless)
+    window.addEventListener('unhandledrejection', function(event) {
+      if (event.reason && event.reason.message && 
+          event.reason.message.includes('message channel closed')) {
+        event.preventDefault();
+      }
+    });
   
     // ====== NEW API ENDPOINT (Node.js Backend) ======
     const API_ENDPOINT = '/api';

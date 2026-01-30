@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a252f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <title>Titan Command</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Titan Command">
+  <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" href="/rok-cup-favicon.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <style>
     * {
       margin: 0;
@@ -36,6 +39,9 @@
       color: var(--light);
       height: 100vh;
       overflow: hidden;
+      overflow-x: hidden;
+      overscroll-behavior-y: none;
+      touch-action: pan-y;
       font-size: 14px;
     }
 
@@ -83,6 +89,16 @@
     .login-form input:focus {
       outline: none;
       border-color: var(--primary);
+      background: var(--dark);
+      color: var(--light);
+    }
+
+    .login-form input:-webkit-autofill,
+    .login-form input:-webkit-autofill:hover,
+    .login-form input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--light) !important;
+      -webkit-box-shadow: 0 0 0px 1000px var(--dark) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
     }
 
     .login-btn {
@@ -573,6 +589,16 @@
     .form-input:focus {
       outline: none;
       border-color: var(--primary);
+      background: var(--dark);
+      color: var(--light);
+    }
+
+    .form-input:-webkit-autofill,
+    .form-input:-webkit-autofill:hover,
+    .form-input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--light) !important;
+      -webkit-box-shadow: 0 0 0px 1000px var(--dark) inset !important;
+      transition: background-color 5000s ease-in-out 0s;
     }
 
     .form-select {
@@ -1399,6 +1425,19 @@
     document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') login();
     });
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('✅ Service Worker registered:', registration.scope);
+          })
+          .catch(error => {
+            console.log('❌ Service Worker registration failed:', error);
+          });
+      });
+    }
   </script>
 </body>
 </html>
