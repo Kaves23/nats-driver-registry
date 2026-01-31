@@ -3459,13 +3459,13 @@
       if(!el) return;
       el.innerHTML = msg ? `<div class="toast ${type}">${escapeHtml(msg)}</div>` : "";
       
-      // For errors, also show centered overlay briefly
-      if (type === 'bad' && msg) {
-        showCenteredError(msg);
+      // Show centered message for all types
+      if (msg) {
+        showCenteredMessage(type, msg);
       }
     }
 
-    function showCenteredError(message) {
+    function showCenteredMessage(type, message) {
       // Create overlay if it doesn't exist
       let overlay = document.getElementById('errorOverlay');
       if (!overlay) {
@@ -3474,8 +3474,8 @@
         overlay.className = 'error-overlay';
         overlay.innerHTML = `
           <div class="error-box">
-            <div class="error-box-icon">⚠</div>
-            <div class="error-box-title">Error</div>
+            <div class="error-box-icon" id="messageIcon">⚠</div>
+            <div class="error-box-title" id="messageTitle">Error</div>
             <div class="error-box-message" id="errorMessage"></div>
           </div>
         `;
@@ -3485,6 +3485,20 @@
         overlay.addEventListener('click', () => {
           overlay.classList.remove('show');
         });
+      }
+
+      // Set icon and title based on type
+      const iconEl = document.getElementById('messageIcon');
+      const titleEl = document.getElementById('messageTitle');
+      if (type === 'good') {
+        iconEl.textContent = '✓';
+        titleEl.textContent = 'Success';
+      } else if (type === 'info') {
+        iconEl.textContent = 'ℹ';
+        titleEl.textContent = 'Info';
+      } else {
+        iconEl.textContent = '⚠';
+        titleEl.textContent = 'Error';
       }
 
       // Set message and show
@@ -6236,34 +6250,78 @@
       document.getElementById('raceEntryModal').style.display = 'none';
     }
 
-    // Function to validate team code
-    function validateTeamCode() {
+    // Function to validate team/discount code
+    async function validateTeamCode() {
       const codeInput = document.getElementById('teamCodeInput');
       const codeMessage = document.getElementById('codeMessage');
       const totalPriceEl = document.getElementById('totalPrice');
       const proceedBtn = document.getElementById('proceedToPayment');
+      const code = codeInput.value.trim();
       
-      if (codeInput.value.toLowerCase() === 'k0k0r0') {
-        codeMessage.style.display = 'block';
-        codeMessage.style.color = '#22c55e';
-        codeMessage.textContent = '✓ Valid team code - Registration fee waived!';
-        totalPriceEl.textContent = 'R0.00';
-        totalPriceEl.style.color = '#22c55e';
-        proceedBtn.textContent = 'Enter Race';
-        proceedBtn.style.background = '#3b82f6';
-      } else if (codeInput.value.trim() !== '') {
-        codeMessage.style.display = 'block';
-        codeMessage.style.color = '#dc2626';
-        codeMessage.textContent = '✗ Invalid code';
-        totalPriceEl.style.color = '#22c55e';
-        proceedBtn.textContent = 'Proceed to Payment';
-        proceedBtn.style.background = '#22c55e';
-        updateRaceTotal();
-      } else {
+      if (!code) {
         codeMessage.style.display = 'none';
         totalPriceEl.style.color = '#22c55e';
         proceedBtn.textContent = 'Proceed to Payment';
         proceedBtn.style.background = '#22c55e';
+        updateRaceTotal();
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/validateDiscountCode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code })
+        });
+        const data = await response.json();
+
+        if (data.success && data.valid) {
+          const discountCode = data.code;
+          codeMessage.style.display = 'block';
+          codeMessage.style.color = '#22c55e';
+          
+          // Calculate discount
+          const currentTotal = parseFloat(totalPriceEl.textContent.replace('R', '').replace(',', '').trim());
+          let newTotal = currentTotal;
+          
+          if (discountCode.discount_type === 'free') {
+            newTotal = 0;
+            codeMessage.textContent = `✓ ${discountCode.description || 'Valid code'} - Registration fee waived!`;
+            proceedBtn.textContent = 'Enter Race';
+            proceedBtn.style.background = '#3b82f6';
+          } else if (discountCode.discount_type === 'percentage') {
+            newTotal = currentTotal * (1 - discountCode.discount_value / 100);
+            codeMessage.textContent = `✓ ${discountCode.description || 'Valid code'} - ${discountCode.discount_value}% discount applied!`;
+            proceedBtn.textContent = 'Proceed to Payment';
+            proceedBtn.style.background = '#22c55e';
+          } else if (discountCode.discount_type === 'fixed') {
+            newTotal = Math.max(0, currentTotal - discountCode.discount_value);
+            codeMessage.textContent = `✓ ${discountCode.description || 'Valid code'} - R${discountCode.discount_value} discount applied!`;
+            proceedBtn.textContent = newTotal === 0 ? 'Enter Race' : 'Proceed to Payment';
+            proceedBtn.style.background = newTotal === 0 ? '#3b82f6' : '#22c55e';
+          }
+          
+          totalPriceEl.textContent = `R${newTotal.toFixed(2)}`;
+          totalPriceEl.style.color = newTotal === 0 ? '#3b82f6' : '#22c55e';
+          
+          // Store discount code for later use
+          window.appliedDiscountCode = discountCode;
+        } else {
+          codeMessage.style.display = 'block';
+          codeMessage.style.color = '#dc2626';
+          codeMessage.textContent = '✗ ' + (data.message || 'Invalid code');
+          totalPriceEl.style.color = '#22c55e';
+          proceedBtn.textContent = 'Proceed to Payment';
+          proceedBtn.style.background = '#22c55e';
+          window.appliedDiscountCode = null;
+          updateRaceTotal();
+        }
+      } catch (err) {
+        console.error('Error validating code:', err);
+        codeMessage.style.display = 'block';
+        codeMessage.style.color = '#dc2626';
+        codeMessage.textContent = '✗ Error validating code';
+        window.appliedDiscountCode = null;
         updateRaceTotal();
       }
     }
@@ -6416,10 +6474,13 @@
           // Clear any previous errors
           hideModalError();
           
-          // Check if valid team code was entered
-          if (teamCode.toLowerCase() === 'k0k0r0') {
-            // Free registration with team code
-            console.log('Free registration with team code for class:', driverClass, 'Items:', selectedItems);
+          // Check if valid discount code was entered (free or discounted)
+          const appliedDiscount = window.appliedDiscountCode;
+          const isFreeEntry = totalPrice === 'R0.00' || totalPrice === 'R 0.00';
+          
+          if (isFreeEntry && appliedDiscount) {
+            // Free registration with discount code
+            console.log('Free registration with discount code for class:', driverClass, 'Items:', selectedItems);
             console.log('Event ID:', window.selectedEventId);
             console.log('Driver ID:', window.currentDriverId);
             console.log('Email:', currentEmail);
@@ -6463,37 +6524,52 @@
             .then(data => {
               if (data.success) {
                 console.log('✅ Free race entry successful:', data);
+                
+                // Increment discount code usage if applied
+                if (appliedDiscount && appliedDiscount.code) {
+                  fetch('/api/useDiscountCode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: appliedDiscount.code })
+                  }).catch(err => console.error('Failed to increment code usage:', err));
+                }
+                
                 toast('good', 'Race entry confirmed! Welcome to the event.');
                 document.getElementById('raceEntryModal').style.display = 'none';
                 
-                // Update the driver profile locally
-                if (currentProfile && currentProfile.driver) {
-                  currentProfile.driver.next_race_entry_status = 'Registered';
-                  currentProfile.driver.next_race_engine_rental_status = selectedItems.some(item => item.toLowerCase().includes('engine')) ? 'Yes' : 'No';
-                }
-                
-                // Update the Next Race box immediately with new status
-                updateNextRaceBox(currentProfile?.driver);
-                
-                // Update status card to show registration success
-                setStatusCard_({
-                  chipText: "Entry Confirmed",
-                  chipKind: "good",
-                  driver: currentProfile ? `${currentProfile.driver.first_name || ""} ${currentProfile.driver.last_name || ""}`.trim() : "—",
-                  klass: currentProfile ? (currentProfile.driver.class || "—") : "—",
-                  ident: currentEmail,
-                  status: "Entered for Race",
-                  note: `You are registered for ${window.selectedEventName || 'the event'}. Engine rental: ${currentProfile?.driver?.next_race_engine_rental_status || 'No'}`
-                });
-                
-                // Stay on portal and switch to Entries tab to show updated status
-                setTimeout(() => {
-                  // Click on Entries and Rentals tab to show the updated status
-                  const entriesTab = document.querySelector('[data-ptab="payments"]');
-                  if (entriesTab) {
-                    entriesTab.click();
-                  }
-                }, 500);
+                // Reload profile from server to get updated engine rental status
+                api('getProfile', { email: currentEmail })
+                  .then(profileData => {
+                    if (profileData && profileData.driver) {
+                      currentProfile = profileData;
+                      // Re-render portal with updated data
+                      renderPortalData(currentProfile);
+                      updateNextRaceBox(currentProfile.driver);
+                      
+                      // Update status card to show registration success
+                      setStatusCard_({
+                        chipText: "Entry Confirmed",
+                        chipKind: "good",
+                        driver: `${currentProfile.driver.first_name || ""} ${currentProfile.driver.last_name || ""}`.trim() || "—",
+                        klass: currentProfile.driver.class || "—",
+                        ident: currentEmail,
+                        status: "Entered for Race",
+                        note: `You are registered for ${window.selectedEventName || 'the event'}. Engine rental: ${currentProfile.driver.next_race_engine_rental_status || 'No'}`
+                      });
+                      
+                      // Switch to Entries tab to show updated status
+                      setTimeout(() => {
+                        const entriesTab = document.querySelector('[data-ptab="payments"]');
+                        if (entriesTab) {
+                          entriesTab.click();
+                        }
+                      }, 500);
+                    }
+                  })
+                  .catch(err => {
+                    console.error('Failed to reload profile:', err);
+                    // Still show success message even if profile reload fails
+                  });
               } else {
                 toast('bad', data.error || 'Registration failed');
               }

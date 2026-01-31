@@ -692,10 +692,12 @@
       <button class="tab-btn" onclick="switchTab('events')">Events</button>
       <button class="tab-btn" onclick="switchTab('raceEntries')" style="background: linear-gradient(135deg, #059669, #047857);">Race Entries</button>
       <button class="tab-btn" onclick="switchTab('payments')">Payments</button>
+      <button class="tab-btn" onclick="switchTab('paymentStatus')" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">💳 Payment Status</button>
       <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
       <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notifications</button>
       <button class="tab-btn" onclick="switchTab('audit')">Audit Trail</button>
+      <button class="tab-btn" onclick="switchTab('discountCodes')" style="background: linear-gradient(135deg, #f59e0b, #d97706);">💰 Discount Codes</button>
       <a href="/clerk.html" target="_blank" class="tab-btn" style="text-decoration: none; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border-radius: 6px; margin-left: auto;">🏁 Race Control</a>
     </div>
 
@@ -870,6 +872,146 @@
             <tr><td colspan="8" class="loading">Loading audit trail...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Discount Codes Tab -->
+    <div id="discountCodesTab" class="admin-content" style="display: none;">
+      <div class="filters-bar" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; color: #1e293b;">💰 Discount Codes Management</h3>
+        <button class="search-btn" onclick="showAddCodeModal()" style="background: linear-gradient(135deg, #22c55e, #16a34a);">+ Add New Code</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Description</th>
+              <th>Type</th>
+              <th>Value</th>
+              <th>Usage</th>
+              <th>Valid From</th>
+              <th>Valid Until</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="discountCodesTable">
+            <tr><td colspan="9" class="loading">Loading discount codes...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ✅ Payment Status Dashboard Tab -->
+    <div id="paymentStatusTab" class="admin-content" style="display: none;">
+      <div style="margin-bottom: 24px;">
+        <h2 style="margin: 0 0 8px 0; color: #1e293b;">💳 Payment Status Dashboard</h2>
+        <p style="margin: 0; color: #64748b; font-size: 14px;">Monitor all payment statuses and reconcile missing payments</p>
+      </div>
+
+      <!-- Payment Statistics -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+        <div style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 20px; border-radius: 12px; color: white;">
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">✓ Completed</div>
+          <div style="font-size: 32px; font-weight: 700;" id="completedCount">0</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 20px; border-radius: 12px; color: white;">
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">⏳ Pending</div>
+          <div style="font-size: 32px; font-weight: 700;" id="pendingCount">0</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 20px; border-radius: 12px; color: white;">
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">⚠️ Failed</div>
+          <div style="font-size: 32px; font-weight: 700;" id="failedCount">0</div>
+        </div>
+        <div style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 20px; border-radius: 12px; color: white;">
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">💰 Total Revenue</div>
+          <div style="font-size: 32px; font-weight: 700;" id="totalRevenue">R0</div>
+        </div>
+      </div>
+
+      <!-- Manual Reconciliation Form -->
+      <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 24px;">
+        <h3 style="margin: 0 0 16px 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+          <span>🔄</span> Manual Payment Reconciliation
+        </h3>
+        <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px;">
+          Use this form to manually reconcile a payment if the PayFast notification was missed.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Payment Reference *</label>
+            <input type="text" id="reconcileReference" placeholder="e.g. RACE-event1-driver123-1234567890"
+                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: monospace;">
+          </div>
+          <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">PayFast Payment ID</label>
+            <input type="text" id="reconcilePfId" placeholder="e.g. 2453626"
+                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: monospace;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Amount *</label>
+            <input type="number" id="reconcileAmount" placeholder="2950.00" step="0.01"
+                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+          </div>
+          <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Email</label>
+            <input type="email" id="reconcileEmail" placeholder="driver@example.com"
+                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+          </div>
+          <div>
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Status</label>
+            <select id="reconcileStatus" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+
+        <button onclick="reconcilePayment()" 
+                style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          🔄 Reconcile Payment
+        </button>
+      </div>
+
+      <!-- Payment Status Table -->
+      <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0; color: #1e293b;">All Payment Records</h3>
+          <div>
+            <select id="filterPaymentStatus" onchange="loadPaymentStatus()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; margin-right: 8px;">
+              <option value="">All Status</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+              <option value="Failed">Failed</option>
+            </select>
+            <button onclick="loadPaymentStatus()" class="search-btn">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Date</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Reference</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Driver</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Event</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Amount</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Status</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #475569;">Entry Status</th>
+              </tr>
+            </thead>
+            <tbody id="paymentStatusTable">
+              <tr><td colspan="7" style="padding: 24px; text-align: center; color: #94a3b8;">Loading payment data...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -1367,6 +1509,66 @@
         <button class="cancel-btn" onclick="closeEventModal()">Cancel</button>
         <button id="eventDeleteBtn" class="cancel-btn" style="background: #ef4444; display: none;" onclick="deleteEvent()">Delete</button>
         <button class="save-btn" onclick="saveEvent()">Save Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discount Code Modal -->
+  <div class="modal" id="discountCodeModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <h2 id="discountCodeModalTitle">Add Discount Code</h2>
+      <input type="hidden" id="dcodeId">
+      
+      <div class="form-group">
+        <label>Code *</label>
+        <input type="text" id="dcodeCode" placeholder="e.g., SUMMER2026" style="text-transform: uppercase;">
+      </div>
+      
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="dcodeDescription" placeholder="e.g., Summer promotion - 20% off">
+      </div>
+      
+      <div class="form-group">
+        <label>Discount Type *</label>
+        <select id="dcodeType" onchange="updateDiscountValueLabel()">
+          <option value="free">Free (100% off)</option>
+          <option value="percentage">Percentage Off</option>
+          <option value="fixed">Fixed Amount Off</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label id="dcodeValueLabel">Discount Value *</label>
+        <input type="number" id="dcodeValue" placeholder="e.g., 20" step="0.01" min="0">
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">For percentage: enter 20 for 20%. For fixed: enter amount in Rands.</small>
+      </div>
+      
+      <div class="form-group">
+        <label>Usage Limit (optional)</label>
+        <input type="number" id="dcodeLimit" placeholder="Leave empty for unlimited" min="1">
+      </div>
+      
+      <div class="form-group">
+        <label>Valid From (optional)</label>
+        <input type="datetime-local" id="dcodeValidFrom">
+      </div>
+      
+      <div class="form-group">
+        <label>Valid Until (optional)</label>
+        <input type="datetime-local" id="dcodeValidUntil">
+      </div>
+      
+      <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="dcodeActive" checked style="width: auto;">
+          <span>Active</span>
+        </label>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="cancel-btn" onclick="closeDiscountCodeModal()">Cancel</button>
+        <button class="save-btn" onclick="saveDiscountCode()">Save Code</button>
       </div>
     </div>
   </div>
@@ -2219,10 +2421,12 @@
       const eventsTab = document.getElementById('eventsTab');
       const raceEntriesTab = document.getElementById('raceEntriesTab');
       const paymentsTab = document.getElementById('paymentsTab');
+      const paymentStatusTab = document.getElementById('paymentStatusTab');
       const msaLicensesTab = document.getElementById('msaLicensesTab');
       const messagesTab = document.getElementById('messagesTab');
       const notificationsTab = document.getElementById('notificationsTab');
       const auditTab = document.getElementById('auditTab');
+      const discountCodesTab = document.getElementById('discountCodesTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
       // Hide all tabs
@@ -2230,10 +2434,12 @@
       eventsTab.style.display = 'none';
       raceEntriesTab.style.display = 'none';
       paymentsTab.style.display = 'none';
+      if (paymentStatusTab) paymentStatusTab.style.display = 'none';
       msaLicensesTab.style.display = 'none';
       messagesTab.style.display = 'none';
       notificationsTab.style.display = 'none';
       auditTab.style.display = 'none';
+      if (discountCodesTab) discountCodesTab.style.display = 'none';
       
       // Remove active from all tab buttons
       tabs.forEach(t => t.classList.remove('active'));
@@ -2253,22 +2459,34 @@
         paymentsTab.style.display = 'block';
         tabs[3].classList.add('active');
         loadPayments();
+      } else if (tabName === 'paymentStatus') {
+        if (paymentStatusTab) {
+          paymentStatusTab.style.display = 'block';
+          tabs[4].classList.add('active');
+          loadPaymentStatus();
+        }
       } else if (tabName === 'msaLicenses') {
         msaLicensesTab.style.display = 'block';
-        tabs[4].classList.add('active');
+        tabs[5].classList.add('active');
         loadAdminMSAEventDropdown();
       } else if (tabName === 'messages') {
         messagesTab.style.display = 'block';
-        tabs[5].classList.add('active');
+        tabs[6].classList.add('active');
         loadMessages();
       } else if (tabName === 'notifications') {
         notificationsTab.style.display = 'block';
-        tabs[6].classList.add('active');
+        tabs[7].classList.add('active');
         loadPushStats();
       } else if (tabName === 'audit') {
         auditTab.style.display = 'block';
-        tabs[7].classList.add('active');
+        tabs[8].classList.add('active');
         loadAuditTrail();
+      } else if (tabName === 'discountCodes') {
+        if (discountCodesTab) {
+          discountCodesTab.style.display = 'block';
+          tabs[9].classList.add('active');
+          loadDiscountCodes();
+        }
       }
     }
 
@@ -3799,6 +4017,381 @@
           loadAdminMSAEventDropdown();
         }
       }, 500);
+    }
+
+    // ===== DISCOUNT CODES FUNCTIONS =====
+    
+    async function loadDiscountCodes() {
+      try {
+        const response = await fetch('/api/getDiscountCodes');
+        const result = await response.json();
+        
+        if (!result.success) throw new Error('Failed to load discount codes');
+        
+        const codes = result.codes || [];
+        const tableBody = document.getElementById('discountCodesTable');
+        
+        if (codes.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="9" class="loading">No discount codes found</td></tr>';
+          return;
+        }
+        
+        tableBody.innerHTML = codes.map(code => {
+          const statusBadge = code.is_active 
+            ? '<span style="background: #10b981; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Active</span>'
+            : '<span style="background: #6b7280; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Inactive</span>';
+          
+          const typeDisplay = code.discount_type === 'free' ? 'Free' 
+            : code.discount_type === 'percentage' ? 'Percentage' 
+            : 'Fixed Amount';
+          
+          const valueDisplay = code.discount_type === 'free' ? '100%'
+            : code.discount_type === 'percentage' ? `${code.discount_value}%`
+            : `R${code.discount_value}`;
+          
+          const usageDisplay = code.usage_limit 
+            ? `${code.usage_count || 0} / ${code.usage_limit}`
+            : `${code.usage_count || 0} / ∞`;
+          
+          const validFrom = code.valid_from ? new Date(code.valid_from).toLocaleDateString() : 'N/A';
+          const validUntil = code.valid_until ? new Date(code.valid_until).toLocaleDateString() : 'N/A';
+          
+          return `
+            <tr>
+              <td style="font-family: monospace; font-weight: 600;">${code.code}</td>
+              <td>${code.description || '—'}</td>
+              <td>${typeDisplay}</td>
+              <td>${valueDisplay}</td>
+              <td>${usageDisplay}</td>
+              <td>${validFrom}</td>
+              <td>${validUntil}</td>
+              <td>${statusBadge}</td>
+              <td>
+                <button onclick="editDiscountCode('${code.code_id}')" style="padding: 4px 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 4px;">Edit</button>
+                <button onclick="deleteDiscountCode('${code.code_id}')" style="padding: 4px 8px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading discount codes:', err);
+        showToast('Error loading discount codes: ' + err.message, 'error');
+      }
+    }
+    
+    function showAddCodeModal() {
+      document.getElementById('discountCodeModalTitle').textContent = 'Add Discount Code';
+      document.getElementById('dcodeId').value = '';
+      document.getElementById('dcodeCode').value = '';
+      document.getElementById('dcodeDescription').value = '';
+      document.getElementById('dcodeType').value = 'free';
+      document.getElementById('dcodeValue').value = '100';
+      document.getElementById('dcodeLimit').value = '';
+      document.getElementById('dcodeValidFrom').value = '';
+      document.getElementById('dcodeValidUntil').value = '';
+      document.getElementById('dcodeActive').checked = true;
+      updateDiscountValueLabel();
+      document.getElementById('discountCodeModal').style.display = 'flex';
+    }
+    
+    async function editDiscountCode(codeId) {
+      try {
+        const response = await fetch('/api/getDiscountCodes');
+        const result = await response.json();
+        
+        if (!result.success) throw new Error('Failed to load discount code');
+        
+        const code = result.codes.find(c => c.code_id === codeId);
+        if (!code) throw new Error('Code not found');
+        
+        document.getElementById('discountCodeModalTitle').textContent = 'Edit Discount Code';
+        document.getElementById('dcodeId').value = code.code_id;
+        document.getElementById('dcodeCode').value = code.code;
+        document.getElementById('dcodeDescription').value = code.description || '';
+        document.getElementById('dcodeType').value = code.discount_type;
+        document.getElementById('dcodeValue').value = code.discount_value;
+        document.getElementById('dcodeLimit').value = code.usage_limit || '';
+        document.getElementById('dcodeValidFrom').value = code.valid_from ? new Date(code.valid_from).toISOString().slice(0,16) : '';
+        document.getElementById('dcodeValidUntil').value = code.valid_until ? new Date(code.valid_until).toISOString().slice(0,16) : '';
+        document.getElementById('dcodeActive').checked = code.is_active;
+        updateDiscountValueLabel();
+        document.getElementById('discountCodeModal').style.display = 'flex';
+      } catch (err) {
+        console.error('Error loading discount code:', err);
+        showToast('Error loading discount code: ' + err.message, 'error');
+      }
+    }
+    
+    function updateDiscountValueLabel() {
+      const type = document.getElementById('dcodeType').value;
+      const label = document.getElementById('dcodeValueLabel');
+      const valueInput = document.getElementById('dcodeValue');
+      
+      if (type === 'free') {
+        label.textContent = 'Discount Value';
+        valueInput.value = '100';
+        valueInput.disabled = true;
+      } else if (type === 'percentage') {
+        label.textContent = 'Percentage Off (%) *';
+        valueInput.disabled = false;
+        if (valueInput.value === '100') valueInput.value = '';
+      } else {
+        label.textContent = 'Amount Off (R) *';
+        valueInput.disabled = false;
+        if (valueInput.value === '100') valueInput.value = '';
+      }
+    }
+    
+    async function saveDiscountCode() {
+      try {
+        const codeId = document.getElementById('dcodeId').value;
+        const code = document.getElementById('dcodeCode').value.trim().toUpperCase();
+        const description = document.getElementById('dcodeDescription').value.trim();
+        const type = document.getElementById('dcodeType').value;
+        const value = parseFloat(document.getElementById('dcodeValue').value);
+        const limit = document.getElementById('dcodeLimit').value ? parseInt(document.getElementById('dcodeLimit').value) : null;
+        const validFrom = document.getElementById('dcodeValidFrom').value || null;
+        const validUntil = document.getElementById('dcodeValidUntil').value || null;
+        const isActive = document.getElementById('dcodeActive').checked;
+        
+        if (!code || !type || isNaN(value)) {
+          showToast('Please fill in all required fields', 'error');
+          return;
+        }
+        
+        const endpoint = codeId ? '/api/updateDiscountCode' : '/api/createDiscountCode';
+        const payload = {
+          code,
+          description,
+          discount_type: type,
+          discount_value: value,
+          usage_limit: limit,
+          valid_from: validFrom,
+          valid_until: validUntil,
+          is_active: isActive,
+          created_by: 'admin'
+        };
+        
+        if (codeId) payload.code_id = codeId;
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error?.message || 'Failed to save discount code');
+        
+        showToast(codeId ? 'Discount code updated successfully' : 'Discount code created successfully', 'success');
+        closeDiscountCodeModal();
+        loadDiscountCodes();
+      } catch (err) {
+        console.error('Error saving discount code:', err);
+        showToast('Error saving discount code: ' + err.message, 'error');
+      }
+    }
+    
+    async function deleteDiscountCode(codeId) {
+      if (!confirm('Are you sure you want to delete this discount code?')) return;
+      
+      try {
+        const response = await fetch('/api/deleteDiscountCode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code_id: codeId })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error?.message || 'Failed to delete discount code');
+        
+        showToast('Discount code deleted successfully', 'success');
+        loadDiscountCodes();
+      } catch (err) {
+        console.error('Error deleting discount code:', err);
+        showToast('Error deleting discount code: ' + err.message, 'error');
+      }
+    }
+    
+    function closeDiscountCodeModal() {
+      document.getElementById('discountCodeModal').style.display = 'none';
+    }
+
+    // ✅ Payment Status Dashboard Functions
+    async function loadPaymentStatus() {
+      try {
+        const statusFilter = document.getElementById('filterPaymentStatus').value;
+        
+        // Load race entries with payment info (no eventId = get all entries)
+        const response = await fetch('/api/getRaceEntries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error?.message || 'Failed to load payment data');
+        
+        const entries = result.data?.entries || [];
+        
+        // Filter if needed
+        const filteredEntries = statusFilter 
+          ? entries.filter(e => e.payment_status === statusFilter)
+          : entries;
+        
+        // Calculate statistics
+        const completed = entries.filter(e => e.payment_status === 'Completed').length;
+        const pending = entries.filter(e => e.payment_status === 'Pending' || e.payment_status === 'pending_payment' || e.entry_status === 'pending_payment').length;
+        const failed = entries.filter(e => e.payment_status === 'Failed').length;
+        const totalRevenue = entries
+          .filter(e => e.payment_status === 'Completed')
+          .reduce((sum, e) => sum + parseFloat(e.amount_paid || 0), 0);
+        
+        // Update statistics cards
+        document.getElementById('completedCount').textContent = completed;
+        document.getElementById('pendingCount').textContent = pending;
+        document.getElementById('failedCount').textContent = failed;
+        document.getElementById('totalRevenue').textContent = `R${totalRevenue.toLocaleString('en-ZA', {minimumFractionDigits: 2})}`;
+        
+        // Build table
+        const table = document.getElementById('paymentStatusTable');
+        
+        if (filteredEntries.length === 0) {
+          table.innerHTML = '<tr><td colspan="7" style="padding: 24px; text-align: center; color: #94a3b8;">No payment records found</td></tr>';
+          return;
+        }
+        
+        // Sort by date descending
+        filteredEntries.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        table.innerHTML = filteredEntries.map(entry => {
+          const date = new Date(entry.created_at).toLocaleString('en-ZA', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+          
+          const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim() || 'Unknown';
+          const eventName = entry.event_name || entry.event_id || '—';
+          const amount = `R${parseFloat(entry.amount_paid || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}`;
+          
+          // Check if this is an old pending entry (more than 1 hour old) - likely failed
+          const entryAge = Date.now() - new Date(entry.created_at).getTime();
+          const isOldPending = (entry.payment_status === 'Pending' || entry.entry_status === 'pending_payment') && entryAge > 3600000; // 1 hour
+          
+          // Status badge
+          let statusColor = '#64748b';
+          let statusIcon = '⏳';
+          let displayStatus = entry.payment_status || 'Unknown';
+          
+          if (entry.payment_status === 'Completed') {
+            statusColor = '#22c55e';
+            statusIcon = '✓';
+          } else if (entry.payment_status === 'Failed' || isOldPending) {
+            statusColor = '#ef4444';
+            statusIcon = '✕';
+            displayStatus = isOldPending ? 'Likely Failed' : 'Failed';
+          } else if (entry.payment_status === 'Pending' || entry.payment_status === 'pending_payment' || entry.entry_status === 'pending_payment') {
+            statusColor = '#f59e0b';
+            statusIcon = '⏳';
+            displayStatus = 'Pending';
+          }
+          
+          const statusBadge = `<span style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+            ${statusIcon} ${displayStatus}
+          </span>`;
+          
+          // Entry status
+          let entryStatusColor = '#64748b';
+          if (entry.entry_status === 'confirmed') {
+            entryStatusColor = '#22c55e';
+          } else if (entry.entry_status === 'pending_payment') {
+            entryStatusColor = '#f59e0b';
+          }
+          
+          const entryStatusBadge = `<span style="background: ${entryStatusColor}; color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
+            ${entry.entry_status || '—'}
+          </span>`;
+          
+          return `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 12px; color: #475569; font-size: 13px;">${date}</td>
+              <td style="padding: 12px; font-family: monospace; font-size: 11px; color: #64748b;">${entry.payment_reference || entry.race_entry_id || '—'}</td>
+              <td style="padding: 12px; color: #1e293b; font-weight: 500;">${driverName}</td>
+              <td style="padding: 12px; color: #475569;">${eventName}</td>
+              <td style="padding: 12px; color: #059669; font-weight: 600;">${amount}</td>
+              <td style="padding: 12px;">${statusBadge}</td>
+              <td style="padding: 12px;">${entryStatusBadge}</td>
+            </tr>
+          `;
+        }).join('');
+        
+      } catch (err) {
+        console.error('Error loading payment status:', err);
+        document.getElementById('paymentStatusTable').innerHTML = 
+          `<tr><td colspan="7" style="padding: 24px; text-align: center; color: #ef4444;">Error: ${err.message}</td></tr>`;
+      }
+    }
+    
+    async function reconcilePayment() {
+      const reference = document.getElementById('reconcileReference').value.trim();
+      const pfId = document.getElementById('reconcilePfId').value.trim();
+      const amount = document.getElementById('reconcileAmount').value;
+      const email = document.getElementById('reconcileEmail').value.trim();
+      const status = document.getElementById('reconcileStatus').value;
+      
+      if (!reference) {
+        alert('Payment reference is required');
+        return;
+      }
+      
+      if (!amount || parseFloat(amount) <= 0) {
+        alert('Valid amount is required');
+        return;
+      }
+      
+      if (!confirm(`Reconcile payment:\n\nReference: ${reference}\nAmount: R${amount}\nStatus: ${status}\n\nContinue?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/admin/reconcilePayment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payment_reference: reference,
+            pf_payment_id: pfId,
+            amount_gross: amount,
+            payment_status: status,
+            email_address: email,
+            name_first: 'Manual',
+            name_last: 'Reconciliation'
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error || 'Reconciliation failed');
+        
+        showToast(result.message || 'Payment reconciled successfully', 'success');
+        
+        // Clear form
+        document.getElementById('reconcileReference').value = '';
+        document.getElementById('reconcilePfId').value = '';
+        document.getElementById('reconcileAmount').value = '';
+        document.getElementById('reconcileEmail').value = '';
+        
+        // Reload payment status
+        loadPaymentStatus();
+        
+      } catch (err) {
+        console.error('Error reconciling payment:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
     }
   </script>
 </body>

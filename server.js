@@ -260,7 +260,23 @@ const initRaceEntriesTable = async () => {
       ADD COLUMN IF NOT EXISTS ticket_fuel_ref VARCHAR(100)
     `);
 
-    console.log('✅ Race entries table initialized with all columns');
+    // ✅ FIX #2: Add unique constraint to prevent duplicate entries
+    // This ensures we can't accidentally create multiple entries for same driver+event+payment
+    await pool.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint 
+          WHERE conname = 'unique_driver_event_payment'
+        ) THEN
+          ALTER TABLE race_entries 
+          ADD CONSTRAINT unique_driver_event_payment 
+          UNIQUE (driver_id, event_id, payment_reference);
+        END IF;
+      END $$;
+    `);
+
+    console.log('✅ Race entries table initialized with all columns and unique constraints');
   } catch (err) {
     console.error('Race entries table init error:', err.message);
   }
@@ -287,6 +303,32 @@ const initPoolEngineRentalsTable = async () => {
     console.log('✅ Pool engine rentals table initialized');
   } catch (err) {
     console.error('Pool engine rentals table init error:', err.message);
+  }
+};
+
+// Initialize Discount Codes table
+const initDiscountCodesTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS discount_codes (
+        code_id VARCHAR(36) PRIMARY KEY,
+        code VARCHAR(50) UNIQUE NOT NULL,
+        description TEXT,
+        discount_type VARCHAR(20) NOT NULL,
+        discount_value DECIMAL(10, 2) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        usage_limit INTEGER,
+        usage_count INTEGER DEFAULT 0,
+        valid_from TIMESTAMP,
+        valid_until TIMESTAMP,
+        created_by VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Discount codes table initialized');
+  } catch (err) {
+    console.error('Discount codes table init error:', err.message);
   }
 };
 
@@ -342,6 +384,7 @@ initNotificationHistoryTable();
 initEventsTable();
 initRaceEntriesTable();
 initPoolEngineRentalsTable();
+initDiscountCodesTable();
 initEventDocumentsTable();
 initMSALicensesTable();
 
@@ -3305,6 +3348,24 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // Generate unique reference that includes event and driver info
     const reference = `RACE-${eventId}-${driverId}-${Date.now()}`;
 
+    // ✅ FIX #1: Create pending race entry BEFORE redirecting to PayFast
+    // This allows us to reconcile payments if notification fails
+    const race_entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    try {
+      await pool.query(
+        `INSERT INTO race_entries (
+          race_entry_id, event_id, driver_id, payment_reference, 
+          payment_status, entry_status, amount_paid, race_class, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        ON CONFLICT (payment_reference) DO NOTHING`,
+        [race_entry_id, eventId, driverId, reference, 'Pending', 'pending_payment', numAmount, raceClass]
+      );
+      console.log(`📝 Created pending race entry: ${race_entry_id} with reference ${reference}`);
+    } catch (dbErr) {
+      console.error('⚠️ Could not create pending entry (non-fatal):', dbErr.message);
+      // Don't fail the payment - just log and continue
+    }
+
     // Build PayFast parameters for the redirect URL
     // These are the parameters that will be sent to PayFast
     const pfDataForPayFast = {
@@ -3630,6 +3691,22 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     const ticketFuelRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('fuel')) 
       ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
     
+    // Check if this is a regional race where season rentals don't apply
+    const eventResult = await pool.query(
+      `SELECT event_date FROM events WHERE event_id = $1`,
+      [eventId]
+    );
+    const eventDate = eventResult.rows[0]?.event_date ? new Date(eventResult.rows[0].event_date) : null;
+    
+    // Regional race dates where everyone must rent engines individually (Feb 14, Apr 11, Sep 7)
+    const regionalRaceDates = ['2026-02-14', '2026-04-11', '2026-09-07'];
+    const isRegionalRace = eventDate && regionalRaceDates.some(dateStr => {
+      const regionalDate = new Date(dateStr);
+      return eventDate.getFullYear() === regionalDate.getFullYear() &&
+             eventDate.getMonth() === regionalDate.getMonth() &&
+             eventDate.getDate() === regionalDate.getDate();
+    });
+    
     // Check if driver has season engine rental from pool engines
     const seasonRentalResult = await pool.query(
       `SELECT COUNT(*) as count FROM pool_engine_rentals 
@@ -3639,13 +3716,19 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     );
     const hasSeasonEngineRental = seasonRentalResult.rows[0]?.count > 0;
     
-    // Determine if engine rental is selected and not covered by season rental
-    let hasEngineRental = selectedItems && selectedItems.some(item => item.toLowerCase().includes('engine') || item.toLowerCase().includes('rental'));
+    // Determine if engine rental is selected
+    const engineRentalSelected = selectedItems && selectedItems.some(item => item.toLowerCase().includes('engine') || item.toLowerCase().includes('rental'));
     
-    // If driver has season engine rental, they don't need to pay for individual race engine rentals
-    if (hasSeasonEngineRental && hasEngineRental) {
+    // Determine if engine needs to be charged
+    let hasEngineRental = engineRentalSelected;
+    
+    // If driver has season engine rental AND it's NOT a regional race, they don't need to pay for individual race engine rentals
+    if (hasSeasonEngineRental && engineRentalSelected && !isRegionalRace) {
       console.log(`ℹ️ Driver ${driverId} has season engine rental - skipping individual race engine charge`);
       hasEngineRental = false;
+    } else if (isRegionalRace && engineRentalSelected) {
+      console.log(`ℹ️ Regional race detected (${eventDate.toLocaleDateString()}) - individual engine rental required even with season pass`);
+      hasEngineRental = true; // Force charging for regional races
     }
     
     const engineValue = hasEngineRental ? 1 : 0;
@@ -3657,13 +3740,13 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
       [entry_id, eventId, driverId, reference, 'Completed', 'confirmed', 0, raceClass, selectedItemsJson, teamCode || null, engineValue, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
     );
 
-    // Update driver's next race status
+    // Update driver's next race status - use engineRentalSelected for status (whether they have an engine), not hasEngineRental (whether they're charged)
     await pool.query(
       `UPDATE drivers 
        SET next_race_entry_status = 'Registered',
            next_race_engine_rental_status = $1
        WHERE driver_id = $2`,
-      [hasEngineRental ? 'Yes' : 'No', driverId]
+      [engineRentalSelected ? 'Yes' : 'No', driverId]
     );
 
     // Log to audit trail
@@ -3671,7 +3754,7 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     await logAuditEvent(driverId, email, 'RACE_ENTRY_REGISTERED', 'entry_items', '', itemsString);
 
     console.log(`✅ Free race entry recorded: ${reference} - ${raceClass}`);
-    console.log(`✅ Updated driver ${driverId} next_race status - Engine Rental: ${hasEngineRental ? 'Yes' : 'No'}, Team Code: ${teamCode || 'N/A'}`);
+    console.log(`✅ Updated driver ${driverId} next_race status - Engine Rental: ${engineRentalSelected ? 'Yes' : 'No'}, Team Code: ${teamCode || 'N/A'}`);
 
     // Send confirmation emails
     try {
@@ -4172,13 +4255,25 @@ app.post('/api/paymentNotify', async (req, res) => {
     // Store payment record using new schema
     const race_entry_id = `race_entry_${pf_payment_id}`;
     if (!isPoolEngineRental) {
-      // Only store as race entry if it's not a pool engine rental
+      // ✅ FIX #1b: Update pending entry to completed (or insert if webhook came first)
+      // ON CONFLICT now updates the pending entry we created during initiation
       await pool.query(
         `INSERT INTO race_entries (race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         ON CONFLICT (payment_reference) DO UPDATE SET payment_status = $5, entry_status = $6, amount_paid = $7, ticket_engine_ref = $8, ticket_tyres_ref = $9, ticket_transponder_ref = $10, ticket_fuel_ref = $11`,
-        [race_entry_id, eventId, driverId, m_payment_id, 'Completed', 'confirmed', amount_gross, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
+         ON CONFLICT (payment_reference) 
+         DO UPDATE SET 
+           race_entry_id = $1,
+           payment_status = $5, 
+           entry_status = $6, 
+           amount_paid = $7, 
+           ticket_engine_ref = $8, 
+           ticket_tyres_ref = $9, 
+           ticket_transponder_ref = $10, 
+           ticket_fuel_ref = $11,
+           updated_at = NOW()`,
+        [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', amount_gross, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
       );
+      console.log(`✅ Race entry updated from pending to completed: ${race_entry_id}`);
     }
 
     console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross} - Driver: ${driverId}`);
@@ -4414,6 +4509,137 @@ app.post('/api/paymentNotify', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('❌ paymentNotify error:', err.message);
+    
+    // ✅ FIX #3: Log failed notifications to file for manual recovery
+    const fs = require('fs');
+    const path = require('path');
+    const logsDir = path.join(__dirname, 'logs');
+    const failedNotificationsFile = path.join(logsDir, 'failed_notifications.json');
+    
+    try {
+      // Ensure logs directory exists
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir, { recursive: true });
+      }
+      
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        error: err.message,
+        stack: err.stack,
+        payload: req.body,
+        headers: req.headers
+      };
+      
+      // Append to file (one JSON object per line for easy parsing)
+      fs.appendFileSync(failedNotificationsFile, JSON.stringify(logEntry) + '\n');
+      console.log(`📝 Failed notification logged to ${failedNotificationsFile}`);
+    } catch (logErr) {
+      console.error('⚠️ Could not log failed notification:', logErr.message);
+    }
+    
+    // Still respond 200 to PayFast so they don't keep retrying (they won't anyway)
+    res.status(200).json({ success: false, error: err.message });
+  }
+});
+
+// ✅ FIX #4: Manual Payment Reconciliation Endpoint
+// Allows admins to manually process a PayFast payment if notification was missed
+app.post('/api/admin/reconcilePayment', async (req, res) => {
+  try {
+    const { 
+      payment_reference, 
+      pf_payment_id,
+      amount_gross,
+      payment_status,
+      email_address,
+      name_first,
+      name_last
+    } = req.body;
+
+    if (!payment_reference) {
+      throw new Error('Payment reference is required');
+    }
+
+    console.log(`🔄 Manual reconciliation requested for: ${payment_reference}`);
+
+    // Parse reference to extract info
+    const referenceParts = payment_reference.split('-');
+    const isPoolEngineRental = payment_reference.startsWith('POOL-');
+    
+    let eventId, driverId, rentalClass, rentalType;
+    
+    if (isPoolEngineRental) {
+      rentalClass = referenceParts[1] || 'UNKNOWN';
+      rentalType = referenceParts[2] || 'UNKNOWN';
+      driverId = referenceParts[3] || 'unknown';
+      
+      // Check if already exists
+      const existing = await pool.query(
+        'SELECT * FROM pool_engine_rentals WHERE payment_reference = $1',
+        [payment_reference]
+      );
+      
+      if (existing.rows.length > 0) {
+        return res.json({ 
+          success: true, 
+          message: 'Payment already reconciled',
+          data: existing.rows[0]
+        });
+      }
+      
+      // Create pool engine rental
+      const rentalId = `pool_rental_${pf_payment_id || Date.now()}`;
+      await pool.query(
+        `INSERT INTO pool_engine_rentals (
+          rental_id, driver_id, championship_class, rental_type, 
+          amount_paid, payment_status, payment_reference, season_year, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())`,
+        [rentalId, driverId, rentalClass, rentalType, amount_gross, payment_status || 'Completed', payment_reference, new Date().getFullYear()]
+      );
+      
+      await pool.query(
+        'UPDATE drivers SET season_engine_rental = $1 WHERE driver_id = $2',
+        ['Y', driverId]
+      );
+      
+      console.log(`✅ Pool engine rental reconciled: ${rentalId}`);
+      res.json({ success: true, message: 'Pool engine rental reconciled successfully', rental_id: rentalId });
+      
+    } else {
+      // Race entry
+      eventId = referenceParts[1] || 'unknown';
+      driverId = referenceParts[2] || 'unknown';
+      
+      // Check if already exists
+      const existing = await pool.query(
+        'SELECT * FROM race_entries WHERE payment_reference = $1',
+        [payment_reference]
+      );
+      
+      if (existing.rows.length > 0) {
+        return res.json({ 
+          success: true, 
+          message: 'Payment already reconciled',
+          data: existing.rows[0]
+        });
+      }
+      
+      // Create race entry
+      const race_entry_id = `race_entry_${pf_payment_id || Date.now()}`;
+      await pool.query(
+        `INSERT INTO race_entries (
+          race_entry_id, event_id, driver_id, payment_reference, 
+          payment_status, entry_status, amount_paid, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+        [race_entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
+      );
+      
+      console.log(`✅ Race entry reconciled: ${race_entry_id}`);
+      res.json({ success: true, message: 'Race entry reconciled successfully', entry_id: race_entry_id });
+    }
+    
+  } catch (err) {
+    console.error('❌ reconcilePayment error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 });
@@ -5223,28 +5449,47 @@ app.post('/api/getRaceEntries', async (req, res) => {
   try {
     const { eventId } = req.body;
 
+    // If no eventId provided, return ALL entries (for payment status dashboard)
+    let result;
     if (!eventId) {
-      throw new Error('Event ID is required');
+      result = await pool.query(
+        `SELECT 
+          r.*,
+          r.ticket_engine_ref,
+          r.ticket_tyres_ref,
+          r.ticket_transponder_ref,
+          r.ticket_fuel_ref,
+          d.first_name AS driver_first_name,
+          d.last_name AS driver_last_name,
+          d.transponder_number,
+          c.email AS driver_email,
+          e.event_name
+         FROM race_entries r
+         LEFT JOIN drivers d ON r.driver_id = d.driver_id
+         LEFT JOIN contacts c ON r.driver_id = c.driver_id
+         LEFT JOIN events e ON r.event_id = e.event_id
+         ORDER BY r.created_at DESC`
+      );
+    } else {
+      result = await pool.query(
+        `SELECT 
+          r.*,
+          r.ticket_engine_ref,
+          r.ticket_tyres_ref,
+          r.ticket_transponder_ref,
+          r.ticket_fuel_ref,
+          d.first_name AS driver_first_name,
+          d.last_name AS driver_last_name,
+          d.transponder_number,
+          c.email AS driver_email
+         FROM race_entries r
+         LEFT JOIN drivers d ON r.driver_id = d.driver_id
+         LEFT JOIN contacts c ON r.driver_id = c.driver_id
+         WHERE r.event_id = $1 AND r.entry_status != 'cancelled'
+         ORDER BY r.created_at DESC`,
+        [eventId]
+      );
     }
-
-    const result = await pool.query(
-      `SELECT 
-        r.*,
-        r.ticket_engine_ref,
-        r.ticket_tyres_ref,
-        r.ticket_transponder_ref,
-        r.ticket_fuel_ref,
-        d.first_name AS driver_first_name,
-        d.last_name AS driver_last_name,
-        d.transponder_number,
-        c.email AS driver_email
-       FROM race_entries r
-       LEFT JOIN drivers d ON r.driver_id = d.driver_id
-       LEFT JOIN contacts c ON r.driver_id = c.driver_id
-       WHERE r.event_id = $1 AND r.entry_status != 'cancelled'
-       ORDER BY r.created_at DESC`,
-      [eventId]
-    );
 
     console.log(`📊 getRaceEntries query result - Found ${result.rows.length} entries`);
     if (result.rows.length > 0) {
@@ -5506,6 +5751,139 @@ app.post('/api/deleteRaceEntry', async (req, res) => {
   } catch (err) {
     console.error('❌ deleteRaceEntry error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Validate discount code
+app.post('/api/validateDiscountCode', async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.json({ success: false, valid: false, message: 'Code is required' });
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM discount_codes 
+       WHERE code = $1 AND is_active = true
+       AND (valid_from IS NULL OR valid_from <= NOW())
+       AND (valid_until IS NULL OR valid_until >= NOW())
+       AND (usage_limit IS NULL OR usage_count < usage_limit)`,
+      [code.toUpperCase()]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, valid: false, message: 'Invalid or expired code' });
+    }
+
+    const discountCode = result.rows[0];
+    res.json({ 
+      success: true, 
+      valid: true,
+      code: discountCode
+    });
+  } catch (err) {
+    console.error('❌ validateDiscountCode error:', err.message);
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Get all discount codes (admin only)
+app.get('/api/getDiscountCodes', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM discount_codes ORDER BY created_at DESC'
+    );
+    res.json({ success: true, codes: result.rows });
+  } catch (err) {
+    console.error('❌ getDiscountCodes error:', err.message);
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Create discount code (admin only)
+app.post('/api/createDiscountCode', async (req, res) => {
+  try {
+    const { code, description, discount_type, discount_value, usage_limit, valid_from, valid_until, created_by } = req.body;
+
+    if (!code || !discount_type || discount_value === undefined) {
+      return res.status(400).json({ success: false, error: { message: 'Missing required fields' } });
+    }
+
+    const code_id = `discount_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    
+    await pool.query(
+      `INSERT INTO discount_codes (code_id, code, description, discount_type, discount_value, usage_limit, valid_from, valid_until, created_by, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+      [code_id, code.toUpperCase(), description, discount_type, discount_value, usage_limit || null, valid_from || null, valid_until || null, created_by || 'admin']
+    );
+
+    console.log(`✅ Discount code created: ${code.toUpperCase()} (${discount_type}: ${discount_value})`);
+    res.json({ success: true, message: 'Discount code created successfully' });
+  } catch (err) {
+    console.error('❌ createDiscountCode error:', err.message);
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Update discount code (admin only)
+app.post('/api/updateDiscountCode', async (req, res) => {
+  try {
+    const { code_id, code, description, discount_type, discount_value, usage_limit, valid_from, valid_until, is_active } = req.body;
+
+    if (!code_id) {
+      return res.status(400).json({ success: false, error: { message: 'Code ID is required' } });
+    }
+
+    await pool.query(
+      `UPDATE discount_codes 
+       SET code = $2, description = $3, discount_type = $4, discount_value = $5, 
+           usage_limit = $6, valid_from = $7, valid_until = $8, is_active = $9, updated_at = NOW()
+       WHERE code_id = $1`,
+      [code_id, code.toUpperCase(), description, discount_type, discount_value, usage_limit || null, valid_from || null, valid_until || null, is_active]
+    );
+
+    console.log(`✅ Discount code updated: ${code.toUpperCase()}`);
+    res.json({ success: true, message: 'Discount code updated successfully' });
+  } catch (err) {
+    console.error('❌ updateDiscountCode error:', err.message);
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Delete discount code (admin only)
+app.post('/api/deleteDiscountCode', async (req, res) => {
+  try {
+    const { code_id } = req.body;
+
+    if (!code_id) {
+      return res.status(400).json({ success: false, error: { message: 'Code ID is required' } });
+    }
+
+    await pool.query('DELETE FROM discount_codes WHERE code_id = $1', [code_id]);
+
+    console.log(`✅ Discount code deleted: ${code_id}`);
+    res.json({ success: true, message: 'Discount code deleted successfully' });
+  } catch (err) {
+    console.error('❌ deleteDiscountCode error:', err.message);
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Increment usage count when code is used
+app.post('/api/useDiscountCode', async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    await pool.query(
+      'UPDATE discount_codes SET usage_count = usage_count + 1 WHERE code = $1',
+      [code.toUpperCase()]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ useDiscountCode error:', err.message);
+    res.status(500).json({ success: false, error: { message: err.message } });
   }
 });
 
