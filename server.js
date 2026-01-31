@@ -4648,6 +4648,319 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
         [payment_reference]
       );
       
+
+// Admin: Manually add race entry (no payment reference)
+app.post('/api/adminAddRaceEntry', async (req, res) => {
+  try {
+    const {
+      event_id,
+      driver_id,
+      race_class,
+      entry_items,
+      payment_status,
+      entry_status,
+      amount_paid
+    } = req.body;
+
+    if (!event_id || !driver_id || !race_class) {
+      throw new Error('Missing required fields: event_id, driver_id, race_class');
+    }
+
+    // Get driver details
+    const driverResult = await pool.query(
+      'SELECT first_name, last_name, email, transponder_number FROM drivers WHERE driver_id = $1',
+      [driver_id]
+    );
+    
+    if (driverResult.rows.length === 0) {
+      throw new Error('Driver not found');
+    }
+    
+    const driver = driverResult.rows[0];
+    
+    // Check for existing entry
+    const existingEntry = await pool.query(
+      'SELECT * FROM race_entries WHERE driver_id = $1 AND event_id = $2 AND (payment_reference IS NULL OR payment_reference = \'\')',
+      [driver_id, event_id]
+    );
+    
+    if (existingEntry.rows.length > 0) {
+      return res.json({ success: false, error: 'Driver already has a manual entry for this event' });
+    }
+    
+    // Generate race_entry_id
+    const race_entry_id = `entry_${event_id}_${driver_id}_${Date.now()}`;
+    
+    // Insert entry
+    await pool.query(
+      `INSERT INTO race_entries (
+        race_entry_id, event_id, driver_id, 
+        first_name, last_name, email, 
+        race_class, entry_items, transponder_number,
+        payment_status, entry_status, amount_paid,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
+      [
+        race_entry_id,
+        event_id,
+        driver_id,
+        driver.first_name,
+        driver.last_name,
+        driver.email,
+        race_class,
+        JSON.stringify(entry_items || []),
+        driver.transponder_number,
+        payment_status || 'Completed',
+        entry_status || 'confirmed',
+        amount_paid || 0
+      ]
+    );
+    
+    console.log(`✅ Manual entry added: ${race_entry_id} for ${driver.first_name} ${driver.last_name} - ${race_class}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Entry added successfully',
+      entry_id: race_entry_id
+    });
+    
+  } catch (err) {
+    console.error('Error adding manual entry:', err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Admin: Send/Resend race entry confirmation email with tickets
+app.post('/api/sendRaceTicketsEmail', async (req, res) => {
+  try {
+    const { race_entry_id } = req.body;
+
+    if (!race_entry_id) {
+      throw new Error('Missing race_entry_id');
+    }
+
+    // Get entry details with driver and event info
+    const entryResult = await pool.query(
+      `SELECT 
+        re.*,
+        d.first_name, d.last_name, d.email as driver_email,
+        e.event_name, e.event_date, e.location
+       FROM race_entries re
+       LEFT JOIN drivers d ON re.driver_id = d.driver_id
+       LEFT JOIN events e ON re.event_id = e.event_id
+       WHERE re.race_entry_id = $1`,
+      [race_entry_id]
+    );
+    
+    if (entryResult.rows.length === 0) {
+      throw new Error('Race entry not found');
+    }
+    
+    const entry = entryResult.rows[0];
+    const driverName = `${entry.first_name} ${entry.last_name}`.trim();
+    const driverEmail = entry.driver_email || entry.email || 'noreply@nats.co.za';
+    
+    // Parse entry items
+    let entryItems = [];
+    try {
+      entryItems = typeof entry.entry_items === 'string' 
+        ? JSON.parse(entry.entry_items) 
+        : (Array.isArray(entry.entry_items) ? entry.entry_items : []);
+    } catch (e) {
+      console.warn('Could not parse entry_items:', e);
+    }
+    
+    const hasEngine = entryItems.some(item => item.toLowerCase().includes('engine'));
+    const hasTyres = entryItems.some(item => item.toLowerCase().includes('tyre'));
+    const hasTransponder = entryItems.some(item => item.toLowerCase().includes('transponder'));
+    const hasFuel = entryItems.some(item => item.toLowerCase().includes('fuel'));
+    
+    // Generate ticket references if not present
+    if (hasEngine && !entry.ticket_engine_ref) {
+      entry.ticket_engine_ref = generateUniqueTicketRef('engine', entry.driver_id, entry.event_id);
+      await pool.query('UPDATE race_entries SET ticket_engine_ref = $1 WHERE race_entry_id = $2', 
+        [entry.ticket_engine_ref, race_entry_id]);
+    }
+    if (hasTyres && !entry.ticket_tyres_ref) {
+      entry.ticket_tyres_ref = generateUniqueTicketRef('tyres', entry.driver_id, entry.event_id);
+      await pool.query('UPDATE race_entries SET ticket_tyres_ref = $1 WHERE race_entry_id = $2', 
+        [entry.ticket_tyres_ref, race_entry_id]);
+    }
+    if (hasTransponder && !entry.ticket_transponder_ref) {
+      entry.ticket_transponder_ref = generateUniqueTicketRef('transponder', entry.driver_id, entry.event_id);
+      await pool.query('UPDATE race_entries SET ticket_transponder_ref = $1 WHERE race_entry_id = $2', 
+        [entry.ticket_transponder_ref, race_entry_id]);
+    }
+    if (hasFuel && !entry.ticket_fuel_ref) {
+      entry.ticket_fuel_ref = generateUniqueTicketRef('fuel', entry.driver_id, entry.event_id);
+      await pool.query('UPDATE race_entries SET ticket_fuel_ref = $1 WHERE race_entry_id = $2', 
+        [entry.ticket_fuel_ref, race_entry_id]);
+    }
+    
+    // Build tickets HTML
+    let ticketsHtml = '';
+    if (hasEngine || hasTyres || hasTransponder || hasFuel) {
+      ticketsHtml = '<div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;"><div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Rental Items</div>';
+      
+      if (hasEngine && entry.ticket_engine_ref) {
+        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #f97316;">
+          <div style="font-size: 13px; color: #f97316; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Engine Rental</div>
+          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Pool Engine Reserved</div>
+          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Your competition engine is assigned for this event. Technical inspection required before practice.</div>
+          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_engine_ref}</div>
+        </div>`;
+      }
+      
+      if (hasTyres && entry.ticket_tyres_ref) {
+        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #8b5cf6;">
+          <div style="font-size: 13px; color: #8b5cf6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Tyre Rental</div>
+          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Complete Tyre Set</div>
+          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Tyres included with your entry. Available for collection at race practice day.</div>
+          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_tyres_ref}</div>
+        </div>`;
+      }
+      
+      if (hasTransponder && entry.ticket_transponder_ref) {
+        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #0ea5e9;">
+          <div style="font-size: 13px; color: #0ea5e9; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Transponder Rental</div>
+          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Timing Transponder</div>
+          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Transponder issued at race control. Must be installed before technical inspection.</div>
+          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_transponder_ref}</div>
+        </div>`;
+      }
+      
+      if (hasFuel && entry.ticket_fuel_ref) {
+        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #10b981;">
+          <div style="font-size: 13px; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Fuel Package</div>
+          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Race Fuel Included</div>
+          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Pre-measured fuel allocation available at pit area.</div>
+          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_fuel_ref}</div>
+        </div>`;
+      }
+      
+      ticketsHtml += '</div>';
+    }
+    
+    // Format event details
+    const eventName = entry.event_name || 'Race Event';
+    const eventDateStr = entry.event_date 
+      ? new Date(entry.event_date).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+      : 'TBA';
+    const eventLocation = entry.location || 'TBA';
+    
+    // Email HTML
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Race Entry Confirmation — NATS 2026 ROK Cup</title>
+        <style>
+          body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+          .header { background: white; padding: 20px; text-align: center; border-bottom: 3px solid #22c55e; }
+          .header-logo { margin-bottom: 16px; }
+          .header-logo img { width: 140px; height: auto; }
+          .header h1 { margin: 0; font-size: 24px; font-weight: 700; color: #111827; }
+          .content { padding: 30px; }
+          .details { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e; }
+          .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .detail-row:last-child { border-bottom: none; }
+          .detail-label { font-weight: 600; color: #6b7280; font-size: 13px; }
+          .detail-value { color: #111827; font-weight: 500; }
+          .amount { font-size: 22px; font-weight: 700; color: #22c55e; }
+          .footer { background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 20px;">
+        <div class="container">
+          <div class="header">
+            <div class="header-logo">
+              <img src="https://www.dropbox.com/scl/fi/ryhszrvk76kd7yy6y0rtc/ROK-CUP-LOGO-2025.png?rlkey=k9dxlzbh5e9zw58v8t34yjzea&dl=1" alt="ROK Cup South Africa" />
+            </div>
+            <h1>Race Entry Confirmed</h1>
+          </div>
+          <div class="content">
+            <p style="margin: 0 0 16px 0; font-size: 15px;">Hi ${driverName},</p>
+            <p style="margin: 0 0 20px 0; font-size: 15px; color: #374151;">Your race entry has been confirmed. Below are your event details and rental item tickets.</p>
+            
+            <div class="details">
+              <div class="detail-row">
+                <span class="detail-label">Entry ID</span>
+                <span class="detail-value">${race_entry_id}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Event Name</span>
+                <span class="detail-value">${eventName}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Event Date</span>
+                <span class="detail-value">${eventDateStr}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">${eventLocation}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Race Class</span>
+                <span class="detail-value">${entry.race_class}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Payment Status</span>
+                <span class="detail-value">${entry.payment_status}</span>
+              </div>
+            </div>
+            
+            ${ticketsHtml}
+            
+            ${generateRaceTicketHTML({
+              reference: entry.payment_reference || race_entry_id,
+              eventName,
+              eventDate: entry.event_date,
+              eventLocation,
+              raceClass: entry.race_class,
+              driverName,
+              teamCode: null
+            })}
+            
+            <p style="margin: 20px 0; font-size: 14px; color: #374151;">See you at the track! If you have any questions, please contact us.</p>
+            
+            <p style="margin: 20px 0 0 0; font-size: 14px;">Best regards,<br><strong style="color: #22c55e;">NATS 2026 ROK Cup Team</strong></p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0; color: #6b7280;">This is an automated confirmation email. Please do not reply to this message.</p>
+            <p style="margin: 8px 0 0 0;"><a href="https://rokthenats.co.za/" style="color: #2563eb; text-decoration: none; font-weight: 600;">Visit the NATS Event Hub</a></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Send email
+    await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+      key: process.env.MAILCHIMP_API_KEY,
+      message: {
+        to: [{ email: driverEmail, name: driverName }],
+        from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+        subject: `Race Entry Confirmation - ${eventName} (${entry.race_class})`,
+        html: emailHtml
+      }
+    });
+    
+    console.log(`📧 Race tickets email sent to: ${driverEmail} for entry ${race_entry_id}`);
+    
+    res.json({ 
+      success: true, 
+      message: `Tickets email sent to ${driverEmail}`
+    });
+    
+  } catch (err) {
+    console.error('Error sending tickets email:', err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
       if (existing.rows.length > 0) {
         return res.json({ 
           success: true, 
@@ -5517,7 +5830,7 @@ app.post('/api/getRaceEntries', async (req, res) => {
          FROM race_entries r
          LEFT JOIN drivers d ON r.driver_id = d.driver_id
          LEFT JOIN contacts c ON r.driver_id = c.driver_id
-         WHERE r.event_id = $1 AND r.entry_status != 'cancelled'
+         WHERE r.event_id = $1
          ORDER BY r.created_at DESC`,
         [eventId]
       );
