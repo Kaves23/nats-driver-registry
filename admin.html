@@ -763,7 +763,7 @@
               <th>Reg Status</th>
               <th>Registrations</th>
               <th>Created</th>
-              <th>Actions</th>
+              <th style="min-width: 220px;">Actions</th>
             </tr>
           </thead>
           <tbody id="eventsTable">
@@ -783,6 +783,10 @@
         <button class="search-btn" onclick="showQuickAddEntryModal()" style="background: #22c55e;">+ Quick Add Entry</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
         <button class="search-btn" onclick="exportRaceEntriesPDF()" style="background: #2563eb;">Export PDF with Barcodes</button>
+        <label style="margin-left: 20px; color: #e5e5e5; font-size: 14px; cursor: pointer;">
+          <input type="checkbox" id="showCancelledEntries" onchange="loadRaceEntries()" style="margin-right: 6px; cursor: pointer;">
+          Show Cancelled/Incomplete
+        </label>
       </div>
 
       <div class="table-wrapper">
@@ -2180,8 +2184,29 @@
         console.log('🔍 First entry data:', entries[0]);
       }
 
+      // Check if we should show cancelled entries
+      const showCancelled = document.getElementById('showCancelledEntries')?.checked || false;
+      
+      // Filter entries: hide cancelled and null race_class unless checkbox is checked
+      const filteredEntries = showCancelled ? entries : entries.filter(entry => {
+        const isCancelled = entry.entry_status === 'cancelled';
+        const hasNoClass = !entry.race_class || entry.race_class === null || entry.race_class === '';
+        return !isCancelled && !hasNoClass;
+      });
+
+      if (filteredEntries.length === 0) {
+        table.innerHTML = '<tr><td colspan="17" class="loading">No active entries found (use checkbox to show cancelled/incomplete entries)</td></tr>';
+        return;
+      }
+
       let html = '';
-      entries.forEach((entry) => {
+      filteredEntries.forEach((entry) => {
+        // Check if entry is cancelled or has no race class
+        const isCancelled = entry.entry_status === 'cancelled';
+        const hasNoClass = !entry.race_class || entry.race_class === null || entry.race_class === '';
+        const isGreyedOut = isCancelled || hasNoClass;
+        const rowStyle = isGreyedOut ? 'style="background-color: #505050; opacity: 0.6;"' : '';
+        
         const itemsArray = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
         
         // Helper function to check if item contains text (handles both string arrays and object arrays)
@@ -2234,7 +2259,7 @@
         const raceClass = entry.race_class || entry.driver_class || '-';
         
         html += `
-          <tr data-entry-id="${entryId}">
+          <tr data-entry-id="${entryId}" ${rowStyle}>
             <td>${eventDate}</td>
             <td>${entry.driver_email || '-'}</td>
             <td>${driverName || '-'}</td>
@@ -2870,13 +2895,17 @@
         const result = await response.json();
         if (!result.success) throw new Error('Failed to load drivers');
         
-        const drivers = result.data || [];
+        const drivers = Array.isArray(result.data) ? result.data : (result.drivers || []);
         const select = document.getElementById('quickAddDriver');
         
         select.innerHTML = '<option value="">-- Select Driver --</option>';
-        drivers.forEach(d => {
-          select.innerHTML += `<option value="${d.driver_id}" data-class="${d.class || ''}">${d.first_name} ${d.last_name} - ${d.class || 'No Class'}</option>`;
-        });
+        if (!Array.isArray(drivers) || drivers.length === 0) {
+          select.innerHTML += '<option value="">No approved drivers found</option>';
+        } else {
+          drivers.forEach(d => {
+            select.innerHTML += `<option value="${d.driver_id}" data-class="${d.class || ''}">${d.first_name} ${d.last_name} - ${d.class || 'No Class'}</option>`;
+          });
+        }
         
         // Add change listener to auto-fill class
         select.onchange = function() {
