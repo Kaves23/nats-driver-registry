@@ -2278,9 +2278,7 @@
             </td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'team_code', '${entry.team_code || ''}')">${entry.team_code ? entry.team_code : '-'}</td>
             <td>
-              <button class="action-btn edit-btn" onclick="confirmRaceEntry('${entryId}')">Confirm</button>
-              <button class="action-btn delete-btn" onclick="deleteRaceEntry('${entryId}', '${driverName}')">Delete</button>
-              <button class="action-btn" onclick="sendTicketsEmail('${entryId}', '${entry.driver_email}')" style="background: #3b82f6; font-size: 11px; padding: 6px 10px;">📧 Send Tickets</button>
+              <button class="action-btn" onclick="showEntryActionsMenu(event, '${entryId}', '${driverName}', '${entry.driver_email}')" style="background: #6366f1; padding: 8px 12px; font-size: 12px;">⚙️ Actions ▼</button>
             </td>
           </tr>
         `;
@@ -2459,6 +2457,60 @@
         console.error('Error sending tickets email:', err);
         showToast(err.message, 'error');
       }
+    }
+
+    // Show actions dropdown menu
+    function showEntryActionsMenu(event, entryId, driverName, driverEmail) {
+      event.stopPropagation();
+      
+      // Remove any existing menu
+      const existingMenu = document.getElementById('entryActionsMenu');
+      if (existingMenu) existingMenu.remove();
+      
+      // Create menu
+      const menu = document.createElement('div');
+      menu.id = 'entryActionsMenu';
+      menu.style.cssText = `
+        position: fixed;
+        background: #2a2a2a;
+        border: 1px solid #404040;
+        border-radius: 8px;
+        padding: 8px 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        min-width: 200px;
+      `;
+      
+      menu.innerHTML = `
+        <div style="padding: 8px 16px; color: #9ca3af; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #404040; margin-bottom: 4px;">${driverName}</div>
+        <button onclick="confirmRaceEntry('${entryId}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #22c55e; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
+          ✓ Confirm Entry
+        </button>
+        <button onclick="sendTicketsEmail('${entryId}', '${driverEmail}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
+          📧 Send Tickets Email
+        </button>
+        <button onclick="deleteRaceEntry('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
+          🗑️ Delete Entry
+        </button>
+      `;
+      
+      document.body.appendChild(menu);
+      
+      // Position menu near click
+      const rect = event.target.getBoundingClientRect();
+      menu.style.left = rect.left + 'px';
+      menu.style.top = (rect.bottom + 5) + 'px';
+      
+      // Close menu when clicking outside
+      setTimeout(() => {
+        document.addEventListener('click', closeEntryActionsMenu);
+      }, 10);
+    }
+
+    function closeEntryActionsMenu() {
+      const menu = document.getElementById('entryActionsMenu');
+      if (menu) menu.remove();
+      document.removeEventListener('click', closeEntryActionsMenu);
     }
 
     async function exportRaceEntriesCSV() {
@@ -2895,15 +2947,19 @@
         const result = await response.json();
         if (!result.success) throw new Error('Failed to load drivers');
         
-        const drivers = Array.isArray(result.data) ? result.data : (result.drivers || []);
+        // Handle API response format: { success: true, data: { drivers: [...] } }
+        const drivers = result.data?.drivers || result.data || [];
         const select = document.getElementById('quickAddDriver');
+        
+        console.log('Quick Add: Received drivers:', drivers.length);
         
         select.innerHTML = '<option value="">-- Select Driver --</option>';
         if (!Array.isArray(drivers) || drivers.length === 0) {
           select.innerHTML += '<option value="">No approved drivers found</option>';
         } else {
           drivers.forEach(d => {
-            select.innerHTML += `<option value="${d.driver_id}" data-class="${d.class || ''}">${d.first_name} ${d.last_name} - ${d.class || 'No Class'}</option>`;
+            const driverEmail = d.driver_email || d.contact_email || '';
+            select.innerHTML += `<option value="${d.driver_id}" data-class="${d.class || ''}" data-email="${driverEmail}" data-name="${d.first_name} ${d.last_name}">${d.first_name} ${d.last_name} - ${d.class || 'No Class'}</option>`;
           });
         }
         
@@ -2943,12 +2999,21 @@
         if (!driverId) throw new Error('Please select a driver');
         if (!driverClass) throw new Error('Driver has no class assigned');
         
+        // Get driver details from selected option
+        const select = document.getElementById('quickAddDriver');
+        const selectedOption = select.options[select.selectedIndex];
+        const driverEmail = selectedOption.getAttribute('data-email') || '';
+        const driverName = selectedOption.getAttribute('data-name') || '';
+        
         // Build entry items array
         const entryItems = [];
-        if (document.getElementById('quickAddEngine').checked) entryItems.push('Engine Rental');
+        const hasEngine = document.getElementById('quickAddEngine').checked;
+        if (hasEngine) entryItems.push('Engine Rental');
         if (document.getElementById('quickAddTyres').checked) entryItems.push('Tyres (Optional)');
         if (document.getElementById('quickAddTransponder').checked) entryItems.push('Rent Transponder');
         if (document.getElementById('quickAddFuel').checked) entryItems.push('Controlled Fuel');
+        
+        showToast('Adding entry...', 'info');
         
         // Create entry via API
         const response = await fetch('/api/adminAddRaceEntry', {
@@ -2961,14 +3026,17 @@
             entry_items: entryItems,
             payment_status: paymentStatus,
             entry_status: paymentStatus === 'Completed' || paymentStatus === 'Free' ? 'confirmed' : 'pending_payment',
-            amount_paid: paymentStatus === 'Free' ? 0 : null
+            amount_paid: paymentStatus === 'Free' ? 0 : null,
+            send_emails: true,
+            create_trello_card: true,
+            update_engine_status: hasEngine
           })
         });
         
         const result = await response.json();
         if (!result.success) throw new Error(result.error || 'Failed to add entry');
         
-        showToast('Entry added successfully!', 'success');
+        showToast('Entry added successfully! Emails sent.', 'success');
         closeQuickAddEntryModal();
         loadRaceEntries(); // Reload entries table
       } catch (err) {

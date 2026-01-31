@@ -4659,7 +4659,10 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
       entry_items,
       payment_status,
       entry_status,
-      amount_paid
+      amount_paid,
+      send_emails,
+      create_trello_card,
+      update_engine_status
     } = req.body;
 
     if (!event_id || !driver_id || !race_class) {
@@ -4688,8 +4691,18 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
       return res.json({ success: false, error: 'Driver already has a manual entry for this event' });
     }
     
-    // Generate race_entry_id
+    // Generate race_entry_id and ticket references
     const race_entry_id = `entry_${event_id}_${driver_id}_${Date.now()}`;
+    
+    const hasEngine = entry_items?.some(item => item.toLowerCase().includes('engine'));
+    const hasTyres = entry_items?.some(item => item.toLowerCase().includes('tyre'));
+    const hasTransponder = entry_items?.some(item => item.toLowerCase().includes('transponder'));
+    const hasFuel = entry_items?.some(item => item.toLowerCase().includes('fuel'));
+    
+    const ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driver_id, event_id) : null;
+    const ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driver_id, event_id) : null;
+    const ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driver_id, event_id) : null;
+    const ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driver_id, event_id) : null;
     
     // Insert entry
     await pool.query(
@@ -4698,8 +4711,9 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
         first_name, last_name, email, 
         race_class, entry_items, transponder_number,
         payment_status, entry_status, amount_paid,
+        ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())`,
       [
         race_entry_id,
         event_id,
@@ -4712,11 +4726,67 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
         driver.transponder_number,
         payment_status || 'Completed',
         entry_status || 'confirmed',
-        amount_paid || 0
+        amount_paid || 0,
+        ticketEngineRef,
+        ticketTyresRef,
+        ticketTransponderRef,
+        ticketFuelRef
       ]
     );
     
     console.log(`✅ Manual entry added: ${race_entry_id} for ${driver.first_name} ${driver.last_name} - ${race_class}`);
+    
+    // Update engine status if needed
+    if (update_engine_status && hasEngine) {
+      try {
+        await pool.query(
+          'UPDATE drivers SET season_engine_rental = $1 WHERE driver_id = $2',
+          ['Y', driver_id]
+        );
+        console.log(`✅ Updated engine status for driver ${driver_id}`);
+      } catch (engineErr) {
+        console.error('⚠️ Failed to update engine status:', engineErr.message);
+      }
+    }
+    
+    // Send emails if requested
+    if (send_emails) {
+      try {
+        const eventResult = await pool.query(
+          'SELECT event_name, event_date, location FROM events WHERE event_id = $1',
+          [event_id]
+        );
+        
+        const event = eventResult.rows[0] || {};
+        const driverName = `${driver.first_name} ${driver.last_name}`.trim();
+        
+        // Build email with tickets
+        const emailResponse = await axios.post(`http://localhost:${process.env.PORT || 3000}/api/sendRaceTicketsEmail`, {
+          race_entry_id: race_entry_id
+        });
+        
+        console.log(`✅ Confirmation emails sent for ${driverName}`);
+      } catch (emailErr) {
+        console.error('⚠️ Failed to send emails (non-critical):', emailErr.message);
+      }
+    }
+    
+    // Create Trello card if requested
+    if (create_trello_card) {
+      try {
+        await adminNotificationQueue.addNotification({
+          type: 'race_entry_confirmation',
+          driver_id: driver_id,
+          driver_name: `${driver.first_name} ${driver.last_name}`,
+          event_id: event_id,
+          race_class: race_class,
+          entry_id: race_entry_id
+        });
+        console.log(`✅ Trello notification queued for ${driver.first_name} ${driver.last_name}`);
+      } catch (trelloErr) {
+        console.error('⚠️ Failed to queue Trello card (non-critical):', trelloErr.message);
+      }
+    }
     
     res.json({ 
       success: true, 
