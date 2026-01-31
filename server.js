@@ -4648,6 +4648,32 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
         [payment_reference]
       );
       
+      if (existing.rows.length > 0) {
+        return res.json({ 
+          success: true, 
+          message: 'Payment already reconciled',
+          data: existing.rows[0]
+        });
+      }
+      
+      // Create race entry
+      const race_entry_id = `race_entry_${pf_payment_id || Date.now()}_manual`;
+      await pool.query(
+        `INSERT INTO race_entries (
+          race_entry_id, event_id, driver_id, payment_reference, payment_status, 
+          entry_status, amount_paid, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+        [race_entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
+      );
+      
+      console.log(`✅ Race entry reconciled: ${race_entry_id}`);
+      res.json({ success: true, message: 'Race entry reconciled successfully', entry_id: race_entry_id });
+    }
+  } catch (err) {
+    console.error('❌ Error reconciling payment:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // Admin: Manually add race entry (no payment reference)
 app.post('/api/adminAddRaceEntry', async (req, res) => {
@@ -4671,7 +4697,7 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
 
     // Get driver details
     const driverResult = await pool.query(
-      'SELECT first_name, last_name, email, transponder_number FROM drivers WHERE driver_id = $1',
+      'SELECT d.first_name, d.last_name, c.email, d.transponder_number FROM drivers d LEFT JOIN contacts c ON d.driver_id = c.driver_id WHERE d.driver_id = $1',
       [driver_id]
     );
     
@@ -4691,8 +4717,10 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
       return res.json({ success: false, error: 'Driver already has a manual entry for this event' });
     }
     
-    // Generate race_entry_id and ticket references
-    const race_entry_id = `entry_${event_id}_${driver_id}_${Date.now()}`;
+    // Generate race_entry_id and ticket references (using same format as payment entries)
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const race_entry_id = `race_entry_${timestamp}_${randomSuffix}`;
     
     const hasEngine = entry_items?.some(item => item.toLowerCase().includes('engine'));
     const hasTyres = entry_items?.some(item => item.toLowerCase().includes('tyre'));
@@ -4707,23 +4735,18 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
     // Insert entry
     await pool.query(
       `INSERT INTO race_entries (
-        race_entry_id, event_id, driver_id, 
-        first_name, last_name, email, 
-        race_class, entry_items, transponder_number,
+        entry_id, event_id, driver_id, 
+        race_class, entry_items,
         payment_status, entry_status, amount_paid,
         ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())`,
       [
         race_entry_id,
         event_id,
         driver_id,
-        driver.first_name,
-        driver.last_name,
-        driver.email,
         race_class,
         JSON.stringify(entry_items || []),
-        driver.transponder_number,
         payment_status || 'Completed',
         entry_status || 'confirmed',
         amount_paid || 0,
@@ -4813,12 +4836,13 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
     const entryResult = await pool.query(
       `SELECT 
         re.*,
-        d.first_name, d.last_name, d.email as driver_email,
+        d.first_name, d.last_name, c.email as driver_email,
         e.event_name, e.event_date, e.location
        FROM race_entries re
        LEFT JOIN drivers d ON re.driver_id = d.driver_id
+       LEFT JOIN contacts c ON re.driver_id = c.driver_id
        LEFT JOIN events e ON re.event_id = e.event_id
-       WHERE re.race_entry_id = $1`,
+       WHERE re.entry_id = $1`,
       [race_entry_id]
     );
     
@@ -4848,67 +4872,56 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
     // Generate ticket references if not present
     if (hasEngine && !entry.ticket_engine_ref) {
       entry.ticket_engine_ref = generateUniqueTicketRef('engine', entry.driver_id, entry.event_id);
-      await pool.query('UPDATE race_entries SET ticket_engine_ref = $1 WHERE race_entry_id = $2', 
+      await pool.query('UPDATE race_entries SET ticket_engine_ref = $1 WHERE entry_id = $2', 
         [entry.ticket_engine_ref, race_entry_id]);
     }
     if (hasTyres && !entry.ticket_tyres_ref) {
       entry.ticket_tyres_ref = generateUniqueTicketRef('tyres', entry.driver_id, entry.event_id);
-      await pool.query('UPDATE race_entries SET ticket_tyres_ref = $1 WHERE race_entry_id = $2', 
+      await pool.query('UPDATE race_entries SET ticket_tyres_ref = $1 WHERE entry_id = $2', 
         [entry.ticket_tyres_ref, race_entry_id]);
     }
     if (hasTransponder && !entry.ticket_transponder_ref) {
       entry.ticket_transponder_ref = generateUniqueTicketRef('transponder', entry.driver_id, entry.event_id);
-      await pool.query('UPDATE race_entries SET ticket_transponder_ref = $1 WHERE race_entry_id = $2', 
+      await pool.query('UPDATE race_entries SET ticket_transponder_ref = $1 WHERE entry_id = $2', 
         [entry.ticket_transponder_ref, race_entry_id]);
     }
     if (hasFuel && !entry.ticket_fuel_ref) {
       entry.ticket_fuel_ref = generateUniqueTicketRef('fuel', entry.driver_id, entry.event_id);
-      await pool.query('UPDATE race_entries SET ticket_fuel_ref = $1 WHERE race_entry_id = $2', 
+      await pool.query('UPDATE race_entries SET ticket_fuel_ref = $1 WHERE entry_id = $2', 
         [entry.ticket_fuel_ref, race_entry_id]);
     }
     
-    // Build tickets HTML
-    let ticketsHtml = '';
-    if (hasEngine || hasTyres || hasTransponder || hasFuel) {
-      ticketsHtml = '<div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;"><div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Rental Items</div>';
-      
-      if (hasEngine && entry.ticket_engine_ref) {
-        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #f97316;">
-          <div style="font-size: 13px; color: #f97316; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Engine Rental</div>
-          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Pool Engine Reserved</div>
-          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Your competition engine is assigned for this event. Technical inspection required before practice.</div>
-          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_engine_ref}</div>
-        </div>`;
-      }
-      
-      if (hasTyres && entry.ticket_tyres_ref) {
-        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #8b5cf6;">
-          <div style="font-size: 13px; color: #8b5cf6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Tyre Rental</div>
-          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Complete Tyre Set</div>
-          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Tyres included with your entry. Available for collection at race practice day.</div>
-          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_tyres_ref}</div>
-        </div>`;
-      }
-      
-      if (hasTransponder && entry.ticket_transponder_ref) {
-        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #0ea5e9;">
-          <div style="font-size: 13px; color: #0ea5e9; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Transponder Rental</div>
-          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Timing Transponder</div>
-          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Transponder issued at race control. Must be installed before technical inspection.</div>
-          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_transponder_ref}</div>
-        </div>`;
-      }
-      
-      if (hasFuel && entry.ticket_fuel_ref) {
-        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #10b981;">
-          <div style="font-size: 13px; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Fuel Package</div>
-          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Race Fuel Included</div>
-          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Pre-measured fuel allocation available at pit area.</div>
-          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${entry.ticket_fuel_ref}</div>
-        </div>`;
-      }
-      
-      ticketsHtml += '</div>';
+    // Build rental tickets HTML using ticket generator functions with barcodes
+    let rentalTicketsHtml = '';
+    if (hasEngine && entry.ticket_engine_ref) {
+      rentalTicketsHtml += generateEngineRentalTicketHTML({
+        reference: entry.ticket_engine_ref,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
+    }
+    if (hasTyres && entry.ticket_tyres_ref) {
+      rentalTicketsHtml += generateTyreRentalTicketHTML({
+        reference: entry.ticket_tyres_ref,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
+    }
+    if (hasTransponder && entry.ticket_transponder_ref) {
+      rentalTicketsHtml += generateTransponderRentalTicketHTML({
+        reference: entry.ticket_transponder_ref,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
     }
     
     // Format event details
@@ -4982,8 +4995,6 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
               </div>
             </div>
             
-            ${ticketsHtml}
-            
             ${generateRaceTicketHTML({
               reference: entry.payment_reference || race_entry_id,
               eventName,
@@ -4993,6 +5004,8 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
               driverName,
               teamCode: null
             })}
+            
+            ${rentalTicketsHtml}
             
             <p style="margin: 20px 0; font-size: 14px; color: #374151;">See you at the track! If you have any questions, please contact us.</p>
             
@@ -5028,34 +5041,6 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
   } catch (err) {
     console.error('Error sending tickets email:', err);
     res.json({ success: false, error: err.message });
-  }
-});
-
-      if (existing.rows.length > 0) {
-        return res.json({ 
-          success: true, 
-          message: 'Payment already reconciled',
-          data: existing.rows[0]
-        });
-      }
-      
-      // Create race entry
-      const race_entry_id = `race_entry_${pf_payment_id || Date.now()}`;
-      await pool.query(
-        `INSERT INTO race_entries (
-          race_entry_id, event_id, driver_id, payment_reference, 
-          payment_status, entry_status, amount_paid, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-        [race_entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
-      );
-      
-      console.log(`✅ Race entry reconciled: ${race_entry_id}`);
-      res.json({ success: true, message: 'Race entry reconciled successfully', entry_id: race_entry_id });
-    }
-    
-  } catch (err) {
-    console.error('❌ reconcilePayment error:', err.message);
-    res.status(400).json({ success: false, error: err.message });
   }
 });
 
