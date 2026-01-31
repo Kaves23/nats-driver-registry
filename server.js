@@ -4256,24 +4256,56 @@ app.post('/api/paymentNotify', async (req, res) => {
     const race_entry_id = `race_entry_${pf_payment_id}`;
     if (!isPoolEngineRental) {
       // ✅ FIX #1b: Update pending entry to completed (or insert if webhook came first)
+      // First, try to get existing pending entry to preserve race_class and other data
+      const existingEntry = await pool.query(
+        'SELECT * FROM race_entries WHERE payment_reference = $1',
+        [reference]
+      );
+      
+      let raceClass = null;
+      let entryItems = null;
+      
+      if (existingEntry.rows.length > 0) {
+        raceClass = existingEntry.rows[0].race_class;
+        entryItems = existingEntry.rows[0].entry_items;
+        console.log(`📝 Found existing pending entry with class: ${raceClass}`);
+      } else {
+        console.log(`⚠️ No pending entry found for reference: ${reference}, creating new entry`);
+      }
+      
+      // Build entry_items array from item_description
+      if (!entryItems) {
+        entryItems = [];
+        if (hasEngine) entryItems.push('Engine Rental');
+        if (hasTyres) entryItems.push('Tyres (Optional)');
+        if (hasTransponder) entryItems.push('Rent Transponder');
+        if (hasFuel) entryItems.push('Controlled Fuel');
+      }
+      
       // ON CONFLICT now updates the pending entry we created during initiation
       await pool.query(
-        `INSERT INTO race_entries (race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, amount_paid, ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `INSERT INTO race_entries (
+          race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, 
+          amount_paid, race_class, entry_items, ticket_engine_ref, ticket_tyres_ref, 
+          ticket_transponder_ref, ticket_fuel_ref, created_at
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
          ON CONFLICT (payment_reference) 
          DO UPDATE SET 
            race_entry_id = $1,
            payment_status = $5, 
            entry_status = $6, 
-           amount_paid = $7, 
-           ticket_engine_ref = $8, 
-           ticket_tyres_ref = $9, 
-           ticket_transponder_ref = $10, 
-           ticket_fuel_ref = $11,
+           amount_paid = $7,
+           entry_items = $9,
+           ticket_engine_ref = $10, 
+           ticket_tyres_ref = $11, 
+           ticket_transponder_ref = $12, 
+           ticket_fuel_ref = $13,
            updated_at = NOW()`,
-        [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', amount_gross, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
+        [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', amount_gross, 
+         raceClass, entryItems, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
       );
-      console.log(`✅ Race entry updated from pending to completed: ${race_entry_id}`);
+      console.log(`✅ Race entry updated from pending to completed: ${race_entry_id} (Class: ${raceClass})`);
     }
 
     console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross} - Driver: ${driverId}`);
