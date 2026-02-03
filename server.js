@@ -3351,15 +3351,187 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // ✅ FIX #1: Create pending race entry BEFORE redirecting to PayFast
     // This allows us to reconcile payments if notification fails
     const race_entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    
+    // Generate unique ticket references for rental items
+    const ticketEngineRef = generateUniqueTicketRef('engine', driverId, eventId);
+    const ticketTyresRef = null; // Will be set if tyres included
+    const ticketTransponderRef = null; // Will be set if transponder included
+    const ticketFuelRef = null; // Will be set if fuel included
+    
     try {
       await pool.query(
         `INSERT INTO race_entries (
           entry_id, event_id, driver_id, payment_reference, 
-          payment_status, entry_status, amount_paid, race_class, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
-        [race_entry_id, eventId, driverId, reference, 'Pending', 'pending_payment', numAmount, raceClass]
+          payment_status, entry_status, amount_paid, race_class, 
+          ticket_engine_ref, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+        [race_entry_id, eventId, driverId, reference, 'Pending', 'pending_payment', numAmount, raceClass, ticketEngineRef]
       );
       console.log(`📝 Created pending race entry: ${race_entry_id} with reference ${reference}`);
+      
+      // ✅ SEND IMMEDIATE CONFIRMATION EMAIL WITH TICKETS
+      try {
+        // Get driver details
+        const driverResult = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driverId]);
+        const driver = driverResult.rows[0];
+        const driverName = driver ? `${driver.first_name || ''} ${driver.last_name || ''}`.trim() : 'Driver';
+        
+        // Get event details
+        let eventName = 'Race Event';
+        let eventDateStr = 'TBA';
+        let eventLocation = 'TBA';
+        let eventDate = null;
+        
+        const eventResult = await pool.query('SELECT * FROM events WHERE event_id = $1', [eventId]);
+        const eventDetails = eventResult.rows[0];
+        if (eventDetails) {
+          eventName = eventDetails.event_name || 'Race Event';
+          eventDate = eventDetails.event_date;
+          eventDateStr = eventDetails.event_date 
+            ? new Date(eventDetails.event_date).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+            : 'TBA';
+          eventLocation = eventDetails.location || 'TBA';
+        }
+        
+        // Build rental tickets HTML (engine included by default for paid entries)
+        let ticketsHtml = '';
+        ticketsHtml = '<div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;"><div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Rental Items</div>';
+        
+        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #f97316;">
+          <div style="font-size: 13px; color: #f97316; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Engine Rental</div>
+          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Pool Engine Reserved</div>
+          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Your competition engine is assigned for this event. Technical inspection required before practice.</div>
+          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${ticketEngineRef}</div>
+        </div>`;
+        
+        ticketsHtml += '</div>';
+        
+        // Email HTML template
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Race Entry Confirmation — NATS 2026 ROK Cup</title>
+            <style>
+              body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+              .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+              .header { background: white; padding: 20px; text-align: center; border-bottom: 3px solid #22c55e; }
+              .header-logo { margin-bottom: 16px; }
+              .header-logo img { width: 140px; height: auto; }
+              .header h1 { margin: 0; font-size: 24px; font-weight: 700; color: #111827; }
+              .content { padding: 30px; }
+              .details { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e; }
+              .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+              .detail-row:last-child { border-bottom: none; }
+              .detail-label { font-weight: 600; color: #6b7280; font-size: 13px; }
+              .detail-value { color: #111827; font-weight: 500; }
+              .amount { font-size: 22px; font-weight: 700; color: #22c55e; }
+              .footer { background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; }
+            </style>
+          </head>
+          <body style="margin: 0; padding: 20px;">
+            <div class="container">
+              <div class="header">
+                <div class="header-logo">
+                  <img src="https://www.dropbox.com/scl/fi/ryhszrvk76kd7yy6y0rtc/ROK-CUP-LOGO-2025.png?rlkey=k9dxlzbh5e9zw58v8t34yjzea&dl=1" alt="ROK Cup South Africa" />
+                </div>
+                <h1>Race Entry Confirmed</h1>
+              </div>
+              <div class="content">
+                <p style="margin: 0 0 16px 0; font-size: 15px;">Hi ${driverName},</p>
+                <p style="margin: 0 0 20px 0; font-size: 15px; color: #374151;">Your race entry has been registered! Payment processing will complete shortly. Thank you for registering with the NATS 2026 ROK Cup!</p>
+                
+                <div class="details">
+                  <div class="detail-row">
+                    <span class="detail-label">Entry Reference</span>
+                    <span class="detail-value">${reference}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Event Name</span>
+                    <span class="detail-value">${eventName}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Event Date</span>
+                    <span class="detail-value">${eventDateStr}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Location</span>
+                    <span class="detail-value">${eventLocation}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Race Class</span>
+                    <span class="detail-value">${raceClass}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Amount</span>
+                    <span class="detail-value amount">R${numAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Registration Date</span>
+                    <span class="detail-value">${new Date().toLocaleDateString('en-ZA')}</span>
+                  </div>
+                </div>
+                
+                ${ticketsHtml}
+                
+                ${generateRaceTicketHTML({
+                  reference,
+                  eventName,
+                  eventDate,
+                  eventLocation,
+                  raceClass,
+                  driverName,
+                  teamCode: null
+                })}
+                
+                <p style="margin: 20px 0; font-size: 14px; color: #374151;">Your payment will be processed by PayFast. Once confirmed, your entry status will be updated to "Completed". If you have any questions, please contact us.</p>
+                
+                <p style="margin: 20px 0 0 0; font-size: 14px;">Best regards,<br><strong style="color: #22c55e;">NATS 2026 ROK Cup Team</strong></p>
+              </div>
+              <div class="footer">
+                <p style="margin: 0; color: #6b7280;">This is an automated confirmation email. Please do not reply to this message.</p>
+                <p style="margin: 8px 0 0 0;"><a href="https://rokthenats.co.za/" style="color: #2563eb; text-decoration: none; font-weight: 600;">Visit the NATS Event Hub</a></p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        // Send to driver
+        await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+          key: process.env.MAILCHIMP_API_KEY,
+          message: {
+            to: [{ email: driverEmail, name: driverName }],
+            bcc_address: 'africankartingcup@gmail.com',
+            from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+            subject: `Race Entry Confirmed - ${eventName} (${raceClass})`,
+            html: emailHtml
+          }
+        });
+        
+        console.log(`📧 IMMEDIATE confirmation email sent to driver: ${driverEmail}`);
+
+        // Send to John (CC)
+        await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+          key: process.env.MAILCHIMP_API_KEY,
+          message: {
+            to: [{ email: 'john@rokcup.co.za', name: 'John' }],
+            bcc_address: 'africankartingcup@gmail.com',
+            from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+            subject: `New Entry - ${driverName} (${raceClass})`,
+            html: emailHtml
+          }
+        });
+        
+        console.log(`📧 IMMEDIATE confirmation email sent to john@rokcup.co.za`);
+
+      } catch (emailErr) {
+        console.error('⚠️ IMMEDIATE email sending failed (non-critical):', emailErr.message);
+        // Don't fail the payment initiation if email fails
+      }
+      
     } catch (dbErr) {
       console.error('⚠️ Could not create pending entry (non-fatal):', dbErr.message);
       // Don't fail the payment - just log and continue
@@ -4326,8 +4498,84 @@ app.post('/api/paymentNotify', async (req, res) => {
     if (ticketTransponderRef) console.log(`   Transponder ticket: ${ticketTransponderRef}`);
     if (ticketFuelRef) console.log(`   Fuel ticket: ${ticketFuelRef}`);
 
-    // Send confirmation emails
+    // ⚠️ EMAIL DISABLED FOR RACE ENTRIES - Now sent immediately when payment is initiated
+    // This prevents duplicate emails. Pool engine rentals still get emails here.
+    // Send confirmation emails (ONLY for pool engine rentals)
     try {
+      if (isPoolEngineRental) {
+        // Pool engine rental email sending (keep this)
+        const driverName = `${name_first || 'Driver'} ${name_last || ''}`.trim();
+        
+        const emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="utf-8"></head>
+          <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 24px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 20px;">🏎️ POOL ENGINE PURCHASE CONFIRMED!</h1>
+              </div>
+              <div style="padding: 24px;">
+                <p style="margin: 0 0 16px 0; font-size: 16px; color: #111827;"><strong>Your seasonal pool engine rental is confirmed!</strong></p>
+                
+                <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin: 16px 0;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Driver Name:</td><td style="padding: 8px 0; color: #111827;">${driverName}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Email:</td><td style="padding: 8px 0; color: #111827;">${email_address}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Championship Class:</td><td style="padding: 8px 0; color: #111827; font-weight: 700;">${rentalClass}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Rental Type:</td><td style="padding: 8px 0; color: #111827; font-weight: 700;">${rentalType}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Amount Paid:</td><td style="padding: 8px 0; color: #16a34a; font-weight: 700; font-size: 18px;">R${parseFloat(amount_gross).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Payment Reference:</td><td style="padding: 8px 0; color: #111827; font-family: monospace;">${reference}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">PayFast Transaction:</td><td style="padding: 8px 0; color: #111827; font-family: monospace;">${pf_payment_id}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #92400e; font-weight: 600;">Season Year:</td><td style="padding: 8px 0; color: #111827;">${new Date().getFullYear()}</td></tr>
+                  </table>
+                </div>
+                
+                <p style="margin: 16px 0 0 0; font-size: 14px; color: #6b7280;">You can now enter races without additional engine charges for the remainder of the season.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+        
+        // Send to driver
+        await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+          key: process.env.MAILCHIMP_API_KEY,
+          message: {
+            to: [{ email: email_address, name: driverName }],
+            bcc_address: 'africankartingcup@gmail.com',
+            from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+            subject: `Pool Engine Rental Confirmed - ${rentalClass}`,
+            html: emailHtml
+          }
+        });
+        
+        console.log(`📧 Pool engine confirmation email sent to driver: ${email_address}`);
+
+        // Send to John (CC)
+        await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+          key: process.env.MAILCHIMP_API_KEY,
+          message: {
+            to: [{ email: 'john@rokcup.co.za', name: 'John' }],
+            bcc_address: 'africankartingcup@gmail.com',
+            from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+            subject: `Pool Engine Purchase - ${driverName} (${rentalClass})`,
+            html: emailHtml
+          }
+        });
+        
+        console.log(`📧 Pool engine confirmation email sent to john@rokcup.co.za`);
+      } else {
+        console.log(`ℹ️ Race entry email SKIPPED - already sent during payment initiation`);
+      }
+      
+    } catch (emailErr) {
+      console.error('⚠️ Email sending failed (non-critical):', emailErr.message);
+      // Don't fail the IPN response if email fails
+    }
+    
+    // Delete old unused email code below
+    /*
       const driverName = `${name_first || 'Driver'} ${name_last || ''}`.trim();
       
       // Fetch event details if not pool engine rental
@@ -4358,6 +4606,9 @@ app.post('/api/paymentNotify', async (req, res) => {
       
       // Build ticket HTML using unique references
       const hasFuel = itemDesc.includes('fuel');
+      
+      // Initialize rental tickets HTML (empty if no rentals)
+      let ticketsHtml = '';
       
       if (hasEngine || hasTyres || hasTransponder || hasFuel) {
         ticketsHtml = '<div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;"><div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Rental Items</div>';
@@ -4546,11 +4797,8 @@ app.post('/api/paymentNotify', async (req, res) => {
       });
       
       console.log(`📧 Confirmation email sent to john@rokcup.co.za`);
-
-    } catch (emailErr) {
-      console.error('⚠️ Email sending failed (non-critical):', emailErr.message);
-      // Don't fail the IPN response if email fails
-    }
+    */
+    // END OLD UNUSED EMAIL CODE - COMMENTED OUT
 
     res.json({ success: true });
   } catch (err) {
