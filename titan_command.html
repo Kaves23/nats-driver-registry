@@ -799,18 +799,36 @@
   <!-- Entry Edit Modal -->
   <div id="entryEditModal" class="modal">
     <div class="modal-header">
-      <div class="modal-title">Edit Entry</div>
+      <div class="modal-title">Edit Entry Details</div>
       <button class="close-btn" onclick="closeEntryEditModal()">CLOSE</button>
     </div>
-    <div class="modal-content">
+    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
       <div class="edit-form">
+        <!-- DRIVER INFO SECTION (READ ONLY) -->
+        <h3 style="color: #fbbf24; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #374151; padding-bottom: 8px;">🏁 Driver Information</h3>
+        
+        <div class="form-group">
+          <label class="form-label">Entry ID (Read Only)</label>
+          <input type="text" class="form-input" id="entry_entry_id" readonly style="opacity: 0.6; font-family: monospace; font-size: 12px;">
+        </div>
+        
         <div class="form-group">
           <label class="form-label">Driver Name (Read Only)</label>
           <input type="text" class="form-input" id="entry_driver_name" readonly style="opacity: 0.6;">
         </div>
+        
+        <div class="form-group">
+          <label class="form-label">Driver ID (Read Only)</label>
+          <input type="text" class="form-input" id="entry_driver_id" readonly style="opacity: 0.6; font-family: monospace; font-size: 12px;">
+        </div>
+
+        <!-- RACE DETAILS SECTION (EDITABLE) -->
+        <h3 style="color: #10b981; margin-top: 25px; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #374151; padding-bottom: 8px;">✏️ Race Details (Editable)</h3>
+        
         <div class="form-group">
           <label class="form-label">Race Class</label>
           <select class="form-select" id="entry_race_class">
+            <option value="">-- Select Class --</option>
             <option value="CADET">CADET</option>
             <option value="MINI ROK U/10">MINI ROK U/10</option>
             <option value="MINI ROK">MINI ROK</option>
@@ -819,10 +837,25 @@
             <option value="KZ2">KZ2</option>
           </select>
         </div>
+        
         <div class="form-group">
           <label class="form-label">Race Number</label>
-          <input type="text" class="form-input" id="entry_race_number">
+          <input type="text" class="form-input" id="entry_race_number" placeholder="e.g., 23">
         </div>
+        
+        <div class="form-group">
+          <label class="form-label">Team Code</label>
+          <input type="text" class="form-input" id="entry_team_code" placeholder="Optional team code">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Engine Value</label>
+          <input type="text" class="form-input" id="entry_engine" placeholder="Engine type (e.g., Vortex)">
+        </div>
+
+        <!-- STATUS & PAYMENT SECTION (EDITABLE) -->
+        <h3 style="color: #10b981; margin-top: 25px; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #374151; padding-bottom: 8px;">💰 Status & Payment (Editable)</h3>
+        
         <div class="form-group">
           <label class="form-label">Entry Status</label>
           <select class="form-select" id="entry_status">
@@ -831,21 +864,40 @@
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
+        
         <div class="form-group">
           <label class="form-label">Payment Status</label>
           <select class="form-select" id="entry_payment_status">
             <option value="Pending">Pending</option>
             <option value="Paid">Paid</option>
             <option value="Partial">Partial</option>
+            <option value="Completed">Completed</option>
+            <option value="Failed">Failed</option>
           </select>
         </div>
+        
         <div class="form-group">
           <label class="form-label">Amount Paid (R)</label>
-          <input type="number" class="form-input" id="entry_amount_paid">
+          <input type="number" class="form-input" id="entry_amount_paid" step="0.01" placeholder="0.00">
         </div>
-        <div class="btn-group">
-          <button class="save-btn-modal" onclick="saveEntryEdit()">SAVE</button>
-          <button class="cancel-btn-modal" onclick="closeEntryEditModal()">CANCEL</button>
+
+        <!-- TIMESTAMPS SECTION (READ ONLY) -->
+        <h3 style="color: #fbbf24; margin-top: 25px; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #374151; padding-bottom: 8px;">🕒 Timestamps</h3>
+        
+        <div class="form-group">
+          <label class="form-label">Created At (Read Only)</label>
+          <input type="text" class="form-input" id="entry_created_at" readonly style="opacity: 0.6; font-family: monospace; font-size: 12px;">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Updated At (Read Only)</label>
+          <input type="text" class="form-input" id="entry_updated_at" readonly style="opacity: 0.6; font-family: monospace; font-size: 12px;">
+        </div>
+
+        <!-- SAVE/CANCEL BUTTONS -->
+        <div class="btn-group" style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #374151;">
+          <button class="save-btn-modal" onclick="saveEntryEdit()" style="background: #10b981; flex: 1;">💾 SAVE CHANGES</button>
+          <button class="cancel-btn-modal" onclick="closeEntryEditModal()" style="flex: 1;">❌ CANCEL</button>
         </div>
       </div>
     </div>
@@ -1358,13 +1410,25 @@
         entry_id: entry.entry_id
       });
       
-      // Populate form fields
-      document.getElementById('entry_driver_name').value = `${entry.driver_first_name} ${entry.driver_last_name}`;
+      // Populate DRIVER INFO fields (read-only)
+      document.getElementById('entry_entry_id').value = entry.entry_id || '';
+      document.getElementById('entry_driver_name').value = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
+      document.getElementById('entry_driver_id').value = entry.driver_id || '';
+      
+      // Populate RACE DETAILS fields (editable)
       document.getElementById('entry_race_class').value = entry.race_class || '';
       document.getElementById('entry_race_number').value = entry.race_number || '';
+      document.getElementById('entry_team_code').value = entry.team_code || '';
+      document.getElementById('entry_engine').value = entry.engine || '';
+      
+      // Populate STATUS & PAYMENT fields (editable)
       document.getElementById('entry_status').value = entry.entry_status || 'pending';
       document.getElementById('entry_payment_status').value = entry.payment_status || 'Pending';
       document.getElementById('entry_amount_paid').value = entry.amount_paid || 0;
+      
+      // Populate TIMESTAMPS (read-only)
+      document.getElementById('entry_created_at').value = entry.created_at || '';
+      document.getElementById('entry_updated_at').value = entry.updated_at || '';
       
       // Show edit modal
       document.getElementById('entryEditModal').classList.add('active');
@@ -1391,11 +1455,13 @@
       
       const updatedData = {
         entry_id: entryId,
-        race_class: document.getElementById('entry_race_class').value,
-        race_number: document.getElementById('entry_race_number').value,
+        race_class: document.getElementById('entry_race_class').value || null,
+        race_number: document.getElementById('entry_race_number').value || null,
+        team_code: document.getElementById('entry_team_code').value || null,
+        engine: document.getElementById('entry_engine').value || null,
         entry_status: document.getElementById('entry_status').value,
         payment_status: document.getElementById('entry_payment_status').value,
-        amount_paid: document.getElementById('entry_amount_paid').value,
+        amount_paid: document.getElementById('entry_amount_paid').value || 0,
         performed_by: 'TITAN'  // Log as TITAN
       };
 
@@ -1409,7 +1475,7 @@
         const data = await response.json();
 
         if (data.success) {
-          alert('Entry updated successfully!');
+          alert('✅ Entry updated successfully!\n\nChanges saved:\n• Race Class\n• Race Number\n• Team Code\n• Engine\n• Entry Status\n• Payment Status\n• Amount Paid');
           closeEntryEditModal();
           await loadEntries(); // Refresh entry list
         } else {
@@ -1417,7 +1483,7 @@
         }
       } catch (error) {
         console.error('Error updating entry:', error);
-        alert('Failed to update entry: ' + error.message);
+        alert('❌ Failed to update entry:\n\n' + error.message);
       }
     }
 
@@ -1428,15 +1494,9 @@
 
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => {
-            console.log('✅ Service Worker registered:', registration.scope);
-          })
-          .catch(error => {
-            console.log('❌ Service Worker registration failed:', error);
-          });
-      });
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('Service Worker registered'))
+        .catch(err => console.error('Service Worker registration failed:', err));
     }
   </script>
 </body>
