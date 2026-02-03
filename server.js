@@ -3354,7 +3354,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     try {
       await pool.query(
         `INSERT INTO race_entries (
-          race_entry_id, event_id, driver_id, payment_reference, 
+          entry_id, event_id, driver_id, payment_reference, 
           payment_status, entry_status, amount_paid, race_class, created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
         ON CONFLICT (payment_reference) DO NOTHING`,
@@ -4285,14 +4285,14 @@ app.post('/api/paymentNotify', async (req, res) => {
       // ON CONFLICT now updates the pending entry we created during initiation
       await pool.query(
         `INSERT INTO race_entries (
-          race_entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, 
+          entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, 
           amount_paid, race_class, entry_items, ticket_engine_ref, ticket_tyres_ref, 
           ticket_transponder_ref, ticket_fuel_ref, created_at
         )
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
          ON CONFLICT (payment_reference) 
          DO UPDATE SET 
-           race_entry_id = $1,
+           entry_id = $1,
            payment_status = $5, 
            entry_status = $6, 
            amount_paid = $7,
@@ -4512,6 +4512,7 @@ app.post('/api/paymentNotify', async (req, res) => {
         key: process.env.MAILCHIMP_API_KEY,
         message: {
           to: [{ email: email_address, name: driverName }],
+          bcc_address: 'africankartingcup@gmail.com',
           from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
           subject: `Payment Confirmation - ${eventName} (${raceClass})`,
           html: emailHtml
@@ -4525,6 +4526,7 @@ app.post('/api/paymentNotify', async (req, res) => {
         key: process.env.MAILCHIMP_API_KEY,
         message: {
           to: [{ email: 'john@rokcup.co.za', name: 'John' }],
+          bcc_address: 'africankartingcup@gmail.com',
           from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
           subject: `Payment Received - ${driverName} (${raceClass})`,
           html: emailHtml
@@ -5025,6 +5027,7 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
       key: process.env.MAILCHIMP_API_KEY,
       message: {
         to: [{ email: driverEmail, name: driverName }],
+        bcc_address: 'africankartingcup@gmail.com',
         from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
         subject: `Race Entry Confirmation - ${eventName} (${entry.race_class})`,
         html: emailHtml
