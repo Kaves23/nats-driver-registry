@@ -3299,10 +3299,10 @@ app.post('/api/admin/restoreDriver', async (req, res) => {
 app.get('/api/debug/payfast', (req, res) => {
   res.json({
     merchantId: process.env.PAYFAST_MERCHANT_ID || 'NOT SET - using default 18906399',
-    merchantKey: process.env.PAYFAST_MERCHANT_KEY ? '***SET (length: ' + process.env.PAYFAST_MERCHANT_KEY.length + ')***' : 'NOT SET - using default wz69jyr6y9zr2',
-    returnUrl: process.env.PAYFAST_RETURN_URL || 'Using default: https://livenats.co.za/payment-success.html',
-    cancelUrl: process.env.PAYFAST_CANCEL_URL || 'Using default: https://livenats.co.za/payment-cancel.html',
-    notifyUrl: process.env.PAYFAST_NOTIFY_URL || 'Using default: https://livenats.co.za/api/paymentNotify'
+    merchantKey: process.env.PAYFAST_MERCHANT_KEY ? '***SET (length: ' + process.env.PAYFAST_MERCHANT_KEY.length + ')***' : 'NOT SET - using default fbxpiwtzoh1gg',
+    returnUrl: process.env.PAYFAST_RETURN_URL || 'Using default: https://www.rokthenats.co.za/payment-success.html',
+    cancelUrl: process.env.PAYFAST_CANCEL_URL || 'Using default: https://www.rokthenats.co.za/payment-cancel.html',
+    notifyUrl: process.env.PAYFAST_NOTIFY_URL || 'Using default: https://www.rokthenats.co.za/api/paymentNotify'
   });
 });
 
@@ -3341,9 +3341,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // PayFast Merchant ID and Key (from environment or correct defaults)
     const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
     const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
-    const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://nats-driver-registry.onrender.com/payment-success.html';
-    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://nats-driver-registry.onrender.com/payment-cancel.html';
-    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://nats-driver-registry.onrender.com/api/paymentNotify';
+    const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://www.rokthenats.co.za/payment-success.html';
+    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://www.rokthenats.co.za/payment-cancel.html';
+    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify';
 
     // Generate unique reference that includes event and driver info
     const reference = `RACE-${eventId}-${driverId}-${Date.now()}`;
@@ -3518,9 +3518,9 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
 
     const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
     const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
-    const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://nats-driver-registry.onrender.com/payment-success.html';
-    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://nats-driver-registry.onrender.com/payment-cancel.html';
-    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://nats-driver-registry.onrender.com/api/paymentNotify';
+    const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://www.rokthenats.co.za/payment-success.html';
+    const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://www.rokthenats.co.za/payment-cancel.html';
+    const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify';
 
     const reference = `POOL-${rentalClass}-${rentalType}-${driverId}-${Date.now()}`;
 

@@ -6248,6 +6248,12 @@
     
     function closeRaceEntryModal() {
       document.getElementById('raceEntryModal').style.display = 'none';
+      // Clear discount code when modal closes
+      window.appliedDiscountCode = null;
+      const codeInput = document.getElementById('teamCodeInput');
+      const codeMessage = document.getElementById('codeMessage');
+      if (codeInput) codeInput.value = '';
+      if (codeMessage) codeMessage.style.display = 'none';
     }
 
     // Function to validate team/discount code
@@ -6263,6 +6269,7 @@
         totalPriceEl.style.color = '#22c55e';
         proceedBtn.textContent = 'Proceed to Payment';
         proceedBtn.style.background = '#22c55e';
+        window.appliedDiscountCode = null; // Clear discount BEFORE recalculating
         updateRaceTotal();
         return;
       }
@@ -6280,9 +6287,20 @@
           codeMessage.style.display = 'block';
           codeMessage.style.color = '#22c55e';
           
-          // Calculate discount
-          const currentTotal = parseFloat(totalPriceEl.textContent.replace('R', '').replace(',', '').trim());
+          // Calculate discount - handle South African format (R6 855,00)
+          const totalText = totalPriceEl.textContent;
+          // Remove R, remove spaces, replace comma with period
+          const cleanedTotal = totalText.replace('R', '').replace(/\s/g, '').replace(',', '.');
+          const currentTotal = parseFloat(cleanedTotal);
           let newTotal = currentTotal;
+          
+          console.log('💰 Discount Code Applied:');
+          console.log('  Code:', discountCode.code);
+          console.log('  Type:', discountCode.discount_type);
+          console.log('  Value:', discountCode.discount_value);
+          console.log('  Total Text:', totalText);
+          console.log('  Cleaned:', cleanedTotal);
+          console.log('  Current Total (parsed):', currentTotal);
           
           if (discountCode.discount_type === 'free') {
             newTotal = 0;
@@ -6295,8 +6313,11 @@
             proceedBtn.textContent = 'Proceed to Payment';
             proceedBtn.style.background = '#22c55e';
           } else if (discountCode.discount_type === 'fixed') {
-            newTotal = Math.max(0, currentTotal - discountCode.discount_value);
-            codeMessage.textContent = `✓ ${discountCode.description || 'Valid code'} - R${discountCode.discount_value} discount applied!`;
+            // Handle both positive discounts (500) and negative amounts (-500)
+            // If negative, treat as absolute value to subtract
+            const discountAmount = Math.abs(discountCode.discount_value);
+            newTotal = Math.max(0, currentTotal - discountAmount);
+            codeMessage.textContent = `✓ ${discountCode.description || 'Valid code'} - R${discountAmount.toFixed(2)} discount applied!`;
             proceedBtn.textContent = newTotal === 0 ? 'Enter Race' : 'Proceed to Payment';
             proceedBtn.style.background = newTotal === 0 ? '#3b82f6' : '#22c55e';
           }
@@ -6410,7 +6431,38 @@
       });
       
       document.getElementById('totalBreakdown').innerHTML = breakdownHtml;
-      document.getElementById('totalPrice').textContent = 'R' + total.toLocaleString('en-ZA', {minimumFractionDigits: 2});
+      
+      // Apply discount if one is active
+      if (window.appliedDiscountCode) {
+        const discountCode = window.appliedDiscountCode;
+        let discountedTotal = total;
+        
+        console.log('🔍 Applying discount:');
+        console.log('  Original Total:', total);
+        console.log('  Discount Type:', discountCode.discount_type);
+        console.log('  Discount Value:', discountCode.discount_value);
+        
+        if (discountCode.discount_type === 'free') {
+          discountedTotal = 0;
+          console.log('  Result: FREE (0)');
+        } else if (discountCode.discount_type === 'percentage') {
+          discountedTotal = total * (1 - discountCode.discount_value / 100);
+          console.log('  Calculation:', total, '* (1 -', discountCode.discount_value, '/ 100) =', discountedTotal);
+        } else if (discountCode.discount_type === 'fixed') {
+          const discountAmount = Math.abs(discountCode.discount_value);
+          discountedTotal = Math.max(0, total - discountAmount);
+          console.log('  Discount Amount:', discountAmount);
+          console.log('  Calculation:', total, '-', discountAmount, '=', discountedTotal);
+        }
+        
+        console.log('  Final Discounted Total:', discountedTotal);
+        
+        document.getElementById('totalPrice').textContent = 'R' + discountedTotal.toLocaleString('en-ZA', {minimumFractionDigits: 2});
+        document.getElementById('totalPrice').style.color = discountedTotal === 0 ? '#3b82f6' : '#22c55e';
+      } else {
+        document.getElementById('totalPrice').textContent = 'R' + total.toLocaleString('en-ZA', {minimumFractionDigits: 2});
+        document.getElementById('totalPrice').style.color = '#22c55e';
+      }
     }
 
     // Show/hide engine rental based on season status
