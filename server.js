@@ -3356,8 +3356,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
         `INSERT INTO race_entries (
           entry_id, event_id, driver_id, payment_reference, 
           payment_status, entry_status, amount_paid, race_class, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-        ON CONFLICT (payment_reference) DO NOTHING`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
         [race_entry_id, eventId, driverId, reference, 'Pending', 'pending_payment', numAmount, raceClass]
       );
       console.log(`📝 Created pending race entry: ${race_entry_id} with reference ${reference}`);
@@ -4283,29 +4282,42 @@ app.post('/api/paymentNotify', async (req, res) => {
       }
       
       // ON CONFLICT now updates the pending entry we created during initiation
-      await pool.query(
-        `INSERT INTO race_entries (
-          entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, 
-          amount_paid, race_class, entry_items, ticket_engine_ref, ticket_tyres_ref, 
-          ticket_transponder_ref, ticket_fuel_ref, created_at
-        )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
-         ON CONFLICT (payment_reference) 
-         DO UPDATE SET 
-           entry_id = $1,
-           payment_status = $5, 
-           entry_status = $6, 
-           amount_paid = $7,
-           entry_items = $9,
-           ticket_engine_ref = $10, 
-           ticket_tyres_ref = $11, 
-           ticket_transponder_ref = $12, 
-           ticket_fuel_ref = $13,
-           updated_at = NOW()`,
-        [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', amount_gross, 
-         raceClass, entryItems, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
+      // First try to update existing pending entry, if not found, insert new
+      const updateResult = await pool.query(
+        `UPDATE race_entries 
+         SET entry_id = $1,
+             payment_status = $2, 
+             entry_status = $3, 
+             amount_paid = $4,
+             race_class = $5,
+             entry_items = $6,
+             ticket_engine_ref = $7, 
+             ticket_tyres_ref = $8, 
+             ticket_transponder_ref = $9, 
+             ticket_fuel_ref = $10,
+             updated_at = NOW()
+         WHERE payment_reference = $11
+         RETURNING *`,
+        [race_entry_id, 'Completed', 'confirmed', amount_gross, raceClass, entryItems, 
+         ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef, reference]
       );
-      console.log(`✅ Race entry updated from pending to completed: ${race_entry_id} (Class: ${raceClass})`);
+      
+      // If no existing entry found, insert new one
+      if (updateResult.rows.length === 0) {
+        await pool.query(
+          `INSERT INTO race_entries (
+            entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, 
+            amount_paid, race_class, entry_items, ticket_engine_ref, ticket_tyres_ref, 
+            ticket_transponder_ref, ticket_fuel_ref, created_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`,
+          [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', amount_gross, 
+           raceClass, entryItems, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
+        );
+        console.log(`✅ Race entry created (no pending entry found): ${race_entry_id} (Class: ${raceClass})`);
+      } else {
+        console.log(`✅ Race entry updated from pending to completed: ${race_entry_id} (Class: ${raceClass})`);
+      }
     }
 
     console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross} - Driver: ${driverId}`);
