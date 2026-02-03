@@ -783,7 +783,7 @@
         <button class="search-btn" onclick="showQuickAddEntryModal()" style="background: #22c55e;">+ Quick Add Entry</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
         <button class="search-btn" onclick="exportRaceEntriesPDF()" style="background: #2563eb;">Export PDF with Barcodes</button>
-        <label style="margin-left: 20px; color: #e5e5e5; font-size: 14px; cursor: pointer;">
+        <label style="margin-left: 20px; color: #ef4444; font-size: 14px; cursor: pointer; font-weight: 600;">
           <input type="checkbox" id="showCancelledEntries" onchange="loadRaceEntries()" style="margin-right: 6px; cursor: pointer;">
           Show Cancelled/Incomplete
         </label>
@@ -4092,7 +4092,25 @@
           return;
         }
 
-        console.log('📋 Generating PDF for', entries.length, 'entries');
+        // Check if we should show cancelled/incomplete entries (same as table filter)
+        const showCancelled = document.getElementById('showCancelledEntries')?.checked || false;
+        console.log('🔍 Show cancelled checkbox state:', showCancelled);
+        
+        // Filter entries: hide cancelled and null race_class unless checkbox is checked
+        const filteredEntries = showCancelled ? entries : entries.filter(entry => {
+          const isCancelled = entry.entry_status === 'cancelled';
+          const hasNoClass = !entry.race_class || entry.race_class === 'null' || entry.race_class === '';
+          return !isCancelled && !hasNoClass;
+        });
+        
+        console.log('📋 Original entries:', entries.length, '| Filtered entries:', filteredEntries.length);
+        
+        if (filteredEntries.length === 0) {
+          showToast('No active entries to export (use checkbox to include cancelled/incomplete entries)', 'info');
+          return;
+        }
+
+        console.log('📋 Generating PDF for', filteredEntries.length, 'entries');
 
         // Generate barcode as base64 image using JsBarcode
         const generateBarcodeImage = (text) => {
@@ -4149,15 +4167,16 @@
               </div>
               <div style="text-align: right; font-size: 8px; color: #666;">
                 <div><strong>Issued:</strong> ${new Date().toLocaleDateString('en-ZA')} ${new Date().toLocaleTimeString('en-ZA', {hour: '2-digit', minute: '2-digit'})}</div>
-                <div><strong>Total Entries:</strong> ${entries.length}</div>
+                <div><strong>Total Entries:</strong> ${filteredEntries.length}</div>
+                ${!showCancelled ? '<div style="color: #ef4444; font-size: 7px; margin-top: 2px;">Cancelled/Incomplete entries excluded</div>' : ''}
               </div>
             </div>
           </div>
         `;
 
-        // Generate table rows
+        // Generate table rows from filtered entries
         console.log('🔨 Building table rows...');
-        const rows = entries.map((entry, idx) => {
+        const rows = filteredEntries.map((entry, idx) => {
           const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
           const raceClass = entry.race_class || entry.driver_class || '-';
           const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';

@@ -809,7 +809,7 @@ function generateTyreRentalTicketHTML(ticketData) {
   }).toUpperCase();
   
   const barcodeRef = reference.slice(-12).toUpperCase();
-  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
+  const barcodeSVG = generateCode39SVG(barcodeRef, { width: 2, height: 45 });
   
   // LeVanto logo URL (hosted) - using text fallback for email compatibility
   const levantoLogoUrl = 'https://levfriction.com/wp-content/uploads/2023/03/levanto-logo.png';
@@ -974,6 +974,102 @@ function generateTransponderRentalTicketHTML(ticketData) {
                       <td style="padding: 12px 20px 14px 20px; background: #f3e8ff; border-top: 1px solid #d8b4fe;">
                         <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #6b21a8; line-height: 1.4;">
                           📡 Collect transponder from timing office. Driver's license required as deposit. Return after final race.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+function generateFuelTicketHTML(ticketData) {
+  const {
+    reference,
+    eventName,
+    eventDate,
+    eventLocation,
+    raceClass,
+    driverName
+  } = ticketData;
+  
+  const dateObj = eventDate ? new Date(eventDate) : new Date();
+  const formattedDate = dateObj.toLocaleDateString('en-ZA', { 
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
+  }).toUpperCase();
+  
+  const barcodeRef = reference.slice(-12).toUpperCase();
+  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
+  
+  return `
+    <!-- FUEL PACKAGE TICKET - PORTRAIT -->
+    <div style="margin: 24px 0;">
+      <div style="font-weight: 700; color: #111827; margin-bottom: 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;">⛽ Race Fuel Package</div>
+      
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; max-width: 380px; margin: 0 auto;">
+        <tr>
+          <td>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #065f46; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(6,95,70,0.3);">
+              
+              <!-- Header with Logo -->
+              <tr>
+                <td style="padding: 20px 20px 16px 20px; text-align: center; background-color: #065f46;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto 12px auto;">
+                    <tr>
+                      <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #34d399; text-align: center; vertical-align: middle;">
+                        <span style="font-family: Arial, sans-serif; font-size: 32px;">⛽</span>
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #6ee7b7; text-transform: uppercase;">Pre-Mixed Racing</div>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">RACE FUEL</div>
+                </td>
+              </tr>
+              
+              <!-- White Content Section -->
+              <tr>
+                <td>
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background: #fff; border-radius: 8px 8px 0 0;">
+                    <tr>
+                      <td style="padding: 16px 20px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                          <tr>
+                            <td style="width: 50%;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">CLASS</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #111; margin-top: 2px;">${(raceClass || 'TBA').toUpperCase()}</div>
+                            </td>
+                            <td style="width: 50%; text-align: right;">
+                              <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
+                              <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 0 20px 16px 20px;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">DRIVER</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: #111; margin-top: 2px;">${(driverName || 'DRIVER').toUpperCase()}</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
+                        ${barcodeSVG}
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
+                          REF: <strong>${reference}</strong>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 20px 14px 20px; background: #d1fae5; border-top: 1px solid #6ee7b7;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #065f46; line-height: 1.4;">
+                          ⛽ Fuel available at paddock fuel station. Present voucher for allocation. Pre-measured competition fuel only.
                         </div>
                       </td>
                     </tr>
@@ -3309,7 +3405,7 @@ app.get('/api/debug/payfast', (req, res) => {
 // Initiate Race Entry Payment via PayFast
 app.get('/api/initiateRacePayment', async (req, res) => {
   try {
-    const { class: raceClass, amount, email, eventId, driverId } = req.query;
+    const { class: raceClass, amount, email, eventId, driverId, items } = req.query;
     
     if (!raceClass || !amount) {
       throw new Error('Missing class or amount');
@@ -3317,6 +3413,14 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     
     if (!eventId || !driverId) {
       throw new Error('Missing event ID or driver ID');
+    }
+    
+    // Parse selected items to know what tickets to generate
+    let selectedItems = [];
+    try {
+      selectedItems = items ? JSON.parse(decodeURIComponent(items)) : [];
+    } catch (e) {
+      console.warn('Could not parse items:', e.message);
     }
 
     // Use provided email or fallback to noreply
@@ -3352,20 +3456,30 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     // This allows us to reconcile payments if notification fails
     const race_entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     
-    // Generate unique ticket references for rental items
-    const ticketEngineRef = generateUniqueTicketRef('engine', driverId, eventId);
-    const ticketTyresRef = null; // Will be set if tyres included
-    const ticketTransponderRef = null; // Will be set if transponder included
-    const ticketFuelRef = null; // Will be set if fuel included
+    // Parse selected items to determine what tickets to generate
+    const itemsLower = selectedItems.map(i => (i || '').toLowerCase());
+    const hasEngine = itemsLower.some(i => i.includes('engine') || i.includes('rental'));
+    const hasTyres = itemsLower.some(i => i.includes('tyre'));
+    const hasTransponder = itemsLower.some(i => i.includes('transponder'));
+    const hasFuel = itemsLower.some(i => i.includes('fuel'));
+    
+    // Generate unique ticket references for ALL selected rental items upfront
+    const ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null;
+    const ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
+    const ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
+    const ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
     
     try {
       await pool.query(
         `INSERT INTO race_entries (
           entry_id, event_id, driver_id, payment_reference, 
-          payment_status, entry_status, amount_paid, race_class, 
-          ticket_engine_ref, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
-        [race_entry_id, eventId, driverId, reference, 'Pending', 'pending_payment', numAmount, raceClass, ticketEngineRef]
+          payment_status, entry_status, amount_paid, race_class,
+          entry_items,
+          ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref,
+          created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`,
+        [race_entry_id, eventId, driverId, reference, 'Pending', 'pending_payment', numAmount, raceClass,
+         JSON.stringify(selectedItems), ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
       );
       console.log(`📝 Created pending race entry: ${race_entry_id} with reference ${reference}`);
       
@@ -3393,18 +3507,48 @@ app.get('/api/initiateRacePayment', async (req, res) => {
           eventLocation = eventDetails.location || 'TBA';
         }
         
-        // Build rental tickets HTML (engine included by default for paid entries)
-        let ticketsHtml = '';
-        ticketsHtml = '<div style="margin: 30px 0; border-top: 1px solid #e5e7eb; padding-top: 20px;"><div style="font-weight: 700; color: #111827; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">Rental Items</div>';
-        
-        ticketsHtml += `<div style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 6px solid #f97316;">
-          <div style="font-size: 13px; color: #f97316; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Engine Rental</div>
-          <div style="font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 12px;">Pool Engine Reserved</div>
-          <div style="font-size: 12px; color: #374151; line-height: 1.5;">Your competition engine is assigned for this event. Technical inspection required before practice.</div>
-          <div style="background: #f9fafb; padding: 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #111827; letter-spacing: 0.05em; text-align: center; margin-top: 12px; border: 1px solid #e5e7eb;">${ticketEngineRef}</div>
-        </div>`;
-        
-        ticketsHtml += '</div>';
+        // Build rental tickets HTML using the beautiful ticket generators
+        let rentalTicketsHtml = '';
+        if (hasEngine && ticketEngineRef) {
+          rentalTicketsHtml += generateEngineRentalTicketHTML({
+            reference: ticketEngineRef,
+            eventName,
+            eventDate,
+            eventLocation,
+            raceClass,
+            driverName
+          });
+        }
+        if (hasTyres && ticketTyresRef) {
+          rentalTicketsHtml += generateTyreRentalTicketHTML({
+            reference: ticketTyresRef,
+            eventName,
+            eventDate,
+            eventLocation,
+            raceClass,
+            driverName
+          });
+        }
+        if (hasTransponder && ticketTransponderRef) {
+          rentalTicketsHtml += generateTransponderRentalTicketHTML({
+            reference: ticketTransponderRef,
+            eventName,
+            eventDate,
+            eventLocation,
+            raceClass,
+            driverName
+          });
+        }
+        if (hasFuel && ticketFuelRef) {
+          rentalTicketsHtml += generateFuelTicketHTML({
+            reference: ticketFuelRef,
+            eventName,
+            eventDate,
+            eventLocation,
+            raceClass,
+            driverName
+          });
+        }
         
         // Email HTML template
         const emailHtml = `
@@ -3474,8 +3618,6 @@ app.get('/api/initiateRacePayment', async (req, res) => {
                   </div>
                 </div>
                 
-                ${ticketsHtml}
-                
                 ${generateRaceTicketHTML({
                   reference,
                   eventName,
@@ -3485,6 +3627,8 @@ app.get('/api/initiateRacePayment', async (req, res) => {
                   driverName,
                   teamCode: null
                 })}
+                
+                ${rentalTicketsHtml}
                 
                 <p style="margin: 20px 0; font-size: 14px; color: #374151;">Your payment will be processed by PayFast. Once confirmed, your entry status will be updated to "Completed". If you have any questions, please contact us.</p>
                 
@@ -3506,6 +3650,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
             to: [{ email: driverEmail, name: driverName }],
             bcc_address: 'africankartingcup@gmail.com',
             from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+            from_name: 'The ROK Cup',
             subject: `Race Entry Confirmed - ${eventName} (${raceClass})`,
             html: emailHtml
           }
@@ -3520,6 +3665,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
             to: [{ email: 'john@rokcup.co.za', name: 'John' }],
             bcc_address: 'africankartingcup@gmail.com',
             from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+            from_name: 'The ROK Cup',
             subject: `New Entry - ${driverName} (${raceClass})`,
             html: emailHtml
           }
@@ -4090,6 +4236,7 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
         message: {
           to: [{ email: email, name: driverName }],
           from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+          from_name: 'The ROK Cup',
           subject: `Race Entry Confirmed - ${eventName} (${raceClass})`,
           html: emailHtml
         }
@@ -4417,11 +4564,12 @@ app.post('/api/paymentNotify', async (req, res) => {
     const hasTransponder = itemDesc.includes('transponder');
     const hasFuel = itemDesc.includes('fuel');
     
-    // Generate unique ticket references for each purchased item
-    const ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null;
-    const ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
-    const ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
-    const ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
+    // Generate ticket references ONLY for items that don't already have them
+    // This preserves the original ticket refs from the initial email
+    let ticketEngineRef = null;
+    let ticketTyresRef = null;
+    let ticketTransponderRef = null;
+    let ticketFuelRef = null;
     
     // Store payment record using new schema
     const race_entry_id = `race_entry_${pf_payment_id}`;
@@ -4439,8 +4587,18 @@ app.post('/api/paymentNotify', async (req, res) => {
       if (existingEntry.rows.length > 0) {
         raceClass = existingEntry.rows[0].race_class;
         entryItems = existingEntry.rows[0].entry_items;
-        console.log(`📝 Found existing pending entry with class: ${raceClass}`);
+        // PRESERVE existing ticket references - don't regenerate them!
+        ticketEngineRef = existingEntry.rows[0].ticket_engine_ref || (hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null);
+        ticketTyresRef = existingEntry.rows[0].ticket_tyres_ref || (hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null);
+        ticketTransponderRef = existingEntry.rows[0].ticket_transponder_ref || (hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null);
+        ticketFuelRef = existingEntry.rows[0].ticket_fuel_ref || (hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null);
+        console.log(`📝 Found existing pending entry with class: ${raceClass}, preserving ticket refs`);
       } else {
+        // No pending entry - generate new tickets
+        ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null;
+        ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
+        ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
+        ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
         console.log(`⚠️ No pending entry found for reference: ${reference}, creating new entry`);
       }
       
@@ -5185,6 +5343,16 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
         driverName
       });
     }
+    if (hasFuel && entry.ticket_fuel_ref) {
+      rentalTicketsHtml += generateFuelTicketHTML({
+        reference: entry.ticket_fuel_ref,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
+    }
     
     // Format event details
     const eventName = entry.event_name || 'Race Event';
@@ -5289,6 +5457,7 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
         to: [{ email: driverEmail, name: driverName }],
         bcc_address: 'africankartingcup@gmail.com',
         from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+        from_name: 'The ROK Cup',
         subject: `Race Entry Confirmation - ${eventName} (${entry.race_class})`,
         html: emailHtml
       }

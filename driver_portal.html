@@ -6647,8 +6647,9 @@
               const amount = totalPrice.replace('R', '').replace(/\s/g, '').replace(',', '.').trim();
               console.log('🔍 Amount after cleaning:', amount);
               toast('info', 'Redirecting to PayFast payment...');
-              // Redirect to PayFast payment with driver email, event, and driver ID
-              window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount + '&email=' + encodeURIComponent(currentEmail) + '&eventId=' + encodeURIComponent(window.selectedEventId) + '&driverId=' + encodeURIComponent(window.currentDriverId);
+              // Redirect to PayFast payment with driver email, event, driver ID, and selected items
+              const itemsParam = encodeURIComponent(JSON.stringify(selectedItems));
+              window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass) + '&amount=' + amount + '&email=' + encodeURIComponent(currentEmail) + '&eventId=' + encodeURIComponent(window.selectedEventId) + '&driverId=' + encodeURIComponent(window.currentDriverId) + '&items=' + itemsParam;
             }
           }
         });
