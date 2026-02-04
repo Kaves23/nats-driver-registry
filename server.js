@@ -5099,7 +5099,7 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
       const race_entry_id = `race_entry_${pf_payment_id || Date.now()}_manual`;
       await pool.query(
         `INSERT INTO race_entries (
-          race_entry_id, event_id, driver_id, payment_reference, payment_status, 
+          entry_id, event_id, driver_id, payment_reference, payment_status, 
           entry_status, amount_paid, created_at, updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
         [race_entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
