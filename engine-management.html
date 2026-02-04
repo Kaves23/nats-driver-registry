@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Engine Management - NATS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .header h1 {
+            color: #1e3c72;
+            font-size: 20px;
+            margin-bottom: 3px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .input-group {
+            margin-bottom: 12px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .driver-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .driver-info h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        
+        .driver-info .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .driver-info .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .driver-info .label {
+            font-weight: bold;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .driver-info .value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .error-message {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        #scanner-video {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+        }
+        
+        .scan-line {
+            position: absolute;
+            width: 80%;
+            height: 3px;
+            background: #38ef7d;
+            left: 10%;
+            top: 50%;
+            animation: scan 2s ease-in-out infinite;
+            box-shadow: 0 0 10px #38ef7d;
+        }
+        
+        @keyframes scan {
+            0%, 100% { top: 20%; }
+            50% { top: 80%; }
+        }
+        
+        .engine-status {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .status-assigned {
+            background: #38ef7d;
+            color: white;
+        }
+        
+        .status-available {
+            background: #667eea;
+            color: white;
+        }
+        
+        .status-issue {
+            background: #f5576c;
+            color: white;
+        }
+        
+        .verify-result {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .verify-match {
+            color: #38ef7d;
+        }
+        
+        .verify-mismatch {
+            color: #f5576c;
+        }
+        
+        @keyframes redFlash {
+            0%, 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); border-color: #ddd; }
+            50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); border-color: #ef4444; }
+        }
+        
+        .error-flash {
+            animation: redFlash 0.5s ease-in-out 3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Engine Management</h1>
+            <p>Scan tickets & manage engine rentals</p>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="mainMenu" class="card">
+            <button class="btn btn-primary" onclick="startTicketScan()">
+                📱 Scan Ticket Barcode
+            </button>
+            <button class="btn btn-success" onclick="showReturnEngine()">
+                ✅ Return Engine
+            </button>
+            <button class="btn btn-warning" onclick="showReportIssue()">
+                ⚠️ Report Engine Issue
+            </button>
+            <button class="btn btn-primary" onclick="showEngineHistory()">
+                📋 Engine History
+            </button>
+            <button class="btn btn-primary" onclick="showTyreVerification()">
+                🔍 Verify Tyres
+            </button>
+        </div>
+
+        <!-- Ticket Scan Section -->
+        <div id="ticketScanSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">Scan Ticket Barcode</h2>
+                
+                <div class="scanner-container hidden" id="scannerContainer">
+                    <video id="scanner-video" playsinline></video>
+                    <div class="scan-line"></div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Or Enter Ticket Barcode:</label>
+                    <input type="text" id="ticketBarcode" placeholder="e.g., ENG6033" 
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <button class="btn btn-primary" onclick="lookupTicket()">
+                    🔍 Lookup Ticket
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Driver Info & Context-Aware Assignment -->
+        <div id="driverInfoSection" class="hidden">
+            <div id="messageContainer"></div>
+            
+            <div class="driver-info" id="driverInfo">
+                <!-- Will be populated dynamically -->
+            </div>
+            
+            <!-- Engine Assignment -->
+            <div class="card hidden" id="engineAssignmentCard">
+                <h3 style="margin-bottom: 20px;">🔧 Assign Engine</h3>
+                
+                <div class="input-group">
+                    <label>Engine Serial Number:</label>
+                    <input type="text" id="engineSerial" placeholder="Scan or enter serial number"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <button class="btn btn-success" onclick="assignEngine()">
+                    ✅ Assign Engine to Driver
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back to Menu
+                </button>
+            </div>
+            
+            <!-- Transponder Assignment -->
+            <div class="card hidden" id="transponderAssignmentCard">
+                <h3 style="margin-bottom: 20px;">📡 Assign Transponder</h3>
+                
+                <div class="input-group">
+                    <label>Transponder Serial Number:</label>
+                    <input type="text" id="transponderSerial" placeholder="Scan or enter serial number"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <button class="btn btn-success" onclick="assignTransponder()">
+                    ✅ Assign Transponder to Driver
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back to Menu
+                </button>
+            </div>
+            
+            <!-- Tyre Registration -->
+            <div class="card hidden" id="tyreAssignmentCard">
+                <h3 style="margin-bottom: 20px;">🏁 Register Tyres (4 Required)</h3>
+                
+                <div class="input-group">
+                    <label>Front Left Tyre Serial:</label>
+                    <input type="text" id="tyreFrontLeft" placeholder="Scan or enter"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <div class="input-group">
+                    <label>Front Right Tyre Serial:</label>
+                    <input type="text" id="tyreFrontRight" placeholder="Scan or enter"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <div class="input-group">
+                    <label>Rear Left Tyre Serial:</label>
+                    <input type="text" id="tyreRearLeft" placeholder="Scan or enter"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <div class="input-group">
+                    <label>Rear Right Tyre Serial:</label>
+                    <input type="text" id="tyreRearRight" placeholder="Scan or enter"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <button class="btn btn-success" onclick="assignTyres()">
+                    ✅ Register All Tyres
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back to Menu
+                </button>
+            </div>
+            
+            <!-- Fuel Collected -->
+            <div class="card hidden" id="fuelAssignmentCard">
+                <h3 style="margin-bottom: 20px;">⛽ Mark Fuel Collected</h3>
+                
+                <p style="margin-bottom: 20px; color: #666;">
+                    Confirm that the driver has collected their controlled fuel allocation.
+                </p>
+                
+                <button class="btn btn-success" onclick="markFuelCollected()">
+                    ✅ Confirm Fuel Collected
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back to Menu
+                </button>
+            </div>
+        </div>
+
+        <!-- Return Engine Section -->
+        <div id="returnEngineSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">Return Engine</h2>
+                
+                <div class="input-group">
+                    <label>Engine Serial Number:</label>
+                    <input type="text" id="returnEngineSerial" placeholder="Scan or enter serial number"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <button class="btn btn-success" onclick="processReturnEngine()">
+                    ✅ Confirm Engine Return
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Report Issue Section -->
+        <div id="reportIssueSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">Report Engine Issue</h2>
+                
+                <div class="input-group">
+                    <label>Engine Serial Number:</label>
+                    <input type="text" id="issueEngineSerial" placeholder="Scan or enter serial number"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <div class="input-group">
+                    <label>Issue Description:</label>
+                    <textarea id="issueDescription" placeholder="Describe the issue with this engine..."></textarea>
+                </div>
+                
+                <button class="btn btn-warning" onclick="reportIssue()">
+                    ⚠️ Report Issue & Return Engine
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back
+                </button>
+            </div>
+            
+            <div id="replacementSection" class="hidden">
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Assign Replacement Engine</h3>
+                    <p style="margin-bottom: 15px; color: #666;">
+                        <strong>Returned Engine:</strong> <span id="returnedEngineRef"></span>
+                    </p>
+                    
+                    <div class="input-group">
+                        <label>Replacement Engine Serial:</label>
+                        <input type="text" id="replacementEngineSerial" 
+                               placeholder="Scan or enter serial number"
+                               style="text-transform: uppercase;">
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="assignReplacementEngine()">
+                        ✅ Assign Replacement
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Engine History Section -->
+        <div id="engineHistorySection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">📋 Engine History</h2>
+                
+                <div class="input-group">
+                    <label>Engine Serial Number:</label>
+                    <input type="text" id="historyEngineSerial" placeholder="Scan or enter serial number"
+                           style="text-transform: uppercase;">
+                </div>
+                
+                <button class="btn btn-primary" onclick="lookupEngineHistory()">
+                    🔍 Lookup History
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back
+                </button>
+            </div>
+            
+            <div id="historyResults" class="hidden">
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">History Results</h3>
+                    <div id="historyContent"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tyre Verification Section -->
+        <div id="tyreVerificationSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">🔍 Verify Tyres</h2>
+                
+                <div class="input-group">
+                    <label>Driver Race Number:</label>
+                    <input type="text" id="verifyRaceNumber" placeholder="Enter race number">
+                </div>
+                
+                <button class="btn btn-primary" onclick="lookupDriverForTyres()">
+                    🔍 Lookup Driver
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    ← Back
+                </button>
+            </div>
+            
+            <div id="tyreVerifyDriver" class="hidden">
+                <div class="driver-info" id="tyreVerifyDriverInfo">
+                    <!-- Driver info -->
+                </div>
+                
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Scan Tyres to Verify</h3>
+                    
+                    <div class="input-group">
+                        <label>Front Left Tyre:</label>
+                        <input type="text" id="verifyTyreFrontLeft" placeholder="Scan tyre serial"
+                               style="text-transform: uppercase;">
+                        <span class="verify-result" id="verifyFL"></span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Front Right Tyre:</label>
+                        <input type="text" id="verifyTyreFrontRight" placeholder="Scan tyre serial"
+                               style="text-transform: uppercase;">
+                        <span class="verify-result" id="verifyFR"></span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Rear Left Tyre:</label>
+                        <input type="text" id="verifyTyreRearLeft" placeholder="Scan tyre serial"
+                               style="text-transform: uppercase;">
+                        <span class="verify-result" id="verifyRL"></span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Rear Right Tyre:</label>
+                        <input type="text" id="verifyTyreRearRight" placeholder="Scan tyre serial"
+                               style="text-transform: uppercase;">
+                        <span class="verify-result" id="verifyRR"></span>
+                    </div>
+                    
+                    <div id="tyreVerifyResults" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDriver = null;
+        let currentTicket = null;
+        let returnedEngine = null;
+
+        // Navigation Functions
+        function backToMenu() {
+            hideAllSections();
+            document.getElementById('mainMenu').classList.remove('hidden');
+        }
+
+        function hideAllSections() {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('ticketScanSection').classList.add('hidden');
+            document.getElementById('driverInfoSection').classList.add('hidden');
+            document.getElementById('returnEngineSection').classList.add('hidden');
+            document.getElementById('reportIssueSection').classList.add('hidden');
+            document.getElementById('replacementSection').classList.add('hidden');
+            document.getElementById('engineHistorySection').classList.add('hidden');
+            document.getElementById('tyreVerificationSection').classList.add('hidden');
+            document.getElementById('historyResults').classList.add('hidden');
+            document.getElementById('tyreVerifyDriver').classList.add('hidden');
+            
+            // Hide all assignment cards
+            document.getElementById('engineAssignmentCard').classList.add('hidden');
+            document.getElementById('transponderAssignmentCard').classList.add('hidden');
+            document.getElementById('tyreAssignmentCard').classList.add('hidden');
+            document.getElementById('fuelAssignmentCard').classList.add('hidden');
+        }
+
+        function startTicketScan() {
+            hideAllSections();
+            document.getElementById('ticketScanSection').classList.remove('hidden');
+            document.getElementById('ticketBarcode').value = '';
+            document.getElementById('ticketBarcode').focus();
+        }
+
+        function showReturnEngine() {
+            hideAllSections();
+            document.getElementById('returnEngineSection').classList.remove('hidden');
+            document.getElementById('returnEngineSerial').value = '';
+            document.getElementById('returnEngineSerial').focus();
+        }
+
+        function showReportIssue() {
+            hideAllSections();
+            document.getElementById('reportIssueSection').classList.remove('hidden');
+            document.getElementById('issueEngineSerial').value = '';
+            document.getElementById('issueDescription').value = '';
+            document.getElementById('issueEngineSerial').focus();
+        }
+        
+        function showEngineHistory() {
+            hideAllSections();
+            document.getElementById('engineHistorySection').classList.remove('hidden');
+            document.getElementById('historyEngineSerial').value = '';
+            document.getElementById('historyEngineSerial').focus();
+        }
+        
+        function showTyreVerification() {
+            hideAllSections();
+            document.getElementById('tyreVerificationSection').classList.remove('hidden');
+            document.getElementById('verifyRaceNumber').value = '';
+            document.getElementById('verifyRaceNumber').focus();
+        }
+
+        // Message Functions
+        function showSuccess(message) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="success-message">${message}</div>`;
+            setTimeout(() => { container.innerHTML = ''; }, 3000);
+        }
+
+        function showError(message) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+            setTimeout(() => { container.innerHTML = ''; }, 5000);
+        }
+
+        // Ticket Lookup
+        async function lookupTicket() {
+            const barcode = document.getElementById('ticketBarcode').value.trim().toUpperCase();
+            
+            if (!barcode) {
+                showError('Please enter a ticket barcode');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/lookupTicket?barcode=${barcode}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentDriver = data.driver;
+                    currentTicket = data.ticket;
+                    displayDriverInfo();
+                } else {
+                    showError(data.error || 'Ticket not found');
+                }
+            } catch (err) {
+                showError('Error looking up ticket: ' + err.message);
+            }
+        }
+
+        function displayDriverInfo() {
+            hideAllSections();
+            document.getElementById('driverInfoSection').classList.remove('hidden');
+            
+            const driverInfoHtml = `
+                <h2>${currentDriver.first_name} ${currentDriver.last_name}</h2>
+                <div class="info-row">
+                    <span class="label">Class:</span>
+                    <span class="value">${currentDriver.race_class}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Race Number:</span>
+                    <span class="value">#${currentDriver.race_number || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Ticket Type:</span>
+                    <span class="value">${currentTicket.type}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Ticket Reference:</span>
+                    <span class="value">${currentTicket.barcode}</span>
+                </div>
+            `;
+            
+            document.getElementById('driverInfo').innerHTML = driverInfoHtml;
+            
+            // Show context-specific assignment card based on ticket type
+            if (currentTicket.type === 'Engine Rental') {
+                document.getElementById('engineAssignmentCard').classList.remove('hidden');
+                document.getElementById('engineSerial').value = '';
+                document.getElementById('engineSerial').focus();
+            } else if (currentTicket.type === 'Transponder') {
+                document.getElementById('transponderAssignmentCard').classList.remove('hidden');
+                document.getElementById('transponderSerial').value = '';
+                document.getElementById('transponderSerial').focus();
+            } else if (currentTicket.type === 'Tyres') {
+                document.getElementById('tyreAssignmentCard').classList.remove('hidden');
+                document.getElementById('tyreFrontLeft').value = '';
+                document.getElementById('tyreFrontLeft').focus();
+            } else if (currentTicket.type === 'Fuel') {
+                document.getElementById('fuelAssignmentCard').classList.remove('hidden');
+            }
+        }
+
+        // Engine Assignment
+        async function assignEngine() {
+            const engineSerial = document.getElementById('engineSerial').value.trim().toUpperCase();
+            
+            if (!engineSerial) {
+                showError('Please enter an engine serial number');
+                return;
+            }
+
+            if (!currentTicket) {
+                showError('No ticket selected');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/assignEngine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticketBarcode: currentTicket.barcode,
+                        engineSerial: engineSerial,
+                        driverId: currentDriver.driver_id,
+                        entryId: currentDriver.entry_id
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(`✅ Engine ${engineSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    setTimeout(() => backToMenu(), 2000);
+                } else {
+                    showError(data.error || 'Failed to assign engine');
+                }
+            } catch (err) {
+                showError('Error assigning engine: ' + err.message);
+            }
+        }
+
+        // Assign Transponder
+        async function assignTransponder() {
+            const transponderSerial = document.getElementById('transponderSerial').value.trim().toUpperCase();
+            
+            if (!transponderSerial) {
+                showError('Please enter a transponder serial number');
+                return;
+            }
+
+            if (!currentTicket) {
+                showError('No ticket selected');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/assignTransponder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticketBarcode: currentTicket.barcode,
+                        transponderSerial: transponderSerial,
+                        driverId: currentDriver.driver_id,
+                        entryId: currentDriver.entry_id
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(`✅ Transponder ${transponderSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    setTimeout(() => backToMenu(), 2000);
+                } else {
+                    showError(data.error || 'Failed to assign transponder');
+                }
+            } catch (err) {
+                showError('Error assigning transponder: ' + err.message);
+            }
+        }
+
+        // Assign Tyres
+        async function assignTyres() {
+            const tyreFrontLeft = document.getElementById('tyreFrontLeft').value.trim().toUpperCase();
+            const tyreFrontRight = document.getElementById('tyreFrontRight').value.trim().toUpperCase();
+            const tyreRearLeft = document.getElementById('tyreRearLeft').value.trim().toUpperCase();
+            const tyreRearRight = document.getElementById('tyreRearRight').value.trim().toUpperCase();
+            
+            if (!tyreFrontLeft || !tyreFrontRight || !tyreRearLeft || !tyreRearRight) {
+                showError('Please enter all 4 tyre serial numbers');
+                return;
+            }
+
+            if (!currentTicket) {
+                showError('No ticket selected');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/assignTyres', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticketBarcode: currentTicket.barcode,
+                        tyres: {
+                            front_left: tyreFrontLeft,
+                            front_right: tyreFrontRight,
+                            rear_left: tyreRearLeft,
+                            rear_right: tyreRearRight
+                        },
+                        driverId: currentDriver.driver_id,
+                        entryId: currentDriver.entry_id
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(`✅ All 4 tyres registered for ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    setTimeout(() => backToMenu(), 2000);
+                } else {
+                    showError(data.error || 'Failed to register tyres');
+                }
+            } catch (err) {
+                showError('Error registering tyres: ' + err.message);
+            }
+        }
+
+        // Mark Fuel Collected
+        async function markFuelCollected() {
+            if (!currentTicket) {
+                showError('No ticket selected');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/markFuelCollected', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticketBarcode: currentTicket.barcode,
+                        driverId: currentDriver.driver_id,
+                        entryId: currentDriver.entry_id
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(`✅ Fuel marked as collected for ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    setTimeout(() => backToMenu(), 2000);
+                } else {
+                    showError(data.error || 'Failed to mark fuel collected');
+                }
+            } catch (err) {
+                showError('Error marking fuel: ' + err.message);
+            }
+        }
+
+        // Return Engine
+        async function processReturnEngine() {
+            const engineSerial = document.getElementById('returnEngineSerial').value.trim().toUpperCase();
+            
+            if (!engineSerial) {
+                showError('Please enter an engine serial number');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/returnEngine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ engineSerial: engineSerial })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(`✅ Engine ${engineSerial} returned successfully`);
+                    setTimeout(() => backToMenu(), 2000);
+                } else {
+                    showError(data.error || 'Failed to return engine');
+                }
+            } catch (err) {
+                showError('Error returning engine: ' + err.message);
+            }
+        }
+
+        // Report Issue
+        async function reportIssue() {
+            const engineSerial = document.getElementById('issueEngineSerial').value.trim().toUpperCase();
+            const issueDescription = document.getElementById('issueDescription').value.trim();
+            
+            if (!engineSerial) {
+                showError('Please enter an engine serial number');
+                return;
+            }
+            
+            if (!issueDescription) {
+                showError('Please describe the issue');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/reportEngineIssue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        engineSerial: engineSerial,
+                        issueDescription: issueDescription
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    returnedEngine = {
+                        serial: engineSerial,
+                        driverId: data.driverId,
+                        entryId: data.entryId
+                    };
+                    
+                    document.getElementById('returnedEngineRef').textContent = engineSerial;
+                    document.getElementById('replacementSection').classList.remove('hidden');
+                    document.getElementById('replacementEngineSerial').focus();
+                    
+                    showSuccess(`⚠️ Issue reported for engine ${engineSerial}`);
+                } else {
+                    showError(data.error || 'Failed to report issue');
+                }
+            } catch (err) {
+                showError('Error reporting issue: ' + err.message);
+            }
+        }
+
+        // Assign Replacement Engine
+        async function assignReplacementEngine() {
+            const replacementSerial = document.getElementById('replacementEngineSerial').value.trim().toUpperCase();
+            
+            if (!replacementSerial) {
+                showError('Please enter a replacement engine serial number');
+                return;
+            }
+
+            if (!returnedEngine) {
+                showError('No returned engine reference');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/assignReplacementEngine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        replacementSerial: replacementSerial,
+                        returnedSerial: returnedEngine.serial,
+                        driverId: returnedEngine.driverId,
+                        entryId: returnedEngine.entryId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(`✅ Replacement engine ${replacementSerial} assigned`);
+                    setTimeout(() => backToMenu(), 2000);
+                } else {
+                    showError(data.error || 'Failed to assign replacement');
+                }
+            } catch (err) {
+                showError('Error assigning replacement: ' + err.message);
+            }
+        }
+
+        // Engine History Lookup
+        async function lookupEngineHistory() {
+            const engineSerial = document.getElementById('historyEngineSerial').value.trim().toUpperCase();
+            
+            if (!engineSerial) {
+                showError('Please enter an engine serial number');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/engineHistory?engineSerial=${engineSerial}`);
+                const data = await response.json();
+                
+                if (data.success && data.history.length > 0) {
+                    let historyHtml = `<h4 style="margin-bottom: 15px;">Engine: ${engineSerial}</h4>`;
+                    historyHtml += `<div style="font-size: 14px; color: #666; margin-bottom: 20px;">Total uses: ${data.history.length}</div>`;
+                    
+                    data.history.forEach((record, index) => {
+                        const statusColor = record.engine_returned ? '#38ef7d' : '#667eea';
+                        historyHtml += `
+                            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid ${statusColor};">
+                                <div style="font-weight: bold; margin-bottom: 8px;">${record.driver_name} - ${record.race_class}</div>
+                                <div style="font-size: 13px; color: #666;">
+                                    <div>📅 Assigned: ${new Date(record.engine_assigned_at).toLocaleString('en-ZA')}</div>
+                                    ${record.engine_returned ? `
+                                        <div>✅ Returned: ${new Date(record.engine_returned_at).toLocaleString('en-ZA')}</div>
+                                        ${record.engine_issue ? `<div style="color: #f5576c; margin-top: 5px;">⚠️ Issue: ${record.engine_issue}</div>` : ''}
+                                        ${record.replacement_for ? `<div style="color: #667eea; margin-top: 5px;">🔄 Replaced: ${record.replacement_for}</div>` : ''}
+                                    ` : '<div style="color: #667eea;">🔵 Currently Assigned</div>'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    document.getElementById('historyContent').innerHTML = historyHtml;
+                    document.getElementById('historyResults').classList.remove('hidden');
+                } else {
+                    showError('No history found for this engine');
+                }
+            } catch (err) {
+                showError('Error looking up engine history: ' + err.message);
+            }
+        }
+
+        // Tyre Verification - Lookup Driver
+        async function lookupDriverForTyres() {
+            const raceNumber = document.getElementById('verifyRaceNumber').value.trim();
+            
+            if (!raceNumber) {
+                showError('Please enter a race number');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/lookupDriverByNumber?raceNumber=${raceNumber}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.tyreVerifyData = data;
+                    
+                    const driverInfoHtml = `
+                        <h2>${data.driver.first_name} ${data.driver.last_name}</h2>
+                        <div class="info-row">
+                            <span class="label">Class:</span>
+                            <span class="value">${data.driver.race_class}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Race Number:</span>
+                            <span class="value">#${raceNumber}</span>
+                        </div>
+                        ${data.registered_tyres ? `
+                        <div class="info-row">
+                            <span class="label">Registered Tyres:</span>
+                            <span class="value">✅ Yes</span>
+                        </div>
+                        ` : '<div style="color: #f5576c; margin-top: 10px;">⚠️ No tyres registered</div>'}
+                    `;
+                    
+                    document.getElementById('tyreVerifyDriverInfo').innerHTML = driverInfoHtml;
+                    document.getElementById('tyreVerifyDriver').classList.remove('hidden');
+                    
+                    // Setup auto-verification on scan
+                    setupTyreVerification();
+                } else {
+                    showError(data.error || 'Driver not found');
+                }
+            } catch (err) {
+                showError('Error looking up driver: ' + err.message);
+            }
+        }
+
+        function setupTyreVerification() {
+            const tyreData = window.tyreVerifyData.tyres;
+            
+            const inputs = [
+                { id: 'verifyTyreFrontLeft', position: 'front_left', resultId: 'verifyFL' },
+                { id: 'verifyTyreFrontRight', position: 'front_right', resultId: 'verifyFR' },
+                { id: 'verifyTyreRearLeft', position: 'rear_left', resultId: 'verifyRL' },
+                { id: 'verifyTyreRearRight', position: 'rear_right', resultId: 'verifyRR' }
+            ];
+            
+            inputs.forEach(input => {
+                const element = document.getElementById(input.id);
+                element.value = '';
+                
+                element.onblur = function() {
+                    const scanned = this.value.trim().toUpperCase();
+                    const registered = tyreData ? tyreData[input.position] : null;
+                    const resultSpan = document.getElementById(input.resultId);
+                    
+                    if (scanned) {
+                        if (registered && scanned === registered) {
+                            resultSpan.innerHTML = '✅';
+                            resultSpan.className = 'verify-result verify-match';
+                            this.classList.remove('error-flash');
+                        } else {
+                            resultSpan.innerHTML = '❌';
+                            resultSpan.className = 'verify-result verify-mismatch';
+                            // Flash red on mismatch
+                            this.classList.remove('error-flash');
+                            void this.offsetWidth; // Trigger reflow
+                            this.classList.add('error-flash');
+                        }
+                        checkAllTyres();
+                    }
+                };
+            });
+        }
+
+        function checkAllTyres() {
+            const results = [
+                document.getElementById('verifyFL').textContent,
+                document.getElementById('verifyFR').textContent,
+                document.getElementById('verifyRL').textContent,
+                document.getElementById('verifyRR').textContent
+            ];
+            
+            const allScanned = results.every(r => r !== '');
+            
+            if (allScanned) {
+                const allMatch = results.every(r => r === '✅');
+                const resultsDiv = document.getElementById('tyreVerifyResults');
+                
+                if (allMatch) {
+                    resultsDiv.innerHTML = '<div class="success-message">✅ All Tyres Match!</div>';
+                } else {
+                    resultsDiv.innerHTML = '<div class="error-message">❌ Tyre Mismatch Detected!</div>';
+                }
+            }
+        }
+
+        // Allow Enter key to submit
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('ticketBarcode').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') lookupTicket();
+            });
+            
+            document.getElementById('engineSerial').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') assignEngine();
+            });
+            
+            document.getElementById('returnEngineSerial').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') processReturnEngine();
+            });
+            
+            document.getElementById('replacementEngineSerial').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') assignReplacementEngine();
+            });
+            
+            document.getElementById('historyEngineSerial').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') lookupEngineHistory();
+            });
+            
+            document.getElementById('verifyRaceNumber').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') lookupDriverForTyres();
+            });
+        });
+    </script>
+</body>
+</html>

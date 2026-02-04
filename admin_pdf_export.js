@@ -100,6 +100,7 @@ async function exportRaceEntriesPDF() {
     // Generate table rows
     const rows = entries.map((entry, idx) => {
       const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
+      const raceNumber = entry.race_number || '?';
       const raceClass = entry.race_class || entry.driver_class || '-';
       const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
       
@@ -115,6 +116,9 @@ async function exportRaceEntriesPDF() {
       const hasTransponder = itemContains('transponder');
       const hasFuel = itemContains('fuel');
       
+      // Generate barcode for race number
+      const raceNumberBarcode = raceNumber && raceNumber !== '?' ? generateBarcodeSVG(raceNumber) : '';
+      
       // Generate barcodes for each ticket
       const engineBarcode = entry.ticket_engine_ref ? generateBarcodeSVG(entry.ticket_engine_ref.slice(-12)) : '';
       const tyresBarcode = entry.ticket_tyres_ref ? generateBarcodeSVG(entry.ticket_tyres_ref.slice(-12)) : '';
@@ -123,9 +127,9 @@ async function exportRaceEntriesPDF() {
       
       return `
         <tr style="background-color: ${bgColor}; page-break-inside: avoid;">
+          <td style="border: 1px solid #dee2e6; padding: 3px; text-align: center;">${raceNumberBarcode ? raceNumberBarcode : `<span style="color: #059669; font-weight: 700; font-size: 11px;">#${raceNumber}</span>`}</td>
           <td style="border: 1px solid #dee2e6; padding: 6px 8px; font-weight: 600; color: #1a1a2e; font-size: 9px;">${driverName}</td>
           <td style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-size: 8px; color: #1a1a2e;">${raceClass}</td>
-          <td style="border: 1px solid #dee2e6; padding: 6px 8px; font-family: monospace; font-size: 8px; color: #666;">${entry.driver_email || '-'}</td>
           <td style="border: 1px solid #dee2e6; padding: 3px; text-align: center;">${hasEngine && engineBarcode ? engineBarcode : '<span style="color: #999; font-size: 7px;">-</span>'}</td>
           <td style="border: 1px solid #dee2e6; padding: 3px; text-align: center;">${hasTyres && tyresBarcode ? tyresBarcode : '<span style="color: #999; font-size: 7px;">-</span>'}</td>
           <td style="border: 1px solid #dee2e6; padding: 3px; text-align: center;">${hasTransponder && transponderBarcode ? transponderBarcode : '<span style="color: #999; font-size: 7px;">-</span>'}</td>
@@ -138,13 +142,13 @@ async function exportRaceEntriesPDF() {
       <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
         <thead>
           <tr style="background: linear-gradient(180deg, #059669 0%, #047857 100%); color: white;">
-            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: left; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 18%;">Driver Name</th>
+            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 11%;">Race #</th>
+            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: left; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 17%;">Driver Name</th>
             <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 10%;">Class</th>
-            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 16%;">Email</th>
-            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 14%;">Engine Ticket</th>
-            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 14%;">Tyres Ticket</th>
-            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 14%;">Transponder Ticket</th>
-            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 14%;">Fuel Ticket</th>
+            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 15.5%;">Engine Ticket</th>
+            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 15.5%;">Tyres Ticket</th>
+            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 15.5%;">Transponder</th>
+            <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 8px; text-transform: uppercase; width: 15.5%;">Fuel Ticket</th>
           </tr>
         </thead>
         <tbody>

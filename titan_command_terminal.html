@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TITAN TERMINAL">
+  <title>TITAN TERMINAL</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --terminal-green: #00ff41;
+      --terminal-green-dim: #00cc33;
+      --terminal-bg: #0a0a0a;
+      --terminal-bg-light: #1a1a1a;
+      --terminal-gray: #666666;
+      --terminal-white: #e0e0e0;
+      --terminal-red: #ff4136;
+      --terminal-yellow: #ffdc00;
+    }
+
+    body {
+      font-family: 'Courier Prime', 'Courier New', monospace;
+      background: var(--terminal-bg);
+      color: var(--terminal-green);
+      height: 100vh;
+      overflow: hidden;
+      font-size: 22px;
+      line-height: 1.6;
+    }
+
+    /* Login Screen */
+    #loginScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 20px;
+    }
+
+    .terminal-header {
+      text-align: center;
+      margin-bottom: 30px;
+      animation: flicker 3s infinite;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.95; }
+    }
+
+    .terminal-header h1 {
+      font-size: 48px;
+      color: var(--terminal-green);
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 10px var(--terminal-green);
+    }
+
+    .terminal-header .version {
+      font-size: 16px;
+      color: var(--terminal-gray);
+      letter-spacing: 2px;
+    }
+
+    .login-form {
+      width: 100%;
+      max-width: 500px;
+      border: 2px solid var(--terminal-green);
+      padding: 30px;
+      background: var(--terminal-bg-light);
+    }
+
+    .login-prompt {
+      color: var(--terminal-green);
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .login-form input {
+      width: 100%;
+      padding: 16px;
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-green);
+      color: var(--terminal-green);
+      font-family: 'Courier Prime', monospace;
+      font-size: 20px;
+      outline: none;
+    }
+
+    .login-form input:focus {
+      box-shadow: 0 0 10px var(--terminal-green);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      background: var(--terminal-green);
+      border: none;
+      color: var(--terminal-bg);
+      font-family: 'Courier Prime', monospace;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .login-btn:active {
+      background: var(--terminal-green-dim);
+    }
+
+    .shortcut-hint {
+      color: var(--terminal-gray);
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* Main App */
+    #appScreen {
+      display: none;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    /* Terminal Header Bar */
+    .app-header {
+      background: var(--terminal-bg-light);
+      border-bottom: 2px solid var(--terminal-green);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .app-title {
+      font-size: 20px;
+      letter-spacing: 2px;
+      color: var(--terminal-green);
+      text-shadow: 0 0 8px var(--terminal-green);
+    }
+
+    .system-time {
+      font-size: 16px;
+      color: var(--terminal-gray);
+    }
+
+    /* Tab Navigation */
+    .tab-bar {
+      background: var(--terminal-bg-light);
+      border-bottom: 1px solid var(--terminal-green);
+      display: flex;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 16px;
+      background: transparent;
+      border: none;
+      color: var(--terminal-gray);
+      font-family: 'Courier Prime', monospace;
+      font-size: 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--terminal-green);
+      border-bottom-color: var(--terminal-green);
+      background: var(--terminal-bg);
+      text-shadow: 0 0 5px var(--terminal-green);
+    }
+
+    .tab-btn:hover {
+      background: var(--terminal-bg);
+    }
+
+    /* Keyboard Hint */
+    .key-hint {
+      display: inline-block;
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-green);
+      padding: 4px 10px;
+      margin-right: 10px;
+      font-size: 16px;
+      color: var(--terminal-green);
+      min-width: 30px;
+      text-align: center;
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Search Box */
+    .search-container {
+      margin-bottom: 16px;
+      border: 1px solid var(--terminal-green);
+      padding: 8px;
+      background: var(--terminal-bg-light);
+    }
+
+    .search-label {
+      font-size: 14px;
+      color: var(--terminal-gray);
+      margin-bottom: 6px;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 12px;
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-green);
+      color: var(--terminal-green);
+      font-family: 'Courier Prime', monospace;
+      font-size: 20px;
+      outline: none;
+    }
+
+    .search-box:focus {
+      box-shadow: 0 0 8px var(--terminal-green);
+    }
+
+    /* Driver List */
+    .driver-item {
+      background: var(--terminal-bg-light);
+      border: 1px solid var(--terminal-green);
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .driver-item:hover {
+      background: var(--terminal-bg);
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+    }
+
+    .driver-item:active {
+      box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+    }
+
+    .driver-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .driver-name {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--terminal-green);
+      text-transform: uppercase;
+    }
+
+    .driver-number {
+      font-size: 36px;
+      font-weight: bold;
+      color: var(--terminal-green);
+      text-shadow: 0 0 10px var(--terminal-green);
+    }
+
+    .driver-meta {
+      font-size: 18px;
+      color: var(--terminal-gray);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--terminal-bg);
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: block;
+    }
+
+    .modal-header {
+      background: var(--terminal-bg-light);
+      border-bottom: 2px solid var(--terminal-green);
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      color: var(--terminal-green);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: 1px solid var(--terminal-green);
+      color: var(--terminal-green);
+      padding: 10px 16px;
+      font-family: 'Courier Prime', monospace;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .close-btn:active {
+      background: var(--terminal-green);
+      color: var(--terminal-bg);
+    }
+
+    .modal-content {
+      padding: 16px;
+    }
+
+    /* Info Sections */
+    .info-section {
+      border: 1px solid var(--terminal-green);
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--terminal-bg-light);
+    }
+
+    .section-title {
+      font-size: 16px;
+      color: var(--terminal-gray);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--terminal-gray);
+      padding-bottom: 6px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px dotted var(--terminal-gray);
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: var(--terminal-gray);
+      font-size: 18px;
+    }
+
+    .info-value {
+      color: var(--terminal-green);
+      font-size: 18px;
+      text-align: right;
+      font-weight: bold;
+    }
+
+    /* Status Indicators */
+    .status-active {
+      color: var(--terminal-green);
+    }
+
+    .status-pending {
+      color: var(--terminal-yellow);
+    }
+
+    .status-failed {
+      color: var(--terminal-red);
+    }
+
+    /* Action Buttons */
+    .action-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--terminal-bg-light);
+      border-top: 2px solid var(--terminal-green);
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 150px;
+      padding: 14px;
+      background: transparent;
+      border: 1px solid var(--terminal-green);
+      color: var(--terminal-green);
+      font-family: 'Courier Prime', monospace;
+      font-size: 18px;
+      cursor: pointer;
+      text-transform: uppercase;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .action-btn:active {
+      background: var(--terminal-green);
+      color: var(--terminal-bg);
+      box-shadow: 0 0 15px var(--terminal-green);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      color: var(--terminal-gray);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 12px;
+      background: var(--terminal-bg);
+      border: 1px solid var(--terminal-green);
+      color: var(--terminal-green);
+      font-family: 'Courier Prime', monospace;
+      font-size: 18px;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus {
+      box-shadow: 0 0 8px var(--terminal-green);
+    }
+
+    .form-input:disabled {
+      color: var(--terminal-gray);
+      border-color: var(--terminal-gray);
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--terminal-gray);
+    }
+
+    .spinner {
+      border: 3px solid var(--terminal-gray);
+      border-top: 3px solid var(--terminal-green);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--terminal-gray);
+      border: 1px dashed var(--terminal-gray);
+      background: var(--terminal-bg-light);
+    }
+
+    /* Keyboard Shortcuts Panel */
+    .shortcuts-panel {
+      position: fixed;
+      top: 60px;
+      right: 10px;
+      background: var(--terminal-bg);
+      border: 2px solid var(--terminal-green);
+      padding: 12px;
+      font-size: 11px;
+      display: none;
+      z-index: 999;
+      max-width: 300px;
+    }
+
+    .shortcuts-panel.visible {
+      display: block;
+    }
+
+    .shortcuts-title {
+      color: var(--terminal-green);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--terminal-green);
+      padding-bottom: 4px;
+    }
+
+    .shortcut-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      color: var(--terminal-gray);
+    }
+
+    .shortcut-key {
+      color: var(--terminal-green);
+      font-weight: bold;
+    }
+
+    /* Scanline Effect */
+    body::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%
+      );
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.1;
+    }
+
+    /* Entry List Styles */
+    .entry-item {
+      background: var(--terminal-bg-light);
+      border: 1px solid var(--terminal-green);
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .entry-item:hover {
+      background: var(--terminal-bg);
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+    }
+
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .entry-driver {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--terminal-green);
+      text-transform: uppercase;
+    }
+
+    .entry-class {
+      font-size: 16px;
+      color: var(--terminal-gray);
+      border: 1px solid var(--terminal-gray);
+      padding: 4px 10px;
+    }
+
+    .entry-details {
+      font-size: 16px;
+      color: var(--terminal-gray);
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen">
+    <div class="terminal-header">
+      <h1>█ TITAN TERMINAL █</h1>
+      <div class="version">v2.0.0 | NATS CONTROL SYSTEM</div>
+    </div>
+    <div class="login-form">
+      <div class="login-prompt">> ENTER ACCESS CODE:</div>
+      <input type="password" id="passwordInput" placeholder="****" />
+      <button class="login-btn" onclick="login()"><span class="key-hint">↵</span> AUTHENTICATE</button>
+      <div class="shortcut-hint">[ENTER] to login | [?] for help</div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="appScreen">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">█ TITAN TERMINAL █</div>
+      <div class="system-time" id="systemTime">--:--:--</div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('drivers')" id="tabDrivers">
+        <span class="key-hint">D</span> DRIVERS
+      </button>
+      <button class="tab-btn" onclick="switchTab('entries')" id="tabEntries">
+        <span class="key-hint">E</span> ENTRIES
+      </button>
+      <button class="tab-btn" onclick="switchTab('help')" id="tabHelp">
+        <span class="key-hint">H</span> HELP
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- Drivers Tab -->
+      <div id="driversTab" class="tab-content active">
+        <div class="search-container">
+          <div class="search-label">> SEARCH [S]</div>
+          <input type="text" class="search-box" id="driverSearch" placeholder="NAME | MSA | SURNAME..." 
+                 oninput="filterDrivers()" />
+        </div>
+        <div id="driverList">
+          <div class="loading">
+            <div class="spinner"></div>
+            <div>LOADING DRIVER DATABASE...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entries Tab -->
+      <div id="entriesTab" class="tab-content">
+        <div class="search-container">
+          <div class="search-label">> SEARCH [S]</div>
+          <input type="text" class="search-box" id="entrySearch" placeholder="DRIVER | CLASS | NUMBER..." 
+                 oninput="filterEntries()" />
+        </div>
+        <div id="entryList">
+          <div class="loading">
+            <div class="spinner"></div>
+            <div>LOADING RACE ENTRIES...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Tab -->
+      <div id="helpTab" class="tab-content">
+        <div class="info-section">
+          <div class="section-title">KEYBOARD SHORTCUTS</div>
+          <div class="info-row">
+            <span class="info-label">Switch to Drivers</span>
+            <span class="info-value">[D]</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Switch to Entries</span>
+            <span class="info-value">[E]</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Focus Search</span>
+            <span class="info-value">[S]</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Refresh Data</span>
+            <span class="info-value">[R]</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Close Modal</span>
+            <span class="info-value">[ESC]</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Show This Help</span>
+            <span class="info-value">[H]</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="section-title">MODAL SHORTCUTS (WHEN OPEN)</div>
+          <div class="info-row">
+            <span class="info-label">Edit Driver/Entry</span>
+            <span class="info-value">[CTRL+E]</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Save Changes</span>
+            <span class="info-value">[CTRL+S]</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Resend Ticket</span>
+            <span class="info-value">[T]</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="section-title">SYSTEM INFO</div>
+          <div class="info-row">
+            <span class="info-label">Version</span>
+            <span class="info-value">v2.0.0 TERMINAL</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Interface</span>
+            <span class="info-value">DOS-STYLE COMMAND</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value status-active">ONLINE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Driver Detail Modal (continues in next file due to length) -->
+  <div id="driverModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title">DRIVER RECORD</div>
+      <button class="close-btn" onclick="closeDriverModal()">
+        <span class="key-hint">ESC</span> CLOSE
+      </button>
+    </div>
+    <div class="modal-content">
+      <div id="driverDetailContent"></div>
+      <div class="action-panel">
+        <button class="action-btn" onclick="openDriverEditMode()">
+          <span class="key-hint">⌃E</span> EDIT
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entry Detail Modal -->
+  <div id="entryModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title">RACE ENTRY</div>
+      <button class="close-btn" onclick="closeEntryModal()">
+        <span class="key-hint">ESC</span> CLOSE
+      </button>
+    </div>
+    <div class="modal-content">
+      <div id="entryDetailContent"></div>
+      <div class="action-panel">
+        <button class="action-btn" onclick="openEntryEditMode()">
+          <span class="key-hint">⌃E</span> EDIT
+        </button>
+        <button class="action-btn" onclick="resendTicketFromModal()">
+          <span class="key-hint">T</span> TICKET
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Driver Edit Modal -->
+  <div id="driverEditModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title">EDIT DRIVER</div>
+      <button class="close-btn" onclick="closeDriverEditModal()">
+        <span class="key-hint">ESC</span> CANCEL
+      </button>
+    </div>
+    <div class="modal-content" style="padding-bottom: 80px;">
+      <form id="driverEditForm" onsubmit="event.preventDefault(); saveDriverEdit();">
+        <div class="info-section">
+          <div class="section-title">IDENTITY</div>
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input type="text" class="form-input" id="edit_first_name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input type="text" class="form-input" id="edit_last_name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">MSA License</label>
+            <input type="text" class="form-input" id="edit_msa_license_number" />
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="section-title">CONTACT</div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="edit_email" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" class="form-input" id="edit_phone" />
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="section-title">LOCATION</div>
+          <div class="form-group">
+            <label class="form-label">Province</label>
+            <input type="text" class="form-input" id="edit_province" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" class="form-input" id="edit_city" />
+          </div>
+        </div>
+
+        <div class="action-panel">
+          <button type="button" class="action-btn" onclick="closeDriverEditModal()">
+            <span class="key-hint">ESC</span> CANCEL
+          </button>
+          <button type="submit" class="action-btn">
+            <span class="key-hint">⌃S</span> SAVE
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Entry Edit Modal -->
+  <div id="entryEditModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title">EDIT ENTRY</div>
+      <button class="close-btn" onclick="closeEntryEditModal()">
+        <span class="key-hint">ESC</span> CANCEL
+      </button>
+    </div>
+    <div class="modal-content" style="padding-bottom: 80px;">
+      <form id="entryEditForm" onsubmit="event.preventDefault(); saveEntryEdit();">
+        <div class="info-section">
+          <div class="section-title">DRIVER INFO (READ-ONLY)</div>
+          <div class="form-group">
+            <label class="form-label">Entry ID</label>
+            <input type="text" class="form-input" id="entry_entry_id" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Driver Name</label>
+            <input type="text" class="form-input" id="entry_driver_name" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Driver ID</label>
+            <input type="text" class="form-input" id="entry_driver_id" disabled />
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="section-title">RACE DETAILS</div>
+          <div class="form-group">
+            <label class="form-label">Race Class</label>
+            <input type="text" class="form-input" id="entry_race_class" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Race Number</label>
+            <input type="text" class="form-input" id="entry_race_number" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Team Code</label>
+            <input type="text" class="form-input" id="entry_team_code" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Engine</label>
+            <input type="text" class="form-input" id="entry_engine" />
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="section-title">STATUS & PAYMENT</div>
+          <div class="form-group">
+            <label class="form-label">Entry Status</label>
+            <select class="form-select" id="entry_status">
+              <option value="pending">PENDING</option>
+              <option value="confirmed">CONFIRMED</option>
+              <option value="cancelled">CANCELLED</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Status</label>
+            <select class="form-select" id="entry_payment_status">
+              <option value="Pending">PENDING</option>
+              <option value="Complete">COMPLETE</option>
+              <option value="Failed">FAILED</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount Paid (ZAR)</label>
+            <input type="number" class="form-input" id="entry_amount_paid" step="0.01" />
+          </div>
+        </div>
+
+        <div class="info-section">
+          <div class="section-title">TIMESTAMPS (READ-ONLY)</div>
+          <div class="form-group">
+            <label class="form-label">Created At</label>
+            <input type="text" class="form-input" id="entry_created_at" disabled />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Updated At</label>
+            <input type="text" class="form-input" id="entry_updated_at" disabled />
+          </div>
+        </div>
+
+        <div class="action-panel">
+          <button type="button" class="action-btn" onclick="closeEntryEditModal()">
+            <span class="key-hint">ESC</span> CANCEL
+          </button>
+          <button type="submit" class="action-btn">
+            <span class="key-hint">⌃S</span> SAVE
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let allDrivers = [];
+    let allEntries = [];
+    let currentDriver = null;
+    let currentEntry = null;
+    let selectedDriver = null;
+    let selectedEntry = null;
+
+    // System Time
+    function updateSystemTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+      document.getElementById('systemTime').textContent = timeStr;
+    }
+    setInterval(updateSystemTime, 1000);
+    updateSystemTime();
+
+    // Login
+    async function login() {
+      const password = document.getElementById('passwordInput').value;
+      try {
+        const response = await fetch('/titan/authenticate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (response.ok) {
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('appScreen').style.display = 'flex';
+          await loadDrivers();
+          await loadEntries();
+        } else {
+          alert('> ACCESS DENIED: INVALID CODE');
+          document.getElementById('passwordInput').value = '';
+          document.getElementById('passwordInput').focus();
+        }
+      } catch (error) {
+        alert('> SYSTEM ERROR: ' + error.message);
+      }
+    }
+
+    // Tab Switching
+    function switchTab(tab) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+      // Show selected tab
+      if (tab === 'drivers') {
+        document.getElementById('driversTab').classList.add('active');
+        document.getElementById('tabDrivers').classList.add('active');
+      } else if (tab === 'entries') {
+        document.getElementById('entriesTab').classList.add('active');
+        document.getElementById('tabEntries').classList.add('active');
+      } else if (tab === 'help') {
+        document.getElementById('helpTab').classList.add('active');
+        document.getElementById('tabHelp').classList.add('active');
+      }
+    }
+
+    // Load Drivers
+    async function loadDrivers() {
+      const list = document.getElementById('driverList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>LOADING DRIVER DATABASE...</div>';
+      
+      try {
+        const response = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: '', name: '', status: '', paid: '' })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          allDrivers = data.data.drivers || [];
+          displayDrivers(allDrivers);
+        } else {
+          throw new Error('Failed to load drivers');
+        }
+      } catch (error) {
+        console.error('Error loading drivers:', error);
+        list.innerHTML = `
+          <div class="empty-state">
+            <div>ERROR: ${error.message}</div>
+            <div style="margin-top: 12px; color: var(--terminal-gray);">
+              Press [R] to retry
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Display Drivers
+    function displayDrivers(drivers) {
+      const container = document.getElementById('driverList');
+      
+      if (!drivers || drivers.length === 0) {
+        container.innerHTML = '<div class="empty-state">NO DRIVERS IN DATABASE</div>';
+        return;
+      }
+
+      let html = '';
+      drivers.forEach(driver => {
+        html += `
+          <div class="driver-item" onclick="openDriverModal('${driver.driver_id}')">
+            <div class="driver-header">
+              <div class="driver-name">${driver.first_name} ${driver.last_name}</div>
+              <div class="driver-number">#${driver.race_number || '---'}</div>
+            </div>
+            <div class="driver-meta">
+              MSA: ${driver.msa_license_number || 'N/A'} | 
+              ${driver.province || 'Unknown'} | 
+              ${driver.email || 'No email'}
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // Filter Drivers
+    function filterDrivers() {
+      const search = document.getElementById('driverSearch').value.toLowerCase();
+      
+      if (!search) {
+        displayDrivers(allDrivers);
+        return;
+      }
+
+      const filtered = allDrivers.filter(driver => {
+        const name = `${driver.first_name} ${driver.last_name}`.toLowerCase();
+        const msa = (driver.msa_license_number || '').toLowerCase();
+        return name.includes(search) || msa.includes(search);
+      });
+
+      displayDrivers(filtered);
+    }
+
+    // Load Entries
+    async function loadEntries() {
+      const list = document.getElementById('entryList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>LOADING RACE ENTRIES...</div>';
+      
+      try {
+        const response = await fetch('/api/allRaceEntries');
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          allEntries = data;
+        } else if (data.success && data.data && data.data.entries) {
+          allEntries = data.data.entries;
+        } else if (data.entries) {
+          allEntries = data.entries;
+        } else {
+          allEntries = [];
+        }
+        
+        displayEntries(allEntries);
+      } catch (error) {
+        console.error('Error loading entries:', error);
+        list.innerHTML = `
+          <div class="empty-state">
+            <div>ERROR: ${error.message}</div>
+            <div style="margin-top: 12px; color: var(--terminal-gray);">
+              Press [R] to retry
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Display Entries
+    function displayEntries(entries) {
+      const container = document.getElementById('entryList');
+      
+      if (!entries || entries.length === 0) {
+        container.innerHTML = '<div class="empty-state">NO RACE ENTRIES FOUND</div>';
+        return;
+      }
+
+      let html = '';
+      entries.forEach(entry => {
+        const statusClass = entry.payment_status === 'Complete' ? 'status-active' : 
+                           entry.payment_status === 'Failed' ? 'status-failed' : 'status-pending';
+        
+        html += `
+          <div class="entry-item" onclick="openEntryModal('${entry.entry_id}')">
+            <div class="entry-header">
+              <div class="entry-driver">${entry.driver_first_name} ${entry.driver_last_name} #${entry.race_number || '?'}</div>
+              <div class="entry-class">${entry.race_class || 'N/A'}</div>
+            </div>
+            <div class="entry-details">
+              <span class="${statusClass}">${entry.payment_status}</span> | 
+              ${entry.event_name || 'Unknown Event'}
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // Filter Entries
+    function filterEntries() {
+      const search = document.getElementById('entrySearch').value.toLowerCase();
+      
+      if (!search) {
+        displayEntries(allEntries);
+        return;
+      }
+
+      const filtered = allEntries.filter(entry => {
+        const name = `${entry.driver_first_name} ${entry.driver_last_name}`.toLowerCase();
+        const raceClass = (entry.race_class || '').toLowerCase();
+        const number = String(entry.race_number || '');
+        return name.includes(search) || raceClass.includes(search) || number.includes(search);
+      });
+
+      displayEntries(filtered);
+    }
+
+    // Driver Modal Functions
+    async function openDriverModal(driverId) {
+      try {
+        const response = await fetch(`/api/driver/${driverId}`);
+        const driver = await response.json();
+        currentDriver = driver;
+        
+        let html = `
+          <div class="info-section">
+            <div class="section-title">IDENTITY</div>
+            <div class="info-row">
+              <span class="info-label">Full Name:</span>
+              <span class="info-value">${driver.first_name} ${driver.last_name}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Driver ID:</span>
+              <span class="info-value">${driver.driver_id}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">MSA License:</span>
+              <span class="info-value">${driver.msa_license_number || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Race Number:</span>
+              <span class="info-value">#${driver.race_number || '---'}</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="section-title">CONTACT</div>
+            <div class="info-row">
+              <span class="info-label">Email:</span>
+              <span class="info-value">${driver.email || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Phone:</span>
+              <span class="info-value">${driver.phone || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="section-title">LOCATION</div>
+            <div class="info-row">
+              <span class="info-label">Province:</span>
+              <span class="info-value">${driver.province || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">City:</span>
+              <span class="info-value">${driver.city || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="section-title">STATUS</div>
+            <div class="info-row">
+              <span class="info-label">Account Status:</span>
+              <span class="info-value status-active">ACTIVE</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Created:</span>
+              <span class="info-value">${new Date(driver.created_at).toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('driverDetailContent').innerHTML = html;
+        document.getElementById('driverModal').classList.add('active');
+      } catch (error) {
+        alert('> ERROR LOADING DRIVER: ' + error.message);
+      }
+    }
+
+    function closeDriverModal() {
+      document.getElementById('driverModal').classList.remove('active');
+      currentDriver = null;
+    }
+
+    function openDriverEditMode() {
+      if (!currentDriver) return;
+      
+      selectedDriver = currentDriver;
+      document.getElementById('edit_first_name').value = currentDriver.first_name || '';
+      document.getElementById('edit_last_name').value = currentDriver.last_name || '';
+      document.getElementById('edit_msa_license_number').value = currentDriver.msa_license_number || '';
+      document.getElementById('edit_email').value = currentDriver.email || '';
+      document.getElementById('edit_phone').value = currentDriver.phone || '';
+      document.getElementById('edit_province').value = currentDriver.province || '';
+      document.getElementById('edit_city').value = currentDriver.city || '';
+      
+      document.getElementById('driverEditModal').classList.add('active');
+    }
+
+    function closeDriverEditModal() {
+      document.getElementById('driverEditModal').classList.remove('active');
+      selectedDriver = null;
+    }
+
+    async function saveDriverEdit() {
+      if (!selectedDriver) return;
+
+      const updatedData = {
+        driver_id: selectedDriver.driver_id,
+        first_name: document.getElementById('edit_first_name').value,
+        last_name: document.getElementById('edit_last_name').value,
+        msa_license_number: document.getElementById('edit_msa_license_number').value || null,
+        email: document.getElementById('edit_email').value,
+        phone: document.getElementById('edit_phone').value || null,
+        province: document.getElementById('edit_province').value || null,
+        city: document.getElementById('edit_city').value || null,
+        performed_by: 'TITAN'
+      };
+
+      try {
+        const response = await fetch('/api/updateDriver', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('> DRIVER RECORD UPDATED SUCCESSFULLY');
+          closeDriverEditModal();
+          closeDriverModal();
+          await loadDrivers();
+        } else {
+          throw new Error(data.error?.message || 'Update failed');
+        }
+      } catch (error) {
+        alert('> ERROR: ' + error.message);
+      }
+    }
+
+    // Entry Modal Functions
+    async function openEntryModal(entryId) {
+      try {
+        const entry = allEntries.find(e => e.entry_id === entryId);
+        if (!entry) throw new Error('Entry not found');
+        
+        currentEntry = entry;
+        
+        const statusClass = entry.payment_status === 'Complete' ? 'status-active' : 
+                           entry.payment_status === 'Failed' ? 'status-failed' : 'status-pending';
+        
+        let html = `
+          <div class="info-section">
+            <div class="section-title">DRIVER</div>
+            <div class="info-row">
+              <span class="info-label">Name:</span>
+              <span class="info-value">${entry.driver_first_name} ${entry.driver_last_name}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Driver ID:</span>
+              <span class="info-value">${entry.driver_id}</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="section-title">RACE DETAILS</div>
+            <div class="info-row">
+              <span class="info-label">Entry ID:</span>
+              <span class="info-value">${entry.entry_id}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Class:</span>
+              <span class="info-value">${entry.race_class || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Number:</span>
+              <span class="info-value">#${entry.race_number || '---'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Team:</span>
+              <span class="info-value">${entry.team_code || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Engine:</span>
+              <span class="info-value">${entry.engine || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="section-title">PAYMENT</div>
+            <div class="info-row">
+              <span class="info-label">Status:</span>
+              <span class="info-value ${statusClass}">${entry.payment_status}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Amount:</span>
+              <span class="info-value">R ${entry.amount_paid || 0}</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="section-title">STATUS</div>
+            <div class="info-row">
+              <span class="info-label">Entry Status:</span>
+              <span class="info-value">${entry.entry_status || 'pending'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Event:</span>
+              <span class="info-value">${entry.event_name || 'Unknown'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Created:</span>
+              <span class="info-value">${new Date(entry.created_at).toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('entryDetailContent').innerHTML = html;
+        document.getElementById('entryModal').classList.add('active');
+      } catch (error) {
+        alert('> ERROR LOADING ENTRY: ' + error.message);
+      }
+    }
+
+    function closeEntryModal() {
+      document.getElementById('entryModal').classList.remove('active');
+      currentEntry = null;
+    }
+
+    function openEntryEditMode() {
+      if (!currentEntry) return;
+      
+      selectedEntry = currentEntry;
+      document.getElementById('entry_entry_id').value = currentEntry.entry_id || '';
+      document.getElementById('entry_driver_name').value = `${currentEntry.driver_first_name} ${currentEntry.driver_last_name}`;
+      document.getElementById('entry_driver_id').value = currentEntry.driver_id || '';
+      document.getElementById('entry_race_class').value = currentEntry.race_class || '';
+      document.getElementById('entry_race_number').value = currentEntry.race_number || '';
+      document.getElementById('entry_team_code').value = currentEntry.team_code || '';
+      document.getElementById('entry_engine').value = currentEntry.engine || '';
+      document.getElementById('entry_status').value = currentEntry.entry_status || 'pending';
+      document.getElementById('entry_payment_status').value = currentEntry.payment_status || 'Pending';
+      document.getElementById('entry_amount_paid').value = currentEntry.amount_paid || 0;
+      document.getElementById('entry_created_at').value = currentEntry.created_at || '';
+      document.getElementById('entry_updated_at').value = currentEntry.updated_at || '';
+      
+      document.getElementById('entryEditModal').classList.add('active');
+    }
+
+    function closeEntryEditModal() {
+      document.getElementById('entryEditModal').classList.remove('active');
+      selectedEntry = null;
+    }
+
+    async function saveEntryEdit() {
+      if (!selectedEntry) return;
+
+      const updatedData = {
+        entry_id: selectedEntry.entry_id,
+        race_class: document.getElementById('entry_race_class').value || null,
+        race_number: document.getElementById('entry_race_number').value || null,
+        team_code: document.getElementById('entry_team_code').value || null,
+        engine: document.getElementById('entry_engine').value || null,
+        entry_status: document.getElementById('entry_status').value,
+        payment_status: document.getElementById('entry_payment_status').value,
+        amount_paid: document.getElementById('entry_amount_paid').value || 0,
+        performed_by: 'TITAN'
+      };
+
+      try {
+        const response = await fetch('/api/updateRaceEntry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('> ENTRY RECORD UPDATED SUCCESSFULLY');
+          closeEntryEditModal();
+          closeEntryModal();
+          await loadEntries();
+        } else {
+          throw new Error(data.error?.message || 'Update failed');
+        }
+      } catch (error) {
+        alert('> ERROR: ' + error.message);
+      }
+    }
+
+    function resendTicketFromModal() {
+      if (!currentEntry) return;
+      
+      if (confirm('> RESEND RACE TICKETS VIA EMAIL?\n\nCONTINUE?')) {
+        resendTicketEmail(currentEntry.entry_id);
+      }
+    }
+
+    async function resendTicketEmail(entryId) {
+      try {
+        const response = await fetch('/api/sendRaceTicketsEmail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_entry_id: entryId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('> TICKETS SENT SUCCESSFULLY');
+        } else {
+          throw new Error(data.error?.message || 'Failed to send email');
+        }
+      } catch (error) {
+        alert('> ERROR: ' + error.message);
+      }
+    }
+
+    // Global Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Don't trigger if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        // Allow Ctrl+S in forms
+        if (e.ctrlKey && e.key === 's') {
+          e.preventDefault();
+          if (document.getElementById('driverEditModal').classList.contains('active')) {
+            saveDriverEdit();
+          } else if (document.getElementById('entryEditModal').classList.contains('active')) {
+            saveEntryEdit();
+          }
+        }
+        return;
+      }
+
+      // Tab switching
+      if (e.key === 'd' || e.key === 'D') {
+        switchTab('drivers');
+      } else if (e.key === 'e' || e.key === 'E') {
+        switchTab('entries');
+      } else if (e.key === 'h' || e.key === 'H') {
+        switchTab('help');
+      }
+
+      // Search focus
+      else if (e.key === 's' || e.key === 'S') {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab.id === 'driversTab') {
+          document.getElementById('driverSearch').focus();
+        } else if (activeTab.id === 'entriesTab') {
+          document.getElementById('entrySearch').focus();
+        }
+      }
+
+      // Refresh
+      else if (e.key === 'r' || e.key === 'R') {
+        loadDrivers();
+        loadEntries();
+      }
+
+      // Close modals with ESC
+      else if (e.key === 'Escape') {
+        if (document.getElementById('driverEditModal').classList.contains('active')) {
+          closeDriverEditModal();
+        } else if (document.getElementById('entryEditModal').classList.contains('active')) {
+          closeEntryEditModal();
+        } else if (document.getElementById('driverModal').classList.contains('active')) {
+          closeDriverModal();
+        } else if (document.getElementById('entryModal').classList.contains('active')) {
+          closeEntryModal();
+        }
+      }
+
+      // Edit modal actions (Ctrl+E to avoid conflict with tab switching)
+      else if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        if (document.getElementById('driverModal').classList.contains('active')) {
+          openDriverEditMode();
+        } else if (document.getElementById('entryModal').classList.contains('active')) {
+          openEntryEditMode();
+        }
+      }
+
+      // Ticket resend
+      else if (e.key === 't' || e.key === 'T') {
+        if (document.getElementById('entryModal').classList.contains('active')) {
+          resendTicketFromModal();
+        }
+      }
+    });
+
+    // Enter key login
+    document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>

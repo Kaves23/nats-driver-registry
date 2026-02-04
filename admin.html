@@ -693,6 +693,7 @@
       <button class="tab-btn" onclick="switchTab('raceEntries')" style="background: linear-gradient(135deg, #059669, #047857); color: white; font-weight: bold;">Race Entries</button>
       <button class="tab-btn" onclick="switchTab('payments')">Payments</button>
       <button class="tab-btn" onclick="switchTab('paymentStatus')" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-weight: bold;">💳 Payment Status</button>
+      <button class="tab-btn" onclick="switchTab('equipment')" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; font-weight: bold;">🔧 Equipment</button>
       <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
       <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notifications</button>
@@ -796,6 +797,7 @@
               <th>Race</th>
               <th>Email</th>
               <th>Name</th>
+              <th>Number</th>
               <th>Class</th>
               <th>Entry Fee</th>
               <th>Tyres</th>
@@ -815,6 +817,67 @@
             <tr><td colspan="17" class="loading">Loading race entries...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- 🔧 Equipment Tracking Tab -->
+    <div id="equipmentTab" class="admin-content" style="display: none;">
+      <div class="section-header">
+        <h2 style="margin: 0 0 8px 0; color: #1e293b;">🔧 Equipment Tracking</h2>
+        <p style="margin: 0; color: #64748b; font-size: 14px;">Monitor all equipment assignments</p>
+      </div>
+      
+      <!-- Sub-tabs for Equipment -->
+      <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #374151; padding-bottom: 10px;">
+        <button id="equipByDriverBtn" onclick="switchEquipmentView('driver')" style="padding: 8px 16px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
+          👤 By Driver
+        </button>
+        <button id="equipByItemBtn" onclick="switchEquipmentView('item')" style="padding: 8px 16px; background: #4b5563; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
+          🏷️ By Equipment
+        </button>
+      </div>
+      
+      <!-- By Driver View -->
+      <div id="equipmentByDriver" style="display: block;">
+        <div class="filters-bar">
+          <select id="equipDriverEventFilter" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="">Select Event...</option>
+          </select>
+          <button class="search-btn" onclick="loadEquipmentByDriver()" style="padding: 10px 20px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            📊 Load
+          </button>
+        </div>
+        
+        <div id="equipmentByDriverTable" style="margin-top: 15px; overflow-x: auto;">
+          <p style="color: #94a3b8; text-align: center; padding: 40px;">Select an event to view driver equipment</p>
+        </div>
+      </div>
+      
+      <!-- By Equipment View -->
+      <div id="equipmentByItem" style="display: none;">
+        <div class="filters-bar">
+          <select id="equipItemEventFilter" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="">Select Event...</option>
+          </select>
+          <button class="search-btn" onclick="loadEquipmentByItem()" style="padding: 10px 20px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            📊 Load
+          </button>
+        </div>
+        
+        <div id="equipmentByItemTable" style="margin-top: 15px; overflow-x: auto;">
+          <p style="color: #94a3b8; text-align: center; padding: 40px;">Select an event to view equipment assignments</p>
+        </div>
+      </div>
+      
+      <!-- Scan Log -->
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #374151;">
+        <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px;">📋 Recent Equipment Scans (Last 50)</h3>
+        <button class="search-btn" onclick="loadEquipmentScanLog()" style="padding: 8px 16px; background: #6366f1; margin-bottom: 15px;">
+          🔄 Refresh Log
+        </button>
+        <div id="equipmentScanLog" style="max-height: 400px; overflow-y: auto; background: #f8fafc; border-radius: 8px; padding: 10px;">
+          <p style="color: #94a3b8; text-align: center; padding: 20px;">Click refresh to load scan history</p>
+        </div>
       </div>
     </div>
 
@@ -1291,6 +1354,7 @@
               <th>Amount</th>
               <th>Status</th>
               <th>Type</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="paymentsTable">
@@ -1625,6 +1689,49 @@
       <div class="modal-buttons">
         <button class="cancel-btn" onclick="closeUpdateEntryItemsModal()">Cancel</button>
         <button class="save-btn" onclick="saveAndResendTickets()">Update & Resend Tickets</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reconcile Payment Modal -->
+  <div class="modal" id="reconcilePaymentModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <h2>💰 Reconcile Payment</h2>
+      <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
+        Manually mark payment as received when PayFast webhook fails. This will update payment status to "Completed" and entry status to "confirmed".
+      </p>
+      
+      <input type="hidden" id="reconcileEntryId">
+      
+      <div style="padding: 12px; background: #f3f4f6; border-radius: 8px; margin-bottom: 20px;">
+        <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Driver:</div>
+        <div style="font-weight: 600; color: #1f2937;" id="reconcileDriverName"></div>
+      </div>
+      
+      <div class="form-group">
+        <label>PayFast Payment Reference *</label>
+        <input type="text" id="reconcilePaymentRef" placeholder="e.g., 1234567" style="font-family: monospace;">
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">The pf_payment_id from PayFast portal</small>
+      </div>
+      
+      <div class="form-group">
+        <label>Amount Paid (Rands) *</label>
+        <input type="number" id="reconcileAmountPaid" placeholder="e.g., 71.05" step="0.01" min="0">
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">Total amount paid by customer</small>
+      </div>
+      
+      <div style="padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24; margin-top: 16px;">
+        <div style="display: flex; gap: 8px; align-items: flex-start;">
+          <span style="font-size: 18px;">⚠️</span>
+          <div style="font-size: 12px; color: #92400e;">
+            <strong>Important:</strong> Only use this when you've verified payment was received in your PayFast portal. This will confirm the entry and send tickets.
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="cancel-btn" onclick="closeReconcilePaymentModal()">Cancel</button>
+        <button class="save-btn" onclick="submitReconcilePayment()">Reconcile Payment</button>
       </div>
     </div>
   </div>
@@ -2322,6 +2429,7 @@
             <td>${eventDate}</td>
             <td>${entry.driver_email || '-'}</td>
             <td>${driverName || '-'}</td>
+            <td style="font-weight: bold; color: #059669; font-size: 20px;">#${entry.race_number || '?'}</td>
             <td><span class="class-badge ${getClassBadgeClass(raceClass)}">${raceClass}</span></td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'amount_paid', ${entry.amount_paid || 0})">R${parseFloat(entry.amount_paid || entry.entry_fee || 0).toLocaleString('en-ZA', {minimumFractionDigits: 2})}</td>
             <td>${tyres}</td>
@@ -2495,9 +2603,84 @@
       }
     }
 
+    async function sendToTrello(entryId) {
+      try {
+        showToast('Sending entry to Trello...', 'info');
+        
+        const response = await fetch('/api/sendEntryToTrello', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entry_id: entryId })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Failed to send to Trello');
+        }
+
+        showToast('Entry sent to Trello successfully!', 'success');
+      } catch (err) {
+        console.error('Error sending to Trello:', err);
+        showToast(err.message, 'error');
+      }
+    }
+
     async function sendTicketsEmail(entryId, driverEmail) {
       // Show modal to update entry items first
       showUpdateEntryItemsModal(entryId, driverEmail);
+    }
+
+    function showReconcilePaymentModal(entryId, driverName) {
+      document.getElementById('reconcileEntryId').value = entryId;
+      document.getElementById('reconcileDriverName').textContent = driverName;
+      document.getElementById('reconcilePaymentModal').style.display = 'flex';
+    }
+
+    function closeReconcilePaymentModal() {
+      document.getElementById('reconcilePaymentModal').style.display = 'none';
+    }
+
+    async function submitReconcilePayment() {
+      try {
+        const entryId = document.getElementById('reconcileEntryId').value;
+        const paymentRef = document.getElementById('reconcilePaymentRef').value.trim();
+        const amountPaid = document.getElementById('reconcileAmountPaid').value.trim();
+        
+        if (!paymentRef || !amountPaid) {
+          showToast('Please fill in all fields', 'error');
+          return;
+        }
+        
+        showToast('Reconciling payment...', 'info');
+        closeReconcilePaymentModal();
+        
+        const response = await fetch('/api/reconcilePayment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            entry_id: entryId,
+            payment_reference: paymentRef,
+            amount_paid: parseFloat(amountPaid)
+          })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Failed to reconcile payment');
+        }
+
+        showToast('Payment reconciled successfully!', 'success');
+        loadRaceEntries(); // Reload entries
+        
+        // Clear form
+        document.getElementById('reconcilePaymentRef').value = '';
+        document.getElementById('reconcileAmountPaid').value = '';
+      } catch (err) {
+        console.error('Error reconciling payment:', err);
+        showToast(err.message, 'error');
+      }
     }
 
     function showUpdateEntryItemsModal(entryId, driverEmail) {
@@ -2628,8 +2811,14 @@
         <button onclick="confirmRaceEntry('${entryId}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #22c55e; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
           ✓ Confirm Entry
         </button>
+        <button onclick="showReconcilePaymentModal('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
+          💰 Reconcile Payment
+        </button>
         <button onclick="sendTicketsEmail('${entryId}', '${driverEmail}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
           📧 Send Tickets Email
+        </button>
+        <button onclick="sendToTrello('${entryId}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #0ea5e9; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
+          📋 Send to Trello
         </button>
         <button onclick="deleteRaceEntry('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
           🗑️ Delete Entry
@@ -2718,6 +2907,7 @@
       const raceEntriesTab = document.getElementById('raceEntriesTab');
       const paymentsTab = document.getElementById('paymentsTab');
       const paymentStatusTab = document.getElementById('paymentStatusTab');
+      const equipmentTab = document.getElementById('equipmentTab');
       const msaLicensesTab = document.getElementById('msaLicensesTab');
       const messagesTab = document.getElementById('messagesTab');
       const notificationsTab = document.getElementById('notificationsTab');
@@ -2731,6 +2921,7 @@
       raceEntriesTab.style.display = 'none';
       paymentsTab.style.display = 'none';
       if (paymentStatusTab) paymentStatusTab.style.display = 'none';
+      if (equipmentTab) equipmentTab.style.display = 'none';
       msaLicensesTab.style.display = 'none';
       messagesTab.style.display = 'none';
       notificationsTab.style.display = 'none';
@@ -2761,26 +2952,32 @@
           tabs[4].classList.add('active');
           loadPaymentStatus();
         }
+      } else if (tabName === 'equipment') {
+        if (equipmentTab) {
+          equipmentTab.style.display = 'block';
+          tabs[5].classList.add('active');
+          loadEquipmentEventDropdowns();
+        }
       } else if (tabName === 'msaLicenses') {
         msaLicensesTab.style.display = 'block';
-        tabs[5].classList.add('active');
+        tabs[6].classList.add('active');
         loadAdminMSAEventDropdown();
       } else if (tabName === 'messages') {
         messagesTab.style.display = 'block';
-        tabs[6].classList.add('active');
+        tabs[7].classList.add('active');
         loadMessages();
       } else if (tabName === 'notifications') {
         notificationsTab.style.display = 'block';
-        tabs[7].classList.add('active');
+        tabs[8].classList.add('active');
         loadPushStats();
       } else if (tabName === 'audit') {
         auditTab.style.display = 'block';
-        tabs[8].classList.add('active');
+        tabs[9].classList.add('active');
         loadAuditTrail();
       } else if (tabName === 'discountCodes') {
         if (discountCodesTab) {
           discountCodesTab.style.display = 'block';
-          tabs[9].classList.add('active');
+          tabs[10].classList.add('active');
           loadDiscountCodes();
         }
       }
@@ -3261,7 +3458,7 @@
     async function loadPayments() {
       try {
         const tbody = document.getElementById('paymentsTable');
-        tbody.innerHTML = '<tr><td colspan="8" class="loading">Loading payments...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="loading">Loading payments...</td></tr>';
 
         const response = await fetch('/api/getAllPayments', {
           method: 'POST',
@@ -3310,7 +3507,7 @@
         displayPayments(combined);
       } catch (err) {
         console.error('loadPayments error:', err);
-        document.getElementById('paymentsTable').innerHTML = `<tr><td colspan="8" style="color: #ef4444;">Error: ${err.message}</td></tr>`;
+        document.getElementById('paymentsTable').innerHTML = `<tr><td colspan="9" style="color: #ef4444;">Error: ${err.message}</td></tr>`;
       }
     }
 
@@ -3345,7 +3542,7 @@
       document.getElementById('pendingCount').textContent = pending.length;
 
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No payments found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">No payments found</td></tr>';
         return;
       }
 
@@ -3361,6 +3558,11 @@
                          payment.type === 'Pool Engine' ? '#8b5cf6' : '#6b7280';
         const typeLabel = payment.type;
         
+        // Show action button for pending payments
+        const actionButton = payment.payment_status === 'Pending' && payment.entry_id 
+          ? `<button class="action-btn" onclick="markPaymentReceived('${payment.entry_id}', '${driverName}')" style="background: #10b981; font-size: 11px; padding: 6px 12px;">✓ Mark Received</button>`
+          : '-';
+        
         return `
           <tr>
             <td style="font-size: 11px;">${date}</td>
@@ -3371,6 +3573,7 @@
             <td style="font-weight: 600;">${amount}</td>
             <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${payment.payment_status || 'Unknown'}</span></td>
             <td><span style="background: ${typeColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${typeLabel}</span></td>
+            <td>${actionButton}</td>
           </tr>
         `;
       }).join('');
@@ -3408,6 +3611,34 @@
       document.body.removeChild(link);
       
       showToast('CSV exported successfully', 'success');
+    }
+
+    async function markPaymentReceived(entryId, driverName) {
+      if (!confirm(`Mark payment as received for ${driverName}?\n\nThis will:\n• Update payment status to "Completed"\n• Update entry status to "confirmed"\n• Send confirmation email with tickets`)) {
+        return;
+      }
+
+      try {
+        showToast('Updating payment status...', 'info');
+        
+        const response = await fetch('/api/markPaymentReceived', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entry_id: entryId })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Failed to update payment');
+        }
+
+        showToast('Payment marked as received! Entry confirmed.', 'success');
+        loadPayments(); // Reload payments table
+      } catch (err) {
+        console.error('Error marking payment received:', err);
+        showToast(err.message, 'error');
+      }
     }
 
     // ============= END PAYMENT LOG =============
@@ -4320,6 +4551,7 @@
         console.log('🔨 Building table rows...');
         const rows = filteredEntries.map((entry, idx) => {
           const driverName = `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim();
+          const raceNumber = entry.race_number || '?';
           const raceClass = entry.race_class || entry.driver_class || '-';
           const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
           
@@ -4338,6 +4570,7 @@
           // Log first entry to see ticket refs
           if (idx === 0) {
             console.log('🎫 First entry ticket refs:', {
+              race_number: raceNumber,
               ticket_engine_ref: entry.ticket_engine_ref,
               ticket_tyres_ref: entry.ticket_tyres_ref,
               ticket_transponder_ref: entry.ticket_transponder_ref,
@@ -4371,16 +4604,24 @@
             }
           };
           
+          // Create race number barcode
+          const raceNumberBarcode = raceNumber && raceNumber !== '?' ? generateBarcodeImage(raceNumber) : '';
+          const raceNumberCell = raceNumberBarcode ? `
+            <div style="text-align: center; padding: 2px;">
+              <img src="${raceNumberBarcode}" style="width: 100%; height: auto; max-height: 45px; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
+              <div style="font-family: 'Courier New', monospace; font-size: 8px; color: #000; font-weight: 700; margin-top: 2px;">${raceNumber}</div>
+            </div>
+          ` : `<span style="color: #059669; font-weight: 700; font-size: 12px;">#${raceNumber}</span>`;
+          
           return `
             <tr style="background-color: ${bgColor}; page-break-inside: avoid;">
+              <td style="border: 1px solid #dee2e6; padding: 3px; text-align: center;">${raceNumberCell}</td>
               <td style="border: 1px solid #dee2e6; padding: 4px 6px; font-weight: 600; color: #1a1a2e; font-size: 8px;">${driverName}</td>
               <td style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-size: 8px; color: #1a1a2e;">${raceClass}</td>
-              <td style="border: 1px solid #dee2e6; padding: 4px 6px; font-family: monospace; font-size: 7px; color: #666;">${entry.driver_email || '-'}</td>
               <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_engine_ref, hasEngine)}</td>
               <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_tyres_ref, hasTyres)}</td>
               <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_transponder_ref, hasTransponder)}</td>
               <td style="border: 1px solid #dee2e6; padding: 3px;">${createTicketCell(entry.ticket_fuel_ref, hasFuel)}</td>
-              <td style="border: 1px solid #dee2e6; padding: 4px 6px; font-size: 7px; color: #666;">&nbsp;</td>
             </tr>
           `;
         }).join('');
@@ -4389,14 +4630,13 @@
           <table style="width: 100%; border-collapse: collapse; font-size: 8px;">
             <thead>
               <tr style="background: linear-gradient(180deg, #059669 0%, #047857 100%); color: white;">
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 12%;">Driver Name</th>
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 7%;">Class</th>
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 12%;">Email</th>
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Engine</th>
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Tyres</th>
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Transponder</th>
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 13%;">Fuel</th>
-                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 17%;">Comments</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 10%;">Race #</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: left; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 14%;">Driver Name</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 8%;">Class</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 17%;">Engine</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 17%;">Tyres</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 17%;">Transponder</th>
+                <th style="border: 1px solid #dee2e6; padding: 4px 6px; text-align: center; font-weight: 700; font-size: 7px; text-transform: uppercase; width: 17%;">Fuel</th>
               </tr>
             </thead>
             <tbody>
@@ -4827,6 +5067,439 @@
       } catch (err) {
         console.error('Error reconciling payment:', err);
         showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // ✅ Equipment Tracking Functions
+    function switchEquipmentView(view) {
+      const driverView = document.getElementById('equipmentByDriver');
+      const itemView = document.getElementById('equipmentByItem');
+      const driverBtn = document.getElementById('equipByDriverBtn');
+      const itemBtn = document.getElementById('equipByItemBtn');
+      
+      if (view === 'driver') {
+        driverView.style.display = 'block';
+        itemView.style.display = 'none';
+        driverBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+        itemBtn.style.background = '#4b5563';
+      } else {
+        driverView.style.display = 'none';
+        itemView.style.display = 'block';
+        driverBtn.style.background = '#4b5563';
+        itemBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+      }
+    }
+
+    async function loadEquipmentByDriver() {
+      const eventId = document.getElementById('equipDriverEventFilter').value;
+      
+      if (!eventId) {
+        showToast('Please select an event', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/equipmentByDriver?event_id=${encodeURIComponent(eventId)}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load equipment');
+        }
+        
+        displayEquipmentByDriver(data.entries);
+      } catch (err) {
+        console.error('Error loading equipment:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    function displayEquipmentByDriver(entries) {
+      const tableDiv = document.getElementById('equipmentByDriverTable');
+      
+      if (!entries || entries.length === 0) {
+        tableDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No entries found for this event</p>';
+        return;
+      }
+      
+      let html = `
+        <table style="width: 100%; background: white; border-radius: 8px; overflow: hidden; font-size: 12px;">
+          <thead>
+            <tr style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white;">
+              <th style="padding: 8px; text-align: left; font-weight: 600;">Driver</th>
+              <th style="padding: 8px; text-align: left; font-weight: 600;">Class</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">Engine Ticket</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">Engine Serial</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">Tyres Ticket</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">Tyres (FL/FR/RL/RR)</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">TX Ticket</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">TX Serial</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">Fuel Ticket</th>
+              <th style="padding: 8px; text-align: center; font-weight: 600;">Fuel</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      entries.forEach((entry, index) => {
+        const bgColor = index % 2 === 0 ? '#f8fafc' : 'white';
+        
+        html += `
+          <tr style="background: ${bgColor}; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 8px; font-weight: 600; color: #1e293b;">${entry.driver_name}</td>
+            <td style="padding: 8px; color: #475569;">${entry.race_class}</td>
+            <td style="padding: 8px; text-align: center;">
+              ${entry.ticket_engine_ref ? `<span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold;">${entry.ticket_engine_ref}</span>` : '<span style="color: #94a3b8;">-</span>'}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              ${entry.engine_serial ? `<span style="background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${entry.engine_serial}</span>${entry.engine_returned ? ' <span style="color: #22c55e;">✓</span>' : ''}` : '<span style="color: #94a3b8;">N/A</span>'}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              ${entry.ticket_tyres_ref ? `<span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold;">${entry.ticket_tyres_ref}</span>` : '<span style="color: #94a3b8;">-</span>'}
+            </td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px;">
+              ${entry.tyre_front_left ? `<span style="background: #d1fae5; color: #065f46; padding: 2px 4px; border-radius: 3px;">${entry.tyre_front_left}</span> / <span style="background: #d1fae5; color: #065f46; padding: 2px 4px; border-radius: 3px;">${entry.tyre_front_right}</span><br><span style="background: #d1fae5; color: #065f46; padding: 2px 4px; border-radius: 3px;">${entry.tyre_rear_left}</span> / <span style="background: #d1fae5; color: #065f46; padding: 2px 4px; border-radius: 3px;">${entry.tyre_rear_right}</span>` : '<span style="color: #94a3b8;">N/A</span>'}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              ${entry.ticket_transponder_ref ? `<span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold;">${entry.ticket_transponder_ref}</span>` : '<span style="color: #94a3b8;">-</span>'}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              ${entry.transponder_serial ? `<span style="background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${entry.transponder_serial}</span>` : '<span style="color: #94a3b8;">N/A</span>'}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              ${entry.ticket_fuel_ref ? `<span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-weight: bold;">${entry.ticket_fuel_ref}</span>` : '<span style="color: #94a3b8;">-</span>'}
+            </td>
+            <td style="padding: 8px; text-align: center;">
+              ${entry.fuel_collected ? '<span style="color: #22c55e; font-size: 16px;">✓</span>' : '<span style="color: #94a3b8;">N/A</span>'}
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += `
+          </tbody>
+        </table>
+      `;
+      
+      tableDiv.innerHTML = html;
+    }
+
+    async function loadEquipmentByItem() {
+      const eventId = document.getElementById('equipItemEventFilter').value;
+      
+      if (!eventId) {
+        showToast('Please select an event', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/equipmentByItem?event_id=${encodeURIComponent(eventId)}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load equipment');
+        }
+        
+        displayEquipmentByItem(data.equipment);
+      } catch (err) {
+        console.error('Error loading equipment:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    function displayEquipmentByItem(equipment) {
+      const tableDiv = document.getElementById('equipmentByItemTable');
+      
+      if (!equipment || (equipment.engines.length === 0 && equipment.transponders.length === 0)) {
+        tableDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No equipment currently assigned</p>';
+        return;
+      }
+      
+      let html = '';
+      
+      // Engines Table
+      if (equipment.engines && equipment.engines.length > 0) {
+        html += `
+          <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 10px 0; color: #059669; font-size: 16px;">🔧 Engines Currently Out</h3>
+            <table style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr style="background: #f0fdf4; color: #065f46; border-bottom: 2px solid #bbf7d0;">
+                  <th style="padding: 8px; text-align: left; font-weight: 600;">Engine Serial</th>
+                  <th style="padding: 8px; text-align: left; font-weight: 600;">Assigned To</th>
+                  <th style="padding: 8px; text-align: center; font-weight: 600;">Class</th>
+                  <th style="padding: 8px; text-align: center; font-weight: 600;">Assigned Date/Time</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        equipment.engines.forEach((engine, index) => {
+          const bgColor = index % 2 === 0 ? '#fafafa' : 'white';
+          html += `
+            <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 8px; font-family: monospace; font-weight: bold; color: #065f46;">${engine.engine_serial}</td>
+              <td style="padding: 8px; color: #1e293b; font-weight: 600;">${engine.driver_name} #${engine.race_number || '?'}</td>
+              <td style="padding: 8px; text-align: center; color: #475569;">${engine.race_class}</td>
+              <td style="padding: 8px; text-align: center; color: #64748b; font-size: 11px;">${new Date(engine.engine_assigned_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}</td>
+            </tr>
+          `;
+        });
+        
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+      
+      // Transponders Table
+      if (equipment.transponders && equipment.transponders.length > 0) {
+        html += `
+          <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 10px 0; color: #3b82f6; font-size: 16px;">📡 Transponders Currently Out</h3>
+            <table style="width: 100%; font-size: 12px;">
+              <thead>
+                <tr style="background: #eff6ff; color: #1e40af; border-bottom: 2px solid #bfdbfe;">
+                  <th style="padding: 8px; text-align: left; font-weight: 600;">TX Serial</th>
+                  <th style="padding: 8px; text-align: left; font-weight: 600;">Assigned To</th>
+                  <th style="padding: 8px; text-align: center; font-weight: 600;">Class</th>
+                  <th style="padding: 8px; text-align: center; font-weight: 600;">Assigned Date/Time</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        equipment.transponders.forEach((tx, index) => {
+          const bgColor = index % 2 === 0 ? '#fafafa' : 'white';
+          html += `
+            <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 8px; font-family: monospace; font-weight: bold; color: #1e40af;">${tx.transponder_serial}</td>
+              <td style="padding: 8px; color: #1e293b; font-weight: 600;">${tx.driver_name} #${tx.race_number || '?'}</td>
+              <td style="padding: 8px; text-align: center; color: #475569;">${tx.race_class}</td>
+              <td style="padding: 8px; text-align: center; color: #64748b; font-size: 11px;">${new Date(tx.transponder_assigned_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}</td>
+            </tr>
+          `;
+        });
+        
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+      
+      tableDiv.innerHTML = html;
+    }
+
+    async function loadEquipmentTracking() {
+      const searchTerm = document.getElementById('equipmentSearchDriver').value.trim();
+      
+      if (!searchTerm) {
+        showToast('Please enter a driver name or race number', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/equipmentTracking?search=${encodeURIComponent(searchTerm)}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load equipment');
+        }
+        
+        displayEquipmentResults(data.entries);
+      } catch (err) {
+        console.error('Error loading equipment:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    async function loadEquipmentEventDropdowns() {
+      try {
+        const response = await fetch('/api/getAllEvents');
+        const data = await response.json();
+        
+        if (!data.success) return;
+        
+        const events = data.events || [];
+        const driverSelect = document.getElementById('equipDriverEventFilter');
+        const itemSelect = document.getElementById('equipItemEventFilter');
+        
+        const options = events.map(e => 
+          `<option value="${e.event_id}">${e.event_name}</option>`
+        ).join('');
+        
+        driverSelect.innerHTML = '<option value="">Select Event...</option>' + options;
+        itemSelect.innerHTML = '<option value="">Select Event...</option>' + options;
+      } catch (err) {
+        console.error('Error loading events:', err);
+      }
+    }
+
+    function displayEquipmentResults(entries) {
+      const resultsDiv = document.getElementById('equipmentResults');
+      
+      if (!entries || entries.length === 0) {
+        resultsDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No equipment assignments found</p>';
+        return;
+      }
+      
+      // Group by event
+      const groupedByEvent = {};
+      entries.forEach(entry => {
+        const eventKey = entry.event_name || 'Unknown Event';
+        if (!groupedByEvent[eventKey]) {
+          groupedByEvent[eventKey] = [];
+        }
+        groupedByEvent[eventKey].push(entry);
+      });
+      
+      let html = '';
+      
+      for (const [eventName, eventEntries] of Object.entries(groupedByEvent)) {
+        html += `
+          <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h3 style="margin: 0 0 20px 0; color: #0ea5e9; font-size: 18px; border-bottom: 2px solid #0ea5e9; padding-bottom: 10px;">
+              📅 ${eventName}
+            </h3>
+        `;
+        
+        eventEntries.forEach(entry => {
+          const hasEngine = entry.engine_serial && entry.engine_assigned_at;
+          const hasTyres = entry.tyre_front_left && entry.tyre_front_right && entry.tyre_rear_left && entry.tyre_rear_right;
+          const hasTransponder = entry.transponder_serial && entry.transponder_assigned_at;
+          const hasFuel = entry.fuel_collected;
+          
+          html += `
+            <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #0ea5e9;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                <div>
+                  <div style="font-weight: bold; font-size: 16px; color: #1e293b; margin-bottom: 4px;">
+                    ${entry.driver_name} - ${entry.race_class}
+                  </div>
+                  <div style="font-size: 13px; color: #64748b;">
+                    Race #${entry.race_number || 'N/A'} | Entry: ${entry.entry_id}
+                  </div>
+                </div>
+                <div style="text-align: right; font-size: 12px; color: #94a3b8;">
+                  ${new Date(entry.created_at).toLocaleDateString('en-ZA')}
+                </div>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px;">
+                ${hasEngine ? `
+                  <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div style="font-weight: 600; color: #059669; margin-bottom: 6px;">🔧 Engine</div>
+                    <div style="font-size: 14px; color: #475569; margin-bottom: 4px;">${entry.engine_serial}</div>
+                    <div style="font-size: 11px; color: #94a3b8;">Assigned: ${new Date(entry.engine_assigned_at).toLocaleString('en-ZA')}</div>
+                    ${entry.engine_returned ? `<div style="font-size: 11px; color: #22c55e; margin-top: 4px;">✅ Returned: ${new Date(entry.engine_returned_at).toLocaleString('en-ZA')}</div>` : '<div style="font-size: 11px; color: #3b82f6; margin-top: 4px;">🔵 Currently Assigned</div>'}
+                    ${entry.engine_issue ? `<div style="font-size: 11px; color: #ef4444; margin-top: 4px;">⚠️ ${entry.engine_issue}</div>` : ''}
+                  </div>
+                ` : '<div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;"><div style="font-weight: 600; color: #dc2626;">🔧 Engine</div><div style="font-size: 13px; color: #991b1b;">Not Assigned</div></div>'}
+                
+                ${hasTyres ? `
+                  <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div style="font-weight: 600; color: #059669; margin-bottom: 6px;">🏁 Tyres</div>
+                    <div style="font-size: 12px; color: #475569;">
+                      <div>FL: ${entry.tyre_front_left}</div>
+                      <div>FR: ${entry.tyre_front_right}</div>
+                      <div>RL: ${entry.tyre_rear_left}</div>
+                      <div>RR: ${entry.tyre_rear_right}</div>
+                    </div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Registered: ${new Date(entry.tyres_registered_at).toLocaleString('en-ZA')}</div>
+                  </div>
+                ` : '<div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;"><div style="font-weight: 600; color: #dc2626;">🏁 Tyres</div><div style="font-size: 13px; color: #991b1b;">Not Registered</div></div>'}
+                
+                ${hasTransponder ? `
+                  <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div style="font-weight: 600; color: #059669; margin-bottom: 6px;">📡 Transponder</div>
+                    <div style="font-size: 14px; color: #475569; margin-bottom: 4px;">${entry.transponder_serial}</div>
+                    <div style="font-size: 11px; color: #94a3b8;">Assigned: ${new Date(entry.transponder_assigned_at).toLocaleString('en-ZA')}</div>
+                  </div>
+                ` : '<div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;"><div style="font-weight: 600; color: #dc2626;">📡 Transponder</div><div style="font-size: 13px; color: #991b1b;">Not Assigned</div></div>'}
+                
+                ${hasFuel ? `
+                  <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div style="font-weight: 600; color: #059669; margin-bottom: 6px;">⛽ Fuel</div>
+                    <div style="font-size: 13px; color: #22c55e;">✅ Collected</div>
+                    <div style="font-size: 11px; color: #94a3b8;">Collected: ${new Date(entry.fuel_collected_at).toLocaleString('en-ZA')}</div>
+                  </div>
+                ` : '<div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;"><div style="font-weight: 600; color: #dc2626;">⛽ Fuel</div><div style="font-size: 13px; color: #991b1b;">Not Collected</div></div>'}
+              </div>
+            </div>
+          `;
+        });
+        console.error('Error loading events:', err);
+      }
+    }
+
+    async function loadEquipmentScanLog() {
+      try {
+        const response = await fetch('/api/getEquipmentScanLog?limit=50');
+        if (!response.ok) throw new Error('Failed to load scan log');
+        
+        const logs = await response.json();
+        const logContainer = document.getElementById('equipmentScanLog');
+        
+        if (!logs || logs.length === 0) {
+          logContainer.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">No scans recorded yet</p>';
+          return;
+        }
+        
+        let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+        
+        logs.forEach(log => {
+          const timestamp = new Date(log.scan_timestamp).toLocaleString('en-ZA', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          // Color code by scan type
+          let typeColor = '#6366f1';
+          let typeLabel = log.scan_type;
+          
+          if (log.scan_type === 'ticket_lookup') {
+            typeColor = '#3b82f6'; typeLabel = '🎫 Ticket Lookup';
+          } else if (log.scan_type === 'engine_assign') {
+            typeColor = '#10b981'; typeLabel = '🔧 Engine Assigned';
+          } else if (log.scan_type === 'engine_return') {
+            typeColor = '#f59e0b'; typeLabel = '↩️ Engine Returned';
+          } else if (log.scan_type === 'transponder_assign') {
+            typeColor = '#8b5cf6'; typeLabel = '📡 Transponder';
+          } else if (log.scan_type === 'tyres_register') {
+            typeColor = '#ec4899'; typeLabel = '🏁 Tyres';
+          } else if (log.scan_type === 'fuel_collect') {
+            typeColor = '#14b8a6'; typeLabel = '⛽ Fuel';
+          }
+          
+          html += `
+            <div style="background: white; padding: 10px 12px; border-radius: 6px; border-left: 4px solid ${typeColor}; display: grid; grid-template-columns: 100px 150px 1fr 150px; gap: 12px; align-items: center; font-size: 13px;">
+              <div style="color: #64748b; font-weight: 500;">${timestamp}</div>
+              <div style="color: ${typeColor}; font-weight: 600;">${typeLabel}</div>
+              <div style="color: #1e293b;">
+                ${log.driver_name ? `<strong>${log.driver_name}</strong>` : '<em>No driver</em>'}
+                ${log.equipment_serial ? `<span style="color: #64748b; margin-left: 8px;">Serial: ${log.equipment_serial}</span>` : ''}
+                ${log.notes ? `<div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${log.notes}</div>` : ''}
+              </div>
+              <div style="color: #64748b; font-size: 12px;">
+                Scanned by: ${log.scanned_by || 'System'}
+              </div>
+            </div>
+          `;
+        });
+        
+        html += '</div>';
+        logContainer.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading scan log:', error);
+        document.getElementById('equipmentScanLog').innerHTML = `
+          <div style="background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca;">
+            <div style="font-weight: 600; color: #dc2626;">❌ Error: ${error.message}</div>
+          </div>
+        `;
       }
     }
   </script>
