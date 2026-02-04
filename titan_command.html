@@ -1143,7 +1143,10 @@
                 <label>Amount:</label>
                 <span>R${entry.amount_paid || '0'}</span>
               </div>
-              <button class="edit-btn" onclick='openEntryEditModal(${JSON.stringify(entry).replace(/'/g, "&#39;")})'>EDIT</button>
+              <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button class="edit-btn" onclick='openEntryEditModal(${JSON.stringify(entry).replace(/'/g, "&#39;")})' style="flex: 1;">EDIT</button>
+                <button class="edit-btn" onclick='resendTicketEmail("${entry.entry_id}")' style="flex: 1; background: #3b82f6;">📧 RESEND TICKETS</button>
+              </div>
             </div>
           `).join('');
         } else {
@@ -1484,6 +1487,39 @@
       } catch (error) {
         console.error('Error updating entry:', error);
         alert('❌ Failed to update entry:\n\n' + error.message);
+      }
+    }
+
+    // Resend Ticket Email
+    async function resendTicketEmail(entryId) {
+      if (!entryId) {
+        alert('❌ Error: Entry ID not found');
+        return;
+      }
+
+      if (!confirm('📧 Resend race tickets email?\n\nThis will:\n• Generate any missing ticket references\n• Send email with ALL tickets (race, engine, tyres, transponder, fuel)\n• Update the database with new references\n\nContinue?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/sendRaceTicketsEmail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ race_entry_id: entryId })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ Race tickets email sent successfully!\n\n' + 
+                'All tickets have been emailed to the driver.\n' +
+                'Missing ticket references were generated and saved.');
+        } else {
+          throw new Error(data.error?.message || 'Failed to send email');
+        }
+      } catch (error) {
+        console.error('Error resending tickets:', error);
+        alert('❌ Failed to resend tickets:\n\n' + error.message);
       }
     }
 

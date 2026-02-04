@@ -690,9 +690,9 @@
     <div class="admin-tabs">
       <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
       <button class="tab-btn" onclick="switchTab('events')">Events</button>
-      <button class="tab-btn" onclick="switchTab('raceEntries')" style="background: linear-gradient(135deg, #059669, #047857);">Race Entries</button>
+      <button class="tab-btn" onclick="switchTab('raceEntries')" style="background: linear-gradient(135deg, #059669, #047857); color: white; font-weight: bold;">Race Entries</button>
       <button class="tab-btn" onclick="switchTab('payments')">Payments</button>
-      <button class="tab-btn" onclick="switchTab('paymentStatus')" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">💳 Payment Status</button>
+      <button class="tab-btn" onclick="switchTab('paymentStatus')" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-weight: bold;">💳 Payment Status</button>
       <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
       <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
       <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notifications</button>
@@ -1570,6 +1570,65 @@
     </div>
   </div>
 
+  <!-- Update Entry Items Modal (for resending tickets) -->
+  <div class="modal" id="updateEntryItemsModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <h2>Update Entry Items & Resend Tickets</h2>
+      <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">Select which items this entry should include. Ticket references will be generated for selected items.</p>
+      
+      <input type="hidden" id="updateItemsEntryId">
+      <input type="hidden" id="updateItemsDriverEmail">
+      
+      <div class="form-group">
+        <label style="font-weight: 600; color: #1f2937; margin-bottom: 12px; display: block;">Entry Items</label>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #22c55e; border-radius: 8px; cursor: pointer; background: #f0fdf4;">
+            <input type="checkbox" id="updateItemEntry" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;" checked>
+            <span style="flex: 1; font-weight: 600; color: #16a34a;">Race Entry Fee</span>
+            <input type="number" id="updateItemEntryPrice" placeholder="Price" value="2950" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
+          </label>
+          
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+            <input type="checkbox" id="updateItemEngine" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+            <span style="flex: 1; font-weight: 600;">Engine Rental</span>
+            <input type="number" id="updateItemEnginePrice" placeholder="Price" value="6500" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
+          </label>
+          
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+            <input type="checkbox" id="updateItemTyres" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+            <span style="flex: 1; font-weight: 600;">Tyres (Optional)</span>
+            <input type="number" id="updateItemTyresPrice" placeholder="Price" value="4730" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
+          </label>
+          
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+            <input type="checkbox" id="updateItemTransponder" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+            <span style="flex: 1; font-weight: 600;">Rent Transponder</span>
+            <input type="number" id="updateItemTransponderPrice" placeholder="Price" value="250" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
+          </label>
+          
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+            <input type="checkbox" id="updateItemFuel" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
+            <span style="flex: 1; font-weight: 600;">Controlled Fuel</span>
+            <input type="number" id="updateItemFuelPrice" placeholder="Price" value="720" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
+          </label>
+        </div>
+      </div>
+      
+      <div style="margin-top: 16px; padding: 16px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 600; color: #166534;">New Total Amount:</span>
+          <span style="font-size: 20px; font-weight: 700; color: #16a34a;" id="updateItemsTotal">R0</span>
+        </div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="cancel-btn" onclick="closeUpdateEntryItemsModal()">Cancel</button>
+        <button class="save-btn" onclick="saveAndResendTickets()">Update & Resend Tickets</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Discount Code Modal -->
   <div class="modal" id="discountCodeModal">
     <div class="modal-content" style="max-width: 600px;">
@@ -2437,24 +2496,107 @@
     }
 
     async function sendTicketsEmail(entryId, driverEmail) {
+      // Show modal to update entry items first
+      showUpdateEntryItemsModal(entryId, driverEmail);
+    }
+
+    function showUpdateEntryItemsModal(entryId, driverEmail) {
+      document.getElementById('updateItemsEntryId').value = entryId;
+      document.getElementById('updateItemsDriverEmail').value = driverEmail;
+      
+      // Add event listeners to checkboxes to update total
+      ['updateItemEntry', 'updateItemEngine', 'updateItemTyres', 'updateItemTransponder', 'updateItemFuel'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateItemsTotal);
+      });
+      
+      // Add event listeners to price inputs
+      ['updateItemEntryPrice', 'updateItemEnginePrice', 'updateItemTyresPrice', 'updateItemTransponderPrice', 'updateItemFuelPrice'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateItemsTotal);
+      });
+      
+      updateItemsTotal();
+      document.getElementById('updateEntryItemsModal').style.display = 'flex';
+    }
+
+    function closeUpdateEntryItemsModal() {
+      document.getElementById('updateEntryItemsModal').style.display = 'none';
+    }
+
+    function updateItemsTotal() {
+      let total = 0;
+      
+      if (document.getElementById('updateItemEntry').checked) {
+        total += parseFloat(document.getElementById('updateItemEntryPrice').value) || 0;
+      }
+      if (document.getElementById('updateItemEngine').checked) {
+        total += parseFloat(document.getElementById('updateItemEnginePrice').value) || 0;
+      }
+      if (document.getElementById('updateItemTyres').checked) {
+        total += parseFloat(document.getElementById('updateItemTyresPrice').value) || 0;
+      }
+      if (document.getElementById('updateItemTransponder').checked) {
+        total += parseFloat(document.getElementById('updateItemTransponderPrice').value) || 0;
+      }
+      if (document.getElementById('updateItemFuel').checked) {
+        total += parseFloat(document.getElementById('updateItemFuelPrice').value) || 0;
+      }
+      
+      document.getElementById('updateItemsTotal').textContent = 'R' + total.toLocaleString('en-ZA');
+    }
+
+    async function saveAndResendTickets() {
       try {
-        showToast('Sending tickets email...', 'info');
+        const entryId = document.getElementById('updateItemsEntryId').value;
+        const driverEmail = document.getElementById('updateItemsDriverEmail').value;
         
-        const response = await fetch('/api/sendRaceTicketsEmail', {
+        // Build entry items array (Race Entry is implicit, only add rental items)
+        const entryItems = [];
+        if (document.getElementById('updateItemEngine').checked) entryItems.push('Engine Rental');
+        if (document.getElementById('updateItemTyres').checked) entryItems.push('Tyres (Optional)');
+        if (document.getElementById('updateItemTransponder').checked) entryItems.push('Rent Transponder');
+        if (document.getElementById('updateItemFuel').checked) entryItems.push('Controlled Fuel');
+        
+        // Calculate total amount (including entry fee)
+        let totalAmount = 0;
+        if (document.getElementById('updateItemEntry').checked) {
+          totalAmount += parseFloat(document.getElementById('updateItemEntryPrice').value) || 0;
+        }
+        if (document.getElementById('updateItemEngine').checked) {
+          totalAmount += parseFloat(document.getElementById('updateItemEnginePrice').value) || 0;
+        }
+        if (document.getElementById('updateItemTyres').checked) {
+          totalAmount += parseFloat(document.getElementById('updateItemTyresPrice').value) || 0;
+        }
+        if (document.getElementById('updateItemTransponder').checked) {
+          totalAmount += parseFloat(document.getElementById('updateItemTransponderPrice').value) || 0;
+        }
+        if (document.getElementById('updateItemFuel').checked) {
+          totalAmount += parseFloat(document.getElementById('updateItemFuelPrice').value) || 0;
+        }
+        
+        showToast('Updating entry and sending tickets...', 'info');
+        closeUpdateEntryItemsModal();
+        
+        const response = await fetch('/api/updateAndResendTickets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ race_entry_id: entryId })
+          body: JSON.stringify({ 
+            race_entry_id: entryId,
+            entry_items: entryItems,
+            amount_paid: totalAmount
+          })
         });
 
         const result = await response.json();
         
         if (!response.ok || !result.success) {
-          throw new Error(result.error || 'Failed to send tickets email');
+          throw new Error(result.error || 'Failed to update and resend tickets');
         }
 
-        showToast(result.message || 'Tickets email sent successfully!', 'success');
+        showToast(result.message || 'Entry updated and tickets sent successfully!', 'success');
+        loadRaceEntries(); // Reload entries to show updated data
       } catch (err) {
-        console.error('Error sending tickets email:', err);
+        console.error('Error updating and resending tickets:', err);
         showToast(err.message, 'error');
       }
     }

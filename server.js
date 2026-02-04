@@ -3416,11 +3416,19 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     }
     
     // Parse selected items to know what tickets to generate
+    // NOTE: Express already URL-decodes query parameters, so req.query.items is already decoded
     let selectedItems = [];
     try {
-      selectedItems = items ? JSON.parse(decodeURIComponent(items)) : [];
+      if (items) {
+        console.log(`📦 Raw items parameter from Express:`, items);
+        selectedItems = JSON.parse(items);  // Just parse, don't decode again!
+        console.log(`📦 Parsed selectedItems:`, selectedItems);
+      }
     } catch (e) {
-      console.warn('Could not parse items:', e.message);
+      console.error('❌ CRITICAL: Could not parse items parameter:', e.message);
+      console.error('❌ Raw items parameter:', items);
+      console.error('❌ This will result in NO rental items being recorded!');
+      // Still continue - user will at least get race entry, but no rental items
     }
 
     // Use provided email or fallback to noreply
@@ -3468,6 +3476,13 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     const ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
     const ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
     const ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
+    
+    console.log(`🎫 Creating pending entry with items:`);
+    console.log(`   - selectedItems array:`, selectedItems);
+    console.log(`   - hasEngine: ${hasEngine}, ticketEngineRef: ${ticketEngineRef}`);
+    console.log(`   - hasTyres: ${hasTyres}, ticketTyresRef: ${ticketTyresRef}`);
+    console.log(`   - hasTransponder: ${hasTransponder}, ticketTransponderRef: ${ticketTransponderRef}`);
+    console.log(`   - hasFuel: ${hasFuel}, ticketFuelRef: ${ticketFuelRef}`);
     
     try {
       await pool.query(
@@ -4588,27 +4603,31 @@ app.post('/api/paymentNotify', async (req, res) => {
         raceClass = existingEntry.rows[0].race_class;
         entryItems = existingEntry.rows[0].entry_items;
         // PRESERVE existing ticket references - don't regenerate them!
-        ticketEngineRef = existingEntry.rows[0].ticket_engine_ref || (hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null);
-        ticketTyresRef = existingEntry.rows[0].ticket_tyres_ref || (hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null);
-        ticketTransponderRef = existingEntry.rows[0].ticket_transponder_ref || (hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null);
-        ticketFuelRef = existingEntry.rows[0].ticket_fuel_ref || (hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null);
-        console.log(`📝 Found existing pending entry with class: ${raceClass}, preserving ticket refs`);
+        ticketEngineRef = existingEntry.rows[0].ticket_engine_ref;
+        ticketTyresRef = existingEntry.rows[0].ticket_tyres_ref;
+        ticketTransponderRef = existingEntry.rows[0].ticket_transponder_ref;
+        ticketFuelRef = existingEntry.rows[0].ticket_fuel_ref;
+        console.log(`📝 Found existing pending entry with class: ${raceClass}, items: ${JSON.stringify(entryItems)}, preserving all data`);
       } else {
-        // No pending entry - generate new tickets
-        ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null;
-        ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
-        ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
-        ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
-        console.log(`⚠️ No pending entry found for reference: ${reference}, creating new entry`);
-      }
-      
-      // Build entry_items array from item_description
-      if (!entryItems) {
+        // ⚠️ CRITICAL: No pending entry found - this should NOT happen in normal flow
+        // This means webhook arrived before pending entry was created, or there was an error
+        // Try to infer items from item_description as fallback (unreliable)
+        console.warn(`⚠️ WARNING: No pending entry found for reference: ${reference}`);
+        console.warn(`⚠️ This indicates the pending entry was not created during payment initiation`);
+        
         entryItems = [];
         if (hasEngine) entryItems.push('Engine Rental');
         if (hasTyres) entryItems.push('Tyres (Optional)');
         if (hasTransponder) entryItems.push('Rent Transponder');
         if (hasFuel) entryItems.push('Controlled Fuel');
+        
+        // Generate new tickets only if no existing entry
+        ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null;
+        ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
+        ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
+        ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
+        
+        console.warn(`⚠️ Built fallback entry_items from description: ${JSON.stringify(entryItems)}`);
       }
       
       // ON CONFLICT now updates the pending entry we created during initiation
@@ -5284,7 +5303,11 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
       console.warn('Could not parse entry_items:', e);
     }
     
-    const hasEngine = entryItems.some(item => item.toLowerCase().includes('engine'));
+    // Check both entry_items AND the engine column (for older entries)
+    const hasEngineFromItems = entryItems.some(item => item.toLowerCase().includes('engine'));
+    const hasEngineFromColumn = entry.engine === 1 || entry.engine === '1' || entry.engine === true;
+    const hasEngine = hasEngineFromItems || hasEngineFromColumn;
+    
     const hasTyres = entryItems.some(item => item.toLowerCase().includes('tyre'));
     const hasTransponder = entryItems.some(item => item.toLowerCase().includes('transponder'));
     const hasFuel = entryItems.some(item => item.toLowerCase().includes('fuel'));
@@ -5472,6 +5495,219 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
     
   } catch (err) {
     console.error('Error sending tickets email:', err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Admin: Update entry items and resend tickets (for fixing old entries)
+app.post('/api/updateAndResendTickets', async (req, res) => {
+  try {
+    const { race_entry_id, entry_items, amount_paid } = req.body;
+
+    if (!race_entry_id || !entry_items) {
+      throw new Error('Missing race_entry_id or entry_items');
+    }
+
+    // Get entry details
+    const entryResult = await pool.query(
+      `SELECT 
+        re.*,
+        d.first_name, d.last_name, c.email as driver_email,
+        e.event_name, e.event_date, e.location
+       FROM race_entries re
+       LEFT JOIN drivers d ON re.driver_id = d.driver_id
+       LEFT JOIN contacts c ON re.driver_id = c.driver_id
+       LEFT JOIN events e ON re.event_id = e.event_id
+       WHERE re.entry_id = $1`,
+      [race_entry_id]
+    );
+    
+    if (entryResult.rows.length === 0) {
+      throw new Error('Race entry not found');
+    }
+    
+    const entry = entryResult.rows[0];
+    const driverName = `${entry.first_name} ${entry.last_name}`.trim();
+    const driverEmail = entry.driver_email || entry.email || 'noreply@nats.co.za';
+    
+    // Determine what items are selected
+    const hasEngine = entry_items.some(item => item.toLowerCase().includes('engine'));
+    const hasTyres = entry_items.some(item => item.toLowerCase().includes('tyre'));
+    const hasTransponder = entry_items.some(item => item.toLowerCase().includes('transponder'));
+    const hasFuel = entry_items.some(item => item.toLowerCase().includes('fuel'));
+    
+    // Generate ticket references for missing items
+    let ticketEngineRef = entry.ticket_engine_ref;
+    let ticketTyresRef = entry.ticket_tyres_ref;
+    let ticketTransponderRef = entry.ticket_transponder_ref;
+    let ticketFuelRef = entry.ticket_fuel_ref;
+    
+    if (hasEngine && !ticketEngineRef) {
+      ticketEngineRef = generateUniqueTicketRef('engine', entry.driver_id, entry.event_id);
+    }
+    if (hasTyres && !ticketTyresRef) {
+      ticketTyresRef = generateUniqueTicketRef('tyres', entry.driver_id, entry.event_id);
+    }
+    if (hasTransponder && !ticketTransponderRef) {
+      ticketTransponderRef = generateUniqueTicketRef('transponder', entry.driver_id, entry.event_id);
+    }
+    if (hasFuel && !ticketFuelRef) {
+      ticketFuelRef = generateUniqueTicketRef('fuel', entry.driver_id, entry.event_id);
+    }
+    
+    // Update database with new entry_items, amount, and ticket refs
+    await pool.query(
+      `UPDATE race_entries 
+       SET entry_items = $1,
+           amount_paid = $2,
+           ticket_engine_ref = $3,
+           ticket_tyres_ref = $4,
+           ticket_transponder_ref = $5,
+           ticket_fuel_ref = $6,
+           updated_at = NOW()
+       WHERE entry_id = $7`,
+      [JSON.stringify(entry_items), amount_paid || entry.amount_paid, 
+       ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef, race_entry_id]
+    );
+    
+    console.log(`✅ Updated entry ${race_entry_id} with items:`, entry_items);
+    console.log(`   Ticket refs - Engine: ${ticketEngineRef}, Tyres: ${ticketTyresRef}, Transponder: ${ticketTransponderRef}, Fuel: ${ticketFuelRef}`);
+    
+    // Build rental tickets HTML
+    let rentalTicketsHtml = '';
+    if (hasEngine && ticketEngineRef) {
+      rentalTicketsHtml += generateEngineRentalTicketHTML({
+        reference: ticketEngineRef,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
+    }
+    if (hasTyres && ticketTyresRef) {
+      rentalTicketsHtml += generateTyreRentalTicketHTML({
+        reference: ticketTyresRef,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
+    }
+    if (hasTransponder && ticketTransponderRef) {
+      rentalTicketsHtml += generateTransponderRentalTicketHTML({
+        reference: ticketTransponderRef,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
+    }
+    if (hasFuel && ticketFuelRef) {
+      rentalTicketsHtml += generateFuelTicketHTML({
+        reference: ticketFuelRef,
+        eventName: entry.event_name,
+        eventDate: entry.event_date,
+        eventLocation: entry.location,
+        raceClass: entry.race_class,
+        driverName
+      });
+    }
+    
+    // Format event details
+    const eventName = entry.event_name || 'Race Event';
+    const eventDateStr = entry.event_date 
+      ? new Date(entry.event_date).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+      : 'TBA';
+    const eventLocation = entry.location || 'TBA';
+    
+    // Send updated email with all tickets
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Updated Race Entry - NATS 2026 ROK Cup</title>
+        <style>
+          body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+          .header { background: white; padding: 20px; text-align: center; border-bottom: 3px solid #22c55e; }
+          .header h1 { margin: 0; font-size: 24px; font-weight: 700; color: #111827; }
+          .content { padding: 30px; }
+          .details { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e; }
+          .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+          .detail-row:last-child { border-bottom: none; }
+          .footer { background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px; }
+        </style>
+      </head>
+      <body style="margin: 0; padding: 20px;">
+        <div class="container">
+          <div class="header">
+            <h1>✅ Updated Race Entry</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${driverName},</p>
+            <p>Your race entry has been updated with the following details and tickets:</p>
+            
+            <div class="details">
+              <div class="detail-row">
+                <span>Entry ID</span>
+                <span>${race_entry_id}</span>
+              </div>
+              <div class="detail-row">
+                <span>Event</span>
+                <span>${eventName}</span>
+              </div>
+              <div class="detail-row">
+                <span>Date</span>
+                <span>${eventDateStr}</span>
+              </div>
+              <div class="detail-row">
+                <span>Location</span>
+                <span>${eventLocation}</span>
+              </div>
+              <div class="detail-row">
+                <span>Class</span>
+                <span>${entry.race_class}</span>
+              </div>
+            </div>
+            
+            ${rentalTicketsHtml}
+            
+            <p style="margin-top: 20px; color: #6b7280; font-size: 14px;">See you at the track!</p>
+          </div>
+          <div class="footer">
+            <p style="margin: 0;">NATS 2026 ROK Cup - www.rokthenats.co.za</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    await axios.post('https://mandrillapp.com/api/1.0/messages/send.json', {
+      key: process.env.MAILCHIMP_API_KEY,
+      message: {
+        to: [{ email: driverEmail, name: driverName }],
+        bcc_address: 'africankartingcup@gmail.com',
+        from_email: process.env.MAILCHIMP_FROM_EMAIL || 'noreply@nats.co.za',
+        from_name: 'The ROK Cup',
+        subject: `Updated Race Entry - ${eventName} (${entry.race_class})`,
+        html: emailHtml
+      }
+    });
+    
+    console.log(`📧 Updated entry email sent to: ${driverEmail}`);
+    
+    res.json({ 
+      success: true, 
+      message: `Entry updated and tickets sent to ${driverEmail}`
+    });
+    
+  } catch (err) {
+    console.error('Error updating and resending tickets:', err);
     res.json({ success: false, error: err.message });
   }
 });

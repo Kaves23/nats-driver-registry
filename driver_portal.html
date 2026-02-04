@@ -2722,7 +2722,12 @@
 
                 <!-- Payment History Section -->
                 <div class="panel" style="margin-top: 24px;">
-                  <div class="panelTitle"><span class="accentBar" style="background:#22c55e"></span>Payment History</div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="panelTitle"><span class="accentBar" style="background:#22c55e"></span>Payment History</div>
+                    <button onclick="loadDriverRaceEntries()" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                      ↻ Refresh
+                    </button>
+                  </div>
                   <div class="hint">Track all your payment transactions and statuses.</div>
                   <div id="paymentHistoryContainer" style="margin-top: 16px;">
                     <div style="color: #9ca3af; text-align: center; padding: 20px;">Loading payment history...</div>
@@ -3915,8 +3920,8 @@
       const inlineBtns = document.getElementById("statusInlineButtons");
       if (inlineBtns) inlineBtns.style.display = "flex";
       
-      // Set the first portal tab active (Driver tab)
-      setPortalTab("driver");
+      // Set the payments (Entries & Rentals) tab active by default
+      setPortalTab("payments");
       
       // Load notification history when logged in
       loadNotificationHistory();
@@ -6383,6 +6388,9 @@
         const labelColor = item.optional ? 'Optional' : 'Required';
         const labelStyle = item.optional ? 'color: #dc2626;' : 'color: #1d4ed8;';
         
+        // Pre-check required (non-optional) items by default
+        const checkedAttr = (!item.optional && !isDisabled) ? 'checked' : '';
+        
         itemsHtml += `
           <div style="padding: 16px; border: 2px solid ${borderColor}; border-radius: 6px; margin-bottom: 12px; background: ${bgColor}; box-shadow: 0 0 12px ${shadowColor};">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -6392,7 +6400,7 @@
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <div style="font-weight: 700; color: #2563eb; font-size: 14px;">${priceDisplay}</div>
-                <input type="checkbox" id="item_${idx}" ${isDisabled ? 'disabled' : ''} onchange="updateRaceTotal()" style="cursor: pointer; width: 18px; height: 18px; ${isDisabled ? 'opacity: 0.5;' : ''}">
+                <input type="checkbox" id="item_${idx}" ${isDisabled ? 'disabled' : ''} ${checkedAttr} onchange="updateRaceTotal()" style="cursor: pointer; width: 18px; height: 18px; ${isDisabled ? 'opacity: 0.5;' : ''}">
               </div>
             </div>
           </div>
@@ -6646,6 +6654,9 @@
               console.log('PayFast payment for class:', driverClass, 'Amount raw:', totalPrice);
               const amount = totalPrice.replace('R', '').replace(/\s/g, '').replace(',', '.').trim();
               console.log('🔍 Amount after cleaning:', amount);
+              console.log('🔍 selectedItems being sent:', selectedItems);
+              console.log('🔍 selectedItems JSON:', JSON.stringify(selectedItems));
+              console.log('🔍 selectedItems encoded:', encodeURIComponent(JSON.stringify(selectedItems)));
               toast('info', 'Redirecting to PayFast payment...');
               // Redirect to PayFast payment with driver email, event, driver ID, and selected items
               const itemsParam = encodeURIComponent(JSON.stringify(selectedItems));
