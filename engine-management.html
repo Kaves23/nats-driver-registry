@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Engine Management - NATS</title>
     <style>
+        :root {
+            --winter: #0ea5e9;
+            --bg: #000000;
+            --panel-bg: #0a0a0a;
+            --ink: #ffffff;
+            --muted: #9ca3af;
+            --border-soft: rgba(255,255,255,0.08);
+            --border-strong: rgba(255,255,255,0.15);
+            --shadow: 0 18px 40px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,255,255,0.05);
+            --shadow-strong: 0 30px 90px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.08);
+            --radius: 0px;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,11 +25,25 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+            background: #000000;
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+            padding: 24px 18px;
             min-height: 100vh;
-            padding: 10px;
-            color: #333;
+            touch-action: pan-y;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 16px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px 10px;
+            }
         }
         
         .container {
@@ -25,44 +52,106 @@
         }
         
         .header {
-            background: white;
-            padding: 12px;
-            border-radius: 10px;
+            background: #0f0f0f;
+            border: 1px solid var(--border-strong);
+            box-shadow: var(--shadow-strong);
+            border-radius: var(--radius);
+            padding: 22px 22px 20px;
             text-align: center;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(135deg,
+                    rgba(255,255,255,0.18) 0%,
+                    rgba(0,0,0,0.04) 55%,
+                    rgba(255,255,255,0.12) 100%),
+                repeating-linear-gradient(135deg,
+                    rgba(0,0,0,0.030) 0px,
+                    rgba(0,0,0,0.030) 1px,
+                    rgba(0,0,0,0.000) 1px,
+                    rgba(0,0,0,0.000) 7px);
+            opacity: 0.35;
+            mix-blend-mode: multiply;
         }
         
         .header h1 {
-            color: #1e3c72;
-            font-size: 20px;
-            margin-bottom: 3px;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink);
+            position: relative;
+            z-index: 1;
         }
         
         .header p {
-            color: #666;
-            font-size: 14px;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 8px;
+            position: relative;
+            z-index: 1;
         }
         
         .card {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: #0f0f0f;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-strong);
+            padding: 22px 22px 20px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(135deg,
+                    rgba(255,255,255,0.18) 0%,
+                    rgba(0,0,0,0.04) 55%,
+                    rgba(255,255,255,0.12) 100%),
+                repeating-linear-gradient(135deg,
+                    rgba(0,0,0,0.030) 0px,
+                    rgba(0,0,0,0.030) 1px,
+                    rgba(0,0,0,0.000) 1px,
+                    rgba(0,0,0,0.000) 7px);
+            opacity: 0.35;
+            mix-blend-mode: multiply;
+        }
+
+        .card > * {
+            position: relative;
+            z-index: 1;
         }
         
         .btn {
             width: 100%;
             padding: 14px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s ease-out;
+            box-shadow: var(--shadow);
+            background: var(--panel-bg);
+            color: var(--ink);
         }
         
         .btn:active {
@@ -70,51 +159,78 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             color: white;
+            border-color: #0ea5e9;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 20px 40px rgba(14, 165, 233, 0.35);
         }
         
         .btn-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
             color: white;
+            border-color: #4ade80;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 20px 40px rgba(34, 197, 94, 0.35);
         }
         
         .btn-warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
+            background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+            color: #0a0a0a;
+            border-color: #facc15;
+            font-weight: 900;
+        }
+
+        .btn-warning:hover {
+            box-shadow: 0 20px 40px rgba(250, 204, 21, 0.35);
         }
         
         .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
+            background: #1a1a1a;
+            color: var(--muted);
+            border-color: var(--border-soft);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--border-strong);
+            color: var(--ink);
         }
         
         .input-group {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
         
         .input-group label {
             display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #333;
-            font-size: 14px;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 700;
+            margin-bottom: 6px;
         }
         
         .input-group input,
         .input-group textarea {
             width: 100%;
-            padding: 15px;
+            padding: 10px;
             font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: var(--radius);
             transition: border-color 0.3s;
+            background: #0a0a0a;
+            color: #ffffff;
+            outline: none;
         }
         
         .input-group input:focus,
         .input-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
+            border-color: var(--winter);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
         }
         
         .input-group textarea {
@@ -123,24 +239,55 @@
         }
         
         .driver-info {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            background: #0f0f0f;
+            border: 1px solid var(--border-strong);
+            color: var(--ink);
+            padding: 22px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
             text-align: center;
+            box-shadow: var(--shadow-strong);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .driver-info::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(135deg,
+                    rgba(255,255,255,0.18) 0%,
+                    rgba(0,0,0,0.04) 55%,
+                    rgba(255,255,255,0.12) 100%),
+                repeating-linear-gradient(135deg,
+                    rgba(0,0,0,0.030) 0px,
+                    rgba(0,0,0,0.030) 1px,
+                    rgba(0,0,0,0.000) 1px,
+                    rgba(0,0,0,0.000) 7px);
+            opacity: 0.35;
+            mix-blend-mode: multiply;
+        }
+
+        .driver-info > * {
+            position: relative;
+            z-index: 1;
         }
         
         .driver-info h2 {
-            font-size: 28px;
+            font-size: 24px;
             margin-bottom: 15px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
         }
         
         .driver-info .info-row {
             display: flex;
             justify-content: space-between;
             padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.3);
+            border-bottom: 1px solid var(--border-soft);
         }
         
         .driver-info .info-row:last-child {
@@ -148,38 +295,49 @@
         }
         
         .driver-info .label {
-            font-weight: bold;
-            font-size: 14px;
-            opacity: 0.9;
+            font-weight: 700;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
         }
         
         .driver-info .value {
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--ink);
         }
         
         .success-message {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
             color: white;
             padding: 20px;
-            border-radius: 12px;
+            border-radius: var(--radius);
             text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
             animation: slideIn 0.3s ease-out;
+            border: 1px solid #4ade80;
+            box-shadow: 0 20px 40px rgba(34, 197, 94, 0.35);
         }
         
         .error-message {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
             padding: 20px;
-            border-radius: 12px;
+            border-radius: var(--radius);
             text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
             animation: slideIn 0.3s ease-out;
+            border: 1px solid #ef4444;
+            box-shadow: 0 20px 40px rgba(239, 68, 68, 0.35);
         }
         
         @keyframes slideIn {
@@ -205,19 +363,20 @@
         
         #scanner-video {
             width: 100%;
-            border-radius: 12px;
+            border-radius: var(--radius);
             background: #000;
+            border: 1px solid var(--border-strong);
         }
         
         .scan-line {
             position: absolute;
             width: 80%;
             height: 3px;
-            background: #38ef7d;
+            background: var(--winter);
             left: 10%;
             top: 50%;
             animation: scan 2s ease-in-out infinite;
-            box-shadow: 0 0 10px #38ef7d;
+            box-shadow: 0 0 10px var(--winter);
         }
         
         @keyframes scan {
@@ -228,75 +387,407 @@
         .engine-status {
             display: inline-block;
             padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
+            border-radius: var(--radius);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             margin-top: 10px;
+            border: 1px solid;
         }
         
         .status-assigned {
-            background: #38ef7d;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
             color: white;
+            border-color: #4ade80;
         }
         
         .status-available {
-            background: #667eea;
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             color: white;
+            border-color: #0ea5e9;
         }
         
         .status-issue {
-            background: #f5576c;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
+            border-color: #ef4444;
         }
         
         .verify-result {
             display: inline-block;
             margin-left: 10px;
-            font-weight: bold;
-            font-size: 18px;
+            font-weight: 700;
+            font-size: 16px;
         }
         
         .verify-match {
-            color: #38ef7d;
+            color: #4ade80;
         }
         
         .verify-mismatch {
-            color: #f5576c;
+            color: #ef4444;
         }
         
         @keyframes redFlash {
-            0%, 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); border-color: #ddd; }
+            0%, 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); border-color: rgba(255,255,255,0.12); }
             50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); border-color: #ef4444; }
         }
         
         .error-flash {
             animation: redFlash 0.5s ease-in-out 3;
         }
+
+        h2, h3 {
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink);
+        }
+
+        p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        /* Debug messages */
+        #debugLog {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.95);
+            color: #0ea5e9;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: monospace;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 9999;
+            border: 1px solid #0ea5e9;
+            display: none;
+        }
+
+        #debugLog.show {
+            display: block;
+        }
+
+        #debugLog div {
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+
+        #debugLog .error {
+            color: #ef4444;
+        }
+
+        #debugLog .success {
+            color: #4ade80;
+        }
+
+        /* Camera Scanner Styles */
+        .input-with-scan {
+            position: relative;
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .input-with-scan input {
+            flex: 1;
+        }
+
+        .scan-btn {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            margin: 0;
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            border: 1px solid #0ea5e9;
+            border-radius: var(--radius);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .scan-btn input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .scan-btn:hover {
+            box-shadow: 0 20px 40px rgba(14, 165, 233, 0.35);
+            transform: scale(1.05);
+        }
+
+        .scan-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Camera Overlay */
+        .camera-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000000;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .camera-overlay.active {
+            display: flex;
+        }
+
+        .camera-header {
+            background: #0f0f0f;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-strong);
+        }
+
+        .camera-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink);
+        }
+
+        .camera-close {
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            color: var(--ink);
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .camera-close:hover {
+            border-color: var(--border-strong);
+            background: #1a1a1a;
+        }
+
+        .camera-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Optimize for barcode scanning */
+            filter: contrast(1.3) brightness(1.1);
+        }
+
+        .camera-target {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            height: 200px;
+            border: 3px solid var(--winter);
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+            pointer-events: none;
+        }
+
+        .camera-target::before,
+        .camera-target::after {
+            content: '';
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--winter);
+        }
+
+        .camera-target::before {
+            top: -3px;
+            left: -3px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .camera-target::after {
+            bottom: -3px;
+            right: -3px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .camera-scan-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: var(--winter);
+            box-shadow: 0 0 10px var(--winter);
+            animation: cameraScan 2s ease-in-out infinite;
+        }
+
+        @keyframes cameraScan {
+            0%, 100% { top: 0; }
+            50% { top: calc(100% - 3px); }
+        }
+
+        .camera-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border: 1px solid var(--border-soft);
+            white-space: nowrap;
+        }
+
+        .camera-controls {
+            background: #0f0f0f;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid var(--border-strong);
+        }
+
+        .camera-control-btn {
+            flex: 1;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .camera-control-btn:hover {
+            border-color: var(--border-strong);
+            background: #2a2a2a;
+        }
+
+        .camera-control-btn.active {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            border-color: #0ea5e9;
+        }
+
+        /* Success feedback */
+        .scan-success {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(74, 222, 128, 0.95);
+            padding: 24px 32px;
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border: 2px solid #4ade80;
+            box-shadow: 0 20px 40px rgba(34, 197, 94, 0.5);
+            display: none;
+            animation: scanSuccess 0.5s ease-out;
+        }
+
+        @keyframes scanSuccess {
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 </head>
 <body>
+    <!-- Camera Scanner Overlay -->
+    <div id="cameraOverlay" class="camera-overlay">
+        <div class="camera-header">
+            <div class="camera-title">Scan Barcode</div>
+            <button class="camera-close" onclick="closeCamera()">×</button>
+        </div>
+        <div class="camera-viewport">
+            <video id="camera-video" playsinline autoplay></video>
+            <canvas id="camera-canvas" style="display:none;"></canvas>
+            <div id="scanner-reader" style="display:none;"></div>
+            <div class="camera-target">
+                <div class="camera-scan-line"></div>
+            </div>
+            <div class="camera-hint">Align barcode within frame</div>
+            <div class="scan-success" id="scanSuccess">✓ Scanned!</div>
+        </div>
+        <div class="camera-controls">
+            <button class="camera-control-btn" onclick="toggleFlash()">
+                <span id="flashIcon">🔦</span> Flash
+            </button>
+            <button class="camera-control-btn" onclick="manualEntry()">
+                ⌨️ Manual Entry
+            </button>
+        </div>
+    </div>
+
+    <!-- Debug Log (visible on screen) -->
+    <div id="debugLog" class="show"></div>
+
     <div class="container">
         <div class="header">
-            <h1>🔧 Engine Management</h1>
+            <h1>Engine Management</h1>
             <p>Scan tickets & manage engine rentals</p>
         </div>
 
         <!-- Main Menu -->
         <div id="mainMenu" class="card">
             <button class="btn btn-primary" onclick="startTicketScan()">
-                📱 Scan Ticket Barcode
+                Scan Ticket Barcode
             </button>
             <button class="btn btn-success" onclick="showReturnEngine()">
-                ✅ Return Engine
+                Return Engine
             </button>
             <button class="btn btn-warning" onclick="showReportIssue()">
-                ⚠️ Report Engine Issue
+                Report Engine Issue
             </button>
             <button class="btn btn-primary" onclick="showEngineHistory()">
-                📋 Engine History
+                Engine History
             </button>
             <button class="btn btn-primary" onclick="showTyreVerification()">
-                🔍 Verify Tyres
+                Verify Tyres
             </button>
         </div>
 
@@ -312,12 +803,15 @@
                 
                 <div class="input-group">
                     <label>Or Enter Ticket Barcode:</label>
-                    <input type="text" id="ticketBarcode" placeholder="e.g., ENG6033" 
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="ticketBarcode" placeholder="e.g., ENG6033" 
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('ticketBarcode')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <button class="btn btn-primary" onclick="lookupTicket()">
-                    🔍 Lookup Ticket
+                    Lookup Ticket
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back
@@ -335,16 +829,19 @@
             
             <!-- Engine Assignment -->
             <div class="card hidden" id="engineAssignmentCard">
-                <h3 style="margin-bottom: 20px;">🔧 Assign Engine</h3>
+                <h3 style="margin-bottom: 20px;">Assign Engine</h3>
                 
                 <div class="input-group">
                     <label>Engine Serial Number:</label>
-                    <input type="text" id="engineSerial" placeholder="Scan or enter serial number"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="engineSerial" placeholder="Scan or enter serial number"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('engineSerial')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <button class="btn btn-success" onclick="assignEngine()">
-                    ✅ Assign Engine to Driver
+                    Assign Engine to Driver
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back to Menu
@@ -353,16 +850,19 @@
             
             <!-- Transponder Assignment -->
             <div class="card hidden" id="transponderAssignmentCard">
-                <h3 style="margin-bottom: 20px;">📡 Assign Transponder</h3>
+                <h3 style="margin-bottom: 20px;">Assign Transponder</h3>
                 
                 <div class="input-group">
                     <label>Transponder Serial Number:</label>
-                    <input type="text" id="transponderSerial" placeholder="Scan or enter serial number"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="transponderSerial" placeholder="Scan or enter serial number"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('transponderSerial')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <button class="btn btn-success" onclick="assignTransponder()">
-                    ✅ Assign Transponder to Driver
+                    Assign Transponder to Driver
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back to Menu
@@ -371,34 +871,46 @@
             
             <!-- Tyre Registration -->
             <div class="card hidden" id="tyreAssignmentCard">
-                <h3 style="margin-bottom: 20px;">🏁 Register Tyres (4 Required)</h3>
+                <h3 style="margin-bottom: 20px;">Register Tyres (4 Required)</h3>
                 
                 <div class="input-group">
                     <label>Front Left Tyre Serial:</label>
-                    <input type="text" id="tyreFrontLeft" placeholder="Scan or enter"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="tyreFrontLeft" placeholder="Scan or enter"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('tyreFrontLeft')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <div class="input-group">
                     <label>Front Right Tyre Serial:</label>
-                    <input type="text" id="tyreFrontRight" placeholder="Scan or enter"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="tyreFrontRight" placeholder="Scan or enter"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('tyreFrontRight')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <div class="input-group">
                     <label>Rear Left Tyre Serial:</label>
-                    <input type="text" id="tyreRearLeft" placeholder="Scan or enter"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="tyreRearLeft" placeholder="Scan or enter"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('tyreRearLeft')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <div class="input-group">
                     <label>Rear Right Tyre Serial:</label>
-                    <input type="text" id="tyreRearRight" placeholder="Scan or enter"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="tyreRearRight" placeholder="Scan or enter"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('tyreRearRight')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <button class="btn btn-success" onclick="assignTyres()">
-                    ✅ Register All Tyres
+                    Register All Tyres
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back to Menu
@@ -414,7 +926,7 @@
                 </p>
                 
                 <button class="btn btn-success" onclick="markFuelCollected()">
-                    ✅ Confirm Fuel Collected
+                    Confirm Fuel Collected
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back to Menu
@@ -429,12 +941,15 @@
                 
                 <div class="input-group">
                     <label>Engine Serial Number:</label>
-                    <input type="text" id="returnEngineSerial" placeholder="Scan or enter serial number"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="returnEngineSerial" placeholder="Scan or enter serial number"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('returnEngineSerial')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <button class="btn btn-success" onclick="processReturnEngine()">
-                    ✅ Confirm Engine Return
+                    Confirm Engine Return
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back
@@ -449,8 +964,11 @@
                 
                 <div class="input-group">
                     <label>Engine Serial Number:</label>
-                    <input type="text" id="issueEngineSerial" placeholder="Scan or enter serial number"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="issueEngineSerial" placeholder="Scan or enter serial number"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('issueEngineSerial')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <div class="input-group">
@@ -459,7 +977,7 @@
                 </div>
                 
                 <button class="btn btn-warning" onclick="reportIssue()">
-                    ⚠️ Report Issue & Return Engine
+                    Report Issue & Return Engine
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back
@@ -475,13 +993,16 @@
                     
                     <div class="input-group">
                         <label>Replacement Engine Serial:</label>
-                        <input type="text" id="replacementEngineSerial" 
-                               placeholder="Scan or enter serial number"
-                               style="text-transform: uppercase;">
+                        <div class="input-with-scan">
+                            <input type="text" id="replacementEngineSerial" 
+                                   placeholder="Scan or enter serial number"
+                                   style="text-transform: uppercase;">
+                            <button class="scan-btn" onclick="openCamera('replacementEngineSerial')" type="button" title="Scan Barcode">📷</button>
+                        </div>
                     </div>
                     
                     <button class="btn btn-success" onclick="assignReplacementEngine()">
-                        ✅ Assign Replacement
+                        Assign Replacement
                     </button>
                 </div>
             </div>
@@ -490,16 +1011,19 @@
         <!-- Engine History Section -->
         <div id="engineHistorySection" class="hidden">
             <div class="card">
-                <h2 style="margin-bottom: 20px;">📋 Engine History</h2>
+                <h2 style="margin-bottom: 20px;">Engine History</h2>
                 
                 <div class="input-group">
                     <label>Engine Serial Number:</label>
-                    <input type="text" id="historyEngineSerial" placeholder="Scan or enter serial number"
-                           style="text-transform: uppercase;">
+                    <div class="input-with-scan">
+                        <input type="text" id="historyEngineSerial" placeholder="Scan or enter serial number"
+                               style="text-transform: uppercase;">
+                        <button class="scan-btn" onclick="openCamera('historyEngineSerial')" type="button" title="Scan Barcode">📷</button>
+                    </div>
                 </div>
                 
                 <button class="btn btn-primary" onclick="lookupEngineHistory()">
-                    🔍 Lookup History
+                    Lookup History
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back
@@ -517,7 +1041,7 @@
         <!-- Tyre Verification Section -->
         <div id="tyreVerificationSection" class="hidden">
             <div class="card">
-                <h2 style="margin-bottom: 20px;">🔍 Verify Tyres</h2>
+                <h2 style="margin-bottom: 20px;">Verify Tyres</h2>
                 
                 <div class="input-group">
                     <label>Driver Race Number:</label>
@@ -525,7 +1049,7 @@
                 </div>
                 
                 <button class="btn btn-primary" onclick="lookupDriverForTyres()">
-                    🔍 Lookup Driver
+                    Lookup Driver
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back
@@ -542,29 +1066,41 @@
                     
                     <div class="input-group">
                         <label>Front Left Tyre:</label>
-                        <input type="text" id="verifyTyreFrontLeft" placeholder="Scan tyre serial"
-                               style="text-transform: uppercase;">
+                        <div class="input-with-scan">
+                            <input type="text" id="verifyTyreFrontLeft" placeholder="Scan tyre serial"
+                                   style="text-transform: uppercase;">
+                            <button class="scan-btn" onclick="openCamera('verifyTyreFrontLeft')" type="button" title="Scan Barcode">📷</button>
+                        </div>
                         <span class="verify-result" id="verifyFL"></span>
                     </div>
                     
                     <div class="input-group">
                         <label>Front Right Tyre:</label>
-                        <input type="text" id="verifyTyreFrontRight" placeholder="Scan tyre serial"
-                               style="text-transform: uppercase;">
+                        <div class="input-with-scan">
+                            <input type="text" id="verifyTyreFrontRight" placeholder="Scan tyre serial"
+                                   style="text-transform: uppercase;">
+                            <button class="scan-btn" onclick="openCamera('verifyTyreFrontRight')" type="button" title="Scan Barcode">📷</button>
+                        </div>
                         <span class="verify-result" id="verifyFR"></span>
                     </div>
                     
                     <div class="input-group">
                         <label>Rear Left Tyre:</label>
-                        <input type="text" id="verifyTyreRearLeft" placeholder="Scan tyre serial"
-                               style="text-transform: uppercase;">
+                        <div class="input-with-scan">
+                            <input type="text" id="verifyTyreRearLeft" placeholder="Scan tyre serial"
+                                   style="text-transform: uppercase;">
+                            <button class="scan-btn" onclick="openCamera('verifyTyreRearLeft')" type="button" title="Scan Barcode">📷</button>
+                        </div>
                         <span class="verify-result" id="verifyRL"></span>
                     </div>
                     
                     <div class="input-group">
                         <label>Rear Right Tyre:</label>
-                        <input type="text" id="verifyTyreRearRight" placeholder="Scan tyre serial"
-                               style="text-transform: uppercase;">
+                        <div class="input-with-scan">
+                            <input type="text" id="verifyTyreRearRight" placeholder="Scan tyre serial"
+                                   style="text-transform: uppercase;">
+                            <button class="scan-btn" onclick="openCamera('verifyTyreRearRight')" type="button" title="Scan Barcode">📷</button>
+                        </div>
                         <span class="verify-result" id="verifyRR"></span>
                     </div>
                     
@@ -578,6 +1114,339 @@
         let currentDriver = null;
         let currentTicket = null;
         let returnedEngine = null;
+
+        // Camera Scanner Variables
+        let cameraStream = null;
+        let cameraScanner = null;
+        let currentTargetInput = null;
+        let flashEnabled = false;
+        let scanningActive = false;
+
+        // Debug logging to screen
+        function debugLog(message, type = 'info') {
+            const log = document.getElementById('debugLog');
+            if (!log) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${timestamp}] ${message}`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+            
+            // Also log to console
+            console.log(message);
+            
+            // Keep only last 20 messages
+            while (log.children.length > 20) {
+                log.removeChild(log.firstChild);
+            }
+        }
+
+        // Check if Quagga library is loaded
+        window.addEventListener('load', () => {
+            if (typeof Quagga === 'undefined') {
+                debugLog('ERROR: Quagga library not loaded', 'error');
+            } else {
+                debugLog('Quagga barcode library loaded OK', 'success');
+            }
+        });
+
+        // Open Camera for Barcode Scanning (Hybrid Approach)
+        async function openCamera(inputId) {
+            debugLog('📷 Opening camera for: ' + inputId);
+            currentTargetInput = inputId;
+
+            // Check if we can use camera streaming
+            const canUseStream = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+            debugLog('Stream support: ' + (canUseStream ? 'YES' : 'NO'));
+            
+            if (canUseStream && typeof Quagga !== 'undefined') {
+                // Try streaming camera approach
+                try {
+                    await openStreamingCamera(inputId);
+                    return;
+                } catch (err) {
+                    debugLog('Stream failed: ' + err.message, 'error');
+                }
+            }
+            
+            // Fallback: Use native file input with camera
+            debugLog('Using native camera input');
+            openNativeCamera(inputId);
+        }
+
+        // Streaming Camera with Quagga (for browsers that support it)
+        async function openStreamingCamera(inputId) {
+            const overlay = document.getElementById('cameraOverlay');
+            overlay.classList.add('active');
+            scanningActive = true;
+
+            debugLog('Starting Quagga camera scanner...');
+
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#camera-video'),
+                    constraints: {
+                        facingMode: "environment",
+                        width: 1280,
+                        height: 720
+                    }
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "codabar_reader",
+                        "i2of5_reader"
+                    ]
+                },
+                locate: true,
+                locator: {
+                    halfSample: false,
+                    patchSize: "medium"
+                }
+            }, function(err) {
+                if (err) {
+                    debugLog('Quagga init error: ' + err.message, 'error');
+                    closeCamera();
+                    openNativeCamera(inputId);
+                    return;
+                }
+                debugLog('Quagga started successfully', 'success');
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                debugLog('✓ Barcode detected: ' + code, 'success');
+                handleBarcodeDetected(code);
+            });
+        }
+
+        // Native Camera Input with Quagga (works on all mobile devices)
+        function openNativeCamera(inputId) {
+            debugLog('Setting up native camera input');
+            
+            // Create a temporary file input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.capture = 'environment';
+            
+            fileInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                debugLog('File selected: ' + (file ? file.name : 'NONE'));
+                
+                if (!file) {
+                    debugLog('User cancelled', 'error');
+                    return;
+                }
+                
+                if (typeof Quagga === 'undefined') {
+                    debugLog('Quagga not available!', 'error');
+                    showError('Barcode scanner library not loaded');
+                    return;
+                }
+                
+                try {
+                    debugLog('🔍 Scanning image with Quagga...');
+                    showMessage('Analyzing image...');
+                    
+                    // Convert file to image
+                    const imageUrl = URL.createObjectURL(file);
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        debugLog('Image loaded, scanning...');
+                        
+                        Quagga.decodeSingle({
+                            src: imageUrl,
+                            numOfWorkers: 0,
+                            decoder: {
+                                readers: [
+                                    "code_128_reader",
+                                    "code_39_reader", 
+                                    "code_39_vin_reader",
+                                    "ean_reader",
+                                    "ean_8_reader",
+                                    "upc_reader",
+                                    "upc_e_reader",
+                                    "codabar_reader",
+                                    "i2of5_reader"
+                                ]
+                            },
+                            locate: true,
+                            locator: {
+                                halfSample: true,
+                                patchSize: "large"
+                            }
+                        }, function(result) {
+                            URL.revokeObjectURL(imageUrl);
+                            
+                            if (result && result.codeResult) {
+                                const barcode = result.codeResult.code;
+                                debugLog('✓ Found barcode: ' + barcode, 'success');
+                                
+                                // Fill the input field
+                                const input = document.getElementById(inputId);
+                                if (input) {
+                                    const barcodeValue = barcode.toUpperCase();
+                                    input.value = barcodeValue;
+                                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                                    input.focus();
+                                    
+                                    // Vibrate on success
+                                    if (navigator.vibrate) {
+                                        navigator.vibrate(200);
+                                    }
+                                    
+                                    showSuccess('✓ Scanned: ' + barcodeValue);
+                                    debugLog('Filled input: ' + inputId, 'success');
+                                }
+                            } else {
+                                debugLog('❌ No barcode found in image', 'error');
+                                showError('No barcode detected. Tips: Get closer, good lighting, hold steady, keep barcode straight.');
+                            }
+                        });
+                    };
+                    
+                    img.onerror = function() {
+                        debugLog('❌ Failed to load image', 'error');
+                        showError('Could not load image');
+                        URL.revokeObjectURL(imageUrl);
+                    };
+                    
+                    img.src = imageUrl;
+                    
+                } catch (err) {
+                    debugLog('❌ Scan error: ' + err.message, 'error');
+                    showError('Scan failed. Please try again or enter manually.');
+                }
+            };
+            
+            debugLog('Triggering camera...');
+            fileInput.click();
+        }
+
+        // Show temporary message
+        function showMessage(message) {
+            const container = document.getElementById('messageContainer');
+            if (!container) return;
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'success-message';
+            msgDiv.textContent = message;
+            msgDiv.style.background = 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)';
+            container.innerHTML = '';
+            container.appendChild(msgDiv);
+            
+            setTimeout(() => msgDiv.remove(), 2000);
+        }
+
+        // Apply visual enhancements to improve barcode readability
+        function applyVideoEnhancements() {
+            // Not needed for Quagga
+        }
+
+        // Handle successful barcode detection
+        function handleBarcodeDetected(barcode) {
+            if (!currentTargetInput || !scanningActive) return;
+
+            scanningActive = false;
+            
+            // Fill the input field
+            const input = document.getElementById(currentTargetInput);
+            if (input) {
+                input.value = barcode.toUpperCase();
+                
+                // Trigger input event for any validation
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            // Show success feedback
+            const successEl = document.getElementById('scanSuccess');
+            successEl.style.display = 'block';
+            
+            // Vibrate if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+
+            // Close camera after short delay
+            setTimeout(() => {
+                successEl.style.display = 'none';
+                closeCamera();
+            }, 800);
+        }
+
+        // Close Camera
+        async function closeCamera() {
+            scanningActive = false;
+            const overlay = document.getElementById('cameraOverlay');
+            overlay.classList.remove('active');
+
+            // Stop Quagga scanner
+            if (typeof Quagga !== 'undefined') {
+                try {
+                    Quagga.stop();
+                    debugLog('Quagga stopped');
+                } catch (err) {
+                    console.log('Quagga stop error:', err);
+                }
+            }
+
+            currentTargetInput = null;
+            flashEnabled = false;
+            document.getElementById('flashIcon').textContent = '🔦';
+        }
+
+        // Toggle Flash/Torch
+        async function toggleFlash() {
+            if (!cameraScanner || !cameraScanner.getState() === Html5QrcodeScannerState.SCANNING) {
+                return;
+            }
+
+            try {
+                const stream = cameraScanner.getRunningTrackCameraCapabilities();
+                const track = stream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities();
+
+                if (!capabilities.torch) {
+                    showError('Flash not available on this device');
+                    return;
+                }
+
+                flashEnabled = !flashEnabled;
+                
+                await track.applyConstraints({
+                    advanced: [{ torch: flashEnabled }]
+                });
+                
+                document.getElementById('flashIcon').textContent = flashEnabled ? '💡' : '🔦';
+            } catch (err) {
+                console.error('Flash error:', err);
+                // Flash might not be available, fail silently
+            }
+        }
+
+        // Manual Entry (close camera and focus input)
+        function manualEntry() {
+            closeCamera();
+            if (currentTargetInput) {
+                const input = document.getElementById(currentTargetInput);
+                if (input) {
+                    input.focus();
+                }
+            }
+        }
 
         // Navigation Functions
         function backToMenu() {
@@ -751,7 +1620,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showSuccess(`✅ Engine ${engineSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    showSuccess(`Engine ${engineSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
                     setTimeout(() => backToMenu(), 2000);
                 } else {
                     showError(data.error || 'Failed to assign engine');
@@ -790,7 +1659,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showSuccess(`✅ Transponder ${transponderSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    showSuccess(`Transponder ${transponderSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
                     setTimeout(() => backToMenu(), 2000);
                 } else {
                     showError(data.error || 'Failed to assign transponder');
@@ -837,7 +1706,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showSuccess(`✅ All 4 tyres registered for ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    showSuccess(`All 4 tyres registered for ${currentDriver.first_name} ${currentDriver.last_name}`);
                     setTimeout(() => backToMenu(), 2000);
                 } else {
                     showError(data.error || 'Failed to register tyres');
@@ -868,7 +1737,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showSuccess(`✅ Fuel marked as collected for ${currentDriver.first_name} ${currentDriver.last_name}`);
+                    showSuccess(`Fuel marked as collected for ${currentDriver.first_name} ${currentDriver.last_name}`);
                     setTimeout(() => backToMenu(), 2000);
                 } else {
                     showError(data.error || 'Failed to mark fuel collected');
@@ -897,7 +1766,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showSuccess(`✅ Engine ${engineSerial} returned successfully`);
+                    showSuccess(`Engine ${engineSerial} returned successfully`);
                     setTimeout(() => backToMenu(), 2000);
                 } else {
                     showError(data.error || 'Failed to return engine');

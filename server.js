@@ -4552,7 +4552,11 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
 // Handle PayFast Payment Notification (IPN)
 app.post('/api/paymentNotify', async (req, res) => {
   try {
-    console.log('📨 PayFast IPN received:', req.body);
+    console.log('� ========================================');
+    console.log('🔔 PAYFAST WEBHOOK RECEIVED');
+    console.log('🔔 ========================================');
+    console.log('📨 Full PayFast IPN Body:', JSON.stringify(req.body, null, 2));
+    console.log('🕐 Timestamp:', new Date().toISOString());
 
     const { 
       m_payment_id, 
@@ -4568,7 +4572,15 @@ app.post('/api/paymentNotify', async (req, res) => {
       name_last
     } = req.body;
 
+    console.log('🔍 Key Fields:');
+    console.log(`   - Payment Reference: ${reference}`);
+    console.log(`   - Payment Status: ${payment_status}`);
+    console.log(`   - Amount: R${amount_gross}`);
+    console.log(`   - Driver: ${name_first} ${name_last}`);
+    console.log(`   - Email: ${email_address}`);
+
     if (!m_payment_id || !payment_status) {
+      console.error('❌ Missing payment ID or status!');
       throw new Error('Missing payment ID or status');
     }
 
@@ -4726,12 +4738,21 @@ app.post('/api/paymentNotify', async (req, res) => {
     // Store payment record using new schema
     const race_entry_id = `race_entry_${pf_payment_id}`;
     if (!isPoolEngineRental) {
+      console.log('🔍 Looking for existing pending entry with reference:', reference);
+      
       // ✅ FIX #1b: Update pending entry to completed (or insert if webhook came first)
       // First, try to get existing pending entry to preserve race_class and other data
       const existingEntry = await pool.query(
         'SELECT * FROM race_entries WHERE payment_reference = $1',
         [reference]
       );
+      
+      console.log(`📋 Existing entries found: ${existingEntry.rows.length}`);
+      if (existingEntry.rows.length > 0) {
+        console.log('   Entry ID:', existingEntry.rows[0].entry_id);
+        console.log('   Current Status:', existingEntry.rows[0].payment_status);
+        console.log('   Race Class:', existingEntry.rows[0].race_class);
+      }
       
       let raceClass = null;
       let entryItems = null;
@@ -4790,6 +4811,9 @@ app.post('/api/paymentNotify', async (req, res) => {
       
       // If no existing entry found, insert new one
       if (updateResult.rows.length === 0) {
+        console.log('⚠️ WARNING: No pending entry found, creating new entry');
+        console.log(`   EventId: ${eventId}, DriverId: ${driverId}`);
+        
         await pool.query(
           `INSERT INTO race_entries (
             entry_id, event_id, driver_id, payment_reference, payment_status, entry_status, 
@@ -4803,14 +4827,21 @@ app.post('/api/paymentNotify', async (req, res) => {
         console.log(`✅ Race entry created (no pending entry found): ${race_entry_id} (Class: ${raceClass})`);
       } else {
         console.log(`✅ Race entry updated from pending to completed: ${race_entry_id} (Class: ${raceClass})`);
+        console.log(`   Updated ${updateResult.rows.length} row(s)`);
       }
     }
 
-    console.log(`✅ Payment recorded: ${reference} - Status: COMPLETE - Amount: R${amount_gross} - Driver: ${driverId}`);
+    console.log('🎉 ========================================');
+    console.log(`✅ PAYMENT PROCESSED SUCCESSFULLY`);
+    console.log(`   Reference: ${reference}`);
+    console.log(`   Status: COMPLETE`);
+    console.log(`   Amount: R${amount_gross}`);
+    console.log(`   Driver ID: ${driverId}`);
     if (ticketEngineRef) console.log(`   Engine ticket: ${ticketEngineRef}`);
     if (ticketTyresRef) console.log(`   Tyres ticket: ${ticketTyresRef}`);
     if (ticketTransponderRef) console.log(`   Transponder ticket: ${ticketTransponderRef}`);
     if (ticketFuelRef) console.log(`   Fuel ticket: ${ticketFuelRef}`);
+    console.log('🎉 ========================================');
 
     // ⚠️ EMAIL DISABLED FOR RACE ENTRIES - Now sent immediately when payment is initiated
     // This prevents duplicate emails. Pool engine rentals still get emails here.
