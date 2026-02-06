@@ -5187,24 +5187,29 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
   try {
     const { 
       entry_id,
+      race_entry_id,
       payment_reference, 
       amount_paid,
       pf_payment_id,
+      amount_gross,
       payment_status,
       email_address,
       name_first,
       name_last
     } = req.body;
 
+    // Accept both entry_id and race_entry_id for backwards compatibility
+    const entryId = entry_id || race_entry_id;
+
     // If entry_id is provided, update existing entry
-    if (entry_id) {
-      console.log(`🔄 Reconciling payment for existing entry: ${entry_id}`);
+    if (entryId) {
+      console.log(`🔄 Reconciling payment for existing entry: ${entryId}`);
       
       if (!payment_reference) {
         throw new Error('Payment reference is required');
       }
       
-      // Update the existing entry with payment info
+      // Update the existing entry with payment info - use race_entry_id as that's the actual column
       const result = await pool.query(
         `UPDATE race_entries 
          SET payment_reference = $1, 
@@ -5212,16 +5217,16 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
              amount_paid = $3,
              entry_status = COALESCE(entry_status, 'confirmed'),
              updated_at = NOW()
-         WHERE entry_id = $4
+         WHERE race_entry_id = $4
          RETURNING *`,
-        [payment_reference, payment_status || 'Completed', amount_paid || 0, entry_id]
+        [payment_reference, payment_status || 'Completed', amount_paid || 0, entryId]
       );
       
       if (result.rows.length === 0) {
         throw new Error('Race entry not found');
       }
       
-      console.log(`✅ Entry reconciled: ${entry_id}`);
+      console.log(`✅ Entry reconciled: ${entryId}`);
       return res.json({ 
         success: true, 
         message: 'Payment reconciled successfully',
@@ -5298,18 +5303,18 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
         });
       }
       
-      // Create race entry using entry_id as primary key
-      const entry_id = `race_entry_${pf_payment_id || Date.now()}_manual`;
+      // Create race entry using race_entry_id as primary key (actual column name in database)
+      const race_entry_id = `race_entry_${pf_payment_id || Date.now()}_manual`;
       await pool.query(
         `INSERT INTO race_entries (
-          entry_id, event_id, driver_id, payment_reference, payment_status, 
+          race_entry_id, event_id, driver_id, payment_reference, payment_status, 
           entry_status, amount_paid, created_at, updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-        [entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
+        [race_entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
       );
       
-      console.log(`✅ Race entry reconciled: ${entry_id}`);
-      res.json({ success: true, message: 'Race entry reconciled successfully', entry_id: entry_id });
+      console.log(`✅ Race entry reconciled: ${race_entry_id}`);
+      res.json({ success: true, message: 'Race entry reconciled successfully', entry_id: race_entry_id });
     }
   } catch (err) {
     console.error('❌ Error reconciling payment:', err);
