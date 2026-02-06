@@ -696,6 +696,10 @@
           <button class="secondary" onclick="exportTimingCSV()">📥 Export CSV - Timing System</button>
           <button class="secondary" onclick="exportDriversPDF()" style="background: #e74c3c;">📄 Export PDF - Drivers</button>
           <button class="secondary" onclick="exportSignOnPDF()" style="background: #e74c3c;">📄 Export PDF - Sign-On Sheet</button>
+          <label style="margin-left: 20px; color: #ef4444; font-size: 14px; cursor: pointer; font-weight: 600;">
+            <input type="checkbox" id="showCancelledEntries" onchange="if(selectedEventId) loadRaceDrivers(selectedEventId)" style="margin-right: 6px; cursor: pointer;">
+            Show Cancelled/Incomplete
+          </label>
         </div>
 
         <div class="table-wrapper">
@@ -1005,14 +1009,37 @@
         return;
       }
 
+      // Check if we should show cancelled entries
+      const showCancelled = document.getElementById('showCancelledEntries')?.checked || false;
+      
+      // Filter entries: hide cancelled and null/incomplete race_class unless checkbox is checked
+      const filteredDrivers = showCancelled ? drivers : drivers.filter(driver => {
+        const isCancelled = driver.entry_status === 'cancelled';
+        const hasNoClass = !driver.race_class || driver.race_class === null || driver.race_class === '';
+        const hasNoDriverClass = !driver.driver_class || driver.driver_class === null || driver.driver_class === '';
+        return !isCancelled && !hasNoClass && !hasNoDriverClass;
+      });
+
+      if (filteredDrivers.length === 0) {
+        table.innerHTML = '<tr><td colspan="7" class="loading">No active entries found (use checkbox to show cancelled/incomplete entries)</td></tr>';
+        return;
+      }
+
       let html = '';
-      drivers.forEach(driver => {
+      filteredDrivers.forEach(driver => {
+        // Check if entry is cancelled or has no race class
+        const isCancelled = driver.entry_status === 'cancelled';
+        const hasNoClass = !driver.race_class || driver.race_class === null || driver.race_class === '';
+        const hasNoDriverClass = !driver.driver_class || driver.driver_class === null || driver.driver_class === '';
+        const isGreyedOut = isCancelled || hasNoClass || hasNoDriverClass;
+        const rowStyle = isGreyedOut ? 'style="background-color: #505050; opacity: 0.6;"' : '';
+        
         const driverName = `${driver.first_name || ''} ${driver.last_name || ''}`.trim();
         const driverClass = driver.championship_class || driver.driver_class || '-';
         const classColor = getClassColor(driverClass);
 
         html += `
-          <tr>
+          <tr ${rowStyle}>
             <td>${driverName || '-'}</td>
             <td><span class="class-badge ${classColor}">${driverClass}</span></td>
             <td>${driver.team_name || '-'}</td>
