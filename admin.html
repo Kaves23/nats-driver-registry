@@ -2655,7 +2655,7 @@
         showToast('Reconciling payment...', 'info');
         closeReconcilePaymentModal();
         
-        const response = await fetch('/api/reconcilePayment', {
+        const response = await fetch('/api/admin/reconcilePayment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 

@@ -7171,16 +7171,17 @@ app.post('/api/useDiscountCode', async (req, res) => {
 
 app.post('/api/confirmRaceEntry', async (req, res) => {
   try {
-    const { race_entry_id } = req.body;
+    const { race_entry_id, entry_id } = req.body;
+    const entryId = race_entry_id || entry_id;
 
-    if (!race_entry_id) {
+    if (!entryId) {
       throw new Error('Race entry ID is required');
     }
 
     // Get entry details for audit log
     const entryCheckResult = await pool.query(
       `SELECT driver_id, payment_status FROM race_entries WHERE race_entry_id = $1`,
-      [race_entry_id]
+      [entryId]
     );
 
     if (entryCheckResult.rows.length === 0) {
@@ -7192,7 +7193,7 @@ app.post('/api/confirmRaceEntry', async (req, res) => {
 
     const result = await pool.query(
       `UPDATE race_entries SET payment_status = 'Confirmed', updated_at = NOW() WHERE race_entry_id = $1 RETURNING *`,
-      [race_entry_id]
+      [entryId]
     );
 
     // Get driver email for audit log
@@ -7205,7 +7206,7 @@ app.post('/api/confirmRaceEntry', async (req, res) => {
     // Log to audit trail
     await logAuditEvent(entryData.driver_id, driverEmail, 'RACE_ENTRY_CONFIRMED', 'payment_status', oldStatus || 'Pending', 'Confirmed');
 
-    console.log(`✅ Race entry confirmed: ${race_entry_id}`);
+    console.log(`✅ Race entry confirmed: ${entryId}`);
 
     res.json({
       success: true,
