@@ -7716,7 +7716,7 @@ app.get('/api/getNextRaceDrivers', async (req, res) => {
 
     const event = eventResult.rows[0];
 
-    // Get all drivers registered for this race with their details
+    // Get all drivers registered for this race - use same query as admin getRaceEntries
     const driversResult = await pool.query(`
       SELECT 
         re.*,
@@ -7733,11 +7733,10 @@ app.get('/api/getNextRaceDrivers', async (req, res) => {
         c.email,
         mc.medical_conditions
       FROM race_entries re
-      JOIN drivers d ON re.driver_id = d.driver_id
+      LEFT JOIN drivers d ON re.driver_id = d.driver_id
       LEFT JOIN contacts c ON re.driver_id = c.driver_id
       LEFT JOIN medical_consent mc ON re.driver_id = mc.driver_id
       WHERE re.event_id = $1
-      AND (re.entry_status IN ('confirmed', 'pending', 'paid', 'registered') OR re.entry_status IS NULL)
       ORDER BY d.first_name, d.last_name
     `, [event.event_id]);
 
