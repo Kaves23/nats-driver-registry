@@ -5209,7 +5209,7 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
         throw new Error('Payment reference is required');
       }
       
-      // Update the existing entry with payment info - use race_entry_id as that's the actual column
+      // Update the existing entry with payment info - use entry_id (production column name)
       const result = await pool.query(
         `UPDATE race_entries 
          SET payment_reference = $1, 
@@ -5217,7 +5217,7 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
              amount_paid = $3,
              entry_status = COALESCE(entry_status, 'confirmed'),
              updated_at = NOW()
-         WHERE race_entry_id = $4
+         WHERE entry_id = $4
          RETURNING *`,
         [payment_reference, payment_status || 'Completed', amount_paid || 0, entryId]
       );
@@ -5303,18 +5303,18 @@ app.post('/api/admin/reconcilePayment', async (req, res) => {
         });
       }
       
-      // Create race entry using race_entry_id as primary key (actual column name in database)
-      const race_entry_id = `race_entry_${pf_payment_id || Date.now()}_manual`;
+      // Create race entry using entry_id as primary key (production column name)
+      const entry_id = `race_entry_${pf_payment_id || Date.now()}_manual`;
       await pool.query(
         `INSERT INTO race_entries (
-          race_entry_id, event_id, driver_id, payment_reference, payment_status, 
+          entry_id, event_id, driver_id, payment_reference, payment_status, 
           entry_status, amount_paid, created_at, updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
-        [race_entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
+        [entry_id, eventId, driverId, payment_reference, payment_status || 'Completed', 'confirmed', amount_gross]
       );
       
-      console.log(`✅ Race entry reconciled: ${race_entry_id}`);
-      res.json({ success: true, message: 'Race entry reconciled successfully', entry_id: race_entry_id });
+      console.log(`✅ Race entry reconciled: ${entry_id}`);
+      res.json({ success: true, message: 'Race entry reconciled successfully', entry_id: entry_id });
     }
   } catch (err) {
     console.error('❌ Error reconciling payment:', err);
@@ -7220,7 +7220,7 @@ app.post('/api/confirmRaceEntry', async (req, res) => {
 
     // Get entry details for audit log
     const entryCheckResult = await pool.query(
-      `SELECT driver_id, payment_status FROM race_entries WHERE race_entry_id = $1`,
+      `SELECT driver_id, payment_status FROM race_entries WHERE entry_id = $1`,
       [entryId]
     );
 
@@ -7232,7 +7232,7 @@ app.post('/api/confirmRaceEntry', async (req, res) => {
     const oldStatus = entryData.payment_status;
 
     const result = await pool.query(
-      `UPDATE race_entries SET payment_status = 'Confirmed', updated_at = NOW() WHERE race_entry_id = $1 RETURNING *`,
+      `UPDATE race_entries SET payment_status = 'Confirmed', updated_at = NOW() WHERE entry_id = $1 RETURNING *`,
       [entryId]
     );
 
