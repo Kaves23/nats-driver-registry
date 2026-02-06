@@ -7696,7 +7696,7 @@ app.get('/api/getNextRaceDrivers', async (req, res) => {
       LEFT JOIN contacts c ON re.driver_id = c.driver_id
       LEFT JOIN medical_consent mc ON re.driver_id = mc.driver_id
       WHERE re.event_id = $1
-      AND re.entry_status IN ('confirmed', 'pending')
+      AND (re.entry_status IN ('confirmed', 'pending', 'paid', 'registered') OR re.entry_status IS NULL)
       ORDER BY d.first_name, d.last_name
     `, [event.event_id]);
 
