@@ -4790,6 +4790,9 @@ app.post('/api/paymentNotify', async (req, res) => {
       
       // ON CONFLICT now updates the pending entry we created during initiation
       // First try to update existing pending entry, if not found, insert new
+      // Ensure entry_items is properly stringified for JSON column
+      const entryItemsJson = typeof entryItems === 'string' ? entryItems : JSON.stringify(entryItems);
+      
       const updateResult = await pool.query(
         `UPDATE race_entries 
          SET entry_id = $1,
@@ -4805,7 +4808,7 @@ app.post('/api/paymentNotify', async (req, res) => {
              updated_at = NOW()
          WHERE payment_reference = $11
          RETURNING *`,
-        [race_entry_id, 'Completed', 'confirmed', amount_gross, raceClass, entryItems, 
+        [race_entry_id, 'Completed', 'confirmed', amount_gross, raceClass, entryItemsJson, 
          ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef, reference]
       );
       
@@ -4822,7 +4825,7 @@ app.post('/api/paymentNotify', async (req, res) => {
           )
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())`,
           [race_entry_id, eventId, driverId, reference, 'Completed', 'confirmed', amount_gross, 
-           raceClass, entryItems, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
+           raceClass, entryItemsJson, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef]
         );
         console.log(`✅ Race entry created (no pending entry found): ${race_entry_id} (Class: ${raceClass})`);
       } else {
@@ -8182,6 +8185,7 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         d.date_of_birth,
         d.season_engine_rental,
         re.entry_id,
+        re.race_entry_id,
         re.engine,
         re.team_code,
         d.transponder_number,
@@ -8193,9 +8197,35 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         d.kart_brand,
         d.team_name,
         d.nationality,
-        d.championship
+        d.championship,
+        e.event_name,
+        e.event_date,
+        re.entry_status,
+        re.payment_status,
+        re.payment_reference,
+        re.entry_fee,
+        re.amount_paid,
+        re.transponder_selection,
+        re.tyres_ordered,
+        re.wets_ordered,
+        re.ticket_engine_ref,
+        re.ticket_tyres_ref,
+        re.ticket_transponder_ref,
+        re.ticket_fuel_ref,
+        re.engine_serial,
+        re.engine_assigned_at,
+        re.transponder_serial,
+        re.transponder_assigned_at,
+        re.tyre_front_left,
+        re.tyre_front_right,
+        re.tyre_rear_left,
+        re.tyre_rear_right,
+        re.fuel_collected,
+        re.created_at,
+        re.updated_at
       FROM race_entries re
       JOIN drivers d ON re.driver_id = d.driver_id
+      JOIN events e ON re.event_id = e.event_id
       LEFT JOIN contacts c ON d.driver_id = c.driver_id
       LEFT JOIN medical_consent mc ON d.driver_id = mc.driver_id
       WHERE re.event_id = $1
@@ -8207,17 +8237,72 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
     let csv = '';
 
     if (format === 'drivers') {
-      // Full driver list
-      const headers = ['Driver Name', 'Entrant Name', 'Email', 'Phone', 'Class', 'Transponder', 'Engine Rental', 'DOB'];
+      // Full driver list with all database fields (excluding payments)
+      const headers = [
+        'Driver ID', 'First Name', 'Last Name', 'Driver Name', 'Email', 'Phone', 
+        'Class', 'Race Class', 'DOB', 'Nationality', 'Championship',
+        'License Number', 'MSA License', 'Transponder Number', 'Transponder Selection',
+        'Kart Brand', 'Team Name', 'Team Code', 'Medical Conditions',
+        'Race Number', 'Entry Race Number',
+        'Event Name', 'Event Date', 'Entry ID', 'Entry Status', 'Payment Status',
+        'Entry Fee', 'Amount Paid', 'Payment Reference',
+        'Season Engine Rental', 'Engine Rental', 'Engine Serial', 'Engine Assigned At',
+        'Transponder Serial', 'Transponder Assigned At',
+        'Tyres Ordered', 'Wets Ordered',
+        'Tyre Front Left', 'Tyre Front Right', 'Tyre Rear Left', 'Tyre Rear Right',
+        'Fuel Collected',
+        'Ticket Engine Ref', 'Ticket Tyres Ref', 'Ticket Transponder Ref', 'Ticket Fuel Ref',
+        'Entry Created At', 'Entry Updated At'
+      ];
       const rows = drivers.map(d => [
-        `${d.first_name} ${d.last_name}`,
-        d.team_name || '',
+        d.driver_id || '',
+        d.first_name || '',
+        d.last_name || '',
+        `${d.first_name || ''} ${d.last_name || ''}`.trim(),
         d.email || '',
         d.phone_mobile || '',
         d.class || '',
+        d.race_class || '',
+        d.date_of_birth ? new Date(d.date_of_birth).toLocaleDateString('en-ZA') : '',
+        d.nationality || '',
+        d.championship || '',
+        d.license_number || '',
+        d.license_number || '',
         d.transponder_number || 'REQUIRED',
+        d.transponder_selection || '',
+        d.kart_brand || '',
+        d.team_name || '',
+        d.team_code || '',
+        d.medical_conditions || '',
+        d.race_number || '',
+        d.entry_race_number || '',
+        d.event_name || '',
+        d.event_date ? new Date(d.event_date).toLocaleDateString('en-ZA') : '',
+        d.entry_id || d.race_entry_id || '',
+        d.entry_status || '',
+        d.payment_status || '',
+        d.entry_fee || '',
+        d.amount_paid || '',
+        d.payment_reference || '',
+        d.season_engine_rental || '',
         (d.engine === 1 || d.engine === '1' || d.season_engine_rental === 'Y') ? 'Yes' : 'No',
-        d.date_of_birth ? new Date(d.date_of_birth).toLocaleDateString('en-ZA') : ''
+        d.engine_serial || '',
+        d.engine_assigned_at ? new Date(d.engine_assigned_at).toLocaleString('en-ZA') : '',
+        d.transponder_serial || '',
+        d.transponder_assigned_at ? new Date(d.transponder_assigned_at).toLocaleString('en-ZA') : '',
+        d.tyres_ordered ? 'Yes' : 'No',
+        d.wets_ordered ? 'Yes' : 'No',
+        d.tyre_front_left || '',
+        d.tyre_front_right || '',
+        d.tyre_rear_left || '',
+        d.tyre_rear_right || '',
+        d.fuel_collected ? 'Yes' : 'No',
+        d.ticket_engine_ref || '',
+        d.ticket_tyres_ref || '',
+        d.ticket_transponder_ref || '',
+        d.ticket_fuel_ref || '',
+        d.created_at ? new Date(d.created_at).toLocaleString('en-ZA') : '',
+        d.updated_at ? new Date(d.updated_at).toLocaleString('en-ZA') : ''
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
       csv = [headers.join(','), ...rows].join('\n');
     } else if (format === 'signon') {

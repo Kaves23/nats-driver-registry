@@ -3,7 +3,7 @@ const axios = require('axios');
 async function testPayFastEndpoint() {
   console.log('🧪 Testing PayFast ITN endpoint...\n');
   
-  const testUrl = 'https://www.rokthenats.co.za/api/paymentNotify';
+  const testUrl = 'http://localhost:3000/api/paymentNotify';
   
   // Simulate a PayFast ITN notification
   const testPayload = {

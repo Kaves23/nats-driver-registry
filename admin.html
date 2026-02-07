@@ -16,7 +16,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
       background: #f5f7fa;
-      color: #2c3e50;
+      color: #000000;
       overscroll-behavior-y: none;
       touch-action: pan-y;
       overflow-x: hidden;
@@ -27,7 +27,7 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #0a0a0a;
     }
 
     .login-box {
@@ -40,8 +40,18 @@
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     }
 
+    .login-box .logo-container {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .login-box .logo-container img {
+      max-width: 140px;
+      height: auto;
+    }
+
     .login-box h1 {
-      color: #2c3e50;
+      color: #000000;
       margin-bottom: 8px;
       font-size: 28px;
       font-weight: 700;
@@ -59,7 +69,7 @@
 
     .form-group label {
       display: block;
-      color: #2c3e50;
+      color: #000000;
       font-size: 14px;
       margin-bottom: 8px;
       font-weight: 600;
@@ -71,7 +81,7 @@
       background: #f8f9fa;
       border: 2px solid #e0e0e0;
       border-radius: 6px;
-      color: #2c3e50;
+      color: #000000;
       font-size: 14px;
       transition: all 0.3s ease;
     }
@@ -116,93 +126,127 @@
     .admin-wrapper {
       display: none;
       min-height: 100vh;
-      background: #f5f7fa;
+      background: #fafbfc;
     }
 
     .admin-header {
       background: white;
-      border-bottom: 1px solid #e0e0e0;
-      padding: 20px 30px;
+      border-bottom: 1px solid #e8eaed;
+      padding: 12px 30px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .admin-header h1 {
-      color: #2c3e50;
-      font-size: 26px;
-      font-weight: 700;
+      color: #000000;
+      font-size: 22px;
+      font-weight: 600;
       margin: 0;
+      letter-spacing: -0.02em;
     }
 
     .logout-btn {
       padding: 8px 16px;
-      background: #e74c3c;
-      color: white;
-      border: none;
+      background: transparent;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
       border-radius: 6px;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 500;
       font-size: 13px;
-      transition: all 0.3s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .logout-btn:hover {
-      background: #c0392b;
-      transform: translateY(-2px);
-      box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fecaca;
     }
 
     .admin-tabs {
       display: flex;
-      gap: 5px;
+      gap: 0;
       padding: 0 30px;
-      border-bottom: 1px solid #e0e0e0;
+      border-bottom: 2px solid #f0f0f0;
       background: white;
       position: sticky;
-      top: 62px;
+      top: 45px;
       z-index: 50;
       overflow-x: auto;
+      position: relative;
+    }
+
+    .tab-indicator {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: #22c55e;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 12px rgba(34, 197, 94, 0.6), 0 0 20px rgba(34, 197, 94, 0.4);
+      z-index: 10;
+    }
+
+    .tab-indicator::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, #22c55e, transparent);
+      filter: blur(4px);
+      animation: glowPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
     }
 
     .tab-btn {
-      padding: 12px 20px;
-      background: none;
-      color: #7f8c8d;
+      padding: 16px 24px;
+      background: transparent;
+      color: #64748b;
       border: none;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 500;
       font-size: 14px;
-      border-bottom: 3px solid transparent;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       white-space: nowrap;
+      position: relative;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .tab-btn:hover {
-      color: #667eea;
+      color: #1e293b;
+      background: #f8fafc;
     }
 
     .tab-btn.active {
-      color: #667eea;
-      border-bottom-color: #667eea;
+      color: #000000;
+      font-weight: 600;
     }
 
     .admin-content {
-      padding: 30px;
+      padding: 30px 30px 40px;
       max-width: 1800px;
       margin: 0 auto;
     }
 
     .filters-bar {
       background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 24px;
-      border: 1px solid #e0e0e0;
+      padding: 14px 18px;
+      border-radius: 0;
+      margin-bottom: 16px;
+      border: 1px solid #e8eaed;
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
@@ -233,21 +277,21 @@
     }
 
     .search-btn {
-      padding: 10px 20px;
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 6px;
+      padding: 8px 16px;
+      background: transparent;
+      color: #3f3f46;
+      border: 1px solid #d4d4d8;
+      border-radius: 0;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-      transition: all 0.3s ease;
+      font-weight: 500;
+      font-size: 13px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .search-btn:hover {
-      background: #5568d3;
-      transform: translateY(-2px);
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      background: #fafafa;
+      border-color: #a1a1aa;
+      color: #18181b;
     }
 
     .table-wrapper {
@@ -669,6 +713,9 @@
   <!-- Login Screen -->
   <div class="login-wrapper" id="loginWrapper">
     <div class="login-box">
+      <div class="logo-container">
+        <img src="/images/rok-logo.png" alt="ROK Cup Logo">
+      </div>
       <h1>NATS Admin</h1>
       <p>Driver Management Portal</p>
       <div class="error-message" id="errorMessage"></div>
@@ -687,19 +734,20 @@
       <button class="logout-btn" onclick="adminLogout()">Logout</button>
     </div>
 
-    <div class="admin-tabs">
-      <button class="tab-btn active" onclick="switchTab('drivers')">Drivers</button>
-      <button class="tab-btn" onclick="switchTab('events')">Events</button>
-      <button class="tab-btn" onclick="switchTab('raceEntries')" style="background: linear-gradient(135deg, #059669, #047857); color: white; font-weight: bold;">Race Entries</button>
-      <button class="tab-btn" onclick="switchTab('payments')">Payments</button>
-      <button class="tab-btn" onclick="switchTab('paymentStatus')" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-weight: bold;">💳 Payment Status</button>
-      <button class="tab-btn" onclick="switchTab('equipment')" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; font-weight: bold;">🔧 Equipment</button>
-      <button class="tab-btn" onclick="switchTab('msaLicenses')">MSA Licenses</button>
-      <button class="tab-btn" onclick="switchTab('messages')">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-left:6px;"></span></button>
-      <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notifications</button>
-      <button class="tab-btn" onclick="switchTab('audit')">Audit Trail</button>
-      <button class="tab-btn" onclick="switchTab('discountCodes')" style="background: linear-gradient(135deg, #f59e0b, #d97706);">💰 Discount Codes</button>
-      <a href="/clerk.html" target="_blank" class="tab-btn" style="text-decoration: none; background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border-radius: 6px; margin-left: auto;">🏁 Race Control</a>
+    <div class="admin-tabs" id="adminTabsContainer">
+      <div class="tab-indicator" id="tabIndicator"></div>
+      <button class="tab-btn active" onclick="switchTab('drivers')" data-tab="drivers">Drivers</button>
+      <button class="tab-btn" onclick="switchTab('events')" data-tab="events">Events</button>
+      <button class="tab-btn" onclick="switchTab('raceEntries')" data-tab="raceEntries">Race Entries</button>
+      <button class="tab-btn" onclick="switchTab('payments')" data-tab="payments">Payments</button>
+      <button class="tab-btn" onclick="switchTab('paymentStatus')" data-tab="paymentStatus">Payment Status</button>
+      <button class="tab-btn" onclick="switchTab('equipment')" data-tab="equipment">Equipment</button>
+      <button class="tab-btn" onclick="switchTab('msaLicenses')" data-tab="msaLicenses">MSA Licenses</button>
+      <button class="tab-btn" onclick="switchTab('messages')" data-tab="messages">Messages <span id="msgBadge" style="background:#ef4444; color:white; padding:2px 6px; border-radius:12px; font-size:11px; font-weight:600;"></span></button>
+      <button class="tab-btn" onclick="switchTab('notifications')" data-tab="notifications">Notifications</button>
+      <button class="tab-btn" onclick="switchTab('audit')" data-tab="audit">Audit Trail</button>
+      <button class="tab-btn" onclick="switchTab('discountCodes')" data-tab="discountCodes">Discount Codes</button>
+      <a href="/clerk.html" target="_blank" class="tab-btn" style="margin-left: auto; color: #dc2626; font-weight: 600;">Race Control →</a>
     </div>
 
     <!-- Drivers Tab -->
@@ -718,12 +766,13 @@
           <option value="Unpaid">Unpaid</option>
         </select>
         <button class="search-btn" onclick="loadDrivers()">Search</button>
-        <button class="search-btn" onclick="exportDriversCSV()" style="background: #4caf50;">Export CSV</button>
+        <button class="search-btn" id="advancedViewBtn" onclick="toggleAdvancedView()">📊 Advanced View</button>
+        <button class="search-btn" onclick="exportDriversCSV()">Export CSV</button>
       </div>
 
       <div class="table-wrapper">
         <table>
-          <thead>
+          <thead id="driversTableHead">
             <tr>
               <th>Email</th>
               <th>Name</th>
@@ -835,6 +884,9 @@
         <button id="equipByItemBtn" onclick="switchEquipmentView('item')" style="padding: 8px 16px; background: #4b5563; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
           🏷️ By Equipment
         </button>
+        <button id="equipDatabaseBtn" onclick="switchEquipmentView('database')" style="padding: 8px 16px; background: #4b5563; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
+          💾 Database View
+        </button>
       </div>
       
       <!-- By Driver View -->
@@ -866,6 +918,22 @@
         
         <div id="equipmentByItemTable" style="margin-top: 15px; overflow-x: auto;">
           <p style="color: #94a3b8; text-align: center; padding: 40px;">Select an event to view equipment assignments</p>
+        </div>
+      </div>
+      
+      <!-- Database View - All Equipment Data -->
+      <div id="equipmentDatabase" style="display: none;">
+        <div class="filters-bar">
+          <select id="equipDatabaseEventFilter" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="">Select Event...</option>
+          </select>
+          <button class="search-btn" onclick="loadEquipmentDatabase()" style="padding: 10px 20px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            📊 Load All Equipment Data
+          </button>
+        </div>
+        
+        <div id="equipmentDatabaseTable" style="margin-top: 15px; overflow-x: auto;">
+          <p style="color: #94a3b8; text-align: center; padding: 40px;">Select an event to view all equipment database information</p>
         </div>
       </div>
       
@@ -1286,14 +1354,14 @@
           </div>
           
           <!-- Push Subscribers List -->
-          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 16px;">
+          <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h4 style="margin: 0; color: #1e293b;">👥 Push Subscribers</h4>
+              <h4 style="margin: 0; color: #1e293b;">👥 Active Subscribers</h4>
               <button onclick="loadPushSubscribers()" style="padding: 6px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                ↻ Refresh
+                🔄 Refresh
               </button>
             </div>
-            <div id="subscribersList" style="max-height: 300px; overflow-y: auto;">
+            <div id="subscribersList" style="max-height: 400px; overflow-y: auto;">
               <p style="color: #6b7280; text-align: center; padding: 20px;">Loading subscribers...</p>
             </div>
           </div>
@@ -1800,6 +1868,7 @@
     const ADMIN_PASSWORD = 'natsadmin2026';
     let currentDriver = null;
     let allDrivers = [];
+    let advancedView = false;
 
     function adminLogin() {
       const pwEl = document.getElementById('adminPassword');
@@ -1821,6 +1890,12 @@
         document.getElementById('filterPaid').value = '';
         loadDrivers();
         loadAdminMSAEventDropdown();
+        
+        // Initialize tab indicator position
+        setTimeout(() => {
+          const activeTab = document.querySelector('.tab-btn.active');
+          if (activeTab) updateTabIndicator(activeTab);
+        }, 50);
       } else {
         const errorMsg = document.getElementById('errorMessage');
         if (errorMsg) {
@@ -1840,6 +1915,12 @@
           }
         });
       }
+      
+      // Update tab indicator on window resize
+      window.addEventListener('resize', () => {
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab) updateTabIndicator(activeTab);
+      });
     });
 
     function adminLogout() {
@@ -1852,6 +1933,76 @@
       if (adminWrapper) adminWrapper.style.display = 'none';
       if (pwEl) pwEl.value = '';
       if (errorMsg) errorMsg.style.display = 'none';
+    }
+
+    function toggleAdvancedView() {
+      advancedView = !advancedView;
+      const btn = document.getElementById('advancedViewBtn');
+      const thead = document.getElementById('driversTableHead');
+      
+      if (advancedView) {
+        btn.textContent = '📊 Basic View';
+        btn.style.borderColor = '#3f3f46';
+        btn.style.fontWeight = '600';
+        
+        // Advanced view headers
+        thead.innerHTML = `
+          <tr style="font-size: 11px;">
+            <th style="position: sticky; left: 0; background: #f8fafc; z-index: 15; border-right: 2px solid #ddd;">Driver ID</th>
+            <th>Email</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Class</th>
+            <th>Race #</th>
+            <th>DOB</th>
+            <th>Nationality</th>
+            <th>Team</th>
+            <th>Kart Brand</th>
+            <th>Transponder</th>
+            <th>License #</th>
+            <th>Phone</th>
+            <th>Championship</th>
+            <th>Season Engine</th>
+            <th>Season Entry</th>
+            <th>Next Race Entry</th>
+            <th>Next Race Engine</th>
+            <th>Medical</th>
+            <th>Emergency Contact</th>
+            <th>Emergency Phone</th>
+            <th>Indemnity</th>
+            <th>Parent/Guardian</th>
+            <th>Guardian ID</th>
+            <th>Created</th>
+            <th>Updated</th>
+            <th>Status</th>
+            <th>Paid</th>
+            <th style="position: sticky; right: 0; background: #f8fafc; z-index: 15; border-left: 2px solid #ddd;">Actions</th>
+          </tr>
+        `;
+      } else {
+        btn.textContent = '📊 Advanced View';
+        btn.style.borderColor = '#d4d4d8';
+        btn.style.fontWeight = '500';
+        
+        // Basic view headers
+        thead.innerHTML = `
+          <tr>
+            <th>Email</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Race #</th>
+            <th>Team</th>
+            <th>Transponder</th>
+            <th>License #</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Paid</th>
+            <th>Actions</th>
+          </tr>
+        `;
+      }
+      
+      displayDrivers(allDrivers);
     }
 
     async function loadDrivers() {
@@ -1899,44 +2050,94 @@
         return;
       }
       
-      console.log('displayDrivers called with', drivers.length, 'drivers');
+      console.log('displayDrivers called with', drivers.length, 'drivers, advancedView:', advancedView);
       
       if (!drivers || drivers.length === 0) {
         console.log('No drivers to display');
-        table.innerHTML = '<tr><td colspan="11" class="loading">No drivers found</td></tr>';
+        table.innerHTML = '<tr><td colspan="' + (advancedView ? '30' : '11') + '" class="loading">No drivers found</td></tr>';
         return;
       }
 
       let html = '';
-      drivers.forEach((driver, index) => {
-        console.log(`Processing driver ${index}:`, driver);
-        const email = driver.driver_email || driver.email || '-';
-        const name = `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || '-';
-        const status = driver.status || 'Pending';
-        const paidStatus = driver.paid_status || 'Unpaid';
+      
+      if (advancedView) {
+        // Advanced View - Show ALL database fields
+        drivers.forEach((driver, index) => {
+          const formatDate = (date) => date ? new Date(date).toLocaleDateString('en-ZA') : '-';
+          const formatDateTime = (date) => date ? new Date(date).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+          
+          html += `
+            <tr>
+              <td style="position: sticky; left: 0; background: white; z-index: 5; border-right: 2px solid #ddd;">${driver.driver_id || '-'}</td>
+              <td title="${driver.driver_email || driver.email || '-'}">${driver.driver_email || driver.email || '-'}</td>
+              <td>${driver.first_name || '-'}</td>
+              <td>${driver.last_name || '-'}</td>
+              <td>${driver.class ? `<span class="class-badge ${getClassBadgeClass(driver.class)}">${driver.class}</span>` : '-'}</td>
+              <td>${driver.race_number || '-'}</td>
+              <td>${formatDate(driver.date_of_birth)}</td>
+              <td>${driver.nationality || '-'}</td>
+              <td>${driver.team_name || '-'}</td>
+              <td>${driver.kart_brand || '-'}</td>
+              <td>${driver.transponder_number || '-'}</td>
+              <td>${driver.license_number || '-'}</td>
+              <td>${driver.contact_phone || driver.phone_mobile || '-'}</td>
+              <td>${driver.championship || '-'}</td>
+              <td>${driver.season_engine_rental || '-'}</td>
+              <td>${driver.season_entry_status || '-'}</td>
+              <td>${driver.next_race_entry_status || '-'}</td>
+              <td>${driver.next_race_engine_rental_status || '-'}</td>
+              <td>${driver.medical_conditions || '-'}</td>
+              <td>${driver.emergency_contact_name || '-'}</td>
+              <td>${driver.emergency_contact_phone || '-'}</td>
+              <td>${driver.indemnity_signed ? '✅' : '-'}</td>
+              <td>${driver.parent_guardian_name || '-'}</td>
+              <td>${driver.parent_guardian_id || '-'}</td>
+              <td>${formatDateTime(driver.created_at)}</td>
+              <td>${formatDateTime(driver.updated_at)}</td>
+              <td><span class="status-badge status-${(driver.status || 'Pending').toLowerCase()}">${driver.status || 'Pending'}</span></td>
+              <td>${driver.paid_status || 'Unpaid'}</td>
+              <td style="white-space: nowrap; position: sticky; right: 0; background: white; z-index: 5; border-left: 2px solid #ddd;">
+                <div class="action-buttons">
+                  <button class="action-btn edit-btn" onclick="openEditModal('${driver.driver_id}')">Edit</button>
+                  <button class="action-btn reset-btn" onclick="resetPassword('${driver.driver_id}')">PW</button>
+                  <button class="action-btn delete-btn" onclick="deleteDriver('${driver.driver_id}', '${driver.first_name} ${driver.last_name}')">Del</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      } else {
+        // Basic View - Original columns
+        drivers.forEach((driver, index) => {
+          console.log(`Processing driver ${index}:`, driver);
+          const email = driver.driver_email || driver.email || '-';
+          const name = `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || '-';
+          const status = driver.status || 'Pending';
+          const paidStatus = driver.paid_status || 'Unpaid';
 
-        html += `
-          <tr>
-            <td title="${email}">${email}</td>
-            <td title="${name}">${name}</td>
-            <td>${driver.class ? `<span class="class-badge ${getClassBadgeClass(driver.class)}">${driver.class}</span>` : '-'}</td>
-            <td>${driver.race_number || '-'}</td>
-            <td title="${driver.team_name || '-'}">${driver.team_name || '-'}</td>
-            <td>${driver.transponder_number || '-'}</td>
-            <td>${driver.license_number || '-'}</td>
-            <td>${driver.contact_phone || '-'}</td>
-            <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
-            <td>${paidStatus}</td>
-            <td>
-              <div class="action-buttons">
-                <button class="action-btn edit-btn" onclick="openEditModal('${driver.driver_id}')">Edit</button>
-                <button class="action-btn reset-btn" onclick="resetPassword('${driver.driver_id}')">PW</button>
-                <button class="action-btn delete-btn" onclick="deleteDriver('${driver.driver_id}', '${driver.first_name} ${driver.last_name}')">Del</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      });
+          html += `
+            <tr>
+              <td title="${email}">${email}</td>
+              <td title="${name}">${name}</td>
+              <td>${driver.class ? `<span class="class-badge ${getClassBadgeClass(driver.class)}">${driver.class}</span>` : '-'}</td>
+              <td>${driver.race_number || '-'}</td>
+              <td title="${driver.team_name || '-'}">${driver.team_name || '-'}</td>
+              <td>${driver.transponder_number || '-'}</td>
+              <td>${driver.license_number || '-'}</td>
+              <td>${driver.contact_phone || '-'}</td>
+              <td><span class="status-badge status-${status.toLowerCase()}">${status}</span></td>
+              <td>${paidStatus}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-btn edit-btn" onclick="openEditModal('${driver.driver_id}')">Edit</button>
+                  <button class="action-btn reset-btn" onclick="resetPassword('${driver.driver_id}')">PW</button>
+                  <button class="action-btn delete-btn" onclick="deleteDriver('${driver.driver_id}', '${driver.first_name} ${driver.last_name}')">Del</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+      }
 
       console.log('Generated HTML length:', html.length);
       console.log('Setting innerHTML to table');
@@ -2901,6 +3102,21 @@
     }
 
     // Tab switching
+    function updateTabIndicator(activeTabBtn) {
+      const indicator = document.getElementById('tabIndicator');
+      if (!indicator || !activeTabBtn) return;
+      
+      const tabsContainer = document.getElementById('adminTabsContainer');
+      const containerRect = tabsContainer.getBoundingClientRect();
+      const btnRect = activeTabBtn.getBoundingClientRect();
+      
+      const left = btnRect.left - containerRect.left + tabsContainer.scrollLeft;
+      const width = btnRect.width;
+      
+      indicator.style.width = `${width}px`;
+      indicator.style.transform = `translateX(${left}px)`;
+    }
+    
     function switchTab(tabName) {
       const driversTab = document.getElementById('driversTab');
       const eventsTab = document.getElementById('eventsTab');
@@ -2930,54 +3146,50 @@
       
       // Remove active from all tab buttons
       tabs.forEach(t => t.classList.remove('active'));
+      
+      // Add active to clicked tab using data-tab attribute
+      const activeTabBtn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+      if (activeTabBtn) {
+        activeTabBtn.classList.add('active');
+        updateTabIndicator(activeTabBtn);
+      }
 
       if (tabName === 'drivers') {
         driversTab.style.display = 'block';
-        tabs[0].classList.add('active');
       } else if (tabName === 'events') {
         eventsTab.style.display = 'block';
-        tabs[1].classList.add('active');
         loadEvents();
       } else if (tabName === 'raceEntries') {
         raceEntriesTab.style.display = 'block';
-        tabs[2].classList.add('active');
         loadRaceEntriesDropdown();
       } else if (tabName === 'payments') {
         paymentsTab.style.display = 'block';
-        tabs[3].classList.add('active');
         loadPayments();
       } else if (tabName === 'paymentStatus') {
         if (paymentStatusTab) {
           paymentStatusTab.style.display = 'block';
-          tabs[4].classList.add('active');
           loadPaymentStatus();
         }
       } else if (tabName === 'equipment') {
         if (equipmentTab) {
           equipmentTab.style.display = 'block';
-          tabs[5].classList.add('active');
           loadEquipmentEventDropdowns();
         }
       } else if (tabName === 'msaLicenses') {
         msaLicensesTab.style.display = 'block';
-        tabs[6].classList.add('active');
         loadAdminMSAEventDropdown();
       } else if (tabName === 'messages') {
         messagesTab.style.display = 'block';
-        tabs[7].classList.add('active');
         loadMessages();
       } else if (tabName === 'notifications') {
         notificationsTab.style.display = 'block';
-        tabs[8].classList.add('active');
         loadPushStats();
       } else if (tabName === 'audit') {
         auditTab.style.display = 'block';
-        tabs[9].classList.add('active');
         loadAuditTrail();
       } else if (tabName === 'discountCodes') {
         if (discountCodesTab) {
           discountCodesTab.style.display = 'block';
-          tabs[10].classList.add('active');
           loadDiscountCodes();
         }
       }
@@ -5074,19 +5286,31 @@
     function switchEquipmentView(view) {
       const driverView = document.getElementById('equipmentByDriver');
       const itemView = document.getElementById('equipmentByItem');
+      const databaseView = document.getElementById('equipmentDatabase');
       const driverBtn = document.getElementById('equipByDriverBtn');
       const itemBtn = document.getElementById('equipByItemBtn');
+      const databaseBtn = document.getElementById('equipDatabaseBtn');
       
+      // Hide all views
+      driverView.style.display = 'none';
+      itemView.style.display = 'none';
+      databaseView.style.display = 'none';
+      
+      // Reset all button styles
+      driverBtn.style.background = '#4b5563';
+      itemBtn.style.background = '#4b5563';
+      databaseBtn.style.background = '#4b5563';
+      
+      // Show selected view and highlight button
       if (view === 'driver') {
         driverView.style.display = 'block';
-        itemView.style.display = 'none';
         driverBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
-        itemBtn.style.background = '#4b5563';
-      } else {
-        driverView.style.display = 'none';
+      } else if (view === 'item') {
         itemView.style.display = 'block';
-        driverBtn.style.background = '#4b5563';
         itemBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+      } else if (view === 'database') {
+        databaseView.style.display = 'block';
+        databaseBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
       }
     }
 
@@ -5314,6 +5538,106 @@
       }
     }
 
+    async function loadEquipmentDatabase() {
+      const eventId = document.getElementById('equipDatabaseEventFilter').value;
+      
+      if (!eventId) {
+        showToast('Please select an event', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/equipmentByDriver?event_id=${encodeURIComponent(eventId)}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load equipment data');
+        }
+        
+        displayEquipmentDatabase(data.entries);
+      } catch (err) {
+        console.error('Error loading equipment database:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    function displayEquipmentDatabase(entries) {
+      const tableDiv = document.getElementById('equipmentDatabaseTable');
+      
+      if (!entries || entries.length === 0) {
+        tableDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No equipment data found for this event</p>';
+        return;
+      }
+      
+      let html = `
+        <div style="background: white; border-radius: 8px; padding: 15px; overflow-x: auto;">
+          <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+            <thead>
+              <tr style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white;">
+                <th style="padding: 8px; text-align: left; font-weight: 600; border: 1px solid #0284c7; position: sticky; left: 0; background: linear-gradient(135deg, #0ea5e9, #0284c7); z-index: 10;">Driver</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">#</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Class</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Engine Serial</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Engine Assigned</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Engine Returned</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Transponder Serial</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">TX Assigned</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Tyre FL</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Tyre FR</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Tyre RL</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Tyre RR</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Tyres Registered</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Fuel Collected</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Ticket Engine</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Ticket Tyres</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Ticket TX</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Ticket Fuel</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      entries.forEach((entry, index) => {
+        const bgColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+        const formatDate = (date) => date ? new Date(date).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+        const formatBool = (val) => val ? '✅ Yes' : '-';
+        
+        html += `
+          <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
+            <td style="padding: 8px; font-weight: 600; color: #1e293b; border: 1px solid #e5e7eb; position: sticky; left: 0; background: ${bgColor}; z-index: 5;">${entry.driver_name}</td>
+            <td style="padding: 8px; text-align: center; color: #475569; border: 1px solid #e5e7eb;">${entry.race_number || '-'}</td>
+            <td style="padding: 8px; text-align: center; color: #475569; border: 1px solid #e5e7eb;">${entry.race_class || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #059669; border: 1px solid #e5e7eb;">${entry.engine_serial || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.engine_assigned_at)}</td>
+            <td style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">${formatBool(entry.engine_returned)}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #3b82f6; border: 1px solid #e5e7eb;">${entry.transponder_serial || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.transponder_assigned_at)}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_front_left || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_front_right || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_rear_left || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_rear_right || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.tyres_registered_at)}</td>
+            <td style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">${formatBool(entry.fuel_collected)}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 9px; color: #78716c; border: 1px solid #e5e7eb;">${entry.ticket_engine_ref || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 9px; color: #78716c; border: 1px solid #e5e7eb;">${entry.ticket_tyres_ref || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 9px; color: #78716c; border: 1px solid #e5e7eb;">${entry.ticket_transponder_ref || '-'}</td>
+            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 9px; color: #78716c; border: 1px solid #e5e7eb;">${entry.ticket_fuel_ref || '-'}</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+            </tbody>
+          </table>
+          <div style="margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 6px; text-align: center; color: #64748b; font-size: 12px;">
+            <strong>${entries.length}</strong> driver entries loaded • Scroll horizontally to view all equipment fields
+          </div>
+        </div>
+      `;
+      
+      tableDiv.innerHTML = html;
+    }
+
     async function loadEquipmentEventDropdowns() {
       try {
         const response = await fetch('/api/getAllEvents');
@@ -5324,6 +5648,7 @@
         const events = data.events || [];
         const driverSelect = document.getElementById('equipDriverEventFilter');
         const itemSelect = document.getElementById('equipItemEventFilter');
+        const databaseSelect = document.getElementById('equipDatabaseEventFilter');
         
         const options = events.map(e => 
           `<option value="${e.event_id}">${e.event_name}</option>`
@@ -5331,6 +5656,7 @@
         
         driverSelect.innerHTML = '<option value="">Select Event...</option>' + options;
         itemSelect.innerHTML = '<option value="">Select Event...</option>' + options;
+        databaseSelect.innerHTML = '<option value="">Select Event...</option>' + options;
       } catch (err) {
         console.error('Error loading events:', err);
       }
