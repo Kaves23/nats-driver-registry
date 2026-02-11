@@ -6652,7 +6652,21 @@
               }, 1000);
             } else {
               console.log('PayFast payment for class:', driverClass, 'Amount raw:', totalPrice);
-              const amount = totalPrice.replace('R', '').replace(/\s/g, '').replace(',', '.').trim();
+              
+              // ✅ FIX: Smart amount parsing to handle both SA and international formats
+              let amount = totalPrice.replace('R', '').replace(/\s/g, '').trim();
+              
+              // If both comma and period exist, comma is thousand separator (international format: 10,170.00)
+              // If only comma exists, it's decimal separator (SA format: 10170,00)
+              if (amount.includes(',') && amount.includes('.')) {
+                // International format: 10,170.00 -> remove comma, keep period
+                amount = amount.replace(/,/g, '');
+              } else if (amount.includes(',')) {
+                // SA format: 10170,00 -> convert comma to period
+                amount = amount.replace(',', '.');
+              }
+              // If only period exists, it's already correct (10170.00)
+              
               console.log('🔍 Amount after cleaning:', amount);
               console.log('🔍 selectedItems being sent:', selectedItems);
               console.log('🔍 selectedItems JSON:', JSON.stringify(selectedItems));

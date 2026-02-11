@@ -698,6 +698,139 @@
         border: 4px solid #10b981;
         box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.6);
       }
+
+    /* Live Update Flash Animations */
+    @keyframes flashGreen {
+      0% {
+        background-color: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+        transform: scale(1.05);
+      }
+      100% {
+        background-color: inherit;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes flashBlue {
+      0% {
+        background-color: #3b82f6;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+        transform: scale(1.05);
+      }
+      100% {
+        background-color: inherit;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes flashYellow {
+      0% {
+        background-color: #f59e0b;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+        transform: scale(1.05);
+      }
+      100% {
+        background-color: inherit;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes flashRed {
+      0% {
+        background-color: #ef4444;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+        transform: scale(1.05);
+      }
+      100% {
+        background-color: inherit;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes pulseLive {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.7;
+        transform: scale(0.95);
+      }
+    }
+
+    .cell-flash-green {
+      animation: flashGreen 1.5s ease-out;
+    }
+
+    .cell-flash-blue {
+      animation: flashBlue 1.5s ease-out;
+    }
+
+    .cell-flash-yellow {
+      animation: flashYellow 1.5s ease-out;
+    }
+
+    .cell-flash-red {
+      animation: flashRed 1.5s ease-out;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ef4444;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+
+    .live-badge .live-dot {
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      animation: pulseLive 1.5s ease-in-out infinite;
+    }
+
+    .live-toggle-btn {
+      background: #6b7280;
+      color: white;
+      border: 2px solid #6b7280;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .live-toggle-btn:hover {
+      background: #4b5563;
+      border-color: #4b5563;
+    }
+
+    .live-toggle-btn.active {
+      background: #ef4444;
+      border-color: #ef4444;
+      animation: pulseLive 2s ease-in-out infinite;
+    }
+
+    .live-toggle-btn.active:hover {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
       100% {
         border: 4px solid transparent;
         box-shadow: none;
@@ -747,6 +880,7 @@
       <button class="tab-btn" onclick="switchTab('notifications')" data-tab="notifications">Notifications</button>
       <button class="tab-btn" onclick="switchTab('audit')" data-tab="audit">Audit Trail</button>
       <button class="tab-btn" onclick="switchTab('discountCodes')" data-tab="discountCodes">Discount Codes</button>
+      <button class="tab-btn" onclick="switchTab('manualPayments')" data-tab="manualPayments">💳 Manual Payments</button>
       <a href="/clerk.html" target="_blank" class="tab-btn" style="margin-left: auto; color: #dc2626; font-weight: 600;">Race Control →</a>
     </div>
 
@@ -923,13 +1057,23 @@
       
       <!-- Database View - All Equipment Data -->
       <div id="equipmentDatabase" style="display: none;">
-        <div class="filters-bar">
-          <select id="equipDatabaseEventFilter" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+        <div class="filters-bar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <select id="equipDatabaseEventFilter" style="flex: 1; min-width: 200px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
             <option value="">Select Event...</option>
           </select>
           <button class="search-btn" onclick="loadEquipmentDatabase()" style="padding: 10px 20px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
             📊 Load All Equipment Data
           </button>
+          <button id="liveModeToggle" class="live-toggle-btn" onclick="toggleLiveMode()" style="display: none;">
+            🔴 LIVE MODE
+          </button>
+          <div id="liveStatusIndicator" style="display: none; align-items: center; gap: 8px;">
+            <span class="live-badge">
+              <span class="live-dot"></span>
+              LIVE
+            </span>
+            <span id="lastUpdateTime" style="font-size: 11px; color: #64748b;">Last update: --:--</span>
+          </div>
         </div>
         
         <div id="equipmentDatabaseTable" style="margin-top: 15px; overflow-x: auto;">
@@ -1040,10 +1184,79 @@
       </div>
     </div>
 
+    <!-- Manual Payments / PayFast Webhooks Tab -->
+    <div id="manualPaymentsTab" class="admin-content" style="display: none;">
+      <div style="margin-bottom: 24px;">
+        <h2 style="margin: 0 0 8px 0; color: #1e293b;">💳 Manual Payments & PayFast Webhooks</h2>
+        <p style="margin: 0; color: #64748b; font-size: 14px;">View ALL PayFast webhook notifications and manually reconcile payments that couldn't be automatically processed</p>
+      </div>
+
+      <!-- Stats Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #22c55e; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">✅ Processed</div>
+          <div style="font-size: 28px; font-weight: 700; color: #22c55e;" id="webhooksProcessed">0</div>
+        </div>
+        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">⏳ Unmatched</div>
+          <div style="font-size: 28px; font-weight: 700; color: #f59e0b;" id="webhooksUnmatched">0</div>
+        </div>
+        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #ef4444; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">❌ Errors</div>
+          <div style="font-size: 28px; font-weight: 700; color: #ef4444;" id="webhooksErrors">0</div>
+        </div>
+        <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #8b5cf6; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">💰 Total Amount</div>
+          <div style="font-size: 28px; font-weight: 700; color: #8b5cf6;" id="webhooksTotalAmount">R0</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <select id="webhookStatusFilter">
+          <option value="">All Statuses</option>
+          <option value="received">Received</option>
+          <option value="processed">Processed</option>
+          <option value="error">Error</option>
+          <option value="signature_invalid">Invalid  Signature</option>
+          <option value="skipped">Skipped</option>
+          <option value="reconciled">Manually Reconciled</option>
+        </select>
+        <input type="date" id="webhookStartDate" />
+        <input type="date" id="webhookEndDate" />
+        <button class="search-btn" onclick="loadPayFastWebhooks()">🔍 Search</button>
+        <button class="search-btn" onclick="loadPayFastWebhooks()" style="background: #22c55e;">🔄 Refresh</button>
+      </div>
+
+      <!-- Webhooks Table -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr style="font-size: 12px;">
+              <th>ID</th>
+              <th>Received</th>
+              <th>Status</th>
+              <th>PayFast ID</th>
+              <th>Reference</th>
+              <th>Driver</th>
+              <th>Amount</th>
+              <th>Item</th>
+              <th>Matched To</th>
+              <th>Signature</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="webhooksTable">
+            <tr><td colspan="11" class="loading">Loading PayFast webhooks...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ✅ Payment Status Dashboard Tab -->
     <div id="paymentStatusTab" class="admin-content" style="display: none;">
       <div style="margin-bottom: 24px;">
-        <h2 style="margin: 0 0 8px 0; color: #1e293b;">💳 Payment Status Dashboard</h2>
+        <h2 style="margin: 0 0 8px 0; color:  #1e293b;">💳 Payment Status Dashboard</h2>
         <p style="margin: 0; color: #64748b; font-size: 14px;">Monitor all payment statuses and reconcile missing payments</p>
       </div>
 
@@ -3129,6 +3342,7 @@
       const notificationsTab = document.getElementById('notificationsTab');
       const auditTab = document.getElementById('auditTab');
       const discountCodesTab = document.getElementById('discountCodesTab');
+      const manualPaymentsTab = document.getElementById('manualPaymentsTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
       // Hide all tabs
@@ -3143,6 +3357,7 @@
       notificationsTab.style.display = 'none';
       auditTab.style.display = 'none';
       if (discountCodesTab) discountCodesTab.style.display = 'none';
+      if (manualPaymentsTab) manualPaymentsTab.style.display = 'none';
       
       // Remove active from all tab buttons
       tabs.forEach(t => t.classList.remove('active'));
@@ -3191,6 +3406,11 @@
         if (discountCodesTab) {
           discountCodesTab.style.display = 'block';
           loadDiscountCodes();
+        }
+      } else if (tabName === 'manualPayments') {
+        if (manualPaymentsTab) {
+          manualPaymentsTab.style.display = 'block';
+          loadPayFastWebhooks();
         }
       }
     }
@@ -5107,6 +5327,188 @@
       document.getElementById('discountCodeModal').style.display = 'none';
     }
 
+    // ========================================
+    // PayFast Webhooks / Manual Payments Functions
+    // ========================================
+    
+    async function loadPayFastWebhooks() {
+      try {
+        const status = document.getElementById('webhookStatusFilter').value;
+        const startDate = document.getElementById('webhookStartDate').value;
+        const endDate = document.getElementById('webhookEndDate').value;
+        
+        const response = await fetch('/api/payfast/webhooks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, startDate, endDate, limit: 200 })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error || 'Failed to load webhooks');
+        
+        displayPayFastWebhooks(result.webhooks);
+        updateWebhookStats(result.stats);
+      } catch (err) {
+        console.error('Error loading webhooks:', err);
+        showToast('Error loading webhooks: ' + err.message, 'error');
+      }
+    }
+    
+    function displayPayFastWebhooks(webhooks) {
+      const table = document.getElementById('webhooksTable');
+      
+      if (!webhooks || webhooks.length === 0) {
+        table.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 40px; color: #94a3b8;">No webhooks found. All payments processed through the system will appear here.</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      webhooks.forEach(webhook => {
+        const statusColor = {
+          'processed': '#22c55e',
+          'received': '#f59e0b',
+          'error': '#ef4444',
+          'signature_invalid': '#dc2626',
+          'skipped': '#94a3b8',
+          'reconciled': '#8b5cf6'
+        }[webhook.processing_status] || '#64748b';
+        
+        const signatureIcon = webhook.signature_valid === true ? '✅' : webhook.signature_valid === false ? '❌' : '❓';
+        const receivedDate = new Date(webhook.received_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' });
+        
+        html += `
+          <tr style="font-size: 11px;">
+            <td style="font-family: monospace; color: #64748b;">${webhook.webhook_id}</td>
+            <td style="white-space: nowrap;">${receivedDate}</td>
+            <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase;">${webhook.processing_status}</span></td>
+            <td style="font-family: monospace; font-size: 10px;">${webhook.pf_payment_id || '-'}</td>
+            <td style="font-family: monospace; font-size: 10px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${webhook.reference || ''}">${webhook.reference || '-'}</td>
+            <td>${webhook.name_first || ''} ${webhook.name_last || ''}</td>
+            <td style="font-weight: 600; color: #059669;">R${parseFloat(webhook.amount_gross || 0).toFixed(2)}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${webhook.item_description || ''}">${webhook.item_description || webhook.item_name || '-'}</td>
+            <td style="font-family: monospace; font-size: 10px; color: ${webhook.matched_entry_id ? '#22c55e' : '#94a3b8'};">
+              ${webhook.matched_entry_id ? 
+                `Entry: ${webhook.matched_entry_id}<br>Driver: ${webhook.matched_driver_id}<br>Event: ${webhook.matched_event_id}` : 
+                '<span style="color: #f59e0b;">Unmatched</span>'}
+            </td>
+            <td style="text-align: center;">${signatureIcon}</td>
+            <td style="white-space: nowrap;">
+              <button class="action-btn edit-btn" onclick="viewWebhookDetails(${webhook.webhook_id})" title="View Raw Data">📋 View</button>
+              ${webhook.processing_status === 'received' || webhook.processing_status === 'error' ? 
+                `<button class="action-btn" style="background: #8b5cf6;" onclick="reconcileWebhook(${webhook.webhook_id})" title="Manual Reconciliation">🔗 Reconcile</button>` : 
+                ''}
+            </td>
+          </tr>
+        `;
+      });
+      
+      table.innerHTML = html;
+    }
+    
+    function updateWebhookStats(stats) {
+      let processed = 0, unmatched = 0, errors = 0, totalAmount = 0;
+      
+      stats.forEach(stat => {
+        if (stat.processing_status === 'processed' || stat.processing_status === 'reconciled') {
+          processed += parseInt(stat.count);
+          totalAmount += parseFloat(stat.total_amount || 0);
+        } else if (stat.processing_status === 'received') {
+          unmatched += parseInt(stat.count);
+          totalAmount += parseFloat(stat.total_amount || 0);
+        } else if (stat.processing_status === 'error' || stat.processing_status === 'signature_invalid') {
+          errors += parseInt(stat.count);
+        }
+      });
+      
+      document.getElementById('webhooksProcessed').textContent = processed;
+      document.getElementById('webhooksUnmatched').textContent = unmatched;
+      document.getElementById('webhooksErrors').textContent = errors;
+      document.getElementById('webhooksTotalAmount').textContent = 'R' + totalAmount.toFixed(2);
+    }
+    
+    async function viewWebhookDetails(webhookId) {
+      try {
+        const response = await fetch(`/api/payfast/webhook/${webhookId}`);
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error || 'Failed to load webhook details');
+        
+        const webhook = result.webhook;
+        const rawData = JSON.stringify(webhook.raw_data, null, 2);
+        
+        alert(`Webhook Details (ID: ${webhookId})\n\n` +
+              `PayFast ID: ${webhook.pf_payment_id}\n` +
+              `Status: ${webhook.processing_status}\n` +
+              `Amount: R${webhook.amount_gross}\n` +
+              `Reference: ${webhook.reference}\n` +
+              `Received: ${new Date(webhook.received_at).toLocaleString()}\n\n` +
+              `Error: ${webhook.processing_error || 'None'}\n\n` +
+              `Raw Data:\n${rawData}`);
+      } catch (err) {
+        console.error('Error viewing webhook:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+    
+    async function reconcileWebhook(webhookId) {
+      // Get webhook details first
+      try {
+        const response = await fetch(`/api/payfast/webhook/${webhookId}`);
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.error || 'Failed to load webhook');
+        
+        const webhook = result.webhook;
+        
+        // Prompt for driver and event
+        const driverEmail = prompt(`Manual Reconciliation Required\n\nWebhook ID: ${webhookId}\nPayFast  ID: ${webhook.pf_payment_id}\nAmount: R${webhook.amount_gross}\nDriver Name: ${webhook.name_first} ${webhook.name_last}\n\nEnter driver EMAIL to reconcile this payment:`);
+        
+        if (!driverEmail) return;
+        
+        const eventId = prompt('Enter EVENT ID for this payment:');
+        
+        if (!eventId) return;
+        
+        // Find driver by email
+        const driversResponse = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        
+        const driversResult = await driversResponse.json();
+        const driver = driversResult.drivers.find(d => d.email === driverEmail || d.driver_email === driverEmail);
+        
+        if (!driver) {
+          showToast('Driver not found with that email', 'error');
+          return;
+        }
+        
+        // Reconcile
+        const reconcileResponse = await fetch('/api/payfast/reconcile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            webhookId,
+            driverId: driver.driver_id,
+            eventId,
+            adminEmail: 'admin'
+          })
+        });
+        
+        const reconcileResult = await reconcileResponse.json();
+        
+        if (!reconcileResult.success) throw new Error(reconcileResult.error || 'Reconciliation failed');
+        
+        showToast(`✅ Payment reconciled!\nDriver: ${reconcileResult.driver}\nEvent: ${reconcileResult.event}\nAmount: R${reconcileResult.amount}`, 'success');
+        loadPayFastWebhooks();
+      } catch (err) {
+        console.error('Error reconciling webhook:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
     // ✅ Payment Status Dashboard Functions
     async function loadPaymentStatus() {
       try {
@@ -5290,6 +5692,12 @@
       const driverBtn = document.getElementById('equipByDriverBtn');
       const itemBtn = document.getElementById('equipByItemBtn');
       const databaseBtn = document.getElementById('equipDatabaseBtn');
+      
+      // Stop live mode when switching away from database view
+      if (view !== 'database' && liveMode.active) {
+        toggleLiveMode(); // Turn off live mode
+        console.log('🔴 Live mode stopped (switched view)');
+      }
       
       // Hide all views
       driverView.style.display = 'none';
@@ -5538,11 +5946,22 @@
       }
     }
 
-    async function loadEquipmentDatabase() {
+    // Live Mode State
+    let liveMode = {
+      active: false,
+      interval: null,
+      previousData: {},
+      eventId: null,
+      pollInterval: 3000 // 3 seconds
+    };
+
+    async function loadEquipmentDatabase(isLiveUpdate = false) {
       const eventId = document.getElementById('equipDatabaseEventFilter').value;
       
       if (!eventId) {
-        showToast('Please select an event', 'error');
+        if (!isLiveUpdate) {
+          showToast('Please select an event', 'error');
+        }
         return;
       }
 
@@ -5554,19 +5973,213 @@
           throw new Error(data.error || 'Failed to load equipment data');
         }
         
-        displayEquipmentDatabase(data.entries);
+        // Store event ID for live mode
+        liveMode.eventId = eventId;
+        
+        // Show live mode toggle after first load
+        document.getElementById('liveModeToggle').style.display = 'inline-block';
+        
+        displayEquipmentDatabase(data.entries, isLiveUpdate);
       } catch (err) {
         console.error('Error loading equipment database:', err);
-        showToast('Error: ' + err.message, 'error');
+        if (!isLiveUpdate) {
+          showToast('Error: ' + err.message, 'error');
+        }
       }
     }
 
-    function displayEquipmentDatabase(entries) {
+    function toggleLiveMode() {
+      const btn = document.getElementById('liveModeToggle');
+      const indicator = document.getElementById('liveStatusIndicator');
+      
+      liveMode.active = !liveMode.active;
+      
+      if (liveMode.active) {
+        // Start live mode
+        btn.classList.add('active');
+        btn.textContent = '🟢 LIVE MODE ON';
+        indicator.style.display = 'flex';
+        
+        // Start polling
+        liveMode.interval = setInterval(() => {
+          loadEquipmentDatabase(true);
+        }, liveMode.pollInterval);
+        
+        showToast('Live updates enabled! Checking for changes every 3 seconds...', 'success');
+        console.log('🟢 Live mode ENABLED');
+      } else {
+        // Stop live mode
+        btn.classList.remove('active');
+        btn.textContent = '🔴 LIVE MODE';
+        indicator.style.display = 'none';
+        
+        // Clear interval
+        if (liveMode.interval) {
+          clearInterval(liveMode.interval);
+          liveMode.interval = null;
+        }
+        
+        showToast('Live updates disabled', 'info');
+        console.log('🔴 Live mode DISABLED');
+      }
+    }
+
+    function displayEquipmentDatabase(entries, isLiveUpdate = false) {
       const tableDiv = document.getElementById('equipmentDatabaseTable');
       
       if (!entries || entries.length === 0) {
         tableDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No equipment data found for this event</p>';
         return;
+      }
+      
+      // Update last update time if live mode
+      if (isLiveUpdate && liveMode.active) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('lastUpdateTime').textContent = `Last update: ${timeStr}`;
+      }
+      
+      // Helper to normalize values (treat null/undefined/"null"/"" as equivalent)
+      const normalize = (val) => {
+        if (val === null || val === undefined || val === 'null' || val === '') return null;
+        return val;
+      };
+      
+      // Helper to check if value has actual content
+      const hasValue = (val) => {
+        const normalized = normalize(val);
+        return normalized !== null;
+      };
+      
+      // Detect changes for live mode
+      const changes = [];
+      if (isLiveUpdate && liveMode.previousData && Object.keys(liveMode.previousData).length > 0) {
+        console.log('🔍 Checking for changes... previousData entries:', Object.keys(liveMode.previousData).length);
+        
+        try {
+          entries.forEach(entry => {
+            const key = entry.race_entry_id || entry.driver_id;
+            const prev = liveMode.previousData[key];
+            
+            // Debug specific driver
+            if (entry.driver_name && entry.driver_name.includes('John Duvill')) {
+              console.log('🐛 DEBUG John Duvill - Key:', key);
+              console.log('🐛 Previous data:', prev);
+              console.log('🐛 Current engine_serial:', entry.engine_serial);
+              console.log('🐛 Current engine_returned:', entry.engine_returned);
+            }
+            
+            if (prev) {
+            // Check each field for REAL changes (not just null/undefined differences)
+            // prev data is already normalized, so compare directly
+            
+            // Engine serial: only flag if going from no-value to value, or value to different value
+            const currEngine = normalize(entry.engine_serial);
+            const prevEngine = prev.engine_serial; // Already normalized when stored
+            if (currEngine !== prevEngine) {
+              if (hasValue(currEngine) && !hasValue(prevEngine)) {
+                // New assignment
+                changes.push({ key, field: 'engine_serial', type: 'green' });
+                console.log('🟢 Engine assigned:', entry.driver_name, currEngine);
+              } else if (hasValue(currEngine) && hasValue(prevEngine)) {
+                // Changed to different engine
+                changes.push({ key, field: 'engine_serial', type: 'green' });
+                console.log('🟢 Engine changed:', entry.driver_name, prevEngine, '→', currEngine);
+              }
+            }
+            
+            // Transponder serial
+            const currTX = normalize(entry.transponder_serial);
+            const prevTX = prev.transponder_serial; // Already normalized
+            if (currTX !== prevTX) {
+              if (hasValue(currTX) && !hasValue(prevTX)) {
+                changes.push({ key, field: 'transponder_serial', type: 'green' });
+                console.log('🟢 Transponder assigned:', entry.driver_name, currTX);
+              } else if (hasValue(currTX) && hasValue(prevTX)) {
+                changes.push({ key, field: 'transponder_serial', type: 'green' });
+                console.log('🟢 Transponder changed:', entry.driver_name, prevTX, '→', currTX);
+              }
+            }
+            
+            // Engine returned (only flag if changing from false to true)
+            const currReturned = !!entry.engine_returned;
+            const prevReturned = prev.engine_returned; // Already stored as boolean
+            if (currReturned && !prevReturned) {
+              changes.push({ key, field: 'engine_returned', type: 'red' });
+              console.log('🔴 Engine returned:', entry.driver_name);
+            }
+            
+            // Tyres: check if any actual values changed
+            const currTyres = [
+              normalize(entry.tyre_front_left),
+              normalize(entry.tyre_front_right),
+              normalize(entry.tyre_rear_left),
+              normalize(entry.tyre_rear_right)
+            ];
+            const prevTyres = [
+              prev.tyre_front_left, // Already normalized
+              prev.tyre_front_right,
+              prev.tyre_rear_left,
+              prev.tyre_rear_right
+            ];
+            
+            const tyresChanged = currTyres.some((curr, idx) => curr !== prevTyres[idx]);
+            const hasAnyTyreValue = currTyres.some(t => t !== null);
+            
+            if (tyresChanged && hasAnyTyreValue) {
+              changes.push({ key, field: 'tyres', type: 'blue' });
+              console.log('🔵 Tyres registered:', entry.driver_name, currTyres.filter(t => t).join(', '));
+            }
+            
+            // Fuel collected (only flag if changing from false to true)
+            const currFuel = !!entry.fuel_collected;
+            const prevFuel = prev.fuel_collected; // Already stored as boolean
+            if (currFuel && !prevFuel) {
+              changes.push({ key, field: 'fuel_collected', type: 'yellow' });
+              console.log('🟡 Fuel collected:', entry.driver_name);
+            }
+          } else {
+            // No previous data for this entry - it's new, log for debugging
+            console.log('⚠️ No previous data found for key:', key, 'Entry:', entry.driver_name);
+          }
+        });
+        } catch (err) {
+          console.error('❌ Error in change detection:', err);
+        }
+      }
+      
+      // Store current data for next comparison (NORMALIZED to prevent false positives)
+      liveMode.previousData = {};
+      entries.forEach(entry => {
+        const key = entry.race_entry_id || entry.driver_id;
+        // Store normalized version to ensure next comparison is accurate
+        const storedData = {
+          driver_name: entry.driver_name,
+          engine_serial: normalize(entry.engine_serial),
+          transponder_serial: normalize(entry.transponder_serial),
+          engine_returned: !!entry.engine_returned,  // Store as boolean
+          tyre_front_left: normalize(entry.tyre_front_left),
+          tyre_front_right: normalize(entry.tyre_front_right),
+          tyre_rear_left: normalize(entry.tyre_rear_left),
+          tyre_rear_right: normalize(entry.tyre_rear_right),
+          fuel_collected: !!entry.fuel_collected  // Store as boolean
+        };
+        
+        liveMode.previousData[key] = storedData;
+        
+        // Debug specific driver
+        if (entry.driver_name && entry.driver_name.includes('John Duvill')) {
+          console.log('💾 STORED John Duvill data:', storedData);
+        }
+      });
+      
+      if (isLiveUpdate) {
+        console.log('✅ Updated previousData with', Object.keys(liveMode.previousData).length, 'entries');
+        // Debug: show first entry
+        const firstKey = Object.keys(liveMode.previousData)[0];
+        if (firstKey) {
+          console.log('📝 First stored entry:', firstKey, liveMode.previousData[firstKey]);
+        }
       }
       
       let html = `
@@ -5580,6 +6193,7 @@
                 <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Engine Serial</th>
                 <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Engine Assigned</th>
                 <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Engine Returned</th>
+                <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Engine Returned At</th>
                 <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Transponder Serial</th>
                 <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">TX Assigned</th>
                 <th style="padding: 8px; text-align: center; font-weight: 600; border: 1px solid #0284c7;">Tyre FL</th>
@@ -5602,22 +6216,32 @@
         const formatDate = (date) => date ? new Date(date).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' }) : '-';
         const formatBool = (val) => val ? '✅ Yes' : '-';
         
+        const key = entry.race_entry_id || entry.driver_id;
+        const rowChanges = changes.filter(c => c.key === key);
+        
+        // Helper to add flash class if field changed
+        const getFlashClass = (fieldName) => {
+          const change = rowChanges.find(c => c.field === fieldName || (fieldName.includes('tyre') && c.field === 'tyres'));
+          return change ? `cell-flash-${change.type}` : '';
+        };
+        
         html += `
-          <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
+          <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;" data-entry-key="${key}">
             <td style="padding: 8px; font-weight: 600; color: #1e293b; border: 1px solid #e5e7eb; position: sticky; left: 0; background: ${bgColor}; z-index: 5;">${entry.driver_name}</td>
             <td style="padding: 8px; text-align: center; color: #475569; border: 1px solid #e5e7eb;">${entry.race_number || '-'}</td>
             <td style="padding: 8px; text-align: center; color: #475569; border: 1px solid #e5e7eb;">${entry.race_class || '-'}</td>
-            <td style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #059669; border: 1px solid #e5e7eb;">${entry.engine_serial || '-'}</td>
-            <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.engine_assigned_at)}</td>
-            <td style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">${formatBool(entry.engine_returned)}</td>
-            <td style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #3b82f6; border: 1px solid #e5e7eb;">${entry.transponder_serial || '-'}</td>
-            <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.transponder_assigned_at)}</td>
-            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_front_left || '-'}</td>
-            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_front_right || '-'}</td>
-            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_rear_left || '-'}</td>
-            <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_rear_right || '-'}</td>
-            <td style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.tyres_registered_at)}</td>
-            <td style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">${formatBool(entry.fuel_collected)}</td>
+            <td class="${getFlashClass('engine_serial')}" style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #059669; border: 1px solid #e5e7eb;">${entry.engine_serial || '-'}</td>
+            <td class="${getFlashClass('engine_serial')}" style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.engine_assigned_at)}</td>
+            <td class="${getFlashClass('engine_returned')}" style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">${formatBool(entry.engine_returned)}</td>
+            <td class="${getFlashClass('engine_returned')}" style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.engine_returned_at)}</td>
+            <td class="${getFlashClass('transponder_serial')}" style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #3b82f6; border: 1px solid #e5e7eb;">${entry.transponder_serial || '-'}</td>
+            <td class="${getFlashClass('transponder_serial')}" style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.transponder_assigned_at)}</td>
+            <td class="${getFlashClass('tyre_front_left')}" style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_front_left || '-'}</td>
+            <td class="${getFlashClass('tyre_front_right')}" style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_front_right || '-'}</td>
+            <td class="${getFlashClass('tyre_rear_left')}" style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_rear_left || '-'}</td>
+            <td class="${getFlashClass('tyre_rear_right')}" style="padding: 8px; text-align: center; font-family: monospace; font-size: 10px; color: #6366f1; border: 1px solid #e5e7eb;">${entry.tyre_rear_right || '-'}</td>
+            <td class="${getFlashClass('tyre_front_left')}" style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.tyres_registered_at)}</td>
+            <td class="${getFlashClass('fuel_collected')}" style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">${formatBool(entry.fuel_collected)}</td>
             <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 9px; color: #78716c; border: 1px solid #e5e7eb;">${entry.ticket_engine_ref || '-'}</td>
             <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 9px; color: #78716c; border: 1px solid #e5e7eb;">${entry.ticket_tyres_ref || '-'}</td>
             <td style="padding: 8px; text-align: center; font-family: monospace; font-size: 9px; color: #78716c; border: 1px solid #e5e7eb;">${entry.ticket_transponder_ref || '-'}</td>
@@ -5626,16 +6250,27 @@
         `;
       });
       
+      const changesText = changes.length > 0 ? ` • <strong style="color: #ef4444;">${changes.length} changes detected!</strong>` : '';
+      
       html += `
             </tbody>
           </table>
           <div style="margin-top: 15px; padding: 10px; background: #f1f5f9; border-radius: 6px; text-align: center; color: #64748b; font-size: 12px;">
-            <strong>${entries.length}</strong> driver entries loaded • Scroll horizontally to view all equipment fields
+            <strong>${entries.length}</strong> driver entries loaded • Scroll horizontally to view all equipment fields${changesText}
+            ${liveMode.active ? '<div style="margin-top: 5px; color: #ef4444; font-weight: 600;">🔴 LIVE MODE ACTIVE - Auto-refreshing every 3 seconds</div>' : ''}
           </div>
         </div>
       `;
       
       tableDiv.innerHTML = html;
+      
+      // Show toast notification for changes
+      if (isLiveUpdate && changes.length > 0) {
+        const changeTypes = [...new Set(changes.map(c => c.type))];
+        const icons = { green: '🟢', blue: '🔵', yellow: '🟡', red: '🔴' };
+        const message = changeTypes.map(t => icons[t]).join(' ') + ` ${changes.length} equipment update${changes.length > 1 ? 's' : ''} detected!`;
+        showToast(message, 'success');
+      }
     }
 
     async function loadEquipmentEventDropdowns() {

@@ -23,6 +23,21 @@
     "2": {
       "name": "NATS 2 - Killarney",
       "documents": []
+    },
+    "event_redstar_001": {
+      "name": "Northern Regions Crown - 14 February 2026",
+      "documents": [
+        {
+          "name": "Supplementary Regulations",
+          "type": "Official Regulations",
+          "url": "https://drive.google.com/file/d/1Pmg1cUW6ZxCxB30tFAS6CrxuKk_dmu2c/view?usp=sharing"
+        },
+        {
+          "name": "Pit & Paddock Layout",
+          "type": "Track Map",
+          "url": "https://drive.google.com/file/d/1qUfCPjrayBXJ4wyri_TWxjZnyclxIIeb/view?usp=sharing"
+        }
+      ]
     }
   },
   "_instructions": {

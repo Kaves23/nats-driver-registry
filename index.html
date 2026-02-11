@@ -5864,7 +5864,7 @@ the paddock quickly and consistently.
                   </div>
                   
                   <!-- Countdown or additional info -->
-                  <div style="font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 500; letter-spacing: 0.05em;">
+                  <div id="rsAdditionalInfo" style="font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 500; letter-spacing: 0.05em;">
                     Check back soon
                   </div>
                 </div>
@@ -5946,6 +5946,46 @@ the paddock quickly and consistently.
           100% {
             opacity: 1;
             transform: scale(1) translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
+        }
+        
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        
+        @keyframes modalSlideOut {
+          from {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
           }
         }
         
@@ -7024,12 +7064,59 @@ the paddock quickly and consistently.
         if (eventsResponse.ok) {
           const eventsData = await eventsResponse.json();
           if (eventsData.success && eventsData.data && eventsData.data.length > 0) {
-            // Try to find matching event by name
-            const matchingEvent = eventsData.data.find(e => 
-              e.event_name && e.event_name.toUpperCase().includes(currentSeason.name.toUpperCase().split(' ')[0])
-            ) || eventsData.data.find(e =>
-              e.location && e.location.toUpperCase().includes(currentSeason.track.toUpperCase().split(' ')[0])
-            ) || eventsData.data[0];
+            // Parse the season date to help with matching
+            const parseSeasonDate = (dateStr) => {
+              // dateStr format: "14 FEB 2026" or "20-22 MAR 2026"
+              const parts = dateStr.trim().split(' ');
+              const monthStr = parts[parts.length - 2]; // Second to last part is month
+              const yearStr = parts[parts.length - 1];  // Last part is year
+              const dayStr = parts[0].split('-')[0];     // First day if range
+              
+              const months = { JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11 };
+              return new Date(parseInt(yearStr), months[monthStr.toUpperCase()], parseInt(dayStr));
+            };
+            
+            const seasonDate = parseSeasonDate(currentSeason.dates);
+            
+            // Try to find matching event by name AND date proximity (strict matching)
+            let matchingEvent = eventsData.data.find(e => {
+              if (!e.event_name || !e.event_date) return false;
+              
+              const eventDate = new Date(e.event_date);
+              const daysDiff = Math.abs((eventDate - seasonDate) / (1000 * 60 * 60 * 24));
+              
+              // Match if event name contains season name AND date is within 7 days
+              const nameMatch = e.event_name.toUpperCase().includes(currentSeason.name.toUpperCase().substring(0, 15));
+              const dateMatch = daysDiff <= 7;
+              
+              return nameMatch && dateMatch;
+            });
+            
+            // Fallback: match by name only (less strict)
+            if (!matchingEvent) {
+              matchingEvent = eventsData.data.find(e => 
+                e.event_name && e.event_name.toUpperCase().includes(currentSeason.name.toUpperCase().split(' ')[0])
+              );
+            }
+            
+            // Last fallback: match by location
+            if (!matchingEvent) {
+              matchingEvent = eventsData.data.find(e =>
+                e.location && e.location.toUpperCase().includes(currentSeason.track.toUpperCase().split(' ')[0])
+              );
+            }
+            
+            // Ultimate fallback: first event
+            if (!matchingEvent) {
+              matchingEvent = eventsData.data[0];
+            }
+            
+            console.log('🔍 Race Specific Match:', {
+              season: currentSeason.name,
+              seasonDate: currentSeason.dates,
+              matchedEvent: matchingEvent.event_name,
+              matchedDate: matchingEvent.event_date
+            });
             
             // Update registration status
             const statusIndicator = document.getElementById('rsStatusIndicator');
@@ -7049,16 +7136,37 @@ the paddock quickly and consistently.
               }
             }
             
+            // Update additional info text
+            const additionalInfo = document.getElementById('rsAdditionalInfo');
+            
             if (isOpen) {
               statusIndicator.style.background = '#22c55e';
               statusIndicator.style.boxShadow = '0 0 24px #22c55e, 0 0 8px rgba(34, 197, 94, 0.8)';
               statusText.style.color = '#22c55e';
               statusText.textContent = 'OPEN';
+              
+              // Hide "Check back soon" and show deadline if available
+              if (additionalInfo) {
+                if (deadline) {
+                  const daysUntil = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+                  additionalInfo.textContent = `Entries close in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`;
+                  additionalInfo.style.color = '#22c55e';
+                } else {
+                  additionalInfo.textContent = 'Entries open now';
+                  additionalInfo.style.color = '#22c55e';
+                }
+              }
             } else {
               statusIndicator.style.background = '#ef4444';
               statusIndicator.style.boxShadow = '0 0 24px #ef4444, 0 0 8px rgba(239, 68, 68, 0.8)';
               statusText.style.color = '#ef4444';
               statusText.textContent = 'CLOSED';
+              
+              // Show "Check back soon" when closed
+              if (additionalInfo) {
+                additionalInfo.textContent = 'Check back soon';
+                additionalInfo.style.color = 'rgba(255,255,255,0.5)';
+              }
             }
 
             // Load event documents
@@ -7084,13 +7192,142 @@ the paddock quickly and consistently.
       }
     }
 
+    function showDocumentModal(folderName, documents) {
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'documentModalOverlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 999998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease-out;
+      `;
+      
+      // Create modal content
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      `;
+      
+      // Header
+      const header = document.createElement('div');
+      header.style.cssText = `
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        padding: 20px 24px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      `;
+      header.innerHTML = `
+        <div>
+          <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">${folderName} Documents</div>
+          <div style="font-size: 13px; opacity: 0.9;">${documents.length} ${documents.length === 1 ? 'file' : 'files'}</div>
+        </div>
+        <button id="closeModalBtn" style="background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      `;
+      
+      // Document list
+      const docList = document.createElement('div');
+      docList.style.cssText = `
+        padding: 0;
+        overflow-y: auto;
+        flex: 1;
+      `;
+      
+      documents.forEach((doc, idx) => {
+        const docItem = document.createElement('a');
+        docItem.href = doc.url;
+        docItem.target = '_blank';
+        docItem.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 18px 24px;
+          text-decoration: none;
+          color: #0f172a;
+          border-bottom: ${idx < documents.length - 1 ? '1px solid #e2e8f0' : 'none'};
+          transition: all 0.2s;
+          cursor: pointer;
+        `;
+        
+        docItem.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#0ea5e9">
+            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+          </svg>
+          <span style="flex: 1; font-size: 15px; font-weight: 600;">${doc.name}</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#0ea5e9">
+            <path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+          </svg>
+        `;
+        
+        docItem.addEventListener('mouseenter', () => {
+          docItem.style.background = '#dbeafe';
+          docItem.style.paddingLeft = '32px';
+        });
+        
+        docItem.addEventListener('mouseleave', () => {
+          docItem.style.background = 'transparent';
+          docItem.style.paddingLeft = '24px';
+        });
+        
+        docList.appendChild(docItem);
+      });
+      
+      modal.appendChild(header);
+      modal.appendChild(docList);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      
+      // Close handlers
+      const closeModal = () => {
+        overlay.style.animation = 'fadeOut 0.2s ease-out';
+        modal.style.animation = 'modalSlideOut 0.2s ease-out';
+        setTimeout(() => overlay.remove(), 200);
+      };
+      
+      document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
+      });
+      
+      // ESC key to close
+      const escHandler = (e) => {
+        if (e.key === 'Escape') {
+          closeModal();
+          document.removeEventListener('keydown', escHandler);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+    }
+
     async function loadRsEventDocuments(eventId) {
       const container = document.getElementById('rsEventDocuments');
       
       // Define class categories for organizing documents
       const classCategories = [
-        { id: 'official', name: 'OFFICIAL', keywords: ['official', 'mandate', 'regulation', 'rule', 'declaration', 'announcement', 'permit'] },
-        { id: 'general', name: 'General', keywords: ['sr', 'supplementary', 'timetable', 'entry', 'track', 'map', 'bulletin', 'result', 'final'] },
+        { id: 'official', name: 'OFFICIAL', keywords: ['supplementary', 'sr', 'regulation', 'official regulation', 'mandate', 'rule', 'declaration', 'announcement', 'permit'] },
+        { id: 'general', name: 'General', keywords: ['track', 'map', 'pit', 'paddock', 'layout', 'timetable', 'entry', 'bulletin', 'result', 'final', 'general'] },
         { id: 'cadet', name: 'Cadet', keywords: ['cadet'] },
         { id: 'miniu10', name: 'Mini ROK U10', keywords: ['u10', 'under 10', 'under10'] },
         { id: 'mini', name: 'Mini ROK', keywords: ['mini'] },
@@ -7111,15 +7348,23 @@ the paddock quickly and consistently.
               const docNameLower = (doc.display_name + ' ' + doc.document_type).toLowerCase();
               let assigned = false;
               
+              console.log('📄 Processing doc:', doc.display_name, 'Type:', doc.document_type, 'Search string:', docNameLower);
+              
               for (const cat of classCategories) {
                 if (cat.keywords.some(kw => docNameLower.includes(kw))) {
                   grouped[cat.id].push(doc);
                   assigned = true;
+                  console.log('✅ Assigned to category:', cat.id, cat.name);
                   break;
                 }
               }
-              if (!assigned) grouped['general'].push(doc);
+              if (!assigned) {
+                grouped['general'].push(doc);
+                console.log('📌 Not matched, assigned to general');
+              }
             });
+            
+            console.log('📊 Final grouped documents:', grouped);
             
             // Build folder grid with popups
             let html = '<div class="folder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 100%; padding: 0;">';
@@ -7137,9 +7382,19 @@ the paddock quickly and consistently.
               }
               const opacity = isEmpty ? '0.6' : '1';
               
-              html += '<div class="folder-item" data-folder-id="' + cat.id + '" onclick="toggleFolder(this)" style="' +
+              // Prepare document data for modal
+              let dataAttr = '';
+              if (count > 0) {
+                const docData = JSON.stringify(grouped[cat.id].map(d => ({
+                  name: d.display_name,
+                  url: d.file_path
+                })));
+                dataAttr = ' data-documents="' + docData.replace(/"/g, '&quot;') + '"';
+              }
+              
+              html += '<div class="folder-item" data-folder-id="' + cat.id + '" data-folder-name="' + cat.name + '"' + dataAttr + ' style="' +
                 'position: relative; ' +
-                'cursor: pointer; ' +
+                'cursor: ' + (isEmpty ? 'default' : 'pointer') + '; ' +
                 'transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); ' +
                 'transform-style: preserve-3d; ' +
                 'opacity: ' + opacity + ';' +
@@ -7168,16 +7423,6 @@ the paddock quickly and consistently.
                   'position: relative; ' +
                   'overflow: hidden;' +
                 '">' +
-                  // Shine effect
-                  '<div style="' +
-                    'position: absolute; ' +
-                    'top: 0; ' +
-                    'left: -100%; ' +
-                    'width: 50%; ' +
-                    'height: 100%; ' +
-                    'background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); ' +
-                    'transition: left 0.5s;' +
-                  '"></div>' +
                   // Folder icon and name
                   '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
                     '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + textColor + '">' +
@@ -7201,73 +7446,21 @@ the paddock quickly and consistently.
                     '</svg>' +
                     '<span style="color: ' + textColor + '; font-size: 11px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + count + ' ' + (count === 1 ? 'doc' : 'docs') + '</span>' +
                   '</div>' +
-                '</div>';
-              
-              // Popup with file list
-              if (count > 0) {
-                html += '<div class="folder-popup" style="' +
-                  'display: none; ' +
-                  'position: absolute; ' +
-                  'top: calc(100% + 8px); ' +
-                  'left: 0; ' +
-                  'width: 300px; ' +
-                  'max-width: 90vw; ' +
-                  'background: #ffffff; ' +
-                  'border: 2px solid #0ea5e9; ' +
-                  'border-radius: 0; ' +
-                  'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(14, 165, 233, 0.5); ' +
-                  'padding: 0; ' +
-                  'z-index: 1000; ' +
-                  'transform-origin: top center; ' +
-                  'animation: folderPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); ' +
-                  'overflow: hidden;' +
-                '">' +
-                  '<div style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); padding: 12px 16px; color: white; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">' + cat.name + ' Documents</div>' +
-                  '<div style="max-height: 200px; overflow-y: auto;">';
-                
-                grouped[cat.id].forEach((doc, docIdx) => {
-                  html += '<a href="' + doc.file_path + '" target="_blank" onclick="event.stopPropagation()" style="' +
-                    'display: flex; align-items: center; gap: 10px; ' +
-                    'padding: 12px 16px; ' +
-                    'text-decoration: none; ' +
-                    'color: #1f2937; ' +
-                    'font-size: 13px; ' +
-                    'border-bottom: 1px solid #e5e7eb; ' +
-                    'transition: all 0.2s; ' +
-                    'background: white;' +
-                  '" onmouseover="this.style.background=\'#e0f2fe\'; this.style.paddingLeft=\'20px\'" onmouseout="this.style.background=\'white\'; this.style.paddingLeft=\'16px\'">' +
-                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="#0ea5e9"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>' +
-                    '<span style="flex: 1;">' + doc.display_name + '</span>' +
-                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="#6b7280"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>' +
-                  '</a>';
-                });
-                
-                html += '</div></div>';
-              } else {
-                html += '<div class="folder-popup" style="' +
-                  'display: none; ' +
-                  'position: absolute; ' +
-                  'top: calc(100% + 8px); ' +
-                  'left: 0; ' +
-                  'width: 250px; ' +
-                  'background: #ffffff; ' +
-                  'border: 2px solid #6b7280; ' +
-                  'border-radius: 0; ' +
-                  'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); ' +
-                  'padding: 16px; ' +
-                  'z-index: 1000; ' +
-                  'transform-origin: top center; ' +
-                  'animation: folderPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);' +
-                '">' +
-                  '<div style="color: #6b7280; font-size: 12px; text-align: center; font-style: italic;">No documents</div>' +
-                '</div>';
-              }
-              
-              html += '</div>';
+                '</div>' +
+              '</div>';
             });
             html += '</div>';
             
             container.innerHTML = html;
+            
+            // Add click handlers to folders with documents
+            document.querySelectorAll('.folder-item[data-documents]').forEach(folder => {
+              folder.addEventListener('click', function() {
+                const folderName = this.getAttribute('data-folder-name');
+                const documents = JSON.parse(this.getAttribute('data-documents'));
+                showDocumentModal(folderName, documents);
+              });
+            });
           } else {
             // No documents from API - still show empty folder structure
             container.innerHTML = buildEmptyFolderStructure();
@@ -7377,9 +7570,9 @@ the paddock quickly and consistently.
           folderColor = '#22c55e';
         }
         
-        html += '<div class="folder-item" data-folder-id="' + cat.id + '" onclick="toggleFolder(this)" style="' +
+        html += '<div class="folder-item" data-folder-id="' + cat.id + '" style="' +
           'position: relative; ' +
-          'cursor: pointer; ' +
+          'cursor: default; ' +
           'opacity: 0.6; ' +
           'transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);' +
         '">' +
@@ -7418,55 +7611,11 @@ the paddock quickly and consistently.
               '<span style="color: ' + textColor + '; font-size: 11px; font-weight: 700;">0 docs</span>' +
             '</div>' +
           '</div>' +
-          '<div class="folder-popup" style="' +
-            'display: none; ' +
-            'position: absolute; ' +
-            'top: calc(100% + 8px); ' +
-            'left: 0; ' +
-            'right: 0; ' +
-            'background: #ffffff; ' +
-            'border: 2px solid #0ea5e9; ' +
-            'border-radius: 0; ' +
-            'box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(14, 165, 233, 0.5); ' +
-            'padding: 16px; ' +
-            'z-index: 1000; ' +
-            'transform-origin: top center; ' +
-            'animation: folderPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);' +
-          '">' +
-            '<div style="color: #6b7280; font-size: 12px; text-align: center; font-style: italic;">No documents</div>' +
-          '</div>' +
         '</div>';
       });
       html += '</div>';
       html += '<div style="margin-top: 32px; text-align: center; color: #4b5563; font-size: 13px; font-style: italic;">No documents uploaded yet for this event</div>';
       return html;
-    }
-
-    function toggleFolder(element) {
-      // Close all other popups first
-      document.querySelectorAll('.folder-popup').forEach(popup => {
-        if (popup.parentElement !== element) {
-          popup.style.display = 'none';
-          popup.style.animation = 'none';
-        }
-      });
-      
-      const popup = element.querySelector('.folder-popup');
-      if (popup) {
-        if (popup.style.display === 'none' || popup.style.display === '') {
-          // Show with animation
-          popup.style.display = 'block';
-          // Force reflow to restart animation
-          void popup.offsetWidth;
-          // Remove and re-add animation class
-          popup.style.animation = 'none';
-          setTimeout(() => {
-            popup.style.animation = 'folderPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
-          }, 10);
-        } else {
-          popup.style.display = 'none';
-        }
-      }
     }
 
     async function loadRsEventNotifications(eventId) {

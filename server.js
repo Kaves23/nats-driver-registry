@@ -467,6 +467,55 @@ const initMSALicensesTable = async () => {
   }
 };
 
+// Initialize PayFast webhooks table for ALL incoming notifications
+const initPayFastWebhooksTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payfast_webhooks (
+        webhook_id SERIAL PRIMARY KEY,
+        m_payment_id VARCHAR(100),
+        pf_payment_id VARCHAR(100),
+        payment_status VARCHAR(50),
+        item_name TEXT,
+        item_description TEXT,
+        amount_gross DECIMAL(10,2),
+        amount_fee DECIMAL(10,2),
+        amount_net DECIMAL(10,2),
+        reference VARCHAR(255),
+        email_address VARCHAR(255),
+        name_first VARCHAR(100),
+        name_last VARCHAR(100),
+        cell_number VARCHAR(50),
+        signature VARCHAR(255),
+        signature_valid BOOLEAN,
+        raw_data JSONB,
+        processing_status VARCHAR(50) DEFAULT 'received',
+        processing_error TEXT,
+        matched_entry_id VARCHAR(100),
+        matched_driver_id VARCHAR(100),
+        matched_event_id VARCHAR(100),
+        reconciled_by VARCHAR(100),
+        reconciled_at TIMESTAMP,
+        received_at TIMESTAMP DEFAULT NOW(),
+        processed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Add index for faster lookups
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_payfast_webhooks_reference ON payfast_webhooks(reference);
+      CREATE INDEX IF NOT EXISTS idx_payfast_webhooks_pf_payment_id ON payfast_webhooks(pf_payment_id);
+      CREATE INDEX IF NOT EXISTS idx_payfast_webhooks_processing_status ON payfast_webhooks(processing_status);
+      CREATE INDEX IF NOT EXISTS idx_payfast_webhooks_received_at ON payfast_webhooks(received_at DESC);
+    `);
+
+    console.log('✅ PayFast webhooks table initialized');
+  } catch (err) {
+    console.error('PayFast webhooks table init error:', err.message);
+  }
+};
+
 initAuditTable();
 initMessagesTable();
 initNotificationHistoryTable();
@@ -477,6 +526,7 @@ initPoolEngineRentalsTable();
 initDiscountCodesTable();
 initEventDocumentsTable();
 initMSALicensesTable();
+initPayFastWebhooksTable();
 
 // Initialize default events if they don't exist
 const initDefaultEvents = async () => {
@@ -3525,14 +3575,26 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     const driverEmail = email && email.trim() ? email.trim().toLowerCase() : 'noreply@nats.co.za';
     console.log(`💳 Payment email: ${driverEmail}`);
 
-    // Clean and parse amount - remove R, spaces, convert comma to decimal point
-    // South African locale: 2 950,00 needs to become 2950.00
+    // Clean and parse amount - handle both SA and international formats
+    // South African: 10 170,00 (space=thousand, comma=decimal)
+    // International: 10,170.00 (comma=thousand, period=decimal)
     let cleanAmount = String(amount)
       .replace(/R/g, '')           // Remove R currency symbol
-      .replace(/\s/g, '')          // Remove spaces (SA thousand separator)
-      .replace(/,/g, '.')          // Convert comma to period (SA decimal separator)
+      .replace(/\s/g, '')          // Remove spaces (thousand separator)
       .trim();
+    
+    // Smart comma/period handling
+    if (cleanAmount.includes(',') && cleanAmount.includes('.')) {
+      // Both present: comma is thousand separator (international: 10,170.00)
+      cleanAmount = cleanAmount.replace(/,/g, '');  // Remove commas, keep period
+    } else if (cleanAmount.includes(',')) {
+      // Only comma: it's decimal separator (SA: 10170,00)
+      cleanAmount = cleanAmount.replace(',', '.');  // Convert to period
+    }
+    // If only period exists, it's already correct
+    
     const numAmount = parseFloat(cleanAmount);
+    console.log(`💰 Amount parsing: "${amount}" → "${cleanAmount}" → ${numAmount}`);
     
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new Error(`Invalid amount: ${amount} (parsed as ${cleanAmount})`);
@@ -3777,6 +3839,27 @@ app.get('/api/initiateRacePayment', async (req, res) => {
         });
         
         console.log(`📧 IMMEDIATE confirmation email sent to john@rokcup.co.za`);
+
+        // ========================================
+        // CREATE TRELLO CARD (Before PayFast redirect)
+        // ========================================
+        try {
+          console.log('📋 Creating Trello card for new race entry (before PayFast redirect)...');
+          
+          await createTrelloCard(
+            driverName,
+            driverEmail,
+            raceClass,
+            null, // teamCode - not available at this point
+            reference,
+            driverId
+          );
+          
+          console.log(`✅ Trello card created for ${driverName} before PayFast redirect`);
+        } catch (trelloErr) {
+          console.error('⚠️ Trello card creation failed (non-critical):', trelloErr.message);
+          // Don't fail the payment initiation if Trello fails
+        }
 
       } catch (emailErr) {
         console.error('⚠️ IMMEDIATE email sending failed (non-critical):', emailErr.message);
@@ -4579,9 +4662,55 @@ app.post('/api/paymentNotify', async (req, res) => {
     console.log(`   - Driver: ${name_first} ${name_last}`);
     console.log(`   - Email: ${email_address}`);
 
+    // ========================================
+    // STEP 1: STORE WEBHOOK IMMEDIATELY (CRITICAL - Never lose a webhook!)
+    // ========================================
+    let webhookId = null;
+    try {
+      const webhookResult = await pool.query(
+        `INSERT INTO payfast_webhooks (
+          m_payment_id, pf_payment_id, payment_status, item_name, item_description,
+          amount_gross, amount_fee, amount_net, reference, email_address,
+          name_first, name_last, cell_number, signature, raw_data,
+          processing_status, received_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
+        RETURNING webhook_id`,
+        [
+          m_payment_id, pf_payment_id, payment_status, item_name, item_description,
+          req.body.amount_gross || null, req.body.amount_fee || null, req.body.amount_net || null,
+          reference, email_address, name_first, name_last, req.body.cell_number || null,
+          signature, JSON.stringify(req.body), 'received'
+        ]
+      );
+      
+      webhookId = webhookResult.rows[0].webhook_id;
+      console.log(`✅ Webhook stored with ID: ${webhookId}`);
+    } catch (storeErr) {
+      console.error('❌ CRITICAL: Failed to store webhook!', storeErr.message);
+      // Even if storage fails, continue processing to not lose the payment
+      // But log it to a file as backup
+      const failedWebhookLog = {
+        timestamp: new Date().toISOString(),
+        error: 'Failed to store in database',
+        stack: storeErr.stack,
+        webhook: req.body
+      };
+      fs.appendFileSync(
+        path.join(__dirname, 'logs', 'failed_webhook_storage.json'),
+        JSON.stringify(failedWebhookLog) + '\n'
+      );
+    }
+
     if (!m_payment_id || !payment_status) {
-      console.error('❌ Missing payment ID or status!');
-      throw new Error('Missing payment ID or status');
+      const errorMsg = 'Missing payment ID or status';
+      console.error('❌', errorMsg);
+      if (webhookId) {
+        await pool.query(
+          `UPDATE payfast_webhooks SET processing_status = 'error', processing_error = $1, processed_at = NOW() WHERE webhook_id = $2`,
+          [errorMsg, webhookId]
+        );
+      }
+      throw new Error(errorMsg);
     }
 
     // Verify PayFast signature
@@ -4612,15 +4741,37 @@ app.post('/api/paymentNotify', async (req, res) => {
     pfParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`;
     
     const calculatedSignature = crypto.createHash('md5').update(pfParamString.trim()).digest('hex');
+    const signatureValid = calculatedSignature === signature;
     
-    console.log(`✅ IPN Signature verification: ${calculatedSignature === signature ? 'PASSED' : 'FAILED'}`);
-    if (calculatedSignature !== signature) {
+    console.log(`✅ IPN Signature verification: ${signatureValid ? 'PASSED' : 'FAILED'}`);
+    
+    // Update webhook with signature validation result
+    if (webhookId) {
+      await pool.query(
+        `UPDATE payfast_webhooks SET signature_valid = $1 WHERE webhook_id = $2`,
+        [signatureValid, webhookId]
+      );
+    }
+    
+    if (!signatureValid) {
       console.warn('⚠️ Signature mismatch - possible tampering');
+      if (webhookId) {
+        await pool.query(
+          `UPDATE payfast_webhooks SET processing_status = 'signature_invalid', processing_error = $1, processed_at = NOW() WHERE webhook_id = $2`,
+          ['Signature verification failed', webhookId]
+        );
+      }
     }
 
     // Only process COMPLETE payments
     if (payment_status !== 'COMPLETE') {
       console.log(`⏭️ Payment not complete (status: ${payment_status}), not recording`);
+      if (webhookId) {
+        await pool.query(
+          `UPDATE payfast_webhooks SET processing_status = 'skipped', processing_error = $1, processed_at = NOW() WHERE webhook_id = $2`,
+          [`Payment status is ${payment_status}, not COMPLETE`, webhookId]
+        );
+      }
       res.json({ success: true });
       return;
     }
@@ -4845,6 +4996,9 @@ app.post('/api/paymentNotify', async (req, res) => {
     if (ticketTransponderRef) console.log(`   Transponder ticket: ${ticketTransponderRef}`);
     if (ticketFuelRef) console.log(`   Fuel ticket: ${ticketFuelRef}`);
     console.log('🎉 ========================================');
+
+    // ℹ️ TRELLO CARD: Already created during payment initiation (before PayFast redirect)
+    // No need to create it again here - would be a duplicate
 
     // ⚠️ EMAIL DISABLED FOR RACE ENTRIES - Now sent immediately when payment is initiated
     // This prevents duplicate emails. Pool engine rentals still get emails here.
@@ -5148,9 +5302,36 @@ app.post('/api/paymentNotify', async (req, res) => {
     */
     // END OLD UNUSED EMAIL CODE - COMMENTED OUT
 
+    // Mark webhook as successfully processed
+    if (webhookId) {
+      await pool.query(
+        `UPDATE payfast_webhooks 
+         SET processing_status = 'processed', 
+             matched_entry_id = $1,
+             matched_driver_id = $2, 
+             matched_event_id = $3,
+             processed_at = NOW() 
+         WHERE webhook_id = $4`,
+        [race_entry_id, driverId, isPoolEngineRental ? 'POOL' : eventId, webhookId]
+      );
+      console.log(`✅ Webhook ${webhookId} marked as processed`);
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error('❌ paymentNotify error:', err.message);
+    
+    // Mark webhook as errored
+    if (webhookId) {
+      try {
+        await pool.query(
+          `UPDATE payfast_webhooks SET processing_status = 'error', processing_error = $1, processed_at = NOW() WHERE webhook_id = $2`,
+          [err.message, webhookId]
+        );
+      } catch (updateErr) {
+        console.error('Failed to update webhook error status:', updateErr.message);
+      }
+    }
     
     // ✅ FIX #3: Log failed notifications to file for manual recovery
     const fs = require('fs');
@@ -5181,6 +5362,263 @@ app.post('/api/paymentNotify', async (req, res) => {
     
     // Still respond 200 to PayFast so they don't keep retrying (they won't anyway)
     res.status(200).json({ success: false, error: err.message });
+  }
+});
+
+// ========================================
+// PAYFAST WEBHOOKS MANAGEMENT ENDPOINTS
+// ========================================
+
+// Get all PayFast webhooks with filtering
+app.post('/api/payfast/webhooks', async (req, res) => {
+  try {
+    const { status, startDate, endDate, limit = 100 } = req.body;
+    
+    let query = `
+      SELECT 
+        webhook_id, m_payment_id, pf_payment_id, payment_status,
+        item_name, item_description, amount_gross, reference, 
+        email_address, name_first, name_last, signature_valid,
+        processing_status, processing_error, 
+        matched_entry_id, matched_driver_id, matched_event_id,
+        reconciled_by, reconciled_at,
+        received_at, processed_at
+      FROM payfast_webhooks
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    let paramIndex = 1;
+    
+    if (status) {
+      query += ` AND processing_status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+    
+    if (startDate) {
+      query += ` AND received_at >= $${paramIndex}`;
+      params.push(startDate);
+      paramIndex++;
+    }
+    
+    if (endDate) {
+      query += ` AND received_at <= $${paramIndex}`;
+      params.push(endDate);
+      paramIndex++;
+    }
+    
+    query += ` ORDER BY received_at DESC LIMIT $${paramIndex}`;
+    params.push(limit);
+    
+    const result = await pool.query(query, params);
+    
+    // Get summary stats
+    const statsResult = await pool.query(`
+      SELECT 
+        processing_status,
+        COUNT(*) as count,
+        SUM(amount_gross::numeric) as total_amount
+      FROM payfast_webhooks
+      GROUP BY processing_status
+    `);
+    
+    res.json({
+      success: true,
+      webhooks: result.rows,
+      stats: statsResult.rows
+    });
+  } catch (err) {
+    console.error('Error fetching webhooks:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Get single webhook details including raw data
+app.get('/api/payfast/webhook/:webhookId', async (req, res) => {
+  try {
+    const { webhookId } = req.params;
+    
+    const result = await pool.query(
+      'SELECT * FROM payfast_webhooks WHERE webhook_id = $1',
+      [webhookId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Webhook not found' });
+    }
+    
+    res.json({
+      success: true,
+      webhook: result.rows[0]
+    });
+  } catch (err) {
+    console.error('Error fetching webhook:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Manual reconciliation - match webhook to driver/event
+app.post('/api/payfast/reconcile', async (req, res) => {
+  try {
+    const { webhookId, driverId, eventId, adminEmail } = req.body;
+    
+    if (!webhookId || !driverId || !eventId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'webhookId, driverId, and eventId are required' 
+      });
+    }
+    
+    // Get webhook details
+    const webhookResult = await pool.query(
+      'SELECT * FROM payfast_webhooks WHERE webhook_id = $1',
+      [webhookId]
+    );
+    
+    if (webhookResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Webhook not found' });
+    }
+    
+    const webhook = webhookResult.rows[0];
+    
+    // Create race entry from webhook data
+    const entryId = `manual_${webhook.pf_payment_id || webhook.m_payment_id}`;
+    const reference = webhook. reference || `MANUAL-${eventId}-${driverId}-${Date.now()}`;
+    
+    // Get event and driver details
+    const eventInfo = await pool.query('SELECT * FROM events WHERE event_id = $1', [eventId]);
+    const driverInfo = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driverId]);
+    
+    if (eventInfo.rows.length === 0 || driverInfo.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Event or driver not found' });
+    }
+    
+    const event = eventInfo.rows[0];
+    const driver = driverInfo.rows[0];
+    const raceClass = driver.class || 'Unknown';
+    
+    // Insert or update race entry
+    await pool.query(
+      `INSERT INTO race_entries (
+        entry_id, event_id, driver_id, payment_reference, 
+        payment_status, entry_status, amount_paid, race_class,
+        entry_items, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      ON CONFLICT (payment_reference) 
+      DO UPDATE SET 
+        payment_status = 'Completed',
+        entry_status = 'confirmed',
+        amount_paid = $7
+      RETURNING *`,
+      [
+        entryId, eventId, driverId, reference,
+        'Completed', 'confirmed', webhook.amount_gross, raceClass,
+        JSON.stringify({ manually_reconciled: true })
+      ]
+    );
+    
+    // Update webhook as reconciled
+    await pool.query(
+      `UPDATE payfast_webhooks 
+       SET processing_status = 'reconciled',
+           matched_entry_id = $1,
+           matched_driver_id = $2,
+           matched_event_id = $3,
+           reconciled_by = $4,
+           reconciled_at = NOW(),
+           processed_at = NOW()
+       WHERE webhook_id = $5`,
+      [entryId, driverId, eventId, adminEmail || 'admin', webhookId]
+    );
+    
+    // Log audit event
+    await logAuditEvent(
+      driverId,
+      driver.email || driver.driver_email,
+      'Manual Payment Reconciliation',
+      'race_entry',
+      null,
+      `Manually reconciled PayFast webhook ${webhookId} to ${event.event_name}`,
+      'admin'
+    );
+    
+    // Create Trello card for manually reconciled entry
+    try {
+      console.log('📋 Creating Trello card for manually reconciled entry...');
+      const driverName = `${driver.first_name} ${driver.last_name}`.trim();
+      const driverEmail = driver.email || driver.driver_email || 'unknown@email.com';
+      
+      await createTrelloCard(
+        driverName,
+        driverEmail,
+        raceClass,
+        null, // teamCode
+        reference,
+        driverId
+      );
+      
+      console.log(`✅ Trello card created for manually reconciled entry: ${driverName}`);
+    } catch (trelloErr) {
+      console.error('⚠️ Trello card creation failed (non-critical):', trelloErr.message);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Webhook reconciled successfully',
+      entryId: entryId,
+      driver: `${driver.first_name} ${driver.last_name}`,
+      event: event.event_name,
+      amount: webhook.amount_gross
+    });
+  } catch (err) {
+    console.error('Error reconciling webhook:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Reprocess a failed webhook
+app.post('/api/payfast/reprocess', async (req, res) => {
+  try {
+    const { webhookId } = req.body;
+    
+    if (!webhookId) {
+      return res.status(400).json({ success: false, error: 'webhookId is required' });
+    }
+    
+    // Get webhook
+    const result = await pool.query(
+      'SELECT * FROM payfast_webhooks WHERE webhook_id = $1',
+      [webhookId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Webhook not found' });
+    }
+    
+    const webhook = result.rows[0];
+    
+    // Reset processing status
+    await pool.query(
+      `UPDATE payfast_webhooks 
+       SET processing_status = 'reprocessing', 
+           processing_error = NULL, 
+           processed_at = NULL 
+       WHERE webhook_id = $1`,
+      [webhookId]
+    );
+    
+    // TODO: Trigger actual reprocessing logic here
+    // For now, just mark it for manual review
+    
+    res.json({
+      success: true,
+      message: 'Webhook marked for reprocessing',
+      webhook: webhook
+    });
+  } catch (err) {
+    console.error('Error reprocessing webhook:', err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -5447,17 +5885,22 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
     // Create Trello card if requested
     if (create_trello_card) {
       try {
-        await adminNotificationQueue.addNotification({
-          type: 'race_entry_confirmation',
-          driver_id: driver_id,
-          driver_name: `${driver.first_name} ${driver.last_name}`,
-          event_id: event_id,
-          race_class: race_class,
-          entry_id: race_entry_id
-        });
-        console.log(`✅ Trello notification queued for ${driver.first_name} ${driver.last_name}`);
+        console.log('📋 Creating Trello card for admin-added entry...');
+        const driverName = `${driver.first_name} ${driver.last_name}`.trim();
+        const driverEmail = driver.email || 'unknown@email.com';
+        
+        await createTrelloCard(
+          driverName,
+          driverEmail,
+          race_class,
+          null, // teamCode
+          race_entry_id, // Use entry ID as reference
+          driver_id
+        );
+        
+        console.log(`✅ Trello card created for admin-added entry: ${driverName}`);
       } catch (trelloErr) {
-        console.error('⚠️ Failed to queue Trello card (non-critical):', trelloErr.message);
+        console.error('⚠️ Failed to create Trello card (non-critical):', trelloErr.message);
       }
     }
     
@@ -7251,6 +7694,38 @@ app.post('/api/confirmRaceEntry', async (req, res) => {
 
     console.log(`✅ Race entry confirmed: ${entryId}`);
 
+    // Create Trello card for confirmed entry
+    try {
+      console.log('📋 Creating Trello card for confirmed race entry...');
+      
+      // Get driver and entry details for Trello
+      const driverResult = await pool.query(
+        `SELECT d.first_name, d.last_name, re.race_class, re.payment_reference, re.team_code
+         FROM drivers d
+         JOIN race_entries re ON d.driver_id = re.driver_id
+         WHERE re.entry_id = $1`,
+        [entryId]
+      );
+      
+      if (driverResult.rows.length > 0) {
+        const driverData = driverResult.rows[0];
+        const driverName = `${driverData.first_name} ${driverData.last_name}`.trim();
+        
+        await createTrelloCard(
+          driverName,
+          driverEmail,
+          driverData.race_class || 'Unknown',
+          driverData.team_code,
+          driverData.payment_reference,
+          entryData.driver_id
+        );
+        
+        console.log(`✅ Trello card created for confirmed entry: ${driverName}`);
+      }
+    } catch (trelloErr) {
+      console.error('⚠️ Trello card creation failed (non-critical):', trelloErr.message);
+    }
+
     res.json({
       success: true,
       data: { entry: result.rows[0] }
@@ -7313,6 +7788,38 @@ app.post('/api/markPaymentReceived', async (req, res) => {
     );
 
     console.log(`✅ Payment marked as received for entry: ${entry_id}`);
+
+    // Create Trello card for manually marked payment
+    try {
+      console.log('📋 Creating Trello card for manually marked payment...');
+      
+      // Get driver and entry details for Trello
+      const driverResult = await pool.query(
+        `SELECT d.first_name, d.last_name, re.race_class, re.payment_reference, re.team_code
+         FROM drivers d
+         JOIN race_entries re ON d.driver_id = re.driver_id
+         WHERE re.entry_id = $1`,
+        [entry_id]
+      );
+      
+      if (driverResult.rows.length > 0) {
+        const driverData = driverResult.rows[0];
+        const driverName = `${driverData.first_name} ${driverData.last_name}`.trim();
+        
+        await createTrelloCard(
+          driverName,
+          driverEmail,
+          driverData.race_class || 'Unknown',
+          driverData.team_code,
+          driverData.payment_reference,
+          entryData.driver_id
+        );
+        
+        console.log(`✅ Trello card created for manually marked payment: ${driverName}`);
+      }
+    } catch (trelloErr) {
+      console.error('⚠️ Trello card creation failed (non-critical):', trelloErr.message);
+    }
 
     res.json({
       success: true,
@@ -8185,7 +8692,6 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         d.date_of_birth,
         d.season_engine_rental,
         re.entry_id,
-        re.race_entry_id,
         re.engine,
         re.team_code,
         d.transponder_number,
@@ -8203,11 +8709,8 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         re.entry_status,
         re.payment_status,
         re.payment_reference,
-        re.entry_fee,
+        re.total_amount as entry_fee,
         re.amount_paid,
-        re.transponder_selection,
-        re.tyres_ordered,
-        re.wets_ordered,
         re.ticket_engine_ref,
         re.ticket_tyres_ref,
         re.ticket_transponder_ref,
@@ -8229,7 +8732,7 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
       LEFT JOIN contacts c ON d.driver_id = c.driver_id
       LEFT JOIN medical_consent mc ON d.driver_id = mc.driver_id
       WHERE re.event_id = $1
-      AND re.entry_status IN ('confirmed', 'pending')
+      AND re.entry_status IN ('confirmed', 'pending', 'pending_payment')
       ORDER BY d.class, d.first_name, d.last_name
     `, [event.event_id]);
 
@@ -8241,14 +8744,13 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
       const headers = [
         'Driver ID', 'First Name', 'Last Name', 'Driver Name', 'Email', 'Phone', 
         'Class', 'Race Class', 'DOB', 'Nationality', 'Championship',
-        'License Number', 'MSA License', 'Transponder Number', 'Transponder Selection',
+        'License Number', 'MSA License', 'Transponder Number',
         'Kart Brand', 'Team Name', 'Team Code', 'Medical Conditions',
         'Race Number', 'Entry Race Number',
         'Event Name', 'Event Date', 'Entry ID', 'Entry Status', 'Payment Status',
         'Entry Fee', 'Amount Paid', 'Payment Reference',
         'Season Engine Rental', 'Engine Rental', 'Engine Serial', 'Engine Assigned At',
         'Transponder Serial', 'Transponder Assigned At',
-        'Tyres Ordered', 'Wets Ordered',
         'Tyre Front Left', 'Tyre Front Right', 'Tyre Rear Left', 'Tyre Rear Right',
         'Fuel Collected',
         'Ticket Engine Ref', 'Ticket Tyres Ref', 'Ticket Transponder Ref', 'Ticket Fuel Ref',
@@ -8269,7 +8771,6 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         d.license_number || '',
         d.license_number || '',
         d.transponder_number || 'REQUIRED',
-        d.transponder_selection || '',
         d.kart_brand || '',
         d.team_name || '',
         d.team_code || '',
@@ -8278,7 +8779,7 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         d.entry_race_number || '',
         d.event_name || '',
         d.event_date ? new Date(d.event_date).toLocaleDateString('en-ZA') : '',
-        d.entry_id || d.race_entry_id || '',
+        d.entry_id || '',
         d.entry_status || '',
         d.payment_status || '',
         d.entry_fee || '',
@@ -8290,8 +8791,6 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
         d.engine_assigned_at ? new Date(d.engine_assigned_at).toLocaleString('en-ZA') : '',
         d.transponder_serial || '',
         d.transponder_assigned_at ? new Date(d.transponder_assigned_at).toLocaleString('en-ZA') : '',
-        d.tyres_ordered ? 'Yes' : 'No',
-        d.wets_ordered ? 'Yes' : 'No',
         d.tyre_front_left || '',
         d.tyre_front_right || '',
         d.tyre_rear_left || '',
@@ -8346,9 +8845,7 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
 
       // Timing system format - full 14 column format
       const headers = ['txp short', 'txpLong', 'Class', 'Race#', 'First Name', 'Last Name', 'License#', 'Chassis', 'Engine', 'Tyres', 'Image', 'Team', 'Country', 'Scoring'];
-      const rows = drivers
-        .filter(d => d.transponder_number) // Only drivers with transponders
-        .map(d => {
+      const rows = drivers.map(d => {
           // Determine engine type based on class
           const raceClass = (d.race_class || d.class || '').toUpperCase();
           const isCadet = raceClass.includes('CADET');
@@ -8860,6 +9357,16 @@ app.get('/api/notifications/event/:eventId', async (req, res) => {
   }
 });
 
+// Disable caching for HTML files to ensure fresh content
+app.use((req, res, next) => {
+  if (req.url.endsWith('.html') || req.url === '/') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
+
 // Serve static files from the project root (AFTER all API routes)
 app.use(express.static(path.join(__dirname, '.')));
 
@@ -8885,7 +9392,7 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
     const path = require('path');
     
     // Read the JSON config file
-    const configPath = path.join(__dirname, 'event-documents.json');
+    const configPath = path.join(__dirname, 'data', 'event-documents.json');
     
     if (!fs.existsSync(configPath)) {
       return res.json({ success: true, documents: [], message: 'No documents config file found' });
