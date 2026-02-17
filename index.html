@@ -8501,14 +8501,21 @@ function closeModals() {
     container.innerHTML = '';
     dotsContainer.innerHTML = '';
     
-    // Create slides
+    const BATCH_SIZE = 30; // Load images in batches of 30
+    
+    // Create slides (but don't load all images immediately)
     slideshowPhotos.forEach((photo, index) => {
       // Create slide
       const slide = document.createElement('div');
       slide.className = 'event-slideshow__slide';
       if (index === 0) slide.classList.add('active');
-      slide.style.backgroundImage = `url('${photo.url}')`;
       slide.style.cursor = 'pointer';
+      slide.dataset.imageUrl = photo.url; // Store URL for lazy loading
+      
+      // Load first batch immediately
+      if (index < BATCH_SIZE) {
+        slide.style.backgroundImage = `url('${photo.url}')`;
+      }
       
       // Add click handler to open lightbox
       slide.addEventListener('click', function() {
@@ -8533,6 +8540,22 @@ function closeModals() {
       dotsContainer.appendChild(dot);
     });
     
+    // Load second batch after 2 seconds
+    setTimeout(() => {
+      const slides = document.querySelectorAll('.event-slideshow__slide');
+      for (let i = BATCH_SIZE; i < BATCH_SIZE * 2 && i < slides.length; i++) {
+        slides[i].style.backgroundImage = `url('${slides[i].dataset.imageUrl}')`;
+      }
+    }, 2000);
+    
+    // Load third batch after 5 seconds
+    setTimeout(() => {
+      const slides = document.querySelectorAll('.event-slideshow__slide');
+      for (let i = BATCH_SIZE * 2; i < slides.length; i++) {
+        slides[i].style.backgroundImage = `url('${slides[i].dataset.imageUrl}')`;
+      }
+    }, 5000);
+    
     // Start auto-play
     startSlideshow();
   }
@@ -8550,6 +8573,22 @@ function closeModals() {
     // Add active class to target
     slides[index].classList.add('active');
     dots[index].classList.add('active');
+    
+    // Ensure the target slide's image is loaded (lazy load on demand)
+    if (!slides[index].style.backgroundImage && slides[index].dataset.imageUrl) {
+      slides[index].style.backgroundImage = `url('${slides[index].dataset.imageUrl}')`;
+    }
+    
+    // Preload next and previous slides
+    const nextIndex = (index + 1) % slides.length;
+    const prevIndex = (index - 1 + slides.length) % slides.length;
+    
+    if (!slides[nextIndex].style.backgroundImage && slides[nextIndex].dataset.imageUrl) {
+      slides[nextIndex].style.backgroundImage = `url('${slides[nextIndex].dataset.imageUrl}')`;
+    }
+    if (!slides[prevIndex].style.backgroundImage && slides[prevIndex].dataset.imageUrl) {
+      slides[prevIndex].style.backgroundImage = `url('${slides[prevIndex].dataset.imageUrl}')`;
+    }
     
     currentSlideIndex = index;
   }
