@@ -8501,9 +8501,7 @@ function closeModals() {
     container.innerHTML = '';
     dotsContainer.innerHTML = '';
     
-    const BATCH_SIZE = 30; // Load images in batches of 30
-    
-    // Create slides (but don't load all images immediately)
+    // Create slides with lazy loading - only load images when needed
     slideshowPhotos.forEach((photo, index) => {
       // Create slide
       const slide = document.createElement('div');
@@ -8511,10 +8509,12 @@ function closeModals() {
       if (index === 0) slide.classList.add('active');
       slide.style.cursor = 'pointer';
       slide.dataset.imageUrl = photo.url; // Store URL for lazy loading
+      slide.dataset.loaded = 'false'; // Track if image is loaded
       
-      // Load first batch immediately
-      if (index < BATCH_SIZE) {
+      // Only load the first image immediately
+      if (index === 0) {
         slide.style.backgroundImage = `url('${photo.url}')`;
+        slide.dataset.loaded = 'true';
       }
       
       // Add click handler to open lightbox
@@ -8540,21 +8540,16 @@ function closeModals() {
       dotsContainer.appendChild(dot);
     });
     
-    // Load second batch after 2 seconds
-    setTimeout(() => {
-      const slides = document.querySelectorAll('.event-slideshow__slide');
-      for (let i = BATCH_SIZE; i < BATCH_SIZE * 2 && i < slides.length; i++) {
-        slides[i].style.backgroundImage = `url('${slides[i].dataset.imageUrl}')`;
-      }
-    }, 2000);
-    
-    // Load third batch after 5 seconds
-    setTimeout(() => {
-      const slides = document.querySelectorAll('.event-slideshow__slide');
-      for (let i = BATCH_SIZE * 2; i < slides.length; i++) {
-        slides[i].style.backgroundImage = `url('${slides[i].dataset.imageUrl}')`;
-      }
-    }, 5000);
+    // Preload the next 2 slides after initial load
+    const slides = document.querySelectorAll('.event-slideshow__slide');
+    if (slides.length > 1 && slides[1].dataset.loaded === 'false') {
+      slides[1].style.backgroundImage = `url('${slides[1].dataset.imageUrl}')`;
+      slides[1].dataset.loaded = 'true';
+    }
+    if (slides.length > 2 && slides[2].dataset.loaded === 'false') {
+      slides[2].style.backgroundImage = `url('${slides[2].dataset.imageUrl}')`;
+      slides[2].dataset.loaded = 'true';
+    }
     
     // Start auto-play
     startSlideshow();
@@ -8574,20 +8569,23 @@ function closeModals() {
     slides[index].classList.add('active');
     dots[index].classList.add('active');
     
-    // Ensure the target slide's image is loaded (lazy load on demand)
-    if (!slides[index].style.backgroundImage && slides[index].dataset.imageUrl) {
+    // Lazy load: ensure the current slide's image is loaded
+    if (slides[index].dataset.loaded === 'false') {
       slides[index].style.backgroundImage = `url('${slides[index].dataset.imageUrl}')`;
+      slides[index].dataset.loaded = 'true';
     }
     
-    // Preload next and previous slides
+    // Preload next and previous slides for smooth transitions
     const nextIndex = (index + 1) % slides.length;
     const prevIndex = (index - 1 + slides.length) % slides.length;
     
-    if (!slides[nextIndex].style.backgroundImage && slides[nextIndex].dataset.imageUrl) {
+    if (slides[nextIndex].dataset.loaded === 'false') {
       slides[nextIndex].style.backgroundImage = `url('${slides[nextIndex].dataset.imageUrl}')`;
+      slides[nextIndex].dataset.loaded = 'true';
     }
-    if (!slides[prevIndex].style.backgroundImage && slides[prevIndex].dataset.imageUrl) {
+    if (slides[prevIndex].dataset.loaded === 'false') {
       slides[prevIndex].style.backgroundImage = `url('${slides[prevIndex].dataset.imageUrl}')`;
+      slides[prevIndex].dataset.loaded = 'true';
     }
     
     currentSlideIndex = index;
