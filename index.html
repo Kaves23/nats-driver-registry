@@ -4316,25 +4316,81 @@ body[data-season="spring"] .info-section-select {
   float: none; /* No floating */
 }
 
-/* Taller on desktop to prevent top/bottom cropping */
-@media (min-width: 769px) {
+/* Mobile: taller strip (stacked above lockup) */
+@media (max-width: 768px) {
   .event-slideshow {
-    height: 600px;
+    height: 420px;
+  }
+  body[data-season="northern"] {
+    flex-direction: column;
+  }
+  body[data-season="northern"] .lockup {
+    clear: both;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
-/* Ensure body uses column layout when slideshow is present */
-body[data-season="northern"] {
-  flex-direction: column;
-}
+/* -------------------------------------------------------
+   DESKTOP: Northern Regions — full-viewport background slideshow
+   The slideshow is fixed behind the page; the lockup sits
+   centered on top with a frosted-glass panel.
+------------------------------------------------------- */
+@media (min-width: 769px) {
+  body[data-season="northern"] .event-slideshow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    margin: 0;
+    max-width: 100vw;
+    border-radius: 0;
+    box-shadow: none;
+  }
 
-/* Slideshow visibility controlled by JavaScript (only for Feb 14 race) */
+  /* Richer overlay so text pops over busy race photos */
+  body[data-season="northern"] .event-slideshow .event-slideshow__overlay {
+    background: linear-gradient(
+      160deg,
+      rgba(0, 0, 0, 0.65) 0%,
+      rgba(0, 0, 0, 0.30) 55%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+  }
 
-/* Ensure lockup doesn't float beside slideshow */
-body[data-season="northern"] .lockup {
-  clear: both;
-  margin-left: auto;
-  margin-right: auto;
+  /* Caption too noisy over the whole page — hide it in this mode */
+  body[data-season="northern"] .event-slideshow .event-slideshow__caption {
+    display: none;
+  }
+
+  /* Nav arrows: push to screen edges and lift above lockup */
+  body[data-season="northern"] .event-slideshow__arrow {
+    z-index: 20;
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  /* Lockup: frosted-glass card floating in the centre, blue tinge */
+  body[data-season="northern"] .lockup {
+    position: relative;
+    z-index: 10;
+    background: rgba(10, 36, 99, 0.52);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(96, 165, 250, 0.22);
+    border-radius: 18px;
+    padding: 3rem 4rem;
+    box-shadow: 0 12px 48px rgba(0, 10, 60, 0.60), 0 0 0 1px rgba(59, 130, 246, 0.12);
+    margin: 0 auto;
+  }
+
+  /* Photo count badge — bottom-right corner */
+  body[data-season="northern"] .slideshow-photo-badge {
+    display: flex;
+  }
 }
 
 @keyframes slideshow-reveal {
@@ -4441,6 +4497,39 @@ body[data-season="northern"] .lockup {
 .event-slideshow__dot:hover {
   background: rgba(255, 255, 255, 0.6);
   transform: scale(1.2);
+}
+
+/* Photo count badge — desktop only, bottom-right */
+.slideshow-photo-badge {
+  display: none; /* shown by desktop northern media query */
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 20;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 40px;
+  padding: 8px 18px 8px 14px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  user-select: none;
+}
+.slideshow-photo-badge:hover {
+  background: rgba(0, 0, 0, 0.75);
+  transform: translateY(-2px);
+}
+.slideshow-photo-badge__icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .event-slideshow__dot.active {
@@ -4693,6 +4782,12 @@ body[data-season="northern"] .lockup {
     <div class="event-slideshow__dots" id="slideshowDots">
       <!-- Dots will be dynamically generated -->
     </div>
+  </div>
+  
+  <!-- Photo count badge (desktop Northern Regions only) -->
+  <div class="slideshow-photo-badge" id="slideshowPhotoBadge" onclick="openLightbox(0)" title="Browse all race photos">
+    <span class="slideshow-photo-badge__icon">📷</span>
+    <span id="slideshowPhotoCount">93 PHOTOS · CLICK TO BROWSE</span>
   </div>
   
   <!-- FULLSCREEN LIGHTBOX FOR SLIDESHOW -->
@@ -7025,7 +7120,7 @@ the paddock quickly and consistently.
       return upcoming.length > 0 ? upcoming[0] : allRaces[0];
     }
 
-    let currentIndex = 0;
+    let currentIndex = getNextRace().pageIndex;
 
     const body            = document.body;
     const kickerText      = document.getElementById('kickerText');
@@ -7191,11 +7286,14 @@ the paddock quickly and consistently.
 
       // Show slideshow only for Feb 14 race (index 0)
       const slideshow = document.getElementById('eventSlideshow');
+      const photoBadge = document.getElementById('slideshowPhotoBadge');
       if (slideshow) {
         if (index === 0) {
           slideshow.style.display = 'block';
+          if (photoBadge) photoBadge.style.display = '';
         } else {
           slideshow.style.display = 'none';
+          if (photoBadge) photoBadge.style.display = 'none';
         }
       }
 
@@ -8489,13 +8587,18 @@ function closeModals() {
   
   let currentSlideIndex = 0;
   let slideshowInterval = null;
-  const SLIDESHOW_DURATION = 5000; // 5 seconds per slide
+  const SLIDESHOW_DURATION = 5000;      // 5 seconds per slide (steady pace)
+  const SLIDESHOW_FIRST_DELAY = 1500;  // first transition fires after 1.5s
   
   function initSlideshow() {
     const container = document.querySelector('.event-slideshow__container');
     const dotsContainer = document.getElementById('slideshowDots');
     
     if (!container || slideshowPhotos.length === 0) return;
+
+    // Update photo count badge
+    const badge = document.getElementById('slideshowPhotoCount');
+    if (badge) badge.textContent = `${slideshowPhotos.length} PHOTOS · CLICK TO BROWSE`;
     
     // Clear existing content
     container.innerHTML = '';
@@ -8618,13 +8721,18 @@ function closeModals() {
   function startSlideshow() {
     stopSlideshow(); // Clear any existing interval
     if (slideshowPhotos.length > 1) {
-      slideshowInterval = setInterval(nextSlide, SLIDESHOW_DURATION);
+      // Fire the first transition quickly, then settle into the normal pace
+      slideshowInterval = setTimeout(function firstTick() {
+        nextSlide();
+        slideshowInterval = setInterval(nextSlide, SLIDESHOW_DURATION);
+      }, SLIDESHOW_FIRST_DELAY);
     }
   }
   
   function stopSlideshow() {
     if (slideshowInterval) {
-      clearInterval(slideshowInterval);
+      clearTimeout(slideshowInterval);  // covers the initial setTimeout
+      clearInterval(slideshowInterval); // covers the subsequent setInterval
       slideshowInterval = null;
     }
   }

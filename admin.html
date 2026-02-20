@@ -882,6 +882,7 @@
       <button class="tab-btn" onclick="switchTab('discountCodes')" data-tab="discountCodes">Discount Codes</button>
       <button class="tab-btn" onclick="switchTab('manualPayments')" data-tab="manualPayments">💳 Manual Payments</button>
       <a href="/clerk.html" target="_blank" class="tab-btn" style="margin-left: auto; color: #dc2626; font-weight: 600;">Race Control →</a>
+      <a href="/engine-management.html" target="_blank" class="tab-btn" style="color: #f97316; font-weight: 600;">⚙ Engine Mgmt →</a>
     </div>
 
     <!-- Drivers Tab -->
@@ -1120,36 +1121,70 @@
 
     <!-- Audit Trail Tab -->
     <div id="auditTab" class="admin-content" style="display: none;">
-      <div class="filters-bar">
-        <input type="text" id="auditSearchDriver" placeholder="Search driver...">
+      <div class="filters-bar" style="flex-wrap: wrap; gap: 8px;">
+        <input type="text" id="auditSearchDriver" placeholder="Search driver / email..." style="min-width:160px;">
+        <select id="auditSourceFilter">
+          <option value="all">All Sources</option>
+          <option value="audit">Driver Events</option>
+          <option value="equipment">Equipment Scans</option>
+        </select>
         <select id="auditActionFilter">
           <option value="">All Actions</option>
-          <option value="RACE_ENTRY_REGISTERED">Race Entry Registered</option>
-          <option value="RACE_ENTRY_CANCELLED">Race Entry Cancelled</option>
-          <option value="RACE_ENTRY_UPDATED">Race Entry Updated</option>
-          <option value="PASSWORD_SET">Password Set</option>
-          <option value="DRIVER_UPDATED">Driver Updated</option>
+          <optgroup label="Driver">
+            <option value="DRIVER_REGISTERED">Driver Registered</option>
+            <option value="DRIVER_UPDATED">Driver Updated</option>
+            <option value="DRIVER_DELETED">Driver Deleted</option>
+            <option value="DRIVER_RESTORED">Driver Restored</option>
+          </optgroup>
+          <optgroup label="Auth">
+            <option value="PASSWORD_SET">Password Set</option>
+            <option value="PASSWORD_RESET">Password Reset</option>
+            <option value="PASSWORD_RESET_SENT">Password Reset Email Sent</option>
+          </optgroup>
+          <optgroup label="Race Entry">
+            <option value="RACE_ENTRY_REGISTERED">Race Entry Registered</option>
+            <option value="RACE_ENTRY_UPDATED">Race Entry Updated</option>
+            <option value="RACE_ENTRY_CANCELLED">Race Entry Cancelled</option>
+            <option value="RACE_ENTRY_CONFIRMED">Race Entry Confirmed</option>
+            <option value="RACE_ENTRY_PAYMENT_COMPLETED">Payment Completed</option>
+          </optgroup>
+          <optgroup label="Equipment Scans">
+            <option value="ASSIGN_ENGINE">Assign Engine</option>
+            <option value="RETURN_ENGINE">Return Engine</option>
+            <option value="ASSIGN_TRANSPONDER">Assign Transponder</option>
+            <option value="ASSIGN_TYRES">Assign Tyres</option>
+            <option value="FUEL_COLLECTED">Fuel Collected</option>
+            <option value="TITAN_AUTH">Titan Authenticate</option>
+            <option value="REPLACEMENT_ENGINE">Replacement Engine</option>
+            <option value="ENGINE_ISSUE">Engine Issue Reported</option>
+          </optgroup>
         </select>
-        <button class="search-btn" onclick="loadAuditTrail()">Search</button>
-        <button class="search-btn" onclick="exportAuditCSV()" style="background: #4caf50;">Export CSV</button>
+        <input type="date" id="auditDateFrom" title="From date" style="min-width:130px;">
+        <input type="date" id="auditDateTo" title="To date" style="min-width:130px;">
+        <button class="search-btn" onclick="loadAuditTrail()">&#128269; Search</button>
+        <button class="search-btn" onclick="clearAuditFilters()" style="background:#64748b;">Clear</button>
+        <button class="search-btn" onclick="exportAuditCSV()" style="background:#4caf50;">&#8595; Export CSV</button>
       </div>
+      <div id="auditSummary" style="padding:6px 0 2px; font-size:12px; color:#94a3b8;"></div>
 
       <div class="table-wrapper">
         <table>
           <thead>
             <tr>
               <th>Timestamp</th>
+              <th>Source</th>
               <th>Action</th>
               <th>Driver</th>
               <th>Email</th>
-              <th>Field</th>
+              <th>Detail</th>
               <th>Old Value</th>
               <th>New Value</th>
-              <th>IP Address</th>
+              <th>Extra</th>
+              <th>IP / Result</th>
             </tr>
           </thead>
           <tbody id="auditTable">
-            <tr><td colspan="8" class="loading">Loading audit trail...</td></tr>
+            <tr><td colspan="10" class="loading">Loading audit trail...</td></tr>
           </tbody>
         </table>
       </div>
@@ -2078,57 +2113,108 @@
   </div>
 
   <script>
-    const ADMIN_PASSWORD = 'natsadmin2026';
     let currentDriver = null;
     let allDrivers = [];
     let advancedView = false;
+    let adminToken = sessionStorage.getItem('adminToken') || null;
 
-    function adminLogin() {
+    // Helper: get admin auth headers for all fetch calls
+    function adminHeaders(extra = {}) {
+      return { 'Content-Type': 'application/json', 'x-admin-token': adminToken || '', ...extra };
+    }
+
+    // =========================================================
+    // Global fetch interceptor — automatically injects admin
+    // token into every /api/ request from this page
+    // =========================================================
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = function(url, options = {}) {
+      if (typeof url === 'string' && url.startsWith('/api/') && adminToken) {
+        options = { ...options, headers: { 'x-admin-token': adminToken, ...(options.headers || {}) } };
+      }
+      return _origFetch(url, options);
+    };
+
+    async function adminLogin() {
       const pwEl = document.getElementById('adminPassword');
-      if (!pwEl) {
-        console.error('adminPassword element not found');
+      const errorMsg = document.getElementById('errorMessage');
+      if (!pwEl) return;
+
+      const password = pwEl.value;
+      if (!password) {
+        if (errorMsg) { errorMsg.textContent = 'Please enter a password'; errorMsg.style.display = 'block'; }
         return;
       }
-      
-      const password = pwEl.value;
-      if (password === ADMIN_PASSWORD) {
-        const loginWrapper = document.getElementById('loginWrapper');
-        const adminWrapper = document.getElementById('adminWrapper');
-      if (loginWrapper) loginWrapper.style.display = 'none';
-        if (adminWrapper) adminWrapper.style.display = 'block';
-        // Clear search fields and load all drivers
-        document.getElementById('searchEmail').value = '';
-        document.getElementById('searchName').value = '';
-        document.getElementById('filterStatus').value = '';
-        document.getElementById('filterPaid').value = '';
-        loadDrivers();
-        loadAdminMSAEventDropdown();
-        
-        // Initialize tab indicator position
-        setTimeout(() => {
-          const activeTab = document.querySelector('.tab-btn.active');
-          if (activeTab) updateTabIndicator(activeTab);
-        }, 50);
-      } else {
-        const errorMsg = document.getElementById('errorMessage');
-        if (errorMsg) {
-          errorMsg.textContent = 'Invalid password';
-          errorMsg.style.display = 'block';
+
+      try {
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+
+        if (data.success && data.token) {
+          adminToken = data.token;
+          sessionStorage.setItem('adminToken', adminToken);
+          
+          const loginWrapper = document.getElementById('loginWrapper');
+          const adminWrapper = document.getElementById('adminWrapper');
+          if (loginWrapper) loginWrapper.style.display = 'none';
+          if (adminWrapper) adminWrapper.style.display = 'block';
+          // Clear search fields and load all drivers
+          document.getElementById('searchEmail').value = '';
+          document.getElementById('searchName').value = '';
+          document.getElementById('filterStatus').value = '';
+          document.getElementById('filterPaid').value = '';
+          loadDrivers();
+          loadAdminMSAEventDropdown();
+          
+          // Initialize tab indicator position
+          setTimeout(() => {
+            const activeTab = document.querySelector('.tab-btn.active');
+            if (activeTab) updateTabIndicator(activeTab);
+          }, 50);
+        } else {
+          if (errorMsg) { errorMsg.textContent = data.error || 'Invalid password'; errorMsg.style.display = 'block'; }
+          if (pwEl) pwEl.value = '';
         }
+      } catch (err) {
+        if (errorMsg) { errorMsg.textContent = 'Login failed - server unreachable'; errorMsg.style.display = 'block'; }
       }
     }
 
     // Add Enter key handler for password input
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       const pwEl = document.getElementById('adminPassword');
       if (pwEl) {
         pwEl.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') {
-            adminLogin();
-          }
+          if (e.key === 'Enter') adminLogin();
         });
       }
-      
+
+      // Auto-restore session from sessionStorage on page reload
+      if (adminToken) {
+        try {
+          const resp = await fetch('/api/admin/verify', { headers: { 'x-admin-token': adminToken } });
+          const d = await resp.json();
+          if (d.valid) {
+            const loginWrapper = document.getElementById('loginWrapper');
+            const adminWrapper = document.getElementById('adminWrapper');
+            if (loginWrapper) loginWrapper.style.display = 'none';
+            if (adminWrapper) adminWrapper.style.display = 'block';
+            loadDrivers();
+            loadAdminMSAEventDropdown();
+          } else {
+            sessionStorage.removeItem('adminToken');
+            adminToken = null;
+          }
+        } catch(e) {
+          sessionStorage.removeItem('adminToken');
+          adminToken = null;
+        }
+      }
+
       // Update tab indicator on window resize
       window.addEventListener('resize', () => {
         const activeTab = document.querySelector('.tab-btn.active');
@@ -2136,12 +2222,16 @@
       });
     });
 
-    function adminLogout() {
+    async function adminLogout() {
+      if (adminToken) {
+        try { await fetch('/api/admin/logout', { method: 'POST', headers: adminHeaders() }); } catch(e) {}
+      }
+      adminToken = null;
+      sessionStorage.removeItem('adminToken');
       const loginWrapper = document.getElementById('loginWrapper');
       const adminWrapper = document.getElementById('adminWrapper');
       const pwEl = document.getElementById('adminPassword');
       const errorMsg = document.getElementById('errorMessage');
-      
       if (loginWrapper) loginWrapper.style.display = 'flex';
       if (adminWrapper) adminWrapper.style.display = 'none';
       if (pwEl) pwEl.value = '';
@@ -4077,15 +4167,31 @@
 
     // ============= AUDIT TRAIL FUNCTIONS =============
 
+    function clearAuditFilters() {
+      document.getElementById('auditSearchDriver').value = '';
+      document.getElementById('auditSourceFilter').value = 'all';
+      document.getElementById('auditActionFilter').value = '';
+      document.getElementById('auditDateFrom').value = '';
+      document.getElementById('auditDateTo').value = '';
+      loadAuditTrail();
+    }
+
     async function loadAuditTrail() {
       try {
-        const driver = document.getElementById('auditSearchDriver').value.trim();
-        const action = document.getElementById('auditActionFilter').value;
+        const driver    = document.getElementById('auditSearchDriver').value.trim();
+        const action    = document.getElementById('auditActionFilter').value;
+        const source    = document.getElementById('auditSourceFilter').value;
+        const date_from = document.getElementById('auditDateFrom').value;
+        const date_to   = document.getElementById('auditDateTo').value;
+
+        const table = document.getElementById('auditTable');
+        if (table) table.innerHTML = '<tr><td colspan="10" class="loading">Loading...</td></tr>';
+        document.getElementById('auditSummary').textContent = '';
 
         const response = await fetch('/api/getAuditLog', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ driver, action, limit: 1000 })
+          body: JSON.stringify({ driver, action, source, date_from, date_to, limit: 500 })
         });
 
         const result = await response.json();
@@ -4093,49 +4199,88 @@
           throw new Error(result.error?.message || 'Failed to load audit trail');
         }
 
-        displayAuditTrail(result.data.logs || []);
+        const logs = result.data.logs || [];
+        displayAuditTrail(logs);
       } catch (err) {
         console.error('Error loading audit trail:', err);
         showToast(err.message, 'error');
         const table = document.getElementById('auditTable');
-        if (table) {
-          table.innerHTML = `<tr><td colspan="8" class="loading">Error: ${err.message}</td></tr>`;
-        }
+        if (table) table.innerHTML = `<tr><td colspan="10" class="loading">Error: ${err.message}</td></tr>`;
       }
     }
 
+    function auditActionBadge(action, source) {
+      if (!action) return '<span style="color:#64748b">—</span>';
+      let color = '#64748b', bg = 'rgba(100,116,139,0.15)';
+      const a = action.toUpperCase();
+      if (source === 'equipment') {
+        if (a.includes('ENGINE'))      { color='#f97316'; bg='rgba(249,115,22,0.15)'; }
+        else if (a.includes('TYRES') || a.includes('TYRE')) { color='#a855f7'; bg='rgba(168,85,247,0.15)'; }
+        else if (a.includes('TRANSPONDER')) { color='#06b6d4'; bg='rgba(6,182,212,0.15)'; }
+        else if (a.includes('FUEL'))   { color='#eab308'; bg='rgba(234,179,8,0.15)'; }
+        else if (a.includes('TITAN'))  { color='#14b8a6'; bg='rgba(20,184,166,0.15)'; }
+        else                           { color='#f97316'; bg='rgba(249,115,22,0.15)'; }
+      } else {
+        if (a.includes('REGISTERED') || a.includes('CREATED')) { color='#22c55e'; bg='rgba(34,197,94,0.15)'; }
+        else if (a.includes('PAYMENT') || a.includes('CONFIRMED')) { color='#3b82f6'; bg='rgba(59,130,246,0.15)'; }
+        else if (a.includes('CANCELLED') || a.includes('DELETED'))  { color='#ef4444'; bg='rgba(239,68,68,0.15)'; }
+        else if (a.includes('PASSWORD') || a.includes('AUTH'))       { color='#eab308'; bg='rgba(234,179,8,0.15)'; }
+        else if (a.includes('UPDATED') || a.includes('RESTORED'))    { color='#a855f7'; bg='rgba(168,85,247,0.15)'; }
+      }
+      const label = action.replace(/_/g,' ');
+      return `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap;color:${color};background:${bg};border:1px solid ${color}40;">${label}</span>`;
+    }
+
     function displayAuditTrail(logs) {
-      const table = document.getElementById('auditTable');
+      const table   = document.getElementById('auditTable');
+      const summary = document.getElementById('auditSummary');
       if (!table) return;
 
       if (!logs || logs.length === 0) {
-        table.innerHTML = '<tr><td colspan="8" class="loading">No audit records found</td></tr>';
+        table.innerHTML = '<tr><td colspan="10" class="loading">No audit records found</td></tr>';
+        if (summary) summary.textContent = 'No records found';
         return;
+      }
+
+      if (summary) {
+        const auditCount = logs.filter(l => l.source === 'audit').length;
+        const equipCount = logs.filter(l => l.source === 'equipment').length;
+        summary.textContent = `Showing ${logs.length} records — ${auditCount} driver events, ${equipCount} equipment scans${logs.length === 500 ? ' (limit 500 — use filters to narrow)' : ''}`;
       }
 
       let html = '';
       logs.forEach(log => {
-        const timestamp = log.created_at ? new Date(log.created_at).toLocaleString('en-ZA') : 'N/A';
-        const action = log.action || 'N/A';
-        const driverName = log.driver_first_name && log.driver_last_name 
-          ? `${log.driver_first_name} ${log.driver_last_name}` 
-          : 'System';
-        const email = log.driver_email || '-';
-        const field = log.field_name || '-';
-        const oldValue = log.old_value || '-';
-        const newValue = log.new_value || '-';
-        const ip = log.ip_address || '-';
+        const ts       = log.event_time ? new Date(log.event_time).toLocaleString('en-ZA') : 'N/A';
+        const isEquip  = log.source === 'equipment';
+        const srcBadge = isEquip
+          ? '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(249,115,22,0.12);color:#f97316;border:1px solid #f9731630;">⚙ equip</span>'
+          : '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid #3b82f630;">👤 driver</span>';
+        const driverName = [log.driver_first_name, log.driver_last_name].filter(Boolean).join(' ') || 'System';
+        const email    = log.driver_email || '—';
+        const detail   = log.detail || '—';
+        const oldVal   = log.old_value || '—';
+        const newVal   = log.new_value || '—';
+        const extra    = isEquip
+          ? [log.equipment_serial ? `SN: ${log.equipment_serial}` : '', log.race_class || ''].filter(Boolean).join(' · ') || '—'
+          : '—';
+        const ipResult = isEquip
+          ? (log.action_result
+              ? `<span style="color:${log.action_result==='success'?'#22c55e':'#ef4444'}">${log.action_result}</span>${log.scanned_by ? '<br><span style="font-size:10px;color:#94a3b8">' + log.scanned_by + '</span>' : ''}`
+              : '—')
+          : (log.ip_address || '—');
 
         html += `
           <tr>
-            <td>${timestamp}</td>
-            <td><span class="action-badge">${action}</span></td>
+            <td style="font-size:11px;white-space:nowrap">${ts}</td>
+            <td style="text-align:center">${srcBadge}</td>
+            <td>${auditActionBadge(log.action, log.source)}</td>
             <td>${driverName}</td>
-            <td>${email}</td>
-            <td>${field}</td>
-            <td style="color: #ff9999;">${oldValue}</td>
-            <td style="color: #99ff99;">${newValue}</td>
-            <td style="font-size: 10px;">${ip}</td>
+            <td style="font-size:11px">${email}</td>
+            <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detail}">${detail}</td>
+            <td style="color:#ff9999;font-size:11px">${oldVal}</td>
+            <td style="color:#99ff99;font-size:11px">${newVal}</td>
+            <td style="font-size:11px;color:#94a3b8">${extra}</td>
+            <td style="font-size:10px">${ipResult}</td>
           </tr>
         `;
       });
@@ -4145,13 +4290,16 @@
 
     async function exportAuditCSV() {
       try {
-        const driver = document.getElementById('auditSearchDriver').value.trim();
-        const action = document.getElementById('auditActionFilter').value;
+        const driver    = document.getElementById('auditSearchDriver').value.trim();
+        const action    = document.getElementById('auditActionFilter').value;
+        const source    = document.getElementById('auditSourceFilter').value;
+        const date_from = document.getElementById('auditDateFrom').value;
+        const date_to   = document.getElementById('auditDateTo').value;
 
         const response = await fetch('/api/exportAuditCSV', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ driver, action })
+          body: JSON.stringify({ driver, action, source, date_from, date_to })
         });
 
         if (!response.ok) throw new Error('Export failed');
@@ -4160,15 +4308,12 @@
         const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
         link.setAttribute('href', url);
         link.setAttribute('download', `audit-trail-${new Date().toISOString().slice(0,10)}.csv`);
         link.style.visibility = 'hidden';
-        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
         showToast('Audit trail exported successfully!', 'success');
       } catch (err) {
         console.error('Export error:', err);

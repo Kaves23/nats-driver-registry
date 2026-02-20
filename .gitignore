@@ -18,6 +18,9 @@ server_log.txt
 # Backups folder with potentially sensitive data
 backups/
 
+# Large photo folders - served locally only
+images/NR1/
+
 # Test scripts with hardcoded credentials
 check_drivers_email.js
 check_login_user.js

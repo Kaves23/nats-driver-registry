@@ -800,6 +800,12 @@
             <button class="btn btn-primary" onclick="showTyreVerification()">
                 Verify Tyres
             </button>
+            <button class="btn" style="background:#7c3aed;color:#fff;" onclick="showManualLoan()">
+                ⚡ Manual / Practice Loan
+            </button>
+            <button class="btn" style="background:#0f766e;color:#fff;" onclick="showActiveLoans()">
+                📋 Active Loans
+            </button>
         </div>
 
         <!-- Ticket Scan Section -->
@@ -1120,6 +1126,101 @@
             </div>
         </div>
     </div>
+
+        <!-- Manual / Practice Loan Section -->
+        <div id="manualLoanSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom:6px;">&#x26A1; Manual / Practice Loan</h2>
+                <p style="color:#9ca3af;font-size:13px;margin-bottom:20px;">Assign an engine to a driver outside of an event</p>
+
+                <div class="input-group">
+                    <label>Engine Serial Number *</label>
+                    <div class="input-with-scan">
+                        <input type="text" id="loanEngineSerial" placeholder="Scan or enter serial" style="text-transform:uppercase;">
+                        <button class="scan-btn" onclick="openCamera('loanEngineSerial')" type="button" title="Scan">&#128247;</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Driver Name *</label>
+                    <input type="text" id="loanDriverName" placeholder="Full name of driver">
+                </div>
+
+                <div class="input-group">
+                    <label>Purpose</label>
+                    <select id="loanPurpose" style="width:100%;padding:12px;background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:15px;">
+                        <option value="Practice">Practice</option>
+                        <option value="Test Day">Test Day</option>
+                        <option value="Event">Event</option>
+                        <option value="Hire">Hire</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Date &amp; Time</label>
+                    <input type="datetime-local" id="loanDate" style="width:100%;padding:12px;background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:15px;">
+                </div>
+
+                <div class="input-group">
+                    <label>Notes <span style="color:#6b7280;font-weight:400;">(event, session, condition, etc.)</span></label>
+                    <textarea id="loanNotes" placeholder="e.g. Club practice at Zwartkops, engine was last serviced Jan 2026..." style="width:100%;padding:12px;background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:14px;min-height:80px;"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label>Assigned By</label>
+                    <input type="text" id="loanAssignedBy" placeholder="Name of person issuing engine">
+                </div>
+
+                <button class="btn btn-success" onclick="submitLoan()">
+                    &#x2714; Issue Engine
+                </button>
+                <button class="btn btn-secondary" onclick="backToMenu()">
+                    &#x2190; Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Active Loans Section -->
+        <div id="activeLoansSection" class="hidden">
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 style="margin:0;">&#x1F4CB; Active Loans</h2>
+                    <button class="btn btn-secondary" onclick="loadActiveLoans()" style="padding:8px 14px;font-size:13px;">&#x21BB; Refresh</button>
+                </div>
+                <div id="activeLoansContainer">
+                    <p style="color:#9ca3af;text-align:center;padding:20px;">Loading...</p>
+                </div>
+                <button class="btn btn-secondary" onclick="backToMenu()" style="margin-top:12px;">
+                    &#x2190; Back to Menu
+                </button>
+            </div>
+        </div>
+
+        <!-- Return Loan Modal -->
+        <div id="returnLoanSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom:6px;">&#x2714; Return Engine</h2>
+                <div id="returnLoanEngineInfo" style="background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:14px;margin-bottom:18px;"></div>
+
+                <div class="input-group">
+                    <label>Received Back By *</label>
+                    <input type="text" id="returnLoanReturnedTo" placeholder="Your name / official receiving engine">
+                </div>
+
+                <div class="input-group">
+                    <label>Return Notes <span style="color:#6b7280;font-weight:400;">(optional)</span></label>
+                    <textarea id="returnLoanNotes" placeholder="Condition, damage, anything to note..." style="width:100%;padding:12px;background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:14px;min-height:70px;"></textarea>
+                </div>
+
+                <button class="btn btn-success" onclick="processLoanReturn()">
+                    &#x2714; Confirm Return &amp; Sign Off
+                </button>
+                <button class="btn btn-secondary" onclick="showActiveLoans()">
+                    &#x2190; Back to Loans
+                </button>
+            </div>
+        </div>
 
     <script>
         let currentDriver = null;
@@ -1473,6 +1574,9 @@
             document.getElementById('tyreVerificationSection').classList.add('hidden');
             document.getElementById('historyResults').classList.add('hidden');
             document.getElementById('tyreVerifyDriver').classList.add('hidden');
+            document.getElementById('manualLoanSection').classList.add('hidden');
+            document.getElementById('activeLoansSection').classList.add('hidden');
+            document.getElementById('returnLoanSection').classList.add('hidden');
             
             // Hide all assignment cards
             document.getElementById('engineAssignmentCard').classList.add('hidden');
@@ -2028,8 +2132,158 @@
             }
         }
 
+        // ============================================================
+        // MANUAL LOAN FUNCTIONS
+        // ============================================================
+
+        let currentLoanId = null;
+
+        function showManualLoan() {
+            hideAllSections();
+            document.getElementById('manualLoanSection').classList.remove('hidden');
+            // Reset datetime to now each time the form opens
+            const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('loanDate').value = nowLocal;
+            document.getElementById('loanEngineSerial').value = '';
+            document.getElementById('loanDriverName').value = '';
+            document.getElementById('loanNotes').value = '';
+            document.getElementById('loanAssignedBy').value = '';
+            document.getElementById('loanPurpose').value = 'Practice';
+            setTimeout(() => document.getElementById('loanEngineSerial').focus(), 100);
+        }
+
+        async function submitLoan() {
+            const engineSerial = document.getElementById('loanEngineSerial').value.trim().toUpperCase();
+            const driverName   = document.getElementById('loanDriverName').value.trim();
+            const purpose      = document.getElementById('loanPurpose').value;
+            const loanDate     = document.getElementById('loanDate').value;
+            const notes        = document.getElementById('loanNotes').value.trim();
+            const assignedBy   = document.getElementById('loanAssignedBy').value.trim();
+
+            if (!engineSerial) { showError('Engine serial number is required'); return; }
+            if (!driverName)   { showError('Driver name is required'); return; }
+
+            try {
+                const response = await fetch('/api/loanEngine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ engineSerial, driverName, purpose, loanDate, notes, assignedBy })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showSuccess(`Engine ${engineSerial} issued to ${driverName} ✓`);
+                    setTimeout(() => backToMenu(), 2200);
+                } else {
+                    showError(data.error || 'Failed to issue engine');
+                }
+            } catch (err) {
+                showError('Network error: ' + err.message);
+            }
+        }
+
+        async function showActiveLoans() {
+            hideAllSections();
+            document.getElementById('activeLoansSection').classList.remove('hidden');
+            await loadActiveLoans();
+        }
+
+        async function loadActiveLoans() {
+            const container = document.getElementById('activeLoansContainer');
+            container.innerHTML = '<p style="color:#9ca3af;text-align:center;padding:20px;">Loading...</p>';
+            try {
+                const response = await fetch('/api/activeLoans');
+                const data = await response.json();
+
+                if (!data.success) throw new Error(data.error || 'Failed to load');
+
+                if (!data.loans || data.loans.length === 0) {
+                    container.innerHTML = '<p style="color:#22c55e;text-align:center;padding:24px;font-size:15px;">&#x2714; No engines currently out on loan</p>';
+                    return;
+                }
+
+                let html = '';
+                data.loans.forEach(loan => {
+                    const dt = loan.loan_date ? new Date(loan.loan_date).toLocaleString('en-ZA', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+                    const purposeColor = { 'Practice':'#f97316','Test Day':'#eab308','Event':'#3b82f6','Hire':'#a855f7','Other':'#6b7280' }[loan.purpose] || '#6b7280';
+                    html += `
+                        <div style="background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:18px;font-weight:700;letter-spacing:0.05em;color:#fff;margin-bottom:3px;">${escapeHtml(loan.engine_serial)}</div>
+                                    <div style="font-size:15px;color:#e5e7eb;margin-bottom:4px;">&#128100; ${escapeHtml(loan.driver_name)}</div>
+                                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:4px;">
+                                        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${purposeColor}22;color:${purposeColor};border:1px solid ${purposeColor}44;">${escapeHtml(loan.purpose || 'Practice')}</span>
+                                        <span style="font-size:12px;color:#9ca3af;">${dt}</span>
+                                    </div>
+                                    ${loan.notes ? `<div style="font-size:12px;color:#9ca3af;margin-top:2px;">${escapeHtml(loan.notes)}</div>` : ''}
+                                    ${loan.assigned_by ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;">Issued by: ${escapeHtml(loan.assigned_by)}</div>` : ''}
+                                </div>
+                                <button onclick="showReturnLoan(${loan.loan_id}, '${escapeHtml(loan.engine_serial)}', '${escapeHtml(loan.driver_name)}')"
+                                        style="background:#22c55e;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+                                    &#x2714; Return
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = `<p style="color:#ef4444;text-align:center;padding:20px;">Error: ${escapeHtml(err.message)}</p>`;
+            }
+        }
+
+        function showReturnLoan(loanId, serial, driverName) {
+            currentLoanId = loanId;
+            hideAllSections();
+            document.getElementById('returnLoanSection').classList.remove('hidden');
+            document.getElementById('returnLoanEngineInfo').innerHTML = `
+                <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">Engine: ${escapeHtml(serial)}</div>
+                <div style="font-size:14px;color:#9ca3af;">Currently with: <span style="color:#e5e7eb;">${escapeHtml(driverName)}</span></div>
+            `;
+            document.getElementById('returnLoanReturnedTo').value = '';
+            document.getElementById('returnLoanNotes').value = '';
+            setTimeout(() => document.getElementById('returnLoanReturnedTo').focus(), 100);
+        }
+
+        async function processLoanReturn() {
+            if (!currentLoanId) { showError('No loan selected'); return; }
+            const returnedTo  = document.getElementById('returnLoanReturnedTo').value.trim();
+            const returnNotes = document.getElementById('returnLoanNotes').value.trim();
+
+            if (!returnedTo) { showError('Please enter the name of the person receiving the engine back'); return; }
+
+            try {
+                const response = await fetch('/api/returnLoanEngine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ loanId: currentLoanId, returnedTo, returnNotes })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showSuccess(`Engine ${data.engine_serial} signed back in from ${data.driver_name} ✓`);
+                    currentLoanId = null;
+                    setTimeout(() => showActiveLoans(), 2000);
+                } else {
+                    showError(data.error || 'Failed to return engine');
+                }
+            } catch (err) {
+                showError('Network error: ' + err.message);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
         // Allow Enter key to submit
         document.addEventListener('DOMContentLoaded', () => {
+            // Default datetime-local to now for loan form
+            const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            const loanDateEl = document.getElementById('loanDate');
+            if (loanDateEl) loanDateEl.value = nowLocal;
+
             document.getElementById('ticketBarcode').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') lookupTicket();
             });
@@ -2052,6 +2306,10 @@
             
             document.getElementById('verifyRaceNumber').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') lookupDriverForTyres();
+            });
+
+            document.getElementById('loanEngineSerial').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') document.getElementById('loanDriverName').focus();
             });
         });
     </script>

@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Media Slideshow Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #1a1a1a;
+      font-family: 'Arial', sans-serif;
+      overflow-x: hidden;
+      color: white;
+    }
+
+    /* Configuration Panel */
+    #config-panel {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    #config-panel h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5rem;
+      color: #ff4444;
+    }
+
+    #config-panel p {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #aaa;
+    }
+
+    .config-section {
+      background: #2a2a2a;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .config-section h2 {
+      color: #ff4444;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #ddd;
+    }
+
+    .form-group input[type="number"],
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      background: #1a1a1a;
+      border: 2px solid #444;
+      border-radius: 5px;
+      color: white;
+      font-size: 16px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #ff4444;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    #generate-btn {
+      display: block;
+      width: 100%;
+      max-width: 400px;
+      margin: 30px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #ff4444, #cc0000);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    #generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 68, 68, 0.5);
+    }
+
+    /* Controls below slideshow */
+    .slideshow-mode {
+      background: #1a1a1a;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+
+    .slideshow-mode #config-panel {
+      display: none;
+    }
+
+    #slideshow-wrapper {
+      display: none;
+      max-width: 1920px;
+      margin: 0 auto;
+    }
+
+    .slideshow-mode #slideshow-wrapper {
+      display: block;
+    }
+
+    /* Slideshow styles */
+    #slideshow {
+      position: relative;
+      width: 100%;
+      max-width: 1080px;
+      height: 1080px;
+      background: #000;
+      margin: 0 auto;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    @media (max-width: 1150px) {
+      #slideshow {
+        max-width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+      }
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: opacity 0.6s ease-in-out;
+    }
+
+    .slide.active {
+      opacity: 1;
+    }
+
+    /* Ken Burns effects - UPGRADED with color washes */
+    .effect-zoom-in {
+      animation: zoomInDramatic 3s ease-out forwards;
+      filter: sepia(0.3) contrast(1.1);
+    }
+
+    .effect-zoom-out {
+      animation: zoomOutDramatic 3s ease-out forwards;
+      filter: saturate(1.3) brightness(1.05);
+    }
+
+    .effect-pan-right {
+      animation: panRightSpin 3s ease-out forwards;
+      filter: hue-rotate(10deg) saturate(1.2);
+    }
+
+    .effect-pan-left {
+      animation: panLeftSpin 3s ease-out forwards;
+      filter: hue-rotate(-10deg) saturate(1.2);
+    }
+
+    .effect-pan-up {
+      animation: panUpZoom 3s ease-out forwards;
+      filter: contrast(1.15) brightness(1.05);
+    }
+
+    .effect-pan-down {
+      animation: panDownZoom 3s ease-out forwards;
+      filter: sepia(0.2) saturate(1.2);
+    }
+
+    .effect-rotate-zoom {
+      animation: rotateZoom 3s ease-out forwards;
+      filter: saturate(1.4) contrast(1.05);
+    }
+
+    .effect-glitch {
+      animation: glitchEffect 3s ease-out forwards;
+    }
+
+    .effect-pulse {
+      animation: pulseBeat 3s ease-out forwards;
+      filter: contrast(1.1);
+    }
+
+    .effect-spiral {
+      animation: spiralIn 3s ease-out forwards;
+      filter: hue-rotate(20deg) saturate(1.3);
+    }
+
+    .effect-dramatic-zoom {
+      animation: dramaticZoom 3s ease-out forwards;
+      filter: contrast(1.2) saturate(1.1);
+    }
+
+    .effect-slide-right {
+      animation: slideRight 3s ease-out forwards;
+      filter: sepia(0.15) brightness(1.05);
+    }
+
+    .effect-slide-left {
+      animation: slideLeft 3s ease-out forwards;
+      filter: hue-rotate(-15deg) saturate(1.15);
+    }
+
+    .effect-bounce-zoom {
+      animation: bounceZoom 3s ease-out forwards;
+      filter: saturate(1.25) contrast(1.08);
+    }
+
+    @keyframes zoomInDramatic {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.3); opacity: 1; }
+    }
+
+    @keyframes zoomOutDramatic {
+      0% { transform: scale(1.4); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes panRightSpin {
+      0% { transform: scale(1.2) translateX(-8%) rotate(-1deg); }
+      100% { transform: scale(1.3) translateX(8%) rotate(1deg); }
+    }
+
+    @keyframes panLeftSpin {
+      0% { transform: scale(1.2) translateX(8%) rotate(1deg); }
+      100% { transform: scale(1.3) translateX(-8%) rotate(-1deg); }
+    }
+
+    @keyframes panUpZoom {
+      0% { transform: scale(1.1) translateY(5%); }
+      100% { transform: scale(1.35) translateY(-5%); }
+    }
+
+    @keyframes panDownZoom {
+      0% { transform: scale(1.1) translateY(-5%); }
+      100% { transform: scale(1.35) translateY(5%); }
+    }
+
+    @keyframes rotateZoom {
+      0% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.4) rotate(3deg); }
+      100% { transform: scale(1.25) rotate(-2deg); }
+    }
+
+    @keyframes glitchEffect {
+      0% { transform: scale(1.2) translate(0, 0); filter: hue-rotate(0deg) contrast(1); }
+      10% { transform: scale(1.22) translate(-2px, 2px); filter: hue-rotate(10deg) contrast(1.1); }
+      20% { transform: scale(1.24) translate(2px, -2px); filter: hue-rotate(0deg) contrast(1); }
+      30% { transform: scale(1.26) translate(-1px, -1px); filter: hue-rotate(5deg) contrast(1.05); }
+      40% { transform: scale(1.28) translate(1px, 1px); filter: hue-rotate(0deg) contrast(1); }
+      100% { transform: scale(1.3) translate(0, 0); filter: hue-rotate(0deg) contrast(1); }
+    }
+
+    @keyframes pulseBeat {
+      0% { transform: scale(1); }
+      15% { transform: scale(1.05); }
+      30% { transform: scale(1.1); }
+      45% { transform: scale(1.15); }
+      60% { transform: scale(1.2); }
+      75% { transform: scale(1.25); }
+      100% { transform: scale(1.3); }
+    }
+
+    @keyframes spiralIn {
+      0% { transform: scale(0.8) rotate(-10deg); filter: blur(2px) saturate(0.8); }
+      50% { transform: scale(1.5) rotate(5deg); filter: blur(0px) saturate(1.3); }
+      100% { transform: scale(1.25) rotate(0deg); filter: blur(0px) saturate(1.3); }
+    }
+
+    @keyframes dramaticZoom {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.5); }
+      100% { transform: scale(1.35); }
+    }
+
+    @keyframes slideRight {
+      0% { transform: scale(1.3) translateX(-15%); }
+      100% { transform: scale(1.2) translateX(10%); }
+    }
+
+    @keyframes slideLeft {
+      0% { transform: scale(1.3) translateX(15%); }
+      100% { transform: scale(1.2) translateX(-10%); }
+    }
+
+    @keyframes bounceZoom {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.15); }
+      50% { transform: scale(1.05); }
+      75% { transform: scale(1.3); }
+      100% { transform: scale(1.25); }
+    }
+
+    /* Overlay for text/branding */
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #title {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 4rem;
+      font-weight: bold;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 255, 255, 0.3);
+      opacity: 0;
+      animation: titleDramatic 3s ease-in-out;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+    }
+
+    #branding {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      opacity: 0.9;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 8px 16px;
+      border-radius: 5px;
+    }
+
+    @keyframes titleDramatic {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-5deg); filter: blur(10px); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(2deg); filter: blur(0px); }
+      80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-1deg); filter: blur(0px); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) rotate(5deg); filter: blur(5px); }
+    }
+
+    /* Enhanced flash transitions - smoother */
+    .flash {
+      animation: flashBeat 0.5s ease-in-out;
+    }
+
+    @keyframes flashBeat {
+      0% { opacity: 1; }
+      20% { opacity: 0.7; }
+      40% { opacity: 1; }
+      60% { opacity: 0.8; }
+      80% { opacity: 1; }
+      100% { opacity: 1; }
+    }
+
+    /* Transition overlays */
+    .transition-effect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 5;
+      animation: transitionWipe 0.5s ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes transitionWipe {
+      0% { clip-path: circle(0% at 50% 50%); }
+      100% { clip-path: circle(150% at 50% 50%); opacity: 0; }
+    }
+
+    /* Controls below slideshow */
+    #controls {
+      max-width: 1080px;
+      margin: 30px auto;
+      background: #2a2a2a;
+      color: white;
+      padding: 25px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+      text-align: center;
+    }
+
+    .slideshow-mode #controls {
+      display: block;
+    }
+
+    #controls h3 {
+      margin-bottom: 15px;
+      color: #ff4444;
+    }
+
+    #controls button {
+      background: #ff4444;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    #controls button:hover {
+      background: #ff6666;
+      transform: translateY(-2px);
+    }
+
+    .hide-controls #controls {
+      display: none;
+    }
+
+    #recording-tip {
+      max-width: 1080px;
+      margin: 0 auto 20px;
+      padding: 20px;
+      background: #2a2a2a;
+      border-left: 4px solid #ff4444;
+      border-radius: 5px;
+      color: #ddd;
+      display: none;
+    }
+
+    .slideshow-mode #recording-tip {
+      display: block;
+    }
+
+    #recording-tip h4 {
+      color: #ff4444;
+      margin-bottom: 10px;
+    }
+
+    #recording-tip ol {
+      margin-left: 20px;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      #title {
+        font-size: 2rem;
+      }
+
+      #branding {
+        font-size: 1rem;
+        bottom: 20px;
+        right: 20px;
+      }
+
+      .slideshow-mode {
+        padding: 20px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Configuration Panel -->
+  <div id="config-panel">
+    <h1>🎬 Social Media Slideshow Generator</h1>
+    <p>Create beat-synced 30-second slideshows for your social media</p>
+
+    <div class="config-section">
+      <h2>⚙️ Slideshow Settings</h2>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="bpm-input">🎵 Music BPM (Beats Per Minute)</label>
+          <input type="number" id="bpm-input" value="150" min="60" max="200" />
+        </div>
+        
+        <div class="form-group">
+          <label for="duration-input">⏱️ Duration (seconds)</label>
+          <input type="number" id="duration-input" value="30" min="15" max="60" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title-input">📝 Title Text (will appear at start)</label>
+          <input type="text" id="title-input" value="YOU SHOULD SEE ME IN A CROWN" />
+        </div>
+        
+        <div class="form-group">
+          <label for="branding-input">🏷️ Watermark Text (bottom-right)</label>
+          <input type="text" id="branding-input" value="ROK THE NATS 2026" />
+        </div>
+      </div>
+
+      <p style="text-align: center; margin-top: 20px; color: #aaa;">
+        ✨ 10 random images will be automatically selected from your gallery
+      </p>
+    </div>
+
+    <button id="generate-btn">
+      🎬 Generate Slideshow
+    </button>
+  </div>
+
+  <!-- Slideshow Container -->
+  <div id="slideshow-wrapper">
+    <div id="recording-tip">
+      <h4>📹 Ready to Record!</h4>
+      <ol>
+        <li>Start your screen recording software</li>
+        <li>Frame just the square slideshow area in the middle</li>
+        <li>Press <strong>SPACE</strong> or <strong>▶ Start</strong> button below</li>
+        <li>Play your music at the same time</li>
+        <li>Press <strong>H</strong> to hide controls during recording</li>
+      </ol>
+    </div>
+
+    <div id="slideshow">
+      <div id="overlay">
+        <div id="title"></div>
+        <div id="branding"></div>
+      </div>
+    </div>
+
+    <div id="controls">
+      <h3>Slideshow Controls</h3>
+      <button onclick="startShow()">▶ Start (30s)</button>
+      <button onclick="resetShow()">↻ Reset</button>
+      <button onclick="backToConfig()">← Back to Config</button>
+      <button onclick="toggleControls()">Hide Controls (H)</button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 🎵 AVAILABLE IMAGES FROM S3
+    // ==========================================
+    
+    const AVAILABLE_IMAGES = [
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-1-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-1.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-10.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-11.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-12.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-13.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-14.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-15.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-16.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-17.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-18.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-19.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-2-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-20.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-21.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-22.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-23.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-24.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-25.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-26.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-27.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-28.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-29.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-3-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-3.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-30.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-31.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-32.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-33.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-34.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-35.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-36.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-37.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-38.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-39.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-4-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-4.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-40.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-41.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-42.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-43.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-44.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-45.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-46.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-47.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-48.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-49.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-5-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-5.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-50.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-51.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-52.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-53.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-54.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-55.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-56.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-57.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-58.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-59.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-6-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-6.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-60.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-61.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-62.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-63.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-64.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-65.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-66.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-67.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-68.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-69.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-7-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-7.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-70.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-71.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-72.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-73.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-74.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-75.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-76.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-77.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-78.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-79.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-8-2.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-8.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-80.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-81.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-82.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-83.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-84.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-85.png',
+      'https://s3.z1storage.com/ftw-media/northernregionsround1/NR 1-9.png'
+    ];
+
+    // ==========================================
+    // 🎬 Configuration State
+    // ==========================================
+    
+    let CONFIG = {};
+
+    // ==========================================
+    // 🎲 Auto-select 10 random images
+    // ==========================================
+
+    function getRandomImages(count = 10) {
+      const shuffled = [...AVAILABLE_IMAGES].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+
+    // ==========================================
+    // 🎬 Generate Slideshow
+    // ==========================================
+
+    function generateSlideshow() {
+      // Get config values
+      CONFIG = {
+        bpm: parseInt(document.getElementById('bpm-input').value),
+        duration: parseInt(document.getElementById('duration-input').value),
+        title: document.getElementById('title-input').value,
+        branding: document.getElementById('branding-input').value,
+        images: getRandomImages(10) // Auto-select 10 random images!
+      };
+
+      // Switch to slideshow mode
+      document.body.classList.add('slideshow-mode');
+      initSlideshow();
+    }
+
+    function backToConfig() {
+      stopShow();
+      document.body.classList.remove('slideshow-mode');
+    }
+
+    // ==========================================
+    // 🎬 SLIDESHOW ENGINE - UPGRADED
+    // ==========================================
+
+    const effects = [
+      'effect-zoom-in', 
+      'effect-zoom-out', 
+      'effect-pan-right', 
+      'effect-pan-left', 
+      'effect-pan-up', 
+      'effect-pan-down',
+      'effect-rotate-zoom',
+      'effect-glitch',
+      'effect-pulse',
+      'effect-spiral',
+      'effect-dramatic-zoom',
+      'effect-slide-right',
+      'effect-slide-left',
+      'effect-bounce-zoom'
+    ];
+    let currentSlide = 0;
+    let isPlaying = false;
+    let slideInterval;
+    let beatDuration, slideDuration, transitionDuration;
+
+    function initSlideshow() {
+      const container = document.getElementById('slideshow');
+      
+      // Remove old slides only (keep overlay intact)
+      const oldSlides = container.querySelectorAll('.slide');
+      oldSlides.forEach(slide => slide.remove());
+      
+      // Calculate timing based on BPM
+      beatDuration = 60 / CONFIG.bpm;
+      slideDuration = (CONFIG.duration / CONFIG.images.length) * 1000;
+      transitionDuration = beatDuration * 1000;
+
+      CONFIG.images.forEach((imageUrl, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'slide';
+        slide.style.backgroundImage = `url('${imageUrl}')`;
+        
+        // Random effect for each slide
+        const randomEffect = effects[Math.floor(Math.random() * effects.length)];
+        slide.classList.add(randomEffect);
+        
+        container.appendChild(slide);
+      });
+
+      // Update text overlays
+      document.getElementById('title').textContent = CONFIG.title;
+      document.getElementById('branding').textContent = CONFIG.branding;
+
+      console.log('🎬 Slideshow ready!');
+      console.log(`🎼 BPM: ${CONFIG.bpm}`);
+      console.log(`⏱️ Duration: ${CONFIG.duration}s`);
+      console.log(`🖼️ Images: ${CONFIG.images.length}`);
+      console.log(`⏰ Slide duration: ${(slideDuration / 1000).toFixed(2)}s (${slideDuration}ms)`);
+      console.log(`🎵 Beat duration: ${beatDuration.toFixed(2)}s`);
+    }
+
+    function startShow() {
+      if (isPlaying) {
+        console.warn('⚠️ Already playing, ignoring startShow call');
+        return;
+      }
+      
+      console.log('▶️ Starting slideshow...');
+      isPlaying = true;
+      currentSlide = 0;
+      
+      const slides = document.querySelectorAll('.slide');
+      console.log(`📊 Total slides: ${slides.length}`);
+      console.log(`⏰ Interval will fire every ${slideDuration}ms (${slideDuration/1000}s)`);
+      
+      // Show first slide immediately
+      slides[0].classList.add('active');
+      slides[0].style.zIndex = '2';
+      console.log('✅ First slide (0) activated');
+      
+      // Change slides at calculated intervals
+      slideInterval = setInterval(() => {
+        try {
+          console.log(`🎬 Interval fired - Current slide: ${currentSlide}, Next will be: ${currentSlide + 1}`);
+          
+          // Move to next slide
+          currentSlide++;
+          
+          if (currentSlide >= CONFIG.images.length) {
+            console.log('🏁 Slideshow complete!');
+            stopShow();
+            return;
+          }
+          
+          const previous = slides[currentSlide - 1];
+          const current = slides[currentSlide];
+          
+          console.log(`✅ Transitioning from ${currentSlide - 1} to ${currentSlide}`);
+          console.log(`   Previous exists: ${!!previous}, Current exists: ${!!current}`);
+          
+          // Ensure current slide is on top
+          current.style.zIndex = '2';
+          previous.style.zIndex = '1';
+          
+          // Transition: add current, remove previous (CSS handles smooth fade)
+          current.classList.add('active');
+          
+          setTimeout(() => {
+            previous.classList.remove('active');
+            previous.style.zIndex = '0';
+          }, 600);
+          
+        } catch(err) {
+          console.error('❌ Error in slideshow interval:', err);
+          stopShow();
+        }
+      }, slideDuration);
+      
+      console.log(`🎯 Interval set with ID: ${slideInterval}`);
+      console.log(`⏱️ Next slide in ${slideDuration}ms`);
+    }
+
+    function stopShow() {
+      console.log('⏹️ stopShow called');
+      isPlaying = false;
+      if (slideInterval) {
+        console.log(`🛑 Clearing interval ${slideInterval}`);
+        clearInterval(slideInterval);
+        slideInterval = null;
+      }
+    }
+
+    function resetShow() {
+      console.log('↻ resetShow called');
+      stopShow();
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach(slide => slide.classList.remove('active'));
+      currentSlide = 0;
+    }
+
+    function toggleControls() {
+      const controls = document.getElementById('controls');
+      const tip = document.getElementById('recording-tip');
+      
+      if (controls.style.display === 'none') {
+        controls.style.display = 'block';
+        tip.style.display = 'block';
+      } else {
+        controls.style.display = 'none';
+        tip.style.display = 'none';
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (document.body.classList.contains('slideshow-mode')) {
+        if (e.key === ' ') {
+          e.preventDefault();
+          if (!isPlaying) {
+            startShow();
+          }
+        }
+        if (e.key === 'r' || e.key === 'R') {
+          resetShow();
+        }
+        if (e.key === 'h' || e.key === 'H') {
+          toggleControls();
+        }
+        if (e.key === 'Escape') {
+          backToConfig();
+        }
+      }
+    });
+
+    // Initialize
+    window.addEventListener('load', () => {
+      document.getElementById('generate-btn').addEventListener('click', generateSlideshow);
+      console.log('🎬 Slideshow Generator Ready!');
+      console.log(`📸 ${AVAILABLE_IMAGES.length} images available`);
+    });
+  </script>
+</body>
+</html>

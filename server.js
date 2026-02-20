@@ -11,6 +11,8 @@ const fs = require('fs');
 const webpush = require('web-push');
 const multer = require('multer');
 const adminNotificationQueue = require('./adminNotificationQueue');
+// Fix #16: Input validation middleware
+const { validateBody, loginSchema, registerDriverSchema, raceEntrySchema } = require('./middleware/validate');
 
 const app = express();
 const path = require('path');
@@ -30,15 +32,16 @@ const storage = multer.diskStorage({
   }
 });
 
+// Fix #11: Exact MIME type whitelist instead of substring regex
 const upload = multer({ 
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|pdf/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    const allowedExtensions = /\.(jpeg|jpg|png|gif|pdf)$/i;
+    const extValid = allowedExtensions.test(path.extname(file.originalname));
+    const mimeValid = allowedMimeTypes.includes(file.mimetype);
+    if (extValid && mimeValid) {
       return cb(null, true);
     }
     cb(new Error('Only images (JPEG, PNG, GIF) and PDF files are allowed'));
@@ -54,12 +57,207 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   );
 }
 
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Fix #9: Restrict CORS to known origins only
+const allowedOrigins = [
+  'https://www.rokthenats.co.za',
+  'https://rokthenats.co.za',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5500', // Live Server for local dev
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, PayFast webhooks, Render health checks)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: Origin ${origin} not allowed`));
+  },
+  credentials: true
+}));
+// Fix #10: Reduce JSON body limit from 50mb to 5mb
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
+// Fix #18: Request logging middleware (method, path, status, duration)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const level = res.statusCode >= 500 ? '❌' : res.statusCode >= 400 ? '⚠️' : '✅';
+    console.log(`${level} ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+  });
+  next();
+});
 
 // Serve static files from images directory
 app.use('/images', express.static(path.join(__dirname, 'images')));
+
+// =========================================================
+// ADMIN AUTHENTICATION - Server-side token system
+// =========================================================
+
+// In-memory token store: token -> { expires: Date }
+const adminTokens = new Map();
+
+// Clean up expired tokens every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, data] of adminTokens.entries()) {
+    if (data.expires < now) adminTokens.delete(token);
+  }
+}, 60 * 60 * 1000);
+
+// =========================================================
+// LOGIN RATE LIMITING - Brute force protection
+// =========================================================
+const loginAttempts = new Map(); // ip -> { count, blockedUntil }
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_BLOCK_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkLoginRateLimit(ip) {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry) return { allowed: true };
+  if (entry.blockedUntil && now < entry.blockedUntil) {
+    const mins = Math.ceil((entry.blockedUntil - now) / 60000);
+    return { allowed: false, message: `Too many failed attempts. Try again in ${mins} minute${mins > 1 ? 's' : ''}.` };
+  }
+  return { allowed: true };
+}
+
+function recordFailedLogin(ip) {
+  const entry = loginAttempts.get(ip) || { count: 0 };
+  entry.count += 1;
+  if (entry.count >= MAX_LOGIN_ATTEMPTS) {
+    entry.blockedUntil = Date.now() + LOGIN_BLOCK_MS;
+    entry.count = 0;
+    console.warn(`⛔ Login rate limit hit for IP: ${ip}`);
+  }
+  loginAttempts.set(ip, entry);
+}
+
+function clearLoginAttempts(ip) {
+  loginAttempts.delete(ip);
+}
+
+// Clean up login attempts map every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of loginAttempts.entries()) {
+    if (!data.blockedUntil || data.blockedUntil < now) loginAttempts.delete(ip);
+  }
+}, 60 * 60 * 1000);
+
+// Middleware to protect admin routes
+function requireAdmin(req, res, next) {
+  const token = req.headers['x-admin-token'];
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Admin authentication required' });
+  }
+  const session = adminTokens.get(token);
+  if (!session || session.expires < Date.now()) {
+    adminTokens.delete(token);
+    return res.status(401).json({ success: false, error: 'Session expired or invalid' });
+  }
+  next();
+}
+
+// Admin login endpoint
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  const adminSecret = process.env.ADMIN_SECRET || 'natsadmin2026';
+  if (!password || password !== adminSecret) {
+    return res.status(401).json({ success: false, error: 'Invalid password' });
+  }
+  const token = uuidv4();
+  adminTokens.set(token, { expires: Date.now() + 8 * 60 * 60 * 1000 }); // 8 hour session
+  console.log(`✅ Admin login successful - session created`);
+  res.json({ success: true, token });
+});
+
+// Admin token verify endpoint (for page reload checks)
+app.get('/api/admin/verify', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  const session = token ? adminTokens.get(token) : null;
+  const valid = !!(session && session.expires > Date.now());
+  res.json({ success: true, valid });
+});
+
+// Admin logout
+app.post('/api/admin/logout', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (token) adminTokens.delete(token);
+  res.json({ success: true });
+});
+
+// =========================================================
+// ADMIN ROUTE PROTECTION
+// All routes below that are admin-only are guarded by
+// requireAdmin middleware. Public/driver routes are NOT listed.
+// =========================================================
+const ADMIN_ONLY_PATHS = [
+  '/api/getAllDrivers',
+  '/api/getAllPayments',
+  '/api/getDatabaseTable',
+  '/api/getAdminMessages',
+  '/api/markMessageAsRead',
+  '/api/getDiscountCodes',
+  '/api/createDiscountCode',
+  '/api/updateDiscountCode',
+  '/api/deleteDiscountCode',
+  '/api/adminAddRaceEntry',
+  '/api/allRaceEntries',
+  '/api/getRaceEntries',
+  '/api/updateRaceEntry',
+  '/api/deleteRaceEntry',
+  '/api/updateDriver',
+  '/api/downloadDriverFile',
+  '/api/sendPasswordReset',
+  '/api/sendRaceTicketsEmail',
+  '/api/updateAndResendTickets',
+  '/api/createEvent',
+  '/api/updateEvent',
+  '/api/deleteEvent',
+  '/api/getAllEvents',
+  '/api/getEventRegistrations',
+  '/api/sendEntryToTrello',
+  '/api/markPaymentReceived',
+  '/api/getAuditLog',
+  '/api/exportAuditCSV',
+  '/api/exportRaceEntriesCSV',
+  '/api/exportDriversCSV',
+  '/api/push/stats',
+  '/api/push/subscribers',
+  '/api/push/send',
+  '/api/payfast/reconcile',
+  '/api/payfast/reprocess',
+  '/api/confirmRaceEntry',
+  // Debug/diagnostic endpoints - admin only
+  '/api/debug-env',
+  '/api/check-schema',
+  '/api/preview-ticket',
+  '/api/test-db',
+  '/api/create-test-driver',
+];
+
+app.use((req, res, next) => {
+  // Protect all /api/admin/* except the auth endpoints themselves
+  if (req.path.startsWith('/api/admin/') &&
+      req.path !== '/api/admin/login' &&
+      req.path !== '/api/admin/verify' &&
+      req.path !== '/api/admin/logout') {
+    return requireAdmin(req, res, next);
+  }
+  // Protect all /api/debug/* routes
+  if (req.path.startsWith('/api/debug/')) {
+    return requireAdmin(req, res, next);
+  }
+  // Protect specific non-/admin/-prefixed admin-only routes
+  if (ADMIN_ONLY_PATHS.includes(req.path)) {
+    return requireAdmin(req, res, next);
+  }
+  next();
+});
 
 // =========================================================
 // GLOBAL ERROR HANDLERS - Prevent server crashes
@@ -371,6 +569,33 @@ async function logEquipmentScan(scanData) {
   }
 }
 
+// Initialize engine loans table (manual/practice assignments)
+const initEngineLoansTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS engine_loans (
+        loan_id       SERIAL PRIMARY KEY,
+        engine_serial VARCHAR(100) NOT NULL,
+        driver_name   VARCHAR(200) NOT NULL,
+        driver_id     VARCHAR(100),
+        purpose       VARCHAR(100) DEFAULT 'Practice',
+        loan_date     TIMESTAMP NOT NULL DEFAULT NOW(),
+        notes         TEXT,
+        assigned_by   VARCHAR(100),
+        returned_at   TIMESTAMP,
+        returned_to   VARCHAR(100),
+        return_notes  TEXT,
+        created_at    TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_engine_loans_serial ON engine_loans(engine_serial)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_engine_loans_active  ON engine_loans(returned_at) WHERE returned_at IS NULL`);
+    console.log('\u2705 Engine loans table initialized');
+  } catch (err) {
+    console.error('Engine loans init error:', err.message);
+  }
+};
+
 // Initialize pool engine rentals table
 const initPoolEngineRentalsTable = async () => {
   try {
@@ -516,19 +741,35 @@ const initPayFastWebhooksTable = async () => {
   }
 };
 
-initAuditTable();
-initMessagesTable();
-initNotificationHistoryTable();
-initEventsTable();
-initRaceEntriesTable();
-initEquipmentScanLog();
-initPoolEngineRentalsTable();
-initDiscountCodesTable();
-initEventDocumentsTable();
-initMSALicensesTable();
-initPayFastWebhooksTable();
+// Fix #15: Gate all table initializations behind SKIP_DB_INIT env var.
+// Set SKIP_DB_INIT=true in production after first successful deploy to
+// avoid running ~10 extra DB queries on every restart.
+const SKIP_DB_INIT = process.env.SKIP_DB_INIT === 'true';
 
-// Initialize default events if they don't exist
+if (SKIP_DB_INIT) {
+  console.log('ℹ️  SKIP_DB_INIT=true — skipping table initializations');
+} else {
+  console.log('🔧 Running database table initializations...');
+  Promise.all([
+    initAuditTable(),
+    initMessagesTable(),
+    initNotificationHistoryTable(),
+    initEventsTable(),
+    initRaceEntriesTable(),
+    initEquipmentScanLog(),
+    initEngineLoansTable(),
+    initPoolEngineRentalsTable(),
+    initDiscountCodesTable(),
+    initEventDocumentsTable(),
+    initMSALicensesTable(),
+    initPayFastWebhooksTable(),
+  ]).then(() => {
+    console.log('✅ Database initialization complete');
+    initDefaultEvents();
+  }).catch(err => {
+    console.error('❌ Database initialization error:', err.message);
+  });
+}
 const initDefaultEvents = async () => {
   try {
     const result = await pool.query('SELECT COUNT(*) as count FROM events');
@@ -550,8 +791,6 @@ const initDefaultEvents = async () => {
     console.error('Error initializing events:', err.message);
   }
 };
-
-initDefaultEvents();
 
 // Log audit event
 const logAuditEvent = async (driver_id, driver_email, action, field_name, old_value, new_value, ip_address = 'unknown') => {
@@ -1703,33 +1942,52 @@ app.post('/api/getDriverProfileByEmail', async (req, res) => {
 });
 
 // Login with password endpoint (for frontend compatibility)
-app.post('/api/loginWithPassword', async (req, res) => {
+app.post('/api/loginWithPassword', validateBody(loginSchema), async (req, res) => {
+  // Rate limit check
+  const clientIp = (req.headers['x-forwarded-for'] || req.ip || 'unknown').split(',')[0].trim();
+  const rateCheck = checkLoginRateLimit(clientIp);
+  if (!rateCheck.allowed) {
+    return res.status(429).json({ success: false, error: { message: rateCheck.message } });
+  }
+
   try {
     const { email, password } = req.body;
-    if (!email || !password) throw new Error('Email and password required');
+    if (!email || !password) {
+      recordFailedLogin(clientIp);
+      // Generic message - don't reveal which field is missing
+      return res.status(400).json({ success: false, error: { message: 'Invalid email or password' } });
+    }
 
     const contactResult = await pool.query('SELECT driver_id FROM contacts WHERE email = $1', [email.toLowerCase()]);
     if (contactResult.rows.length === 0) {
       console.warn(`⚠️ Login attempt with non-existent email: ${email}`);
-      throw new Error('Email not found');
+      recordFailedLogin(clientIp);
+      return res.status(400).json({ success: false, error: { message: 'Invalid email or password' } });
     }
 
     const driver_id = contactResult.rows[0].driver_id;
     const result = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driver_id]);
     const driver = result.rows[0];
-    if (!driver) throw new Error('Driver not found');
+    if (!driver) {
+      recordFailedLogin(clientIp);
+      return res.status(400).json({ success: false, error: { message: 'Invalid email or password' } });
+    }
 
-    // Check if password_hash column exists and has a value
     if (!driver.password_hash) {
       console.warn(`⚠️ Driver ${driver_id} has no password set`);
-      throw new Error('Password not set. Please reset your password first.');
+      recordFailedLogin(clientIp);
+      return res.status(400).json({ success: false, error: { message: 'Password not set for this account. Please use the reset link.' } });
     }
 
     const passwordMatch = await bcryptjs.compare(password, driver.password_hash);
     if (!passwordMatch) {
       console.warn(`⚠️ Failed login attempt for ${email}`);
-      throw new Error('Invalid password');
+      recordFailedLogin(clientIp);
+      return res.status(400).json({ success: false, error: { message: 'Invalid email or password' } });
     }
+
+    // Successful login - clear rate limit counter
+    clearLoginAttempts(clientIp);
 
     const contacts = await pool.query('SELECT * FROM contacts WHERE driver_id = $1', [driver_id]);
     const medical = await pool.query('SELECT * FROM medical_consent WHERE driver_id = $1', [driver_id]);
@@ -1737,7 +1995,6 @@ app.post('/api/loginWithPassword', async (req, res) => {
 
     console.log(`✅ Successful login: ${email}`);
     
-    // Send batched admin notification (prevents email flooding)
     adminNotificationQueue.addToBatch({
       action: 'User Login',
       userEmail: email,
@@ -1759,7 +2016,7 @@ app.post('/api/loginWithPassword', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ loginWithPassword error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: 'Login failed. Please try again.' } });
   }
 });
 
@@ -1804,7 +2061,7 @@ app.get('/api/debug/contacts-sample', async (req, res) => {
 });
 
 // Register new driver
-app.post('/api/registerDriver', async (req, res) => {
+app.post('/api/registerDriver', validateBody(registerDriverSchema), async (req, res) => {
   const client = await pool.connect();
   try {
     console.log('📥 registerDriver request received:', {
@@ -2520,7 +2777,7 @@ app.post('/api/storeRaceEntryPayment', async (req, res) => {
 });
 
 // Register Race Entry (Free - for promo codes)
-app.post('/api/registerRaceEntry', async (req, res) => {
+app.post('/api/registerRaceEntry', validateBody(raceEntrySchema), async (req, res) => {
   try {
     const { driver_id, race_class, entry_items, total_amount, has_engine_rental, promo_code } = req.body;
     if (!driver_id || !race_class) throw new Error('Missing required fields');
@@ -2776,6 +3033,40 @@ app.post('/api/payfast-itn', async (req, res) => {
     const has_engine_rental = custom_str3 === 'YES';
     
     console.log(`📬 PayFast ITN Callback: payment=${m_payment_id}, status=${payment_status}, driver=${driver_id}`);
+
+    // ========================================
+    // SIGNATURE VALIDATION - Reject fake webhooks
+    // ========================================
+    const passphrase = process.env.PAYFAST_PASSPHRASE || '';
+    const signatureData = { ...req.body };
+    delete signatureData.signature;
+
+    const itnSignatureFields = [
+      'm_payment_id', 'pf_payment_id', 'payment_status', 'item_name', 'item_description',
+      'amount_gross', 'amount_fee', 'amount_net', 'custom_int1', 'custom_int2', 'custom_int3',
+      'custom_int4', 'custom_int5', 'custom_str1', 'custom_str2', 'custom_str3', 'custom_str4',
+      'custom_str5', 'name_first', 'name_last', 'email_address', 'cell_number', 'merchant_id'
+    ];
+    let itnParamString = '';
+    for (const field of itnSignatureFields) {
+      if (signatureData[field] !== undefined && signatureData[field] !== '') {
+        const encoded = encodeURIComponent(signatureData[field]).replace(/%20/g, '+');
+        itnParamString += `${field}=${encoded}&`;
+      }
+    }
+    if (passphrase) {
+      itnParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`,
+      itnParamString = itnParamString.replace(/,$/, '');
+    } else {
+      itnParamString = itnParamString.replace(/&$/, '');
+    }
+    const itnCalcSig = crypto.createHash('md5').update(itnParamString.trim()).digest('hex');
+    const itnSigValid = itnCalcSig === req.body.signature;
+    if (!itnSigValid) {
+      console.warn(`❌ PayFast ITN signature INVALID - possible spoofed request. Calculated: ${itnCalcSig}, Received: ${req.body.signature}`);
+      return res.json({ success: true }); // Return 200 to stop PayFast retrying, but do NOT process
+    }
+    console.log('✅ PayFast ITN signature valid');
     
     if (payment_status === 'COMPLETE') {
       try {
@@ -3409,9 +3700,13 @@ app.post('/api/getDatabaseTable', async (req, res) => {
     if (filter && Object.keys(filter).length > 0) {
       const conditions = [];
       for (const [key, value] of Object.entries(filter)) {
-        if (value && value.trim()) {
+        // SECURITY: Validate column name - only allow alphanumeric + underscore (prevents SQL injection)
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) {
+          throw new Error(`Invalid filter column name: ${key}`);
+        }
+        if (value && String(value).trim()) {
           conditions.push(`${key} ILIKE $${paramIndex}`);
-          params.push(`%${value}%`);
+          params.push(`%${String(value).trim()}%`);
           paramIndex++;
         }
       }
@@ -3534,11 +3829,12 @@ app.post('/api/admin/restoreDriver', async (req, res) => {
 // Debug PayFast credentials
 app.get('/api/debug/payfast', (req, res) => {
   res.json({
-    merchantId: process.env.PAYFAST_MERCHANT_ID || 'NOT SET - using default 18906399',
-    merchantKey: process.env.PAYFAST_MERCHANT_KEY ? '***SET (length: ' + process.env.PAYFAST_MERCHANT_KEY.length + ')***' : 'NOT SET - using default fbxpiwtzoh1gg',
-    returnUrl: process.env.PAYFAST_RETURN_URL || 'Using default: https://www.rokthenats.co.za/payment-success.html',
-    cancelUrl: process.env.PAYFAST_CANCEL_URL || 'Using default: https://www.rokthenats.co.za/payment-cancel.html',
-    notifyUrl: process.env.PAYFAST_NOTIFY_URL || 'Using default: https://www.rokthenats.co.za/api/paymentNotify'
+    merchantId: process.env.PAYFAST_MERCHANT_ID ? 'SET' : 'NOT SET',
+    merchantKey: process.env.PAYFAST_MERCHANT_KEY ? `SET (length: ${process.env.PAYFAST_MERCHANT_KEY.length})` : 'NOT SET',
+    passphrase: process.env.PAYFAST_PASSPHRASE ? 'SET' : 'NOT SET',
+    returnUrl: process.env.PAYFAST_RETURN_URL || 'NOT SET',
+    cancelUrl: process.env.PAYFAST_CANCEL_URL || 'NOT SET',
+    notifyUrl: process.env.PAYFAST_NOTIFY_URL || 'NOT SET'
   });
 });
 
@@ -3602,9 +3898,12 @@ app.get('/api/initiateRacePayment', async (req, res) => {
 
     console.log(`💳 Initiating PayFast payment: ${raceClass} - R${numAmount.toFixed(2)} for event ${eventId}`);
 
-    // PayFast Merchant ID and Key (from environment or correct defaults)
-    const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
+    // PayFast credentials - MUST be set in environment variables
+    const merchantId = process.env.PAYFAST_MERCHANT_ID;
+    const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
+    if (!merchantId || !merchantKey) {
+      throw new Error('PayFast credentials not configured on server');
+    }
     const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://www.rokthenats.co.za/payment-success.html';
     const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://www.rokthenats.co.za/payment-cancel.html';
     const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify';
@@ -3920,12 +4219,14 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     }
     
     // Append passphrase at the very end (as per PayFast spec)
-    const actualPassphrase = 'RokCupZA2024';
+    const actualPassphrase = process.env.PAYFAST_PASSPHRASE || '';
     const passphraseEncoded = encodeURIComponent(actualPassphrase).replace(/%20/g, '+');
-    pfParamString += `passphrase=${passphraseEncoded}`;
-    console.log(`  passphrase=${passphraseEncoded}`);
-
-    console.log(`🔐 Amount to charge: R${numAmount.toFixed(2)}`);
+    if (actualPassphrase) {
+      pfParamString += `passphrase=${passphraseEncoded}`;
+      console.log(`  passphrase=[REDACTED]`);
+    } else {
+      pfParamString = pfParamString.replace(/&$/, '');
+    }
     console.log(`🔐 Full signature string: ${pfParamString}`);
 
     const signature = crypto
@@ -4022,8 +4323,12 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
 
     console.log(`💳 Initiating PayFast payment: Pool Engine ${rentalType} for ${rentalClass} - R${numAmount.toFixed(2)}`);
 
-    const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
+    // PayFast credentials - MUST be set in environment variables
+    const merchantId = process.env.PAYFAST_MERCHANT_ID;
+    const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
+    if (!merchantId || !merchantKey) {
+      throw new Error('PayFast credentials not configured on server');
+    }
     const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://www.rokthenats.co.za/payment-success.html';
     const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://www.rokthenats.co.za/payment-cancel.html';
     const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify';
@@ -4056,10 +4361,14 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
       }
     }
     
-    const actualPassphrase = 'RokCupZA2024';
+    const actualPassphrase = process.env.PAYFAST_PASSPHRASE || '';
     const passphraseEncoded = encodeURIComponent(actualPassphrase).replace(/%20/g, '+');
-    pfParamString += `passphrase=${passphraseEncoded}`;
-    console.log(`  passphrase=${passphraseEncoded}`);
+    if (actualPassphrase) {
+      pfParamString += `passphrase=${passphraseEncoded}`;
+      console.log(`  passphrase=[REDACTED]`);
+    } else {
+      pfParamString = pfParamString.replace(/&$/, '');
+    }
 
     const signature = crypto
       .createHash('md5')
@@ -4714,9 +5023,9 @@ app.post('/api/paymentNotify', async (req, res) => {
     }
 
     // Verify PayFast signature
-    const merchantId = process.env.PAYFAST_MERCHANT_ID || '18906399';
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg';
-    const passphrase = 'RokCupZA2024';
+    const merchantId = process.env.PAYFAST_MERCHANT_ID;
+    const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
+    const passphrase = process.env.PAYFAST_PASSPHRASE || '';
 
     // Build signature string in PayFast order (excluding signature field itself)
     let pfParamString = '';
@@ -4754,13 +5063,15 @@ app.post('/api/paymentNotify', async (req, res) => {
     }
     
     if (!signatureValid) {
-      console.warn('⚠️ Signature mismatch - possible tampering');
+      console.warn('⚠️ Signature mismatch - possible tampering. Aborting payment processing.');
       if (webhookId) {
         await pool.query(
           `UPDATE payfast_webhooks SET processing_status = 'signature_invalid', processing_error = $1, processed_at = NOW() WHERE webhook_id = $2`,
           ['Signature verification failed', webhookId]
         );
       }
+      // Return 200 to stop PayFast retrying, but do NOT process the payment
+      return res.json({ success: true });
     }
 
     // Only process COMPLETE payments
@@ -8917,103 +9228,182 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
   }
 });
 
-// Get audit log entries
+// Get audit log entries (unified: audit_log + equipment_scan_log)
 app.post('/api/getAuditLog', async (req, res) => {
   try {
-    const { driver, action, limit } = req.body;
-    let query = `
-      SELECT 
-        al.*,
-        d.first_name as driver_first_name,
-        d.last_name as driver_last_name,
-        c.email as driver_email
-      FROM audit_log al
-      LEFT JOIN drivers d ON al.driver_id = d.driver_id
-      LEFT JOIN contacts c ON al.driver_id = c.driver_id
-      WHERE 1=1
-    `;
-    
+    const { driver, action, source, date_from, date_to, limit } = req.body;
+    const safeLimit = Math.min(parseInt(limit) || 500, 2000);
     const params = [];
+    const conditions = [];
 
     if (driver) {
       params.push(`%${driver}%`);
-      query += ` AND (d.first_name ILIKE $${params.length} OR d.last_name ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
+      const p = params.length;
+      conditions.push(`(combined.driver_first_name ILIKE $${p} OR combined.driver_last_name ILIKE $${p} OR combined.driver_email ILIKE $${p})`);
     }
 
     if (action) {
       params.push(action);
-      query += ` AND al.action = $${params.length}`;
+      conditions.push(`combined.action = $${params.length}`);
     }
 
-    query += ` ORDER BY al.created_at DESC LIMIT ${limit || 1000}`;
+    if (source && source !== 'all') {
+      params.push(source);
+      conditions.push(`combined.source = $${params.length}`);
+    }
+
+    if (date_from) {
+      params.push(date_from);
+      conditions.push(`combined.event_time >= $${params.length}::date`);
+    }
+
+    if (date_to) {
+      params.push(date_to);
+      conditions.push(`combined.event_time < ($${params.length}::date + interval '1 day')`);
+    }
+
+    const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+
+    const query = `
+      SELECT * FROM (
+        SELECT
+          'audit'            AS source,
+          al.created_at      AS event_time,
+          al.action,
+          al.driver_id::text AS driver_id,
+          COALESCE(d.first_name, '')       AS driver_first_name,
+          COALESCE(d.last_name, '')        AS driver_last_name,
+          COALESCE(al.driver_email, c.email, '') AS driver_email,
+          al.field_name      AS detail,
+          al.old_value,
+          al.new_value,
+          COALESCE(al.ip_address, '')      AS ip_address,
+          NULL::text         AS equipment_serial,
+          NULL::text         AS scanned_by,
+          NULL::text         AS action_result,
+          NULL::text         AS race_class
+        FROM audit_log al
+        LEFT JOIN drivers  d ON al.driver_id::text = d.driver_id::text
+        LEFT JOIN contacts c ON al.driver_id::text = c.driver_id::text
+
+        UNION ALL
+
+        SELECT
+          'equipment'        AS source,
+          esl.scan_timestamp AS event_time,
+          esl.scan_type      AS action,
+          esl.driver_id,
+          split_part(COALESCE(esl.driver_name,''), ' ', 1) AS driver_first_name,
+          CASE WHEN position(' ' IN COALESCE(esl.driver_name,'')) > 0
+               THEN substring(COALESCE(esl.driver_name,'') FROM position(' ' IN COALESCE(esl.driver_name,'')) + 1)
+               ELSE '' END  AS driver_last_name,
+          ''                 AS driver_email,
+          esl.barcode_scanned AS detail,
+          ''                 AS old_value,
+          COALESCE(esl.notes, '') AS new_value,
+          ''                 AS ip_address,
+          esl.equipment_serial,
+          esl.scanned_by,
+          esl.action_result,
+          esl.race_class
+        FROM equipment_scan_log esl
+      ) combined
+      ${whereClause}
+      ORDER BY combined.event_time DESC
+      LIMIT ${safeLimit}
+    `;
 
     const result = await pool.query(query, params);
 
     res.json({
       success: true,
-      data: { logs: result.rows }
+      data: { logs: result.rows, total: result.rowCount }
     });
   } catch (err) {
     console.error('❌ getAuditLog error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: 'Failed to load audit log' } });
   }
 });
 
-// Export audit log as CSV
+// Export audit log as CSV (unified: audit_log + equipment_scan_log)
 app.post('/api/exportAuditCSV', async (req, res) => {
   try {
-    const { driver, action } = req.body;
-    let query = `
-      SELECT 
-        al.*,
-        d.first_name as driver_first_name,
-        d.last_name as driver_last_name,
-        c.email as driver_email
-      FROM audit_log al
-      LEFT JOIN drivers d ON al.driver_id = d.driver_id
-      LEFT JOIN contacts c ON al.driver_id = c.driver_id
-      WHERE 1=1
-    `;
-    
+    const { driver, action, source, date_from, date_to } = req.body;
     const params = [];
+    const conditions = [];
 
     if (driver) {
       params.push(`%${driver}%`);
-      query += ` AND (d.first_name ILIKE $${params.length} OR d.last_name ILIKE $${params.length} OR c.email ILIKE $${params.length})`;
+      const p = params.length;
+      conditions.push(`(combined.driver_first_name ILIKE $${p} OR combined.driver_last_name ILIKE $${p} OR combined.driver_email ILIKE $${p})`);
     }
+    if (action) { params.push(action); conditions.push(`combined.action = $${params.length}`); }
+    if (source && source !== 'all') { params.push(source); conditions.push(`combined.source = $${params.length}`); }
+    if (date_from) { params.push(date_from); conditions.push(`combined.event_time >= $${params.length}::date`); }
+    if (date_to)   { params.push(date_to);   conditions.push(`combined.event_time < ($${params.length}::date + interval '1 day')`); }
 
-    if (action) {
-      params.push(action);
-      query += ` AND al.action = $${params.length}`;
-    }
+    const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
-    query += ` ORDER BY al.created_at DESC`;
+    const query = `
+      SELECT * FROM (
+        SELECT 'audit' AS source, al.created_at AS event_time, al.action,
+          al.driver_id::text,
+          COALESCE(d.first_name,'') AS driver_first_name,
+          COALESCE(d.last_name,'')  AS driver_last_name,
+          COALESCE(al.driver_email, c.email,'') AS driver_email,
+          al.field_name AS detail, al.old_value, al.new_value,
+          COALESCE(al.ip_address,'') AS ip_address,
+          NULL::text AS equipment_serial, NULL::text AS scanned_by,
+          NULL::text AS action_result, NULL::text AS race_class
+        FROM audit_log al
+        LEFT JOIN drivers  d ON al.driver_id::text = d.driver_id::text
+        LEFT JOIN contacts c ON al.driver_id::text = c.driver_id::text
+        UNION ALL
+        SELECT 'equipment' AS source, esl.scan_timestamp AS event_time, esl.scan_type AS action,
+          esl.driver_id,
+          split_part(COALESCE(esl.driver_name,''),' ',1) AS driver_first_name,
+          CASE WHEN position(' ' IN COALESCE(esl.driver_name,''))>0
+               THEN substring(COALESCE(esl.driver_name,'') FROM position(' ' IN COALESCE(esl.driver_name,''))+1)
+               ELSE '' END AS driver_last_name,
+          '' AS driver_email,
+          esl.barcode_scanned AS detail, '' AS old_value,
+          COALESCE(esl.notes,'') AS new_value,
+          '' AS ip_address,
+          esl.equipment_serial, esl.scanned_by, esl.action_result, esl.race_class
+        FROM equipment_scan_log esl
+      ) combined
+      ${whereClause}
+      ORDER BY combined.event_time DESC
+    `;
 
     const result = await pool.query(query, params);
 
-    // Build CSV
-    const headers = ['Timestamp', 'Action', 'Driver Name', 'Email', 'Field', 'Old Value', 'New Value', 'IP Address'];
+    const headers = ['Source','Timestamp','Action','Driver Name','Email','Detail','Old Value','New Value','IP Address','Equipment Serial','Scanned By','Result','Race Class'];
     const rows = result.rows.map(log => [
-      log.created_at ? new Date(log.created_at).toLocaleString('en-ZA') : '',
+      log.source || '',
+      log.event_time ? new Date(log.event_time).toLocaleString('en-ZA') : '',
       log.action || '',
-      log.driver_first_name && log.driver_last_name ? `${log.driver_first_name} ${log.driver_last_name}` : 'System',
+      [log.driver_first_name, log.driver_last_name].filter(Boolean).join(' ') || 'System',
       log.driver_email || '',
-      log.field_name || '',
+      log.detail || '',
       log.old_value || '',
       log.new_value || '',
-      log.ip_address || ''
+      log.ip_address || '',
+      log.equipment_serial || '',
+      log.scanned_by || '',
+      log.action_result || '',
+      log.race_class || ''
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
 
     const csv = [headers.join(','), ...rows].join('\n');
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="audit-log-${new Date().toISOString().slice(0,10)}.csv"`);
-
     console.log(`✅ Audit log export: ${result.rows.length} records`);
     res.send(csv);
   } catch (err) {
     console.error('❌ exportAuditCSV error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: 'Export failed' } });
   }
 });
 
@@ -9367,8 +9757,48 @@ app.use((req, res, next) => {
   next();
 });
 
+// Fix #12: Protect admin.html behind HTTP Basic Auth (adds browser-level barrier)
+// This runs BEFORE express.static so it intercepts the file request first
+app.get(['/admin.html', '/admin'], (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const adminSecret = process.env.ADMIN_SECRET || 'natsadmin2026';
+  if (authHeader && authHeader.startsWith('Basic ')) {
+    const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf8');
+    const [, pass] = decoded.split(':');
+    if (pass === adminSecret) return next();
+  }
+  res.setHeader('WWW-Authenticate', 'Basic realm="NATS Admin"');
+  return res.status(401).send('Admin access required');
+});
+
+// Fix #13: Block direct access to server-side source files and uploads listing
+// These must be declared BEFORE express.static
+app.get([
+  '/server.js', '/server-https.js',
+  '/package.json', '/package-lock.json',
+  '/.env', '/.env.example',
+  '/adminNotificationQueue.js', '/admin_pdf_export.js',
+], (req, res) => {
+  res.status(403).json({ error: 'Forbidden' });
+});
+
+// Block directory listing of uploads (individual file URLs still work for legitimate use)
+app.use('/uploads', (req, res, next) => {
+  // Only allow direct file access (path has a filename with extension), not directory browsing
+  if (req.path === '/' || !path.extname(req.path)) {
+    return res.status(403).json({ error: 'Directory listing not allowed' });
+  }
+  next();
+});
+
 // Serve static files from the project root (AFTER all API routes)
 app.use(express.static(path.join(__dirname, '.')));
+
+// Fix #17: safeError helper — never expose raw error messages in production
+const safeError = (err, fallback = 'An unexpected error occurred') => {
+  const isDev = process.env.NODE_ENV === 'development';
+  return isDev ? (err?.message || fallback) : fallback;
+};
 
 // =========================================================
 // EXPRESS ERROR HANDLING MIDDLEWARE - Catch all route errors
@@ -9376,10 +9806,11 @@ app.use(express.static(path.join(__dirname, '.')));
 app.use((err, req, res, next) => {
   console.error('❌ Express error:', err.message);
   console.error('Stack:', err.stack);
+  const isDev = process.env.NODE_ENV === 'development';
   res.status(500).json({ 
     success: false, 
-    error: 'Internal server error', 
-    message: err.message 
+    error: 'Internal server error',
+    ...(isDev && { detail: err.message })
   });
 });
 
@@ -9455,8 +9886,13 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
   }
 });
 
+// Fix #14: Equipment management routes extracted to routes/equipment.js
+// The inline routes below are now superseded by this router.
+// They can be removed in a future cleanup pass.
+app.use(require('./routes/equipment')(pool, logEquipmentScan));
+
 // =============================================
-// ENGINE MANAGEMENT API ENDPOINTS
+// ENGINE MANAGEMENT API ENDPOINTS (inline - superseded by routes/equipment.js above)
 // =============================================
 
 // Lookup ticket barcode and get driver info

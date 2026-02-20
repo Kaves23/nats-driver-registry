@@ -610,7 +610,7 @@
       let filtered = allLogs.filter(log => {
         return (!driverId || log.driver_id?.toLowerCase().includes(driverId)) &&
                (!email || log.driver_email?.toLowerCase().includes(email)) &&
-               (!field || log.field_name?.toLowerCase().includes(field));
+               (!field || (log.detail || log.field_name || '').toLowerCase().includes(field));
       });
 
       if (filtered.length === 0) {
@@ -623,10 +623,11 @@
           <thead>
             <tr>
               <th>Timestamp</th>
+              <th>Source</th>
               <th>Driver Email</th>
               <th>Driver ID</th>
               <th>Action</th>
-              <th>Field</th>
+              <th>Detail</th>
               <th>Old Value</th>
               <th>New Value</th>
             </tr>
@@ -635,16 +636,18 @@
       `;
 
       filtered.forEach(log => {
-        const timestamp = new Date(log.timestamp).toLocaleString();
-        const actionClass = log.action.toLowerCase().includes('update') ? 'update' : 'create';
+        const timestamp = new Date(log.event_time || log.created_at).toLocaleString();
+        const actionClass = (log.action || '').toLowerCase().includes('update') ? 'update' : 'create';
+        const source = log.source || 'audit';
         
         html += `
           <tr>
             <td><span class="timestamp">${timestamp}</span></td>
+            <td>${source}</td>
             <td>${log.driver_email || '-'}</td>
             <td>${log.driver_id || '-'}</td>
-            <td><span class="action ${actionClass}">${log.action}</span></td>
-            <td><span class="field-name">${log.field_name}</span></td>
+            <td><span class="action ${actionClass}">${log.action || '-'}</span></td>
+            <td><span class="field-name">${(log.detail || log.field_name || '-')}</span></td>
             <td><span class="value-change old-value">${(log.old_value || '-').substring(0, 50)}</span></td>
             <td><span class="value-change new-value">${(log.new_value || '-').substring(0, 50)}</span></td>
           </tr>
@@ -663,7 +666,8 @@
 
       const today = new Date().toDateString();
       const todayCount = allLogs.filter(log => {
-        return new Date(log.timestamp).toDateString() === today;
+        const ts = log.event_time || log.created_at;
+        return ts && new Date(ts).toDateString() === today;
       }).length;
       document.getElementById('todayChanges').textContent = todayCount;
     }
@@ -676,13 +680,14 @@
       let filtered = allLogs.filter(log => {
         return (!driverId || log.driver_id?.toLowerCase().includes(driverId)) &&
                (!email || log.driver_email?.toLowerCase().includes(email)) &&
-               (!field || log.field_name?.toLowerCase().includes(field));
+               (!field || (log.detail || log.field_name || '').toLowerCase().includes(field));
       });
 
-      let csv = 'Timestamp,Driver Email,Driver ID,Action,Field,Old Value,New Value\n';
+      let csv = 'Timestamp,Source,Driver Email,Driver ID,Action,Detail,Old Value,New Value\n';
       filtered.forEach(log => {
-        const timestamp = new Date(log.timestamp).toISOString();
-        csv += `"${timestamp}","${log.driver_email || '-'}","${log.driver_id || '-'}","${log.action}","${log.field_name}","${(log.old_value || '-').replace(/"/g, '""')}","${(log.new_value || '-').replace(/"/g, '""')}"\n`;
+        const ts = log.event_time || log.created_at;
+        const timestamp = ts ? new Date(ts).toISOString() : '';
+        csv += `"${timestamp}","${log.source || 'audit'}","${log.driver_email || '-'}","${log.driver_id || '-'}","${log.action || '-'}","${(log.detail || log.field_name || '-').replace(/"/g, '""')}","${(log.old_value || '-').replace(/"/g, '""')}","${(log.new_value || '-').replace(/"/g, '""')}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv' });
