@@ -4339,118 +4339,110 @@
           return;
         }
         
-        // Build season summary cards
-        const seasonCards = data.seasonTotals.map(season => {
-          const avgPoints = season.races_completed > 0 ? (season.total_points / season.races_completed).toFixed(1) : '0.0';
-          
+        // Helper: build a points results table for a given championship type
+        function buildChampSection(champType, points, totals, isRegional) {
+          const accentColor  = isRegional ? '#0ea5e9' : '#f59e0b';
+          const accentLight  = isRegional ? '#e0f2fe' : '#fef3c7';
+          const accentDark   = isRegional ? '#0c4a6e' : '#92400e';
+          const accentBorder = isRegional ? '#7dd3fc' : '#fbbf24';
+          const cardGrad     = isRegional
+            ? 'linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%)'
+            : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+          const label        = isRegional ? '🗺️ Northern Regions Championship' : '🏆 ROK the NATS Championship';
+
+          const filteredPoints = points.filter(p => p.championship_type === champType);
+          const filteredTotals = totals.filter(t => t.championship_type === champType);
+
+          const summaryCards = filteredTotals.map(s => {
+            const avg = s.races_completed > 0 ? (s.total_points / s.races_completed).toFixed(1) : '0.0';
+            return `
+              <div style="flex:1;min-width:0;max-width:340px;padding:18px;background:${cardGrad};border-radius:8px;border:2px solid ${accentBorder};box-shadow:0 4px 12px ${accentColor}30;">
+                <div style="font-size:28px;font-weight:800;color:${accentDark};margin-bottom:4px;">${escapeHtml(s.total_points||0)}</div>
+                <div style="font-size:10px;font-weight:700;color:${accentDark};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Total Points</div>
+                <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid ${accentColor}40;">
+                  <div>
+                    <div style="font-size:17px;font-weight:700;color:${accentDark};">${escapeHtml(s.races_completed)}</div>
+                    <div style="font-size:10px;color:${accentDark};">Rounds</div>
+                  </div>
+                  <div>
+                    <div style="font-size:17px;font-weight:700;color:${accentDark};">${avg}</div>
+                    <div style="font-size:10px;color:${accentDark};">Avg/Rnd</div>
+                  </div>
+                </div>
+                <div style="margin-top:8px;font-size:12px;font-weight:600;color:${accentDark};">${escapeHtml(s.season)} · ${escapeHtml(s.class)}</div>
+              </div>`;
+          }).join('');
+
+          if (filteredPoints.length === 0) {
+            return `
+              <div style="margin-bottom:32px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${accentColor};">
+                  <span style="font-size:17px;font-weight:700;color:var(--ink);">${label}</span>
+                  <span style="font-size:12px;background:${accentLight};color:${accentDark};padding:3px 10px;border-radius:20px;font-weight:600;">0 points</span>
+                </div>
+                <div style="text-align:center;padding:32px 20px;color:var(--muted);background:#0f0f0f;border-radius:8px;border:1px dashed #1f1f1f;">
+                  <div style="font-size:32px;margin-bottom:10px;opacity:0.3;">${isRegional ? '🗺️' : '🏆'}</div>
+                  <div style="font-size:14px;">No ${champType} results yet.</div>
+                  <div style="font-size:12px;margin-top:4px;opacity:0.7;">${isRegional ? 'Regional rounds count toward Northern Regions standings.' : 'NATS championship rounds will appear here when posted.'}</div>
+                </div>
+              </div>`;
+          }
+
+          const rows = filteredPoints.map((p, i) => {
+            const bg  = i % 2 === 0 ? '#111' : '#0a0a0a';
+            const tc  = p.total_points >= 75 ? '#16a34a' : p.total_points >= 50 ? '#d97706' : '#6b7280';
+            const dsqNote = p.notes && p.notes.includes('DSQ') ? ` <span style="font-size:10px;color:#dc2626;font-weight:700;">DSQ</span>` : '';
+            return `
+              <tr style="border-bottom:1px solid #1f1f1f;background:${bg};" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='${bg}'">
+                <td style="padding:10px 8px;">
+                  <div style="font-weight:600;color:var(--ink);font-size:13px;">${escapeHtml(p.event||'Event')}</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">Round ${escapeHtml(String(p.round||'—'))} · ${escapeHtml(p.class||'')}</div>
+                </td>
+                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.heat1_points||'—'}${p.notes&&p.notes.includes('R1')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
+                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.heat2_points||'—'}${p.notes&&p.notes.includes('R2')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
+                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.final_points||'—'}${p.notes&&p.notes.includes('R3')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
+                <td style="padding:10px 8px;text-align:center;">
+                  <div style="font-size:15px;font-weight:700;color:${tc};">${p.total_points||0}${dsqNote}</div>
+                </td>
+                <td style="padding:10px 8px;text-align:center;">
+                  <div style="display:inline-block;padding:3px 10px;background:${accentLight};color:${accentDark};font-size:12px;font-weight:700;border-radius:4px;">${p.position||'—'}</div>
+                </td>
+              </tr>`;
+          }).join('');
+
+          const totalPts = filteredTotals.reduce((s,t) => s + parseInt(t.total_points||0), 0);
+
           return `
-            <div style="flex: 1; min-width: 0; max-width: 100%; padding: 20px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border: 2px solid #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
-              <div style="font-size: 28px; font-weight: 800; color: #92400e; margin-bottom: 4px;">${escapeHtml(season.total_points || 0)}</div>
-              <div style="font-size: 11px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">Total Points</div>
-              <div style="display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #fbbf2480;">
-                <div>
-                  <div style="font-size: 18px; font-weight: 700; color: #92400e;">${escapeHtml(season.races_completed)}</div>
-                  <div style="font-size: 10px; color: #b45309;">Races</div>
-                </div>
-                <div>
-                  <div style="font-size: 18px; font-weight: 700; color: #92400e;">${avgPoints}</div>
-                  <div style="font-size: 10px; color: #b45309;">Avg/Race</div>
-                </div>
+            <div style="margin-bottom:32px;">
+              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${accentColor};">
+                <span style="font-size:17px;font-weight:700;color:var(--ink);">${label}</span>
+                <span style="font-size:12px;background:${accentLight};color:${accentDark};padding:3px 10px;border-radius:20px;font-weight:600;">${totalPts} pts total</span>
               </div>
-              <div style="margin-top: 8px; font-size: 12px; font-weight: 600; color: #78350f;">
-                ${escapeHtml(season.season)} · ${escapeHtml(season.class)}
+              <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;">
+                ${summaryCards}
               </div>
-            </div>
-          `;
-        }).join('');
-        
-        // Build points history table with breakdown
-        const pointsRows = data.points.map((point, index) => {
-          const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
-          const totalColor = point.total_points >= 25 ? '#16a34a' : point.total_points >= 15 ? '#d97706' : '#6b7280';
-          
-          return `
-            <tr style="border-bottom: 1px solid #e5e7eb; background: ${rowBg}; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='${rowBg}'">
-              <td style="padding: 12px 8px;">
-                <div style="font-weight: 600; color: var(--ink); font-size: 14px;">${escapeHtml(point.event || 'Event')}</div>
-                <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Round ${escapeHtml(point.round || 'N/A')}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="font-size: 13px; color: var(--muted);">${escapeHtml(point.class || '-')}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="font-size: 13px; color: var(--muted);">${point.qualifying_points || '-'}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="font-size: 13px; color: var(--muted);">${point.heat1_points || '-'}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="font-size: 13px; color: var(--muted);">${point.heat2_points || '-'}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="font-size: 13px; color: var(--muted);">${point.final_points || '-'}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="font-size: 13px; color: #dc2626;">${point.penalties_points || '-'}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="font-size: 16px; font-weight: 700; color: ${totalColor};">${point.total_points || 0}</div>
-              </td>
-              <td style="padding: 12px 8px; text-align: center;">
-                <div style="display: inline-block; padding: 4px 10px; background: #dbeafe; color: #1e40af; font-size: 12px; font-weight: 700; border-radius: 4px;">
-                  ${point.position || '-'}
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
-        
-        container.innerHTML = `
-          <div style="margin-bottom: 24px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
-              ${seasonCards}
-            </div>
-            
-            ${data.seasonTotals.length > 0 ? `
-            <div style="padding: 16px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 24px;">
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span style="font-size: 20px;">📊</span>
-                <div style="font-weight: 700; color: #0c4a6e; font-size: 15px;">Season Summary</div>
+              <div style="overflow-x:auto;border-radius:8px;border:1px solid #1f1f1f;">
+                <table style="width:100%;border-collapse:collapse;">
+                  <thead>
+                    <tr style="background:#0f0f0f;border-bottom:2px solid ${accentColor}40;">
+                      <th style="padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Event / Class</th>
+                      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Race 1</th>
+                      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Race 2</th>
+                      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Race 3</th>
+                      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Total</th>
+                      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Position</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
               </div>
-              <div style="font-size: 13px; color: #0c4a6e; line-height: 1.6;">
-                You're competing in <strong>${escapeHtml(driverClass || 'N/A')}</strong> for the <strong>${escapeHtml(driverChampionship || 'Championship')}</strong>. 
-                Keep racing to climb the standings!
-              </div>
-            </div>
-            ` : ''}
-          </div>
-          
-          <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ink);">Race Results Breakdown</h3>
-            <div style="font-size: 12px; color: var(--muted);">${data.points.length} result${data.points.length !== 1 ? 's' : ''}</div>
-          </div>
-          
-          <div style="overflow-x: auto;">
-            <table class="table" style="width: 100%; border-collapse: collapse; background: #0a0a0a; border-radius: 8px; box-shadow: var(--shadow);">
-              <thead>
-                <tr style="background: #0f0f0f; border-bottom: 2px solid #1f1f1f;">
-                  <th style="padding: 12px 8px; text-align: left; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Event</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Class</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Quali</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Heat 1</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Heat 2</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Final</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Penalties</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Total</th>
-                  <th style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--ink); font-size: 11px; text-transform: uppercase;">Position</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${pointsRows}
-              </tbody>
-            </table>
-          </div>
-        `;
+            </div>`;
+        }
+
+        const nrSection   = buildChampSection('Northern Regions', data.points, data.seasonTotals, true);
+        const natsSection = buildChampSection('ROK NATS',         data.points, data.seasonTotals, false);
+
+        container.innerHTML = `<div style="margin-bottom:8px;">${nrSection}${natsSection}</div>`;
         
       } catch (error) {
         console.error('Error loading driver points:', error);

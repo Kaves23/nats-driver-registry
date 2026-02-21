@@ -6877,26 +6877,28 @@ app.get('/api/driver-points/:driverId', async (req, res) => {
       throw new Error('Driver ID required');
     }
 
-    // Get driver's points records
+    // Get driver's points records grouped by championship_type
     const pointsResult = await pool.query(
       `SELECT points_id, season, event, round, class,
               qualifying_points, heat1_points, heat2_points, final_points,
-              penalties_points, total_points, position, notes, created_at
+              penalties_points, total_points, position, notes, created_at,
+              COALESCE(championship_type, 'Northern Regions') AS championship_type
        FROM points
        WHERE driver_id = $1
-       ORDER BY created_at DESC`,
+       ORDER BY championship_type, season DESC, round ASC`,
       [driverId]
     );
 
-    // Calculate season totals by class
+    // Calculate season totals by class + championship_type
     const seasonTotals = await pool.query(
-      `SELECT season, class, 
+      `SELECT season, class,
+              COALESCE(championship_type, 'Northern Regions') AS championship_type,
               SUM(total_points) as total_points,
               COUNT(*) as races_completed
        FROM points
        WHERE driver_id = $1
-       GROUP BY season, class
-       ORDER BY season DESC, class`,
+       GROUP BY season, class, championship_type
+       ORDER BY championship_type, season DESC, class`,
       [driverId]
     );
 
@@ -6922,11 +6924,12 @@ app.get('/api/driver-points/:driverId', async (req, res) => {
   }
 });
 
-// Get championship standings for a specific class/season
+// Get championship standings for a specific class/season/championship_type
 app.get('/api/championship-standings/:season/:class', async (req, res) => {
   try {
     const { season, class: raceClass } = req.params;
-    
+    const champType = req.query.championship_type || 'Northern Regions';
+
     if (!season || !raceClass) {
       throw new Error('Season and class required');
     }
@@ -6936,13 +6939,14 @@ app.get('/api/championship-standings/:season/:class', async (req, res) => {
       `SELECT d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name,
               SUM(p.total_points) as total_points,
               COUNT(p.points_id) as races_completed,
-              MAX(p.position) as best_position
+              MIN(p.position::text) as best_position
        FROM points p
        JOIN drivers d ON p.driver_id = d.driver_id
        WHERE p.season = $1 AND p.class = $2
+         AND COALESCE(p.championship_type, 'Northern Regions') = $3
        GROUP BY d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name
        ORDER BY total_points DESC, races_completed DESC`,
-      [season, raceClass]
+      [season, raceClass, champType]
     );
 
     console.log(`✅ Retrieved championship standings: ${season} ${raceClass} - ${result.rows.length} drivers`);
