@@ -190,6 +190,19 @@ app.post('/api/admin/logout', (req, res) => {
   res.json({ success: true });
 });
 
+// Titan terminal login — authenticates with TITAN_PASSWORD and returns an admin-scoped token
+app.post('/api/titan/login', (req, res) => {
+  const { password } = req.body;
+  const titanPassword = process.env.TITAN_PASSWORD || 'titan2026';
+  if (!password || password !== titanPassword) {
+    return res.status(401).json({ success: false, error: 'Invalid access code' });
+  }
+  const token = uuidv4();
+  adminTokens.set(token, { expires: Date.now() + 12 * 60 * 60 * 1000, source: 'titan' }); // 12 hour session
+  console.log('✅ Titan terminal login — session created');
+  res.json({ success: true, token });
+});
+
 // =========================================================
 // ADMIN ROUTE PROTECTION
 // All routes below that are admin-only are guarded by
