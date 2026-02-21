@@ -1987,33 +1987,46 @@
             }
 
             try {
-                const response = await fetch(`/api/engineHistory?engineSerial=${engineSerial}`);
+                const response = await fetch(`/api/engineFullHistory?engineSerial=${engineSerial}`);
                 const data = await response.json();
                 
-                if (data.success && data.history.length > 0) {
-                    const escapeHtml = (str) => String(str).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
-                    
-                    let historyHtml = `<h4 style="margin-bottom: 15px;">Engine: ${escapeHtml(engineSerial)}</h4>`;
-                    historyHtml += `<div style="font-size: 14px; color: #666; margin-bottom: 20px;">Total uses: ${data.history.length}</div>`;
-                    
-                    data.history.forEach((record, index) => {
-                        const statusColor = record.engine_returned ? '#38ef7d' : '#667eea';
-                        historyHtml += `
-                            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid ${statusColor};">
-                                <div style="font-weight: bold; margin-bottom: 8px;">${escapeHtml(record.driver_name)} - ${escapeHtml(record.race_class)}</div>
-                                <div style="font-size: 13px; color: #666;">
-                                    <div>📅 Assigned: ${escapeHtml(new Date(record.engine_assigned_at).toLocaleString('en-ZA'))}</div>
-                                    ${record.engine_returned ? `
-                                        <div>✅ Returned: ${escapeHtml(new Date(record.engine_returned_at).toLocaleString('en-ZA'))}</div>
-                                        ${record.engine_issue ? `<div style="color: #f5576c; margin-top: 5px;">⚠️ Issue: ${escapeHtml(record.engine_issue)}</div>` : ''}
-                                        ${record.replacement_for ? `<div style="color: #667eea; margin-top: 5px;">🔄 Replaced: ${escapeHtml(record.replacement_for)}</div>` : ''}
-                                    ` : '<div style="color: #667eea;">🔵 Currently Assigned</div>'}
+                if (data.success && data.history && data.history.length > 0) {
+                    const ENG_STYLES = {
+                        loan_out:      { icon:'\u2B06', label:'LOAN OUT',      color:'#7c3aed' },
+                        loan_return:   { icon:'\u2B07', label:'RETURNED',      color:'#059669' },
+                        event_assign:  { icon:'\uD83C\uDFC1', label:'EVENT ASSIGN', color:'#1d4ed8' },
+                        event_return:  { icon:'\uD83D\uDD19', label:'EVENT RETURN', color:'#0f766e' },
+                        issue_reported:{ icon:'\u26A0',  label:'ISSUE',        color:'#b45309' },
+                        assign_engine: { icon:'\uD83D\uDD27', label:'SCAN ASSIGN', color:'#1d4ed8' },
+                        return_engine: { icon:'\u2714',  label:'SCAN RETURN',  color:'#059669' },
+                        replacement:   { icon:'\uD83D\uDD04', label:'REPLACEMENT', color:'#6d28d9' },
+                        engine_issue:  { icon:'\u26A0',  label:'ISSUE SCAN',   color:'#b45309' },
+                    };
+                    const rows = data.history.map(h => {
+                        const s  = ENG_STYLES[h.event_type] || { icon:'\uD83D\uDCCB', label:(h.event_type||'EVENT').toUpperCase().replace(/_/g,' '), color:'#555' };
+                        const dt = h.event_time ? new Date(h.event_time).toLocaleString('en-ZA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '\u2014';
+                        const extras = [
+                            h.context && h.context !== h.detail && h.context !== 'Equipment Scan' ? h.context : '',
+                            h.notes  ? '\u201c' + h.notes + '\u201d' : '',
+                            h.actor  ? 'By: ' + h.actor : ''
+                        ].filter(Boolean).join(' &bull; ');
+                        return `
+                            <div style="margin-bottom:12px;padding:14px 16px;border-radius:8px;background:#0f0f0f;border:1px solid rgba(255,255,255,0.08);border-left:4px solid ${s.color};">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+                                    <div>
+                                        <span style="background:${s.color};color:#fff;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;">${s.icon} ${s.label}</span>
+                                        ${h.driver_name ? ` <strong style="color:#fff;">${h.driver_name}</strong>` : ''}
+                                        ${h.detail && h.detail !== h.event_type ? `<div style="font-size:13px;color:${s.color};margin-top:3px;">${h.detail}</div>` : ''}
+                                        ${extras ? `<div style="font-size:12px;color:#9ca3af;margin-top:3px;">${extras}</div>` : ''}
+                                    </div>
+                                    <div style="font-size:12px;color:#9ca3af;white-space:nowrap;">${dt}</div>
                                 </div>
-                            </div>
-                        `;
-                    });
-                    
-                    document.getElementById('historyContent').innerHTML = historyHtml;
+                            </div>`;
+                    }).join('');
+                    document.getElementById('historyContent').innerHTML = `
+                        <h4 style="margin-bottom:8px;color:#fff;">Engine: ${engineSerial}</h4>
+                        <div style="font-size:13px;color:#9ca3af;margin-bottom:18px;">${data.count} event${data.count!==1?'s':''} recorded</div>
+                        <div>${rows}</div>`;
                     document.getElementById('historyResults').classList.remove('hidden');
                 } else {
                     showError('No history found for this engine');

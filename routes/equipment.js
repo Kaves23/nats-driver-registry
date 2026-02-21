@@ -833,5 +833,132 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     }
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // COMPREHENSIVE ENGINE TIMELINE — every event across all sources
+  // ─────────────────────────────────────────────────────────────────────────
+  router.get('/api/engineFullHistory', async (req, res) => {
+    try {
+      const { engineSerial } = req.query;
+      if (!engineSerial) return res.json({ success: false, error: 'Engine serial required' });
+      const serial = engineSerial.toUpperCase();
+
+      const result = await pool.query(`
+        -- Manual loans — issued out
+        SELECT
+          'loan_out'              AS event_type,
+          loan_date               AS event_time,
+          driver_name,
+          'Manual Loan'           AS context,
+          COALESCE(purpose, 'Practice') AS detail,
+          COALESCE(notes, '')     AS notes,
+          COALESCE(assigned_by, '') AS actor,
+          loan_id::text           AS ref_id,
+          'out'                   AS status
+        FROM engine_loans
+        WHERE engine_serial = $1
+
+        UNION ALL
+
+        -- Manual loans — returned
+        SELECT
+          'loan_return'           AS event_type,
+          returned_at             AS event_time,
+          driver_name,
+          'Manual Loan Return'    AS context,
+          'Engine signed back in' AS detail,
+          COALESCE(return_notes, '') AS notes,
+          COALESCE(returned_to, '') AS actor,
+          loan_id::text           AS ref_id,
+          'returned'              AS status
+        FROM engine_loans
+        WHERE engine_serial = $1
+          AND returned_at IS NOT NULL
+
+        UNION ALL
+
+        -- Equipment scan log (exclude loan events to avoid duplicates)
+        SELECT
+          LOWER(scan_type)        AS event_type,
+          scan_timestamp          AS event_time,
+          COALESCE(driver_name, '') AS driver_name,
+          COALESCE(race_class, 'Equipment Scan') AS context,
+          scan_type               AS detail,
+          COALESCE(notes, '')     AS notes,
+          COALESCE(scanned_by, '') AS actor,
+          log_id::text            AS ref_id,
+          COALESCE(action_result, 'success') AS status
+        FROM equipment_scan_log
+        WHERE equipment_serial = $1
+          AND scan_type NOT IN ('LOAN_ASSIGN', 'LOAN_RETURN')
+
+        UNION ALL
+
+        -- Race entry — engine assigned for event
+        SELECT
+          'event_assign'          AS event_type,
+          re.engine_assigned_at   AS event_time,
+          CONCAT(d.first_name, ' ', d.last_name) AS driver_name,
+          COALESCE(e.event_name, 'Race Event') AS context,
+          COALESCE(re.race_class, '') AS detail,
+          ''                      AS notes,
+          ''                      AS actor,
+          re.entry_id             AS ref_id,
+          'assigned'              AS status
+        FROM race_entries re
+        JOIN drivers d ON re.driver_id = d.driver_id
+        LEFT JOIN events e ON re.event_id = e.event_id
+        WHERE re.engine_serial = $1
+          AND re.engine_assigned_at IS NOT NULL
+
+        UNION ALL
+
+        -- Race entry — engine returned from event
+        SELECT
+          'event_return'          AS event_type,
+          re.engine_returned_at   AS event_time,
+          CONCAT(d.first_name, ' ', d.last_name) AS driver_name,
+          COALESCE(e.event_name, 'Race Event') AS context,
+          COALESCE(re.race_class, '') AS detail,
+          ''                      AS notes,
+          ''                      AS actor,
+          re.entry_id             AS ref_id,
+          'returned'              AS status
+        FROM race_entries re
+        JOIN drivers d ON re.driver_id = d.driver_id
+        LEFT JOIN events e ON re.event_id = e.event_id
+        WHERE re.engine_serial = $1
+          AND re.engine_returned = true
+          AND re.engine_returned_at IS NOT NULL
+
+        UNION ALL
+
+        -- Race entry — issue reported
+        SELECT
+          'issue_reported'        AS event_type,
+          re.updated_at           AS event_time,
+          CONCAT(d.first_name, ' ', d.last_name) AS driver_name,
+          COALESCE(e.event_name, 'Race Event') AS context,
+          COALESCE(re.engine_issue, 'Issue reported') AS detail,
+          ''                      AS notes,
+          ''                      AS actor,
+          re.entry_id             AS ref_id,
+          'issue'                 AS status
+        FROM race_entries re
+        JOIN drivers d ON re.driver_id = d.driver_id
+        LEFT JOIN events e ON re.event_id = e.event_id
+        WHERE re.engine_serial = $1
+          AND re.engine_issue IS NOT NULL
+          AND re.engine_issue != ''
+
+        ORDER BY event_time DESC NULLS LAST
+      `, [serial]);
+
+      res.json({ success: true, serial, history: result.rows, count: result.rows.length });
+    } catch (err) {
+      console.error('Error fetching full engine history:', err);
+      res.json({ success: false, error: 'Failed to fetch engine history' });
+    }
+  });
+
   return router;
 };
