@@ -25,11 +25,13 @@ const pool = new Pool({
 // EVENT METADATA
 // ─────────────────────────────────────────────────────────────────────────────
 const EVENT_META = {
-  name : '2026 NR Rnd 1 - Red Star',
-  round: 1,
-  season: '2026',
-  date : '2026-02-14',
-  venue: 'Red Star Raceway, Delmas'
+  name       : '2026 NR Rnd 1 - Red Star',
+  round      : 1,
+  season     : '2026',
+  date       : '2026-02-14',
+  venue      : 'Red Star Raceway, Delmas',
+  // 'regional' = Northern Regions only  |  'national' = ROK NATS only  |  'both' = scores both
+  event_type : 'regional'
 };
 
 // Points per session result — same scale for Regional & NATS
@@ -162,13 +164,14 @@ async function main() {
       continue;
     }
 
-    // Determine championship types to record
-    // Northern Regions is always regional.
-    // ROK NATS drivers also get a 'ROK NATS' scoring row (same points, different table).
-    const champTypes = ['Northern Regions'];
-    if (driver.championship && driver.championship.toUpperCase().includes('NATS')) {
-      champTypes.push('ROK NATS');
-    }
+    // Determine which championship table(s) this race scores for
+    // Regional events only score Northern Regions.
+    // National events only score ROK NATS.
+    // 'both' would score both tables (e.g. a race that counts toward both championships).
+    const champTypes =
+      EVENT_META.event_type === 'national' ? ['ROK NATS'] :
+      EVENT_META.event_type === 'both'     ? ['Northern Regions', 'ROK NATS'] :
+                                              ['Northern Regions'];
 
     for (const champType of champTypes) {
       const pointsId = uuidv4();
