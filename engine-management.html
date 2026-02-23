@@ -748,6 +748,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
     <!-- Camera Scanner Overlay -->
@@ -761,7 +762,7 @@
             <div class="camera-target">
                 <div class="camera-scan-line"></div>
             </div>
-            <div class="camera-hint">Align barcode within frame</div>
+            <div class="camera-hint">Align barcode or QR code within frame</div>
             <div class="scan-success" id="scanSuccess">✓ Scanned!</div>
         </div>
         <div class="camera-controls">
@@ -1254,12 +1255,17 @@
             }
         }
 
-        // Check if Quagga library is loaded
+        // Check if scanner libraries are loaded
         window.addEventListener('load', () => {
             if (typeof Quagga === 'undefined') {
                 debugLog('ERROR: Quagga library not loaded', 'error');
             } else {
                 debugLog('Quagga barcode library loaded OK', 'success');
+            }
+            if (typeof jsQR === 'undefined') {
+                debugLog('ERROR: jsQR library not loaded', 'error');
+            } else {
+                debugLog('jsQR QR code library loaded OK', 'success');
             }
         });
 
@@ -1343,11 +1349,32 @@
 
             Quagga.onDetected(function(result) {
                 if (!scanningActive) return;
-                
                 const code = result.codeResult.code;
                 debugLog('✓ Barcode detected: ' + code, 'success');
                 handleBarcodeDetected(code);
             });
+
+            // QR code scanning loop running alongside Quagga
+            const qrCanvas = document.createElement('canvas');
+            const qrCtx = qrCanvas.getContext('2d');
+            function qrScanLoop() {
+                if (!scanningActive) return;
+                const video = document.querySelector('#scanner-reader video');
+                if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+                    qrCanvas.width  = video.videoWidth;
+                    qrCanvas.height = video.videoHeight;
+                    qrCtx.drawImage(video, 0, 0);
+                    const imageData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+                    const qr = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+                    if (qr && qr.data) {
+                        debugLog('✓ QR code detected: ' + qr.data, 'success');
+                        handleBarcodeDetected(qr.data);
+                        return;
+                    }
+                }
+                requestAnimationFrame(qrScanLoop);
+            }
+            requestAnimationFrame(qrScanLoop);
         }
 
         // Native Camera Input with Quagga (works on all mobile devices)
@@ -1431,8 +1458,35 @@
                                     debugLog('Filled input: ' + inputId, 'success');
                                 }
                             } else {
-                                debugLog('❌ No barcode found in image', 'error');
-                                showError('No barcode detected. Tips: Get closer, good lighting, hold steady, keep barcode straight.');
+                                // Quagga found nothing — try jsQR for QR codes
+                                debugLog('No barcode found, trying QR code scan...', 'info');
+                                try {
+                                    const fb = document.createElement('canvas');
+                                    fb.width  = img.naturalWidth;
+                                    fb.height = img.naturalHeight;
+                                    fb.getContext('2d').drawImage(img, 0, 0);
+                                    const id = fb.getContext('2d').getImageData(0, 0, fb.width, fb.height);
+                                    const qr = jsQR(id.data, id.width, id.height, { inversionAttempts: 'attemptBoth' });
+                                    URL.revokeObjectURL(imageUrl);
+                                    if (qr && qr.data) {
+                                        debugLog('✓ QR code found: ' + qr.data, 'success');
+                                        const input = document.getElementById(inputId);
+                                        if (input) {
+                                            input.value = qr.data.toUpperCase();
+                                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                                            input.focus();
+                                        }
+                                        if (navigator.vibrate) navigator.vibrate(200);
+                                        showSuccess('✓ QR Scanned: ' + qr.data.toUpperCase());
+                                    } else {
+                                        debugLog('❌ No barcode or QR code found', 'error');
+                                        showError('No barcode or QR code detected. Get closer, ensure good lighting.');
+                                    }
+                                } catch (qrErr) {
+                                    URL.revokeObjectURL(imageUrl);
+                                    debugLog('QR fallback error: ' + qrErr.message, 'error');
+                                    showError('No barcode detected. Please try again or enter manually.');
+                                }
                             }
                         });
                     };

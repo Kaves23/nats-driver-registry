@@ -248,7 +248,6 @@ const ADMIN_ONLY_PATHS = [
   // Debug/diagnostic endpoints - admin only
   '/api/debug-env',
   '/api/check-schema',
-  '/api/preview-ticket',
   '/api/test-db',
   '/api/create-test-driver',
 ];
@@ -1073,15 +1072,22 @@ function generateRaceTicketHTML(ticketData) {
 // Generate ENGINE RENTAL ticket HTML - Vortex Engines
 // Generate unique ticket reference with barcode
 function generateUniqueTicketRef(type, driverId, eventId) {
-  const random4Digit = Math.floor(1000 + Math.random() * 9000); // Random number between 1000-9999
   const typeCode = {
     'engine': 'ENG',
     'tyres': 'TYR',
     'transponder': 'TX',
     'fuel': 'GAS'
   }[type] || 'TKT';
-  
-  // Format: TYPEXXXX (e.g., ENG1234, TYR5678, TX9012, GAS3456)
+
+  let random4Digit;
+  if (type === 'engine') {
+    // Engine voucher codes: ENG5500–ENG5599
+    random4Digit = Math.floor(5500 + Math.random() * 100);
+  } else {
+    random4Digit = Math.floor(1000 + Math.random() * 9000);
+  }
+
+  // Format: TYPEXXXX (e.g., ENG5523, TYR5678, TX9012, GAS3456)
   return `${typeCode}${random4Digit}`;
 }
 
@@ -1092,17 +1098,30 @@ function generateEngineRentalTicketHTML(ticketData) {
     eventDate,
     eventLocation,
     raceClass,
-    driverName
+    driverName,
+    raceNumber
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
   const formattedDate = dateObj.toLocaleDateString('en-ZA', { 
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
   }).toUpperCase();
-  
-  const barcodeRef = reference.slice(-12).toUpperCase();
-  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
-  
+
+  // Class colour map
+  const classColour = (() => {
+    const c = (raceClass || '').toUpperCase();
+    if (c.includes('CADET'))             return '#f97316'; // orange
+    if (c.includes('MINI') && c.includes('10')) return '#ec4899'; // pink
+    if (c.includes('MINI'))              return '#7c3aed'; // purple
+    if (c.includes('OK-J') || c.includes('OKJ')) return '#2563eb'; // blue
+    if (c.includes('OK-N') || c.includes('OKN')) return '#059669'; // green
+    if (c.includes('OK'))                return '#0891b2'; // cyan
+    return '#374151'; // gray default
+  })();
+
+  const qrData = reference.toUpperCase();
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(qrData)}`;
+
   // Vortex logo URL (hosted) - using text fallback for email compatibility
   const vortexLogoUrl = 'https://www.vortex-rok.com/wp-content/uploads/2020/01/vortex-logo.png';
   
@@ -1116,18 +1135,29 @@ function generateEngineRentalTicketHTML(ticketData) {
           <td>
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #1e3a5f; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(30,58,95,0.3);">
               
-              <!-- Header with Logo -->
+              <!-- Header with Logo + Race Number -->
               <tr>
-                <td style="padding: 20px 20px 16px 20px; text-align: center; background-color: #1e3a5f;">
-                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto 12px auto;">
+                <td style="padding: 20px 20px 16px 20px; background-color: #1e3a5f; position: relative;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
                     <tr>
-                      <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #f59e0b; text-align: center; vertical-align: middle;">
-                        <span style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 900; color: #1e3a5f; letter-spacing: 1px;">VORTEX</span>
+                      <td style="vertical-align: top; text-align: left; width: 80px;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                          <tr>
+                            <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #f59e0b; text-align: center; vertical-align: middle;">
+                              <span style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 900; color: #1e3a5f; letter-spacing: 1px;">VORTEX</span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td style="vertical-align: top; text-align: center;">
+                        <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #f59e0b; text-transform: uppercase;">Rental Engine</div>
+                        <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">VORTEX ROK</div>
+                      </td>
+                      <td style="vertical-align: top; text-align: right; width: 72px;">
+                        ${raceNumber ? `<div style="font-family: 'Courier New', monospace; font-size: 44px; font-weight: 900; color: #f59e0b; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">#${raceNumber}</div>` : ''}
                       </td>
                     </tr>
                   </table>
-                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #f59e0b; text-transform: uppercase;">Rental Engine</div>
-                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">VORTEX ROK</div>
                 </td>
               </tr>
               
@@ -1141,7 +1171,10 @@ function generateEngineRentalTicketHTML(ticketData) {
                           <tr>
                             <td style="width: 50%;">
                               <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">CLASS</div>
-                              <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #111; margin-top: 2px;">${(raceClass || 'TBA').toUpperCase()}</div>
+                              <div style="display:inline-flex;align-items:center;gap:6px;margin-top:2px;">
+                                <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${classColour};"></span>
+                                <span style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #111;">${(raceClass || 'TBA').toUpperCase()}</span>
+                              </div>
                             </td>
                             <td style="width: 50%; text-align: right;">
                               <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
@@ -1158,11 +1191,13 @@ function generateEngineRentalTicketHTML(ticketData) {
                       </td>
                     </tr>
                     <tr>
-                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
-                        ${barcodeSVG}
-                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
-                          REF: <strong>${reference}</strong>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd; text-align: center;">
+                        <img src="${qrCodeUrl}" alt="${qrData}" width="160" height="160"
+                             style="display:block;margin:0 auto;border-radius:6px;" />
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 900; color: #111; text-align: center; margin-top: 8px; letter-spacing: 0.12em;">
+                          ${reference}
                         </div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-align: center; margin-top: 2px;">Scan QR code to collect engine</div>
                       </td>
                     </tr>
                     <tr>
@@ -1493,9 +1528,19 @@ app.get('/api/preview-ticket', (req, res) => {
     driverName: 'Max Verstappen',
     teamCode: 'RSR'
   };
+
+  const engineTicketData = {
+    reference: `ENG${Math.floor(5500 + Math.random() * 100)}`,
+    eventName: 'Northern Regions Crown Race',
+    eventDate: '2026-02-14',
+    eventLocation: 'Red Star Raceway, Mpumalanga',
+    raceClass: 'OK-J',
+    driverName: 'Max Verstappen',
+    raceNumber: '33'
+  };
   
   const raceTicketHtml = generateRaceTicketHTML(ticketData);
-  const engineTicketHtml = generateEngineRentalTicketHTML(ticketData);
+  const engineTicketHtml = generateEngineRentalTicketHTML(engineTicketData);
   const tyreTicketHtml = generateTyreRentalTicketHTML(ticketData);
   const transponderTicketHtml = generateTransponderRentalTicketHTML(ticketData);
   
@@ -3995,7 +4040,8 @@ app.get('/api/initiateRacePayment', async (req, res) => {
             eventDate,
             eventLocation,
             raceClass,
-            driverName
+            driverName,
+            raceNumber: driver?.race_number
           });
         }
         if (hasTyres && ticketTyresRef) {
@@ -4633,6 +4679,9 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     // Send confirmation emails
     try {
       const driverName = `${firstName || 'Driver'} ${lastName || ''}`.trim();
+      // Get driver race number for ticket
+      const driverRaceNumResult = await pool.query('SELECT race_number FROM drivers WHERE driver_id = $1', [driverId]);
+      const driverRaceNumber = driverRaceNumResult.rows[0]?.race_number;
       
       // Fetch event details
       const eventResult = await pool.query(
@@ -4661,7 +4710,8 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
           eventDate: eventDetails?.event_date,
           eventLocation,
           raceClass,
-          driverName
+          driverName,
+          raceNumber: driverRaceNumber
         });
       }
       if (hasTyresItem && ticketTyresRef) {
@@ -6253,7 +6303,7 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
     const entryResult = await pool.query(
       `SELECT 
         re.*,
-        d.first_name, d.last_name, c.email as driver_email,
+        d.first_name, d.last_name, d.race_number as driver_race_number, c.email as driver_email,
         e.event_name, e.event_date, e.location
        FROM race_entries re
        LEFT JOIN drivers d ON re.driver_id = d.driver_id
@@ -6321,7 +6371,8 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
         eventDate: entry.event_date,
         eventLocation: entry.location,
         raceClass: entry.race_class,
-        driverName
+        driverName,
+        raceNumber: entry.driver_race_number
       });
     }
     if (hasTyres && entry.ticket_tyres_ref) {
@@ -6490,7 +6541,7 @@ app.post('/api/updateAndResendTickets', async (req, res) => {
     const entryResult = await pool.query(
       `SELECT 
         re.*,
-        d.first_name, d.last_name, c.email as driver_email,
+        d.first_name, d.last_name, d.race_number as driver_race_number, c.email as driver_email,
         e.event_name, e.event_date, e.location
        FROM race_entries re
        LEFT JOIN drivers d ON re.driver_id = d.driver_id
@@ -6560,7 +6611,8 @@ app.post('/api/updateAndResendTickets', async (req, res) => {
         eventDate: entry.event_date,
         eventLocation: entry.location,
         raceClass: entry.race_class,
-        driverName
+        driverName,
+        raceNumber: entry.driver_race_number
       });
     }
     if (hasTyres && ticketTyresRef) {
