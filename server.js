@@ -1135,29 +1135,18 @@ function generateEngineRentalTicketHTML(ticketData) {
           <td>
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%; background-color: #1e3a5f; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(30,58,95,0.3);">
               
-              <!-- Header with Logo + Race Number -->
+              <!-- Header with Logo centered -->
               <tr>
-                <td style="padding: 20px 20px 16px 20px; background-color: #1e3a5f; position: relative;">
-                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width: 100%;">
+                <td style="padding: 20px 20px 16px 20px; background-color: #1e3a5f; text-align: center;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                     <tr>
-                      <td style="vertical-align: top; text-align: left; width: 80px;">
-                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                          <tr>
-                            <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #f59e0b; text-align: center; vertical-align: middle;">
-                              <span style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 900; color: #1e3a5f; letter-spacing: 1px;">VORTEX</span>
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                      <td style="vertical-align: top; text-align: center;">
-                        <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #f59e0b; text-transform: uppercase;">Rental Engine</div>
-                        <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">VORTEX ROK</div>
-                      </td>
-                      <td style="vertical-align: top; text-align: right; width: 72px;">
-                        ${raceNumber ? `<div style="font-family: 'Courier New', monospace; font-size: 44px; font-weight: 900; color: #f59e0b; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">#${raceNumber}</div>` : ''}
+                      <td style="width: 70px; height: 70px; border-radius: 50%; background-color: #ffffff; border: 3px solid #f59e0b; text-align: center; vertical-align: middle;">
+                        <span style="font-family: Arial, sans-serif; font-size: 11px; font-weight: 900; color: #1e3a5f; letter-spacing: 1px;">VORTEX</span>
                       </td>
                     </tr>
                   </table>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #f59e0b; text-transform: uppercase; margin-top: 10px;">Rental Engine</div>
+                  <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">VORTEX ROK</div>
                 </td>
               </tr>
               
@@ -1176,9 +1165,10 @@ function generateEngineRentalTicketHTML(ticketData) {
                                 <span style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 800; color: #111;">${(raceClass || 'TBA').toUpperCase()}</span>
                               </div>
                             </td>
-                            <td style="width: 50%; text-align: right;">
+                            <td style="width: 50%; text-align: right; vertical-align: top;">
                               <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
                               <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                              ${raceNumber ? `<div style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #1e3a5f; line-height: 1; margin-top: 6px;">#${raceNumber}</div>` : ''}
                             </td>
                           </tr>
                         </table>

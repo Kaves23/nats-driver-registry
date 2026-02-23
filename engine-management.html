@@ -604,11 +604,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%;
-            max-width: 400px;
-            height: 200px;
-            border: 3px solid var(--winter);
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+            width: 72%;
+            max-width: 320px;
+            height: 320px;
+            max-height: 72vw;
+            border: none;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
             pointer-events: none;
             z-index: 2;
             transition: all 0.3s ease;
@@ -634,30 +635,48 @@
             position: absolute;
             width: 40px;
             height: 40px;
-            border: 3px solid var(--winter);
+            border: 4px solid #00e5ff;
         }
 
         .camera-target::before {
-            top: -3px;
-            left: -3px;
+            top: -4px;
+            left: -4px;
             border-right: none;
             border-bottom: none;
         }
 
         .camera-target::after {
-            bottom: -3px;
-            right: -3px;
+            bottom: -4px;
+            right: -4px;
             border-left: none;
             border-top: none;
         }
 
+        /* Extra two corners via inner elements */
+        .camera-target .corner-bl,
+        .camera-target .corner-tr {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #00e5ff;
+        }
+        .camera-target .corner-bl {
+            bottom: -4px; left: -4px;
+            border-right: none; border-top: none;
+        }
+        .camera-target .corner-tr {
+            top: -4px; right: -4px;
+            border-left: none; border-bottom: none;
+        }
+
         .camera-scan-line {
             position: absolute;
-            width: 100%;
-            height: 3px;
-            background: var(--winter);
-            box-shadow: 0 0 10px var(--winter);
-            animation: cameraScan 2s ease-in-out infinite;
+            width: calc(100% - 16px);
+            left: 8px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+            box-shadow: 0 0 8px #00e5ff;
+            animation: cameraScan 1.8s ease-in-out infinite;
         }
 
         @keyframes cameraScan {
@@ -747,22 +766,23 @@
             }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
     <!-- Camera Scanner Overlay -->
     <div id="cameraOverlay" class="camera-overlay">
         <div class="camera-header">
-            <div class="camera-title">Scan Barcode</div>
+            <div class="camera-title">Scan QR Code</div>
             <button class="camera-close" onclick="closeCamera()">×</button>
         </div>
         <div class="camera-viewport">
             <div id="scanner-reader"></div>
             <div class="camera-target">
+                <div class="corner-bl"></div>
+                <div class="corner-tr"></div>
                 <div class="camera-scan-line"></div>
             </div>
-            <div class="camera-hint">Align barcode or QR code within frame</div>
+            <div class="camera-hint">Hold QR code steady in the box</div>
             <div class="scan-success" id="scanSuccess">✓ Scanned!</div>
         </div>
         <div class="camera-controls">
@@ -1269,307 +1289,251 @@
             }
         });
 
-        // Open Camera for Barcode Scanning (Hybrid Approach)
+        // ── QR Scanner ──────────────────────────────────────────────
+        // Single entry point. Tries live streaming first; falls back to
+        // photo-from-file-input if getUserMedia is unavailable (LAN HTTP).
         async function openCamera(inputId) {
-            debugLog('📷 Opening camera for: ' + inputId);
             currentTargetInput = inputId;
+            debugLog('📷 Scan for: ' + inputId);
 
-            // Check if we can use camera streaming
-            const canUseStream = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-            debugLog('Stream support: ' + (canUseStream ? 'YES' : 'NO'));
-            
-            if (canUseStream && typeof Quagga !== 'undefined') {
-                // Try streaming camera approach
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
-                    await openStreamingCamera(inputId);
+                    await openLiveScanner(inputId);
                     return;
-                } catch (err) {
-                    debugLog('Stream failed: ' + err.message, 'error');
+                } catch(err) {
+                    debugLog('Live camera unavailable (' + err.message + ') — using photo mode', 'error');
+                    closeCamera();
                 }
             }
-            
-            // Fallback: Use native file input with camera
-            debugLog('Using native camera input');
-            openNativeCamera(inputId);
+            openPhotoCapture(inputId);
         }
 
-        // Streaming Camera with Quagga (for browsers that support it)
-        async function openStreamingCamera(inputId) {
+        // Live streaming scanner (requires getUserMedia — works on HTTPS or localhost)
+        async function openLiveScanner(inputId) {
             const overlay = document.getElementById('cameraOverlay');
             overlay.classList.add('active');
             scanningActive = true;
 
-            debugLog('Starting Quagga camera scanner...');
-
-            Quagga.init({
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#scanner-reader'),
-                    constraints: {
-                        facingMode: "environment",
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                },
-                decoder: {
-                    readers: [
-                        "code_128_reader",
-                        "code_39_reader",
-                        "code_39_vin_reader",
-                        "ean_reader",
-                        "ean_8_reader",
-                        "upc_reader",
-                        "upc_e_reader",
-                        "codabar_reader",
-                        "i2of5_reader"
-                    ],
-                    debug: {
-                        drawBoundingBox: true,
-                        showFrequency: true,
-                        drawScanline: true,
-                        showPattern: true
-                    }
-                },
-                locate: true,
-                locator: {
-                    halfSample: true,
-                    patchSize: "medium"
-                }
-            }, function(err) {
-                if (err) {
-                    debugLog('Quagga init error: ' + err.message, 'error');
-                    closeCamera();
-                    openNativeCamera(inputId);
-                    return;
-                }
-                debugLog('Quagga started successfully', 'success');
-                Quagga.start();
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
             });
+            cameraStream = stream;
 
-            Quagga.onDetected(function(result) {
-                if (!scanningActive) return;
-                const code = result.codeResult.code;
-                debugLog('✓ Barcode detected: ' + code, 'success');
-                handleBarcodeDetected(code);
-            });
+            const scannerDiv = document.querySelector('#scanner-reader');
+            scannerDiv.innerHTML = '';
+            const video = document.createElement('video');
+            video.setAttribute('playsinline', '');
+            video.setAttribute('autoplay', '');
+            video.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+            scannerDiv.appendChild(video);
+            video.srcObject = stream;
+            await video.play();
 
-            // QR code scanning loop running alongside Quagga
-            const qrCanvas = document.createElement('canvas');
-            const qrCtx = qrCanvas.getContext('2d');
-            function qrScanLoop() {
-                if (!scanningActive) return;
-                const video = document.querySelector('#scanner-reader video');
-                if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-                    qrCanvas.width  = video.videoWidth;
-                    qrCanvas.height = video.videoHeight;
-                    qrCtx.drawImage(video, 0, 0);
-                    const imageData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
-                    const qr = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-                    if (qr && qr.data) {
-                        debugLog('✓ QR code detected: ' + qr.data, 'success');
-                        handleBarcodeDetected(qr.data);
-                        return;
-                    }
+            // Use native BarcodeDetector (Chrome/Android) if available, else jsQR
+            if ('BarcodeDetector' in window) {
+                const det = new BarcodeDetector({ formats: ['qr_code'] });
+                debugLog('Live — BarcodeDetector ready', 'success');
+                async function liveDetect() {
+                    if (!scanningActive) return;
+                    try {
+                        const results = await det.detect(video);
+                        if (results.length > 0) {
+                            onQRFound(results[0].rawValue);
+                            return;
+                        }
+                    } catch(e) {}
+                    if (scanningActive) requestAnimationFrame(liveDetect);
                 }
-                requestAnimationFrame(qrScanLoop);
+                requestAnimationFrame(liveDetect);
+            } else {
+                debugLog('Live — jsQR ready', 'success');
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                function liveJsQR() {
+                    if (!scanningActive) return;
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width  = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0);
+                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
+                        if (qr && qr.data) {
+                            onQRFound(qr.data);
+                            return;
+                        }
+                    }
+                    if (scanningActive) requestAnimationFrame(liveJsQR);
+                }
+                requestAnimationFrame(liveJsQR);
             }
-            requestAnimationFrame(qrScanLoop);
         }
 
-        // Native Camera Input with Quagga (works on all mobile devices)
-        function openNativeCamera(inputId) {
-            debugLog('Setting up native camera input');
-            
-            // Create a temporary file input
+        // Photo capture fallback (file input — works on any HTTP context)
+        function openPhotoCapture(inputId) {
+            debugLog('Photo mode — opening camera');
+
+            // Show overlay with "take photo" prompt while waiting
+            const overlay = document.getElementById('cameraOverlay');
+            overlay.classList.add('active');
+            const hint = overlay.querySelector('.camera-hint');
+            if (hint) hint.textContent = 'Point camera at QR code and tap shutter';
+
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
             fileInput.capture = 'environment';
-            
-            fileInput.onchange = async (e) => {
-                const file = e.target.files[0];
-                debugLog('File selected: ' + (file ? file.name : 'NONE'));
-                
-                if (!file) {
-                    debugLog('User cancelled', 'error');
-                    return;
-                }
-                
-                if (typeof Quagga === 'undefined') {
-                    debugLog('Quagga not available!', 'error');
-                    showError('Barcode scanner library not loaded');
-                    return;
-                }
-                
-                try {
-                    debugLog('🔍 Scanning image with Quagga...');
-                    showMessage('Analyzing image...');
-                    
-                    // Convert file to image
-                    const imageUrl = URL.createObjectURL(file);
-                    const img = new Image();
-                    
-                    img.onload = function() {
-                        debugLog('Image loaded, scanning...');
-                        
-                        Quagga.decodeSingle({
-                            src: imageUrl,
-                            numOfWorkers: 0,
-                            decoder: {
-                                readers: [
-                                    "code_128_reader",
-                                    "code_39_reader", 
-                                    "code_39_vin_reader",
-                                    "ean_reader",
-                                    "ean_8_reader",
-                                    "upc_reader",
-                                    "upc_e_reader",
-                                    "codabar_reader",
-                                    "i2of5_reader"
-                                ]
-                            },
-                            locate: true,
-                            locator: {
-                                halfSample: true,
-                                patchSize: "large"
-                            }
-                        }, function(result) {
-                            URL.revokeObjectURL(imageUrl);
-                            
-                            if (result && result.codeResult) {
-                                const barcode = result.codeResult.code;
-                                debugLog('✓ Found barcode: ' + barcode, 'success');
-                                
-                                // Fill the input field
-                                const input = document.getElementById(inputId);
-                                if (input) {
-                                    const barcodeValue = barcode.toUpperCase();
-                                    input.value = barcodeValue;
-                                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                                    input.focus();
-                                    
-                                    // Vibrate on success
-                                    if (navigator.vibrate) {
-                                        navigator.vibrate(200);
-                                    }
-                                    
-                                    showSuccess('✓ Scanned: ' + barcodeValue);
-                                    debugLog('Filled input: ' + inputId, 'success');
-                                }
-                            } else {
-                                // Quagga found nothing — try jsQR for QR codes
-                                debugLog('No barcode found, trying QR code scan...', 'info');
-                                try {
-                                    const fb = document.createElement('canvas');
-                                    fb.width  = img.naturalWidth;
-                                    fb.height = img.naturalHeight;
-                                    fb.getContext('2d').drawImage(img, 0, 0);
-                                    const id = fb.getContext('2d').getImageData(0, 0, fb.width, fb.height);
-                                    const qr = jsQR(id.data, id.width, id.height, { inversionAttempts: 'attemptBoth' });
-                                    URL.revokeObjectURL(imageUrl);
-                                    if (qr && qr.data) {
-                                        debugLog('✓ QR code found: ' + qr.data, 'success');
-                                        const input = document.getElementById(inputId);
-                                        if (input) {
-                                            input.value = qr.data.toUpperCase();
-                                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                                            input.focus();
-                                        }
-                                        if (navigator.vibrate) navigator.vibrate(200);
-                                        showSuccess('✓ QR Scanned: ' + qr.data.toUpperCase());
-                                    } else {
-                                        debugLog('❌ No barcode or QR code found', 'error');
-                                        showError('No barcode or QR code detected. Get closer, ensure good lighting.');
-                                    }
-                                } catch (qrErr) {
-                                    URL.revokeObjectURL(imageUrl);
-                                    debugLog('QR fallback error: ' + qrErr.message, 'error');
-                                    showError('No barcode detected. Please try again or enter manually.');
-                                }
-                            }
-                        });
-                    };
-                    
-                    img.onerror = function() {
-                        debugLog('❌ Failed to load image', 'error');
-                        showError('Could not load image');
-                        URL.revokeObjectURL(imageUrl);
-                    };
-                    
-                    img.src = imageUrl;
-                    
-                } catch (err) {
-                    debugLog('❌ Scan error: ' + err.message, 'error');
-                    showError('Scan failed. Please try again or enter manually.');
-                }
+            fileInput.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+            document.body.appendChild(fileInput);
+
+            fileInput.onchange = (e) => {
+                try { document.body.removeChild(fileInput); } catch(_) {}
+                overlay.classList.remove('active');
+                if (hint) hint.textContent = 'Hold QR code steady in the box';
+
+                const file = e.target.files && e.target.files[0];
+                if (!file) { debugLog('No photo taken', 'error'); return; }
+                debugLog('Photo taken — decoding...');
+
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = function() {
+                    decodeQRFromImage(img, url, inputId);
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); showError('Could not load image'); };
+                img.src = url;
             };
-            
-            debugLog('Triggering camera...');
+
+            fileInput.oncancel = () => {
+                try { document.body.removeChild(fileInput); } catch(_) {}
+                overlay.classList.remove('active');
+            };
             fileInput.click();
         }
 
+        // Decode QR from a loaded <img> element — tries BarcodeDetector then jsQR
+        function decodeQRFromImage(img, url, inputId) {
+            if ('BarcodeDetector' in window) {
+                const det = new BarcodeDetector({ formats: ['qr_code'] });
+                det.detect(img).then(results => {
+                    URL.revokeObjectURL(url);
+                    if (results.length > 0) {
+                        debugLog('✓ BarcodeDetector: ' + results[0].rawValue, 'success');
+                        onQRFound(results[0].rawValue);
+                    } else {
+                        debugLog('BarcodeDetector found nothing, trying jsQR...', 'info');
+                        decodeWithJsQR(img, inputId);
+                    }
+                }).catch(err => {
+                    URL.revokeObjectURL(url);
+                    debugLog('BarcodeDetector error: ' + err.message + ', trying jsQR...', 'error');
+                    decodeWithJsQR(img, inputId);
+                });
+            } else {
+                URL.revokeObjectURL(url);
+                decodeWithJsQR(img, inputId);
+            }
+        }
 
+        // jsQR decode from a loaded <img> element
+        function decodeWithJsQR(img, inputId) {
+            try {
+                // Resize large images before passing to jsQR.
+                // iPhone photos are 4032x3024 — jsQR fails when QR is tiny relative to image.
+                // Target: longest side ~800px for fast, reliable decode.
+                const MAX = 800;
+                let w = img.naturalWidth;
+                let h = img.naturalHeight;
+                if (w > MAX || h > MAX) {
+                    const scale = MAX / Math.max(w, h);
+                    w = Math.round(w * scale);
+                    h = Math.round(h * scale);
+                }
+                debugLog('jsQR decode at ' + w + 'x' + h, 'info');
+                const canvas = document.createElement('canvas');
+                canvas.width  = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
+                if (qr && qr.data) {
+                    debugLog('✓ jsQR: ' + qr.data, 'success');
+                    onQRFound(qr.data);
+                } else {
+                    // Try once more at a higher resolution if image was big
+                    if (img.naturalWidth > MAX) {
+                        const MAX2 = 1600;
+                        let w2 = img.naturalWidth, h2 = img.naturalHeight;
+                        if (w2 > MAX2 || h2 > MAX2) { const s = MAX2 / Math.max(w2, h2); w2 = Math.round(w2*s); h2 = Math.round(h2*s); }
+                        debugLog('Retry jsQR at ' + w2 + 'x' + h2, 'info');
+                        const c2 = document.createElement('canvas');
+                        c2.width = w2; c2.height = h2;
+                        c2.getContext('2d').drawImage(img, 0, 0, w2, h2);
+                        const id2 = c2.getContext('2d').getImageData(0, 0, w2, h2);
+                        const qr2 = jsQR(id2.data, id2.width, id2.height, { inversionAttempts: 'attemptBoth' });
+                        if (qr2 && qr2.data) {
+                            debugLog('✓ jsQR retry: ' + qr2.data, 'success');
+                            onQRFound(qr2.data);
+                            return;
+                        }
+                    }
+                    debugLog('No QR code found (orig: ' + img.naturalWidth + 'x' + img.naturalHeight + ')', 'error');
+                    showError('No QR code found. Get closer to the QR code and try again.');
+                }
+            } catch(err) {
+                debugLog('jsQR error: ' + err.message, 'error');
+                showError('Decode failed — try again or type manually.');
+            }
+        }
 
-
-
-        // Handle successful barcode detection
-        function handleBarcodeDetected(barcode) {
-            if (!currentTargetInput || !scanningActive) return;
-
+        // Called when any scanner method finds a QR code
+        function onQRFound(value) {
+            const upper = value.trim().toUpperCase();
             scanningActive = false;
-            
-            // Fill the input field
+
+            // Fill target input
             const input = document.getElementById(currentTargetInput);
             if (input) {
-                input.value = barcode.toUpperCase();
-                
-                // Trigger input event for any validation
+                input.value = upper;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             }
 
-            // Show success feedback on camera target with green flash
+            // Visual feedback on overlay (if live scanner was open)
             const target = document.querySelector('.camera-target');
             const successEl = document.getElementById('scanSuccess');
-            
-            target.classList.add('scan-success');
-            successEl.style.display = 'block';
-            
-            // Vibrate if supported (double pulse for success)
-            if (navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
-            }
+            if (target) target.classList.add('scan-success');
+            if (successEl) successEl.style.display = 'block';
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-            // Close camera after short delay
+            // Show toast and close
+            showSuccess('✓ Scanned: ' + upper);
             setTimeout(() => {
-                target.classList.remove('scan-success');
-                successEl.style.display = 'none';
+                if (target) target.classList.remove('scan-success');
+                if (successEl) successEl.style.display = 'none';
                 closeCamera();
-            }, 800);
+                // Focus input after close
+                const inp = document.getElementById(currentTargetInput || '');
+                if (inp) inp.focus();
+            }, 600);
         }
 
-        // Close Camera
-        async function closeCamera() {
+        // Close live scanner overlay and stop stream
+        function closeCamera() {
             scanningActive = false;
             const overlay = document.getElementById('cameraOverlay');
             overlay.classList.remove('active');
-
-            // Stop Quagga scanner
-            if (typeof Quagga !== 'undefined') {
-                try {
-                    Quagga.stop();
-                    debugLog('Quagga stopped');
-                } catch (err) {
-                    console.log('Quagga stop error:', err);
-                }
+            if (cameraStream) {
+                try { cameraStream.getTracks().forEach(t => t.stop()); } catch(_) {}
+                cameraStream = null;
             }
-
+            const scannerDiv = document.querySelector('#scanner-reader');
+            if (scannerDiv) scannerDiv.innerHTML = '';
             currentTargetInput = null;
             flashEnabled = false;
             document.getElementById('flashIcon').textContent = '🔦';
         }
 
-        // Toggle Flash/Torch (for Quagga)
+        // Toggle Flash/Torch
         async function toggleFlash() {
             try {
                 const video = document.querySelector('#scanner-reader video');
