@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Activity Monitor — ROK Cup SA</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #04080f;
+      color: #e2e8f0;
+      font-family: 'Courier New', Courier, monospace;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 28px;
+      background: #070d1a;
+      border-bottom: 2px solid #0f2040;
+      flex-shrink: 0;
+      gap: 20px;
+    }
+    #header .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    #header .brand .sup {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: #4a6fa5;
+      text-transform: uppercase;
+    }
+    #header .brand .title {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: #fff;
+    }
+    #header .brand .sub {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #4a6fa5;
+    }
+    #header .center-info {
+      text-align: center;
+      flex: 1;
+    }
+    #header .center-info .event-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #94a3b8;
+    }
+    #status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: inline-block;
+      margin-right: 6px;
+      transition: background 0.3s;
+    }
+    #status-dot.live { background: #22c55e; box-shadow: 0 0 8px #22c55e88; animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+    #header .right-panel {
+      text-align: right;
+      min-width: 180px;
+    }
+    #clock {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      line-height: 1;
+    }
+    #date-label {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #4a6fa5;
+      margin-top: 2px;
+    }
+    #conn-status {
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* ── STAT BAR ── */
+    #stat-bar {
+      display: flex;
+      gap: 1px;
+      background: #0f2040;
+      border-bottom: 1px solid #0f2040;
+      flex-shrink: 0;
+    }
+    .stat-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #070d1a;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .stat-pill .count {
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .stat-pill .label { color: #64748b; }
+    .stat-engine   { border-top: 2px solid #f59e0b; }
+    .stat-engine   .count { color: #f59e0b; }
+    .stat-tyres    { border-top: 2px solid #06b6d4; }
+    .stat-tyres    .count { color: #06b6d4; }
+    .stat-trans    { border-top: 2px solid #a78bfa; }
+    .stat-trans    .count { color: #a78bfa; }
+    .stat-fuel     { border-top: 2px solid #34d399; }
+    .stat-fuel     .count { color: #34d399; }
+    .stat-entry    { border-top: 2px solid #0ea5e9; }
+    .stat-entry    .count { color: #0ea5e9; }
+    .stat-loans    { border-top: 2px solid #fb923c; }
+    .stat-loans    .count { color: #fb923c; }
+    .stat-errors   { border-top: 2px solid #ef4444; }
+    .stat-errors   .count { color: #ef4444; }
+
+    /* ── ACTIVITY FEED ── */
+    #feed-wrapper {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    #feed {
+      display: flex;
+      flex-direction: column;
+      padding: 10px 16px;
+      gap: 6px;
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-behavior: auto;
+    }
+    /* scrollbar */
+    #feed::-webkit-scrollbar { width: 4px; }
+    #feed::-webkit-scrollbar-track { background: transparent; }
+    #feed::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 2px; }
+
+    /* ── ACTIVITY CARD ── */
+    .card {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 20px;
+      border-radius: 8px;
+      background: #0a1628;
+      border-left: 4px solid transparent;
+      min-height: 72px;
+      position: relative;
+      overflow: hidden;
+      animation: slide-in 0.35s cubic-bezier(0.22,1,0.36,1);
+      flex-shrink: 0;
+    }
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* flash overlay */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      opacity: 0;
+      pointer-events: none;
+      animation: flash-in 0.8s ease-out;
+    }
+    @keyframes flash-in {
+      0%   { opacity: 0.25; }
+      100% { opacity: 0; }
+    }
+
+    /* type badge column */
+    .card .badge-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .card .icon { font-size: 24px; line-height: 1; }
+    .card .type-badge {
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* main content column */
+    .card .main-col { min-width: 0; }
+    .card .driver-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .card .driver-name {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #f1f5f9;
+      line-height: 1;
+    }
+    .card .race-num {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--accent);
+    }
+    .card .class-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #64748b;
+      border: 1px solid #1e3a5f;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    .card .notes-row {
+      font-size: 11px;
+      color: #475569;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    .card .barcode {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-top: 3px;
+    }
+
+    /* right meta column */
+    .card .meta-col { text-align: right; }
+    .card .time {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #fff;
+      line-height: 1;
+    }
+    .card .ago { font-size: 10px; color: #334155; margin-top: 3px; letter-spacing: 1px; }
+
+    /* error state */
+    .card.is-error { background: #1a0a0a; }
+    .card.is-error .driver-name { color: #fca5a5; }
+
+    /* ── CARD THEMES ── */
+    .t-engine_assign     { --accent: #f59e0b; --accent-dim: #1c140530; border-left-color: #f59e0b; }
+    .t-engine_return     { --accent: #94a3b8; --accent-dim: #1e293b88; border-left-color: #94a3b8; }
+    .t-tyres_register    { --accent: #06b6d4; --accent-dim: #06b6d420; border-left-color: #06b6d4; }
+    .t-transponder_assign{ --accent: #a78bfa; --accent-dim: #2e1e5420; border-left-color: #a78bfa; }
+    .t-fuel_collect      { --accent: #34d399; --accent-dim: #05291a30; border-left-color: #34d399; }
+    .t-error             { --accent: #ef4444; --accent-dim: #2d0a0a40; border-left-color: #ef4444; }
+    /* Loan — solid orange-red, visually distinct from ticket and regular engine */
+    .t-loan_assign       { --accent: #fb923c; --accent-dim: #2b120430; border-left-color: #fb923c; }
+    .t-loan_return       { --accent: #fbbf24; --accent-dim: #2b1e0430; border-left-color: #fbbf24; }
+
+    /* Ticket lookup — dashed border + dimmer bg to distinguish from equipment actions */
+    .is-ticket {
+      background: #060f1e;
+      border-left-style: dashed;
+      opacity: 0.82;
+    }
+    .t-ticket-eng   { --accent: #f59e0b; --accent-dim: #1c140520; border-left-color: #f59e0b; }
+    .t-ticket-tyr   { --accent: #06b6d4; --accent-dim: #06b6d415; border-left-color: #06b6d4; }
+    .t-ticket-tx    { --accent: #a78bfa; --accent-dim: #2e1e5415; border-left-color: #a78bfa; }
+    .t-ticket-gas   { --accent: #34d399; --accent-dim: #05291a15; border-left-color: #34d399; }
+    .t-ticket-race  { --accent: #38bdf8; --accent-dim: #0c2a3a15; border-left-color: #38bdf8; }
+    .t-ticket-other { --accent: #64748b; --accent-dim: #1e293b15; border-left-color: #64748b; }
+    .t-driver_check  { --accent: #22c55e; --accent-dim: #14532d20; border-left-color: #22c55e; }
+
+    /* ── EMPTY STATE ── */
+    #empty-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #1e3a5f;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    #empty-state .big { font-size: 48px; }
+
+    /* ── SCAN FLASH OVERLAY (full screen) ── */
+    #scan-flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 999;
+      transition: opacity 0.05s;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Full-screen flash -->
+<div id="scan-flash"></div>
+
+<!-- Header -->
+<div id="header">
+  <div class="brand">
+    <div class="sup">ROK Cup South Africa</div>
+    <div class="title">LIVE MONITOR</div>
+    <div class="sub">Activity Feed</div>
+  </div>
+  <div class="center-info">
+    <div class="event-name" id="event-label">ALL EVENTS</div>
+    <div style="margin-top:6px;font-size:11px;color:#334155;letter-spacing:1px;">
+      <span id="status-dot"></span>
+      <span id="conn-status">CONNECTING…</span>
+      &nbsp;·&nbsp;
+      <span id="last-event-lbl" style="color:#475569">no events yet</span>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div id="clock">--:--:--</div>
+    <div id="date-label">-- --- ----</div>
+  </div>
+</div>
+
+<!-- Stat counters -->
+<div id="stat-bar">
+  <div class="stat-pill stat-engine">
+    <span class="count" id="cnt-engine">0</span>
+    <span class="label">Engines</span>
+  </div>
+  <div class="stat-pill stat-loans">
+    <span class="count" id="cnt-loans">0</span>
+    <span class="label">Loans</span>
+  </div>
+  <div class="stat-pill stat-tyres">
+    <span class="count" id="cnt-tyres">0</span>
+    <span class="label">Tyres</span>
+  </div>
+  <div class="stat-pill stat-trans">
+    <span class="count" id="cnt-trans">0</span>
+    <span class="label">Transponders</span>
+  </div>
+  <div class="stat-pill stat-fuel">
+    <span class="count" id="cnt-fuel">0</span>
+    <span class="label">Fuel</span>
+  </div>
+  <div class="stat-pill stat-entry">
+    <span class="count" id="cnt-entry">0</span>
+    <span class="label">Lookups</span>
+  </div>
+  <div class="stat-pill stat-errors">
+    <span class="count" id="cnt-errors">0</span>
+    <span class="label">Errors</span>
+  </div>
+</div>
+
+<!-- Feed -->
+<div id="feed-wrapper">
+  <div id="feed">
+    <div id="empty-state">
+      <div class="big">📡</div>
+      <div>Waiting for activity…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────
+// Config per scan type
+// ─────────────────────────────────────────────────
+const TYPE_CONFIG = {
+  engine_assign:      { icon: '🔧', label: 'ENGINE OUT',    cssClass: 't-engine_assign',      flashColor: 'rgba(245,158,11,0.12)' },
+  engine_return:      { icon: '🏠', label: 'ENGINE IN',     cssClass: 't-engine_return',      flashColor: 'rgba(148,163,184,0.08)' },
+  tyres_register:     { icon: '🛞',  label: 'TYRES REG',    cssClass: 't-tyres_register',     flashColor: 'rgba(6,182,212,0.12)' },
+  transponder_assign: { icon: '📡', label: 'TRANSPONDER',  cssClass: 't-transponder_assign', flashColor: 'rgba(167,139,250,0.12)' },
+  fuel_collect:       { icon: '⛽', label: 'FUEL OUT',     cssClass: 't-fuel_collect',       flashColor: 'rgba(52,211,153,0.12)' },
+  LOAN_ASSIGN:        { icon: '🔁', label: 'ENGINE LOAN',  cssClass: 't-loan_assign',        flashColor: 'rgba(251,146,60,0.14)' },
+  LOAN_RETURN:        { icon: '✅', label: 'LOAN RETURN',  cssClass: 't-loan_return',        flashColor: 'rgba(251,191,36,0.10)' },
+  ticket_lookup:      { icon: '🎟️', label: 'TICKET',       cssClass: 't-ticket-other is-ticket', flashColor: 'rgba(100,116,139,0.06)' },
+  driver_check:       { icon: '🔍', label: 'CHECK',        cssClass: 't-driver_check',           flashColor: 'rgba(34,197,94,0.10)'   },
+  engine_verify:      { icon: '🔧', label: 'ENG VERIFY',   cssClass: 't-engine_assign',          flashColor: 'rgba(245,158,11,0.14)'  },
+  tyre_verify:        { icon: '🛵', label: 'TYRE SCAN',   cssClass: 't-tyres_register',         flashColor: 'rgba(6,182,212,0.12)'   },
+};
+const ERROR_CONFIG = { icon: '❌', label: 'ERROR', cssClass: 't-error is-error', flashColor: 'rgba(239,68,68,0.15)' };
+
+const TICKET_SUB = {
+  ENG:  { icon: '🎟️', label: 'TKT ENGINE', cssClass: 't-ticket-eng  is-ticket', flashColor: 'rgba(245,158,11,0.06)' },
+  TYR:  { icon: '🎟️', label: 'TKT TYRES',  cssClass: 't-ticket-tyr  is-ticket', flashColor: 'rgba(6,182,212,0.06)'  },
+  TX:   { icon: '🎟️', label: 'TKT TRANS',  cssClass: 't-ticket-tx   is-ticket', flashColor: 'rgba(167,139,250,0.06)' },
+  GAS:  { icon: '🎟️', label: 'TKT FUEL',   cssClass: 't-ticket-gas  is-ticket', flashColor: 'rgba(52,211,153,0.06)'  },
+  RACE: { icon: '🎟️', label: 'TKT RACE',   cssClass: 't-ticket-race is-ticket', flashColor: 'rgba(56,189,248,0.06)'  },
+  B:    { icon: '🔒', label: 'SEAL SCAN',  cssClass: 't-engine_assign is-ticket', flashColor: 'rgba(245,158,11,0.05)'  },
+};
+
+function classColour(cls) {
+  const c = (cls || '').toUpperCase();
+  if (c.includes('CADET'))                          return '#f97316';
+  if (c.includes('MINI') && c.includes('10'))       return '#ec4899';
+  if (c.includes('MINI'))                           return '#a855f7';
+  if (c.includes('OK-J') || c.includes('OKJ'))      return '#3b82f6';
+  if (c.includes('OK-N') || c.includes('OKN'))      return '#22c55e';
+  if (c.includes('OK'))                             return '#06b6d4';
+  return '#94a3b8';
+}
+
+// ─────────────────────────────────────────────────
+// Web Audio beeps
+// ─────────────────────────────────────────────────
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(freq, dur, type = 'sine', vol = 0.4, delay = 0) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + dur + 0.05);
+  } catch(_) {}
+}
+const SOUNDS = {
+  engine_assign()      { beep(523,0.12); beep(659,0.18,undefined,0.5,0.14); },
+  engine_return()      { beep(660,0.10); beep(440,0.18,undefined,0.4,0.12); },
+  tyres_register()     { beep(880,0.07); beep(880,0.07,undefined,0.4,0.09); beep(880,0.10,undefined,0.4,0.18); },
+  transponder_assign() { beep(520,0.10); beep(520,0.14,undefined,0.4,0.13); },
+  fuel_collect()       { beep(440,0.08); beep(523,0.08,undefined,0.4,0.10); beep(659,0.14,undefined,0.5,0.20); },
+  LOAN_ASSIGN()        { beep(392,0.10); beep(523,0.12,undefined,0.5,0.13); beep(659,0.18,undefined,0.5,0.27); },
+  LOAN_RETURN()        { beep(523,0.10); beep(392,0.18,undefined,0.4,0.13); },
+  ticket_lookup()      { beep(440,0.08,undefined,0.2); },
+  driver_check()       { beep(600,0.08,undefined,0.3); beep(720,0.10,undefined,0.3,0.12); },
+  engine_verify()      { beep(659,0.08,undefined,0.35); beep(880,0.12,undefined,0.4,0.14); },
+  tyre_verify()        { beep(880,0.06,undefined,0.25); },
+  error()              { beep(200,0.25,'sawtooth',0.3); },
+};
+let audioUnlocked = false;
+document.addEventListener('click', () => { if(!audioUnlocked){ getAudio(); audioUnlocked=true; } }, { once: true });
+
+// ─────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────
+let seenIds = new Set();
+const counters = { engine_assign:0, tyres_register:0, transponder_assign:0, fuel_collect:0, ticket_lookup:0, driver_check:0, engine_verify:0, tyre_verify:0, LOAN_ASSIGN:0, LOAN_RETURN:0, errors:0 };
+
+// ─────────────────────────────────────────────────
+// Clock
+// ─────────────────────────────────────────────────
+const TZ = 'Africa/Johannesburg';
+const DAYS   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-ZA',{hour12:false,timeZone:TZ});
+  // Convert to SAST wall-clock date for day/month/year labels
+  const za = new Date(now.toLocaleString('en-US', {timeZone:TZ}));
+  document.getElementById('date-label').textContent =
+    `${DAYS[za.getDay()]} ${za.getDate()} ${MONTHS[za.getMonth()]} ${za.getFullYear()}`;
+}
+setInterval(updateClock, 500);
+updateClock();
+
+// ─────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:TZ});
+}
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (s < 5) return 'just now';
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s/60)}m ago`;
+  return `${Math.floor(s/3600)}h ago`;
+}
+
+// ─────────────────────────────────────────────────
+// Render a card
+// ─────────────────────────────────────────────────
+function buildCard(evt, isNew = false) {
+  const isError = evt.action_result === 'error';
+  let cfg;
+  if (isError) {
+    cfg = ERROR_CONFIG;
+  } else if (evt.scan_type === 'ticket_lookup') {
+    const prefix = (evt.barcode_scanned || '').toUpperCase();
+    const subKey = Object.keys(TICKET_SUB).find(k => prefix.startsWith(k));
+    cfg = subKey ? TICKET_SUB[subKey] : TYPE_CONFIG['ticket_lookup'];
+  } else {
+    cfg = TYPE_CONFIG[evt.scan_type] || TYPE_CONFIG['ticket_lookup'];
+  }
+
+  const driverName = (evt.driver_name || '—').toUpperCase();
+  const barcode = (evt.barcode_scanned || '').toUpperCase();
+  const cls = (evt.race_class || '').toUpperCase();
+  const clsColor = classColour(cls);
+  const serial = evt.equipment_serial ? evt.equipment_serial.toUpperCase() : null;
+  const notes = (evt.notes || '').replace(/ ?· ?SN:.*$/i, '').trim(); // strip SN from notes, render separately
+
+  const card = document.createElement('div');
+  card.className = `card ${cfg.cssClass}`;
+  card.setAttribute('data-id', evt.log_id || '');
+  card.innerHTML = `
+    <div class="badge-col">
+      <div class="icon">${cfg.icon}</div>
+      <div class="type-badge">${cfg.label}</div>
+    </div>
+    <div class="main-col">
+      <div class="driver-row">
+        <span class="driver-name">${driverName}</span>
+        ${cls ? `<span class="class-badge" style="color:${clsColor};border-color:${clsColor}44;">${cls}</span>` : ''}
+      </div>
+      ${barcode ? `<div class="barcode">${barcode}</div>` : ''}
+      <div class="notes-row">
+        ${serial ? `<span style="color:#ffffff;font-weight:900;letter-spacing:1px;">SN: ${serial}</span>` : ''}
+        ${serial && notes ? ' &nbsp;·&nbsp; ' : ''}
+        ${notes}
+      </div>
+    </div>
+    <div class="meta-col">
+      <div class="time">${formatTime(evt.scan_timestamp)}</div>
+      <div class="ago">${isNew ? 'just now' : timeAgo(evt.scan_timestamp)}</div>
+    </div>
+  `;
+  return card;
+}
+
+function flashScreen(color) {
+  const el = document.getElementById('scan-flash');
+  el.style.background = color;
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 80);
+}
+
+function updateStats() {
+  document.getElementById('cnt-engine').textContent = counters.engine_assign;
+  document.getElementById('cnt-tyres').textContent  = counters.tyres_register + counters.tyre_verify;
+  document.getElementById('cnt-trans').textContent  = counters.transponder_assign;
+  document.getElementById('cnt-fuel').textContent   = counters.fuel_collect;
+  document.getElementById('cnt-entry').textContent  = counters.ticket_lookup + counters.driver_check;
+  document.getElementById('cnt-loans').textContent  = counters.LOAN_ASSIGN + counters.LOAN_RETURN;
+  document.getElementById('cnt-errors').textContent = counters.errors;
+}
+
+function hideEmpty() {
+  const e = document.getElementById('empty-state');
+  if (e) e.style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────
+// Add event to feed
+// ─────────────────────────────────────────────────
+function addEvent(evt, isNew = false) {
+  if (evt.log_id && seenIds.has(evt.log_id)) return;
+  if (evt.log_id) seenIds.add(evt.log_id);
+
+  hideEmpty();
+
+  const feed = document.getElementById('feed');
+  const card = buildCard(evt, isNew);
+
+  if (isNew) {
+    // Insert at very top — newest first
+    feed.prepend(card);
+    feed.scrollTop = 0;
+
+    // beep & flash
+    const isError = evt.action_result === 'error';
+    const soundKey = isError ? 'error' : (evt.scan_type || 'ticket_lookup');
+    if (SOUNDS[soundKey]) SOUNDS[soundKey]();
+    const cfg = isError ? ERROR_CONFIG : (TYPE_CONFIG[evt.scan_type] || TYPE_CONFIG['ticket_lookup']);
+    flashScreen(cfg.flashColor);
+
+    // update counters
+    if (isError) counters.errors++;
+    else if (counters[evt.scan_type] !== undefined) counters[evt.scan_type]++;
+    updateStats();
+  } else {
+    // History: append at bottom (older items below newer)
+    feed.appendChild(card);
+  }
+}
+
+// ─────────────────────────────────────────────────
+// Load historical log on startup
+// ─────────────────────────────────────────────────
+async function loadHistory() {
+  historyLoading = true;
+  try {
+    const res = await fetch('/api/getEquipmentScanLog?limit=30');
+    const rows = await res.json();
+    if (Array.isArray(rows)) {
+      // rows come back DESC (newest first) — append each so oldest ends up at bottom
+      rows.forEach(r => {
+        addEvent(r, false);
+        if (r.action_result === 'error') counters.errors++;
+        else if (counters[r.scan_type] !== undefined) counters[r.scan_type]++;
+      });
+      updateStats();
+    }
+  } catch(e) {
+    console.warn('Could not load history:', e);
+  } finally {
+    historyLoading = false;
+  }
+}
+
+// ─────────────────────────────────────────────────
+// SSE connection
+// ─────────────────────────────────────────────────
+let sseConnected = false;
+let historyLoading = false;
+
+function connectSSE() {
+  const dot = document.getElementById('status-dot');
+  const label = document.getElementById('conn-status');
+
+  const es = new EventSource('/api/monitor/events');
+
+  es.onopen = () => {
+    dot.className = 'live';
+    label.textContent = 'LIVE';
+    sseConnected = true;
+    // Reload history on every (re)connect to catch events missed while disconnected
+    if (!historyLoading) loadHistory();
+  };
+
+  es.onmessage = (e) => {
+    if (!e.data || e.data.startsWith(':')) return; // skip comment/ping frames
+    try {
+      const evt = JSON.parse(e.data);
+      addEvent(evt, true);
+      // Update last-event indicator
+      const lbl = document.getElementById('last-event-lbl');
+      if (lbl) lbl.textContent = 'last: ' + formatTime(evt.scan_timestamp || new Date());
+    } catch(_) {}
+  };
+
+  es.onerror = () => {
+    dot.className = '';
+    label.textContent = 'RECONNECTING…';
+    sseConnected = false;
+    es.close();
+    setTimeout(connectSSE, 3000);
+  };
+}
+
+// ─────────────────────────────────────────────────
+// Fallback poll — every 20s pull latest 30 and surface any unseen events
+// ─────────────────────────────────────────────────
+setInterval(async () => {
+  try {
+    const res = await fetch('/api/getEquipmentScanLog?limit=30');
+    const rows = await res.json();
+    if (Array.isArray(rows)) {
+      // rows are DESC — process oldest-first so cards insert in right order
+      [...rows].reverse().forEach(r => addEvent(r, false));
+    }
+  } catch(_) {}
+}, 20000);
+
+// ─────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────
+loadHistory().then(connectSSE);
+</script>
+</body>
+</html>

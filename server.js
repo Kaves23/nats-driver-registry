@@ -506,6 +506,9 @@ const initRaceEntriesTable = async () => {
       END $$;
     `);
 
+    // Ensure msa_license_number exists on drivers table
+    await pool.query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS msa_license_number VARCHAR(100)`);
+
     console.log('✅ Race entries table initialized with all columns and unique constraints');
   } catch (err) {
     console.error('Error initializing race entries table:', err);
@@ -556,13 +559,16 @@ async function initEquipmentScanLog() {
 }
 
 // Helper function to log equipment scans
+const monitorClients = new Set();
+
 async function logEquipmentScan(scanData) {
   try {
-    await pool.query(`
+    const result = await pool.query(`
       INSERT INTO equipment_scan_log 
       (scan_type, barcode_scanned, entry_id, driver_id, driver_name, 
        equipment_serial, scanned_by, action_result, notes, event_id, race_class)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING log_id, scan_timestamp
     `, [
       scanData.scan_type,
       scanData.barcode_scanned,
@@ -576,6 +582,22 @@ async function logEquipmentScan(scanData) {
       scanData.event_id,
       scanData.race_class
     ]);
+    // Broadcast to live monitor clients
+    const row = result.rows[0];
+    const event = JSON.stringify({
+      log_id: row.log_id,
+      scan_timestamp: row.scan_timestamp,
+      scan_type: scanData.scan_type,
+      barcode_scanned: scanData.barcode_scanned,
+      driver_name: scanData.driver_name,
+      race_class: scanData.race_class,
+      equipment_serial: scanData.equipment_serial,
+      action_result: scanData.action_result || 'success',
+      notes: scanData.notes
+    });
+    for (const client of monitorClients) {
+      try { client.write(`data: ${event}\n\n`); } catch (_) { monitorClients.delete(client); }
+    }
   } catch (err) {
     console.error('Error logging equipment scan:', err.message);
   }
@@ -629,6 +651,35 @@ const initPoolEngineRentalsTable = async () => {
     console.log('✅ Pool engine rentals table initialized');
   } catch (err) {
     console.error('Pool engine rentals table init error:', err.message);
+  }
+};
+
+// Initialize DIR engine contact log table
+const initDirEngineContactsTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS dir_engine_contacts (
+        contact_id    SERIAL PRIMARY KEY,
+        engine_serial VARCHAR(100),
+        person_name   VARCHAR(200) NOT NULL,
+        driver_id     VARCHAR(100),
+        contact_date  TIMESTAMP NOT NULL DEFAULT NOW(),
+        contact_type  VARCHAR(100) DEFAULT 'Inspection',
+        outcome       VARCHAR(50) NOT NULL,
+        fault_category VARCHAR(100),
+        description   TEXT,
+        dir_notes     TEXT,
+        follow_up     BOOLEAN DEFAULT false,
+        follow_up_notes TEXT,
+        created_at    TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_dir_engine_serial ON dir_engine_contacts(engine_serial)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_dir_outcome ON dir_engine_contacts(outcome)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_dir_date ON dir_engine_contacts(contact_date)`);
+    console.log('✅ DIR engine contacts table initialized');
+  } catch (err) {
+    console.error('DIR engine contacts table init error:', err.message);
   }
 };
 
@@ -771,6 +822,7 @@ if (SKIP_DB_INIT) {
     initEquipmentScanLog(),
     initEngineLoansTable(),
     initPoolEngineRentalsTable(),
+    initDirEngineContactsTable(),
     initDiscountCodesTable(),
     initEventDocumentsTable(),
     initMSALicensesTable(),
@@ -896,6 +948,7 @@ function generateRaceTicketHTML(ticketData) {
     eventLocation,
     raceClass,
     driverName,
+    raceNumber,
     teamCode,
     gatesTime = '07:00',
     practiceTime = '08:00',
@@ -910,11 +963,9 @@ function generateRaceTicketHTML(ticketData) {
   const year = dateObj.getFullYear();
   const formattedDate = `${dayName} ${dayNum} ${monthName} ${year}`;
   
-  // Generate short barcode reference (last 12 chars for cleaner barcode)
-  const barcodeRef = reference.slice(-12).toUpperCase();
-  
-  // Generate barcode SVG
-  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 50, gap: 2 });
+  // Generate QR code
+  const qrData = reference.toUpperCase();
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(qrData)}`;
   
   // Issue timestamp
   const issueStamp = new Date().toLocaleString('en-ZA', { 
@@ -995,6 +1046,7 @@ function generateRaceTicketHTML(ticketData) {
                             <td style="width: 50%; vertical-align: top; text-align: right;">
                               <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #888; letter-spacing: 1px; text-transform: uppercase;">CLASS</div>
                               <div style="font-family: 'Courier New', monospace; font-size: 14px; font-weight: 800; color: #111; margin-top: 4px;">${(raceClass || 'TBA').toUpperCase()}</div>
+                              ${raceNumber ? `<div style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #0b2e55; line-height: 1; margin-top: 6px;">#${raceNumber}</div>` : ''}
                             </td>
                           </tr>
                         </table>
@@ -1019,21 +1071,12 @@ function generateRaceTicketHTML(ticketData) {
                       </td>
                     </tr>
                     
-                    <!-- Barcode Section -->
+                    <!-- QR Code Section -->
                     <tr>
-                      <td style="padding: 16px 20px 12px 20px; border-top: 1px solid #eee;">
-                        <div style="text-align: center;">
-                          ${barcodeSVG}
-                        </div>
-                      </td>
-                    </tr>
-                    
-                    <!-- Reference Number -->
-                    <tr>
-                      <td style="padding: 0 20px 16px 20px; text-align: center;">
-                        <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: 0.5px;">
-                          REF: <strong style="color: #111;">${reference}</strong>
-                        </div>
+                      <td style="padding: 16px 20px 12px 20px; border-top: 1px solid #eee; text-align: center;">
+                        <img src="${qrCodeUrl}" alt="${qrData}" width="160" height="160" style="display:block;margin:0 auto;border-radius:6px;" />
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 900; color: #111; text-align: center; margin-top: 8px; letter-spacing: 0.12em;">${reference}</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-align: center; margin-top: 2px;">Scan QR code at the gate for entry</div>
                       </td>
                     </tr>
                     
@@ -1046,7 +1089,7 @@ function generateRaceTicketHTML(ticketData) {
                               ISSUED: ${issueStamp}
                             </td>
                             <td style="text-align: right; font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-transform: uppercase;">
-                              BARCODED ENTRY
+                              QR SCAN ENTRY
                             </td>
                           </tr>
                         </table>
@@ -1217,7 +1260,8 @@ function generateTyreRentalTicketHTML(ticketData) {
     eventDate,
     eventLocation,
     raceClass,
-    driverName
+    driverName,
+    raceNumber
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
@@ -1225,8 +1269,8 @@ function generateTyreRentalTicketHTML(ticketData) {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
   }).toUpperCase();
   
-  const barcodeRef = reference.slice(-12).toUpperCase();
-  const barcodeSVG = generateCode39SVG(barcodeRef, { width: 2, height: 45 });
+  const qrData = reference.toUpperCase();
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(qrData)}`;
   
   // LeVanto logo URL (hosted) - using text fallback for email compatibility
   const levantoLogoUrl = 'https://levfriction.com/wp-content/uploads/2023/03/levanto-logo.png';
@@ -1271,6 +1315,7 @@ function generateTyreRentalTicketHTML(ticketData) {
                             <td style="width: 50%; text-align: right;">
                               <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
                               <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                              ${raceNumber ? `<div style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #0ea5e9; line-height: 1; margin-top: 6px;">#${raceNumber}</div>` : ''}
                             </td>
                           </tr>
                         </table>
@@ -1283,11 +1328,10 @@ function generateTyreRentalTicketHTML(ticketData) {
                       </td>
                     </tr>
                     <tr>
-                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
-                        ${barcodeSVG}
-                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
-                          REF: <strong>${reference}</strong>
-                        </div>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd; text-align: center;">
+                        <img src="${qrCodeUrl}" alt="${qrData}" width="160" height="160" style="display:block;margin:0 auto;border-radius:6px;" />
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 900; color: #111; text-align: center; margin-top: 8px; letter-spacing: 0.12em;">${reference}</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-align: center; margin-top: 2px;">Scan QR code to collect tyres</div>
                       </td>
                     </tr>
                     <tr>
@@ -1317,7 +1361,8 @@ function generateTransponderRentalTicketHTML(ticketData) {
     eventDate,
     eventLocation,
     raceClass,
-    driverName
+    driverName,
+    raceNumber
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
@@ -1325,8 +1370,8 @@ function generateTransponderRentalTicketHTML(ticketData) {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
   }).toUpperCase();
   
-  const barcodeRef = reference.slice(-12).toUpperCase();
-  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
+  const qrData = reference.toUpperCase();
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(qrData)}`;
   
   return `
     <!-- TRANSPONDER RENTAL TICKET - PORTRAIT -->
@@ -1368,6 +1413,7 @@ function generateTransponderRentalTicketHTML(ticketData) {
                             <td style="width: 50%; text-align: right;">
                               <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
                               <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                              ${raceNumber ? `<div style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #4c1d95; line-height: 1; margin-top: 6px;">#${raceNumber}</div>` : ''}
                             </td>
                           </tr>
                         </table>
@@ -1380,11 +1426,10 @@ function generateTransponderRentalTicketHTML(ticketData) {
                       </td>
                     </tr>
                     <tr>
-                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
-                        ${barcodeSVG}
-                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
-                          REF: <strong>${reference}</strong>
-                        </div>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd; text-align: center;">
+                        <img src="${qrCodeUrl}" alt="${qrData}" width="160" height="160" style="display:block;margin:0 auto;border-radius:6px;" />
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 900; color: #111; text-align: center; margin-top: 8px; letter-spacing: 0.12em;">${reference}</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-align: center; margin-top: 2px;">Scan QR code to collect transponder</div>
                       </td>
                     </tr>
                     <tr>
@@ -1413,7 +1458,8 @@ function generateFuelTicketHTML(ticketData) {
     eventDate,
     eventLocation,
     raceClass,
-    driverName
+    driverName,
+    raceNumber
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
@@ -1421,8 +1467,8 @@ function generateFuelTicketHTML(ticketData) {
     weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
   }).toUpperCase();
   
-  const barcodeRef = reference.slice(-12).toUpperCase();
-  const barcodeSVG = generateCode39SVG(barcodeRef, { narrow: 2, wide: 5, height: 45, gap: 2 });
+  const qrData = reference.toUpperCase();
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=${encodeURIComponent(qrData)}`;
   
   return `
     <!-- FUEL PACKAGE TICKET - PORTRAIT -->
@@ -1464,6 +1510,7 @@ function generateFuelTicketHTML(ticketData) {
                             <td style="width: 50%; text-align: right;">
                               <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; letter-spacing: 1px;">EVENT</div>
                               <div style="font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700; color: #111; margin-top: 2px;">${formattedDate}</div>
+                              ${raceNumber ? `<div style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #065f46; line-height: 1; margin-top: 6px;">#${raceNumber}</div>` : ''}
                             </td>
                           </tr>
                         </table>
@@ -1476,11 +1523,10 @@ function generateFuelTicketHTML(ticketData) {
                       </td>
                     </tr>
                     <tr>
-                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd;">
-                        ${barcodeSVG}
-                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #666; text-align: center; margin-top: 8px;">
-                          REF: <strong>${reference}</strong>
-                        </div>
+                      <td style="padding: 14px 20px; border-top: 1px dashed #ddd; text-align: center;">
+                        <img src="${qrCodeUrl}" alt="${qrData}" width="160" height="160" style="display:block;margin:0 auto;border-radius:6px;" />
+                        <div style="font-family: 'Courier New', monospace; font-size: 13px; font-weight: 900; color: #111; text-align: center; margin-top: 8px; letter-spacing: 0.12em;">${reference}</div>
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px; color: #888; text-align: center; margin-top: 2px;">Scan QR code to collect fuel</div>
                       </td>
                     </tr>
                     <tr>
@@ -1509,30 +1555,21 @@ app.all('/api/ping', (req, res) => {
 
 // TEST: Preview race ticket HTML (for testing only - remove in production)
 app.get('/api/preview-ticket', (req, res) => {
-  const ticketData = {
-    reference: 'RACE-FREE-1737450000-abc123',
+  const baseData = {
     eventName: 'Northern Regions Crown Race',
     eventDate: '2026-02-14',
     eventLocation: 'Red Star Raceway, Mpumalanga',
     raceClass: 'OK-J',
     driverName: 'Max Verstappen',
-    teamCode: 'RSR'
-  };
-
-  const engineTicketData = {
-    reference: `ENG${Math.floor(5500 + Math.random() * 100)}`,
-    eventName: 'Northern Regions Crown Race',
-    eventDate: '2026-02-14',
-    eventLocation: 'Red Star Raceway, Mpumalanga',
-    raceClass: 'OK-J',
-    driverName: 'Max Verstappen',
+    teamCode: 'RSR',
     raceNumber: '33'
   };
-  
-  const raceTicketHtml = generateRaceTicketHTML(ticketData);
-  const engineTicketHtml = generateEngineRentalTicketHTML(engineTicketData);
-  const tyreTicketHtml = generateTyreRentalTicketHTML(ticketData);
-  const transponderTicketHtml = generateTransponderRentalTicketHTML(ticketData);
+
+  const raceTicketHtml        = generateRaceTicketHTML({ ...baseData, reference: `RACE${Math.floor(1000 + Math.random() * 9000)}` });
+  const engineTicketHtml      = generateEngineRentalTicketHTML({ ...baseData, reference: `ENG${Math.floor(5500 + Math.random() * 100)}` });
+  const tyreTicketHtml        = generateTyreRentalTicketHTML({ ...baseData, reference: `TYR${Math.floor(1000 + Math.random() * 9000)}` });
+  const transponderTicketHtml = generateTransponderRentalTicketHTML({ ...baseData, reference: `TX${Math.floor(1000 + Math.random() * 9000)}` });
+  const fuelTicketHtml        = generateFuelTicketHTML({ ...baseData, reference: `GAS${Math.floor(1000 + Math.random() * 9000)}` });
   
   res.send(`
     <!DOCTYPE html>
@@ -1569,6 +1606,11 @@ app.get('/api/preview-ticket', (req, res) => {
       <h2>TRANSPONDER RENTAL TICKET</h2>
       <div class="preview-container">
         ${transponderTicketHtml}
+      </div>
+      
+      <h2>FUEL PACKAGE TICKET</h2>
+      <div class="preview-container">
+        ${fuelTicketHtml}
       </div>
     </body>
     </html>
@@ -2176,7 +2218,7 @@ app.post('/api/registerDriver', validateBody(registerDriverSchema), async (req, 
         `UPDATE drivers SET date_of_birth = $1, nationality = $2, gender = $3,
           championship = $4, class = $5, race_number = $6,
           team_name = $7, coach_name = $8, kart_brand = $9, engine_type = $10,
-          transponder_number = $11, license_number = $12
+          transponder_number = $11, license_number = $12, msa_license_number = $12
         WHERE driver_id = $13`,
         [date_of_birth, nationality, gender, championship, klass,
           race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, id_or_passport_number, driver_id]
@@ -2712,6 +2754,7 @@ app.post('/api/getAllPayments', async (req, res) => {
         re.entry_status,
         re.amount_paid,
         re.race_class,
+        re.race_number,
         re.entry_items,
         re.team_code,
         re.created_at,
@@ -3488,7 +3531,8 @@ app.post('/api/updateDriver', async (req, res) => {
       values.push(klass);
     }
     if (license_number !== undefined && license_number !== null) {
-      updates.push(`license_number = $${paramCount++}`);
+      updates.push(`license_number = $${paramCount}`);
+      updates.push(`msa_license_number = $${paramCount++}`);
       values.push(license_number);
     }
     if (transponder_number !== undefined && transponder_number !== null) {
@@ -6852,6 +6896,40 @@ app.get('/api/getAvailableEvents', async (req, res) => {
   }
 });
 
+// Get next upcoming events (by event_date >= today) — used by driver portal next-race box
+app.get('/api/getUpcomingEvents', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open
+       FROM events
+       WHERE event_date >= CURRENT_DATE
+       ORDER BY event_date ASC`
+    );
+    res.json({ success: true, events: result.rows });
+  } catch (err) {
+    console.error('❌ getUpcomingEvents error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Save MSA license number for a driver
+app.post('/api/saveMSALicenseNumber', async (req, res) => {
+  try {
+    const { driver_id, license_number, msa_license_number } = req.body;
+    if (!driver_id) return res.status(400).json({ success: false, error: 'driver_id required' });
+    const val = (license_number ?? msa_license_number ?? '').toString().trim() || null;
+    await pool.query(
+      'UPDATE drivers SET license_number = $1, msa_license_number = $1 WHERE driver_id = $2',
+      [val, driver_id]
+    );
+    console.log(`✅ License number updated for driver ${driver_id}: ${val}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ saveMSALicenseNumber error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Get driver's race entries with event details
 app.get('/api/getDriverEntries/:driverId', async (req, res) => {
   try {
@@ -8529,30 +8607,7 @@ app.post('/api/officialLogin', async (req, res) => {
   }
 });
 
-// Get all upcoming events for race selector
-app.get('/api/getUpcomingEvents', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      throw new Error('Unauthorized');
-    }
-
-    const result = await pool.query(
-      `SELECT event_id, event_name, event_date, location
-       FROM events 
-       WHERE event_date >= CURRENT_DATE
-       ORDER BY event_date ASC`
-    );
-
-    res.json({
-      success: true,
-      data: result.rows
-    });
-  } catch (err) {
-    console.error('❌ getUpcomingEvents error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
-  }
-});
+// Duplicate removed — see /api/getUpcomingEvents registered earlier (no auth required)
 
 // Get next race drivers for officials (or specific event if event_id provided)
 app.get('/api/getNextRaceDrivers', async (req, res) => {
@@ -10047,22 +10102,29 @@ app.post('/api/assignEngine', async (req, res) => {
       return res.json({ success: false, error: 'Missing required fields' });
     }
     
-    // Check if engine is already assigned to someone else
+    // Check if engine is already assigned to someone else — if so, clear it and reassign
     const existingAssignment = await pool.query(`
       SELECT re.entry_id, d.first_name, d.last_name
       FROM race_entries re
       JOIN drivers d ON re.driver_id = d.driver_id
-      WHERE re.engine_serial = $1 AND re.engine_returned = false
+      WHERE re.engine_serial = $1 AND (re.engine_returned = false OR re.engine_returned IS NULL)
     `, [engineSerial.toUpperCase()]);
-    
+
+    let reassignWarning = null;
     if (existingAssignment.rows.length > 0) {
-      const existing = existingAssignment.rows[0];
-      return res.json({ 
-        success: false, 
-        error: `Engine ${engineSerial} is already assigned to ${existing.first_name} ${existing.last_name}` 
-      });
+      const prev = existingAssignment.rows[0];
+      // Only block if it's a different entry — same entry is a re-assign (fine)
+      if (prev.entry_id !== entryId) {
+        reassignWarning = `⚠️ Engine ${engineSerial} was previously assigned to ${prev.first_name} ${prev.last_name} — reassigned`;
+        // Clear engine from previous entry
+        await pool.query(`
+          UPDATE race_entries
+          SET engine_serial = NULL, engine_assigned_at = NULL, updated_at = NOW()
+          WHERE entry_id = $1
+        `, [prev.entry_id]);
+      }
     }
-    
+
     // Assign engine to this entry
     const assignResult = await pool.query(`
       UPDATE race_entries 
@@ -10097,8 +10159,8 @@ app.post('/api/assignEngine', async (req, res) => {
     });
     
     console.log(`✅ Engine ${engineSerial} assigned to driver ${driverId} (Entry: ${entryId})`);
-    
-    res.json({ success: true });
+
+    res.json({ success: true, warning: reassignWarning });
   } catch (err) {
     console.error('Error assigning engine:', err);
     res.json({ success: false, error: err.message });
@@ -10446,6 +10508,23 @@ app.get('/api/getEquipmentScanLog', async (req, res) => {
   }
 });
 
+// Live monitor SSE stream
+app.get('/api/monitor/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+  res.write(': connected\n\n');
+  monitorClients.add(res);
+  // keepalive ping every 15s so connection doesn't silently time out
+  const ping = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch (_) { clearInterval(ping); monitorClients.delete(res); }
+  }, 15000);
+  req.on('close', () => { clearInterval(ping); monitorClients.delete(res); });
+});
+
 // Get engine history
 app.get('/api/engineHistory', async (req, res) => {
   try {
@@ -10477,52 +10556,202 @@ app.get('/api/engineHistory', async (req, res) => {
   }
 });
 
-// Lookup driver by race number for tyre verification
+// ── DIR ENGINE CONTACT LOG ───────────────────────────────────────────────────
+
+// POST /api/dir/log — create a new contact record
+app.post('/api/dir/log', async (req, res) => {
+  try {
+    const {
+      engine_serial, person_name, driver_id,
+      contact_date, contact_type, outcome,
+      fault_category, description, dir_notes,
+      follow_up, follow_up_notes
+    } = req.body;
+
+    if (!person_name) return res.status(400).json({ success: false, error: 'person_name is required' });
+    if (!outcome)     return res.status(400).json({ success: false, error: 'outcome is required' });
+
+    const result = await pool.query(`
+      INSERT INTO dir_engine_contacts
+        (engine_serial, person_name, driver_id, contact_date, contact_type,
+         outcome, fault_category, description, dir_notes, follow_up, follow_up_notes)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      RETURNING *
+    `, [
+      engine_serial ? engine_serial.toUpperCase() : null,
+      person_name,
+      driver_id || null,
+      contact_date || new Date(),
+      contact_type || 'Inspection',
+      outcome,
+      fault_category || null,
+      description || null,
+      dir_notes || null,
+      follow_up === true || follow_up === 'true',
+      follow_up_notes || null
+    ]);
+
+    res.json({ success: true, contact: result.rows[0] });
+  } catch (err) {
+    console.error('Error creating DIR contact log:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/dir/logs — list all logs, optional filters: outcome, engine_serial, from, to
+app.get('/api/dir/logs', async (req, res) => {
+  try {
+    const { outcome, engine_serial, search, from, to, limit = 200 } = req.query;
+    const params = [];
+    const where = [];
+
+    if (outcome)       { params.push(outcome);                      where.push(`outcome = $${params.length}`); }
+    if (engine_serial) { params.push(engine_serial.toUpperCase());  where.push(`engine_serial = $${params.length}`); }
+    if (search)        { params.push(`%${search}%`);               where.push(`(person_name ILIKE $${params.length} OR engine_serial ILIKE $${params.length} OR description ILIKE $${params.length})`); }
+    if (from)          { params.push(from);                         where.push(`contact_date >= $${params.length}`); }
+    if (to)            { params.push(to);                           where.push(`contact_date <= $${params.length}`); }
+
+    params.push(parseInt(limit));
+    const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
+
+    const result = await pool.query(`
+      SELECT * FROM dir_engine_contacts
+      ${whereClause}
+      ORDER BY contact_date DESC
+      LIMIT $${params.length}
+    `, params);
+
+    // Summary counts
+    const stats = await pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE outcome = 'engine_fault')    AS engine_faults,
+        COUNT(*) FILTER (WHERE outcome = 'user_error')      AS user_errors,
+        COUNT(*) FILTER (WHERE outcome = 'mechanic_error')  AS mechanic_errors,
+        COUNT(*) FILTER (WHERE outcome = 'inconclusive')    AS inconclusive,
+        COUNT(*) FILTER (WHERE outcome = 'no_fault')        AS no_fault,
+        COUNT(*)                                             AS total
+      FROM dir_engine_contacts
+    `);
+
+    res.json({ success: true, logs: result.rows, stats: stats.rows[0] });
+  } catch (err) {
+    console.error('Error fetching DIR logs:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/dir/engine/:serial — full history for one engine serial
+app.get('/api/dir/engine/:serial', async (req, res) => {
+  try {
+    const serial = req.params.serial.toUpperCase();
+    const result = await pool.query(`
+      SELECT * FROM dir_engine_contacts
+      WHERE engine_serial = $1
+      ORDER BY contact_date DESC
+    `, [serial]);
+    res.json({ success: true, serial, logs: result.rows });
+  } catch (err) {
+    console.error('Error fetching engine contact log:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/dir/log/:id — remove a single log entry
+app.delete('/api/dir/log/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dir_engine_contacts WHERE contact_id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting DIR log:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── END DIR ENGINE CONTACT LOG ──────────────────────────────────────────────
+
+// Lookup driver by race number — returns all confirmed entries with equipment
 app.get('/api/lookupDriverByNumber', async (req, res) => {
   try {
     const { raceNumber } = req.query;
-    
-    if (!raceNumber) {
-      return res.json({ success: false, error: 'Race number required' });
-    }
-    
-    // Find most recent entry for this driver
+    if (!raceNumber) return res.json({ success: false, error: 'Race number required' });
+
     const result = await pool.query(`
       SELECT re.entry_id, re.driver_id, re.race_class,
+             re.engine_serial,
              re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
-             d.first_name, d.last_name, d.race_number
+             d.first_name, d.last_name, d.race_number,
+             e.event_name, e.event_date
       FROM race_entries re
       JOIN drivers d ON re.driver_id = d.driver_id
+      LEFT JOIN events e ON re.event_id = e.event_id
       WHERE d.race_number = $1
-      ORDER BY re.created_at DESC
-      LIMIT 1
+        AND re.payment_status IN ('Completed','completed','Confirmed','confirmed','paid')
+        AND re.entry_status NOT IN ('cancelled','canceled')
+      ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
     `, [raceNumber]);
-    
+
     if (result.rows.length === 0) {
-      return res.json({ success: false, error: 'No entry found for this race number' });
+      return res.json({ success: false, error: 'No confirmed entry found for this race number' });
     }
-    
-    const entry = result.rows[0];
-    const tyresRegistered = entry.tyre_front_left && entry.tyre_front_right && 
-                            entry.tyre_rear_left && entry.tyre_rear_right;
-    
+
+    // For each entry build the equipment object, falling back to scan log if DB columns are null
+    const entries = [];
+    for (const row of result.rows) {
+      let engineSerial = row.engine_serial || null;
+      let fl = row.tyre_front_left  || null;
+      let fr = row.tyre_front_right || null;
+      let rl = row.tyre_rear_left   || null;
+      let rr = row.tyre_rear_right  || null;
+
+      if (!engineSerial) {
+        const el = await pool.query(`
+          SELECT equipment_serial FROM equipment_scan_log
+          WHERE driver_id = $1 AND scan_type IN ('engine_assign','LOAN_ASSIGN')
+            AND action_result = 'success' AND equipment_serial IS NOT NULL
+          ORDER BY scan_timestamp DESC LIMIT 1
+        `, [row.driver_id]);
+        if (el.rows.length) engineSerial = el.rows[0].equipment_serial;
+      }
+
+      if (!fl || !fr || !rl || !rr) {
+        const tl = await pool.query(`
+          SELECT equipment_serial FROM equipment_scan_log
+          WHERE driver_id = $1 AND scan_type = 'tyres_register'
+            AND action_result = 'success' AND equipment_serial IS NOT NULL
+          ORDER BY scan_timestamp DESC LIMIT 1
+        `, [row.driver_id]);
+        if (tl.rows.length) {
+          const raw = tl.rows[0].equipment_serial;
+          const flM = raw.match(/FL:(\S+)/i); const frM = raw.match(/FR:(\S+)/i);
+          const rlM = raw.match(/RL:(\S+)/i); const rrM = raw.match(/RR:(\S+)/i);
+          if (flM) fl = flM[1]; if (frM) fr = frM[1];
+          if (rlM) rl = rlM[1]; if (rrM) rr = rrM[1];
+        }
+      }
+
+      const tyresOk = !!(fl && fr && rl && rr);
+      entries.push({
+        driver_id:   row.driver_id,
+        entry_id:    row.entry_id,
+        first_name:  row.first_name,
+        last_name:   row.last_name,
+        race_number: row.race_number,
+        race_class:  row.race_class,
+        event_name:  row.event_name  || null,
+        event_date:  row.event_date  || null,
+        engine_serial:    engineSerial,
+        registered_tyres: tyresOk,
+        tyres: tyresOk ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null
+      });
+    }
+
+    const first = entries[0];
     res.json({
       success: true,
-      driver: {
-        driver_id: entry.driver_id,
-        entry_id: entry.entry_id,
-        first_name: entry.first_name,
-        last_name: entry.last_name,
-        race_number: entry.race_number,
-        race_class: entry.race_class
-      },
-      registered_tyres: tyresRegistered,
-      tyres: tyresRegistered ? {
-        front_left: entry.tyre_front_left,
-        front_right: entry.tyre_front_right,
-        rear_left: entry.tyre_rear_left,
-        rear_right: entry.tyre_rear_right
-      } : null
+      entries,
+      driver:           { driver_id: first.driver_id, entry_id: first.entry_id, first_name: first.first_name, last_name: first.last_name, race_number: first.race_number, race_class: first.race_class, engine_serial: first.engine_serial },
+      registered_tyres: first.registered_tyres,
+      tyres:            first.tyres
     });
   } catch (err) {
     console.error('Error looking up driver:', err);

@@ -109,19 +109,25 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         return res.json({ success: false, error: 'Missing required fields' });
       }
 
+      // Check if engine is already assigned — if so, clear and force-reassign
       const existingAssignment = await pool.query(`
         SELECT re.entry_id, d.first_name, d.last_name
         FROM race_entries re
         JOIN drivers d ON re.driver_id = d.driver_id
-        WHERE re.engine_serial = $1 AND re.engine_returned = false
+        WHERE re.engine_serial = $1 AND (re.engine_returned = false OR re.engine_returned IS NULL)
       `, [engineSerial.toUpperCase()]);
 
+      let reassignWarning = null;
       if (existingAssignment.rows.length > 0) {
-        const existing = existingAssignment.rows[0];
-        return res.json({
-          success: false,
-          error: `Engine ${engineSerial} is already assigned to ${existing.first_name} ${existing.last_name}`
-        });
+        const prev = existingAssignment.rows[0];
+        if (prev.entry_id !== entryId) {
+          reassignWarning = `⚠️ Engine ${engineSerial} was previously assigned to ${prev.first_name} ${prev.last_name} — reassigned`;
+          await pool.query(`
+            UPDATE race_entries
+            SET engine_serial = NULL, engine_assigned_at = NULL, updated_at = NOW()
+            WHERE entry_id = $1
+          `, [prev.entry_id]);
+        }
       }
 
       const assignResult = await pool.query(`
@@ -157,10 +163,10 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       });
 
       console.log(`✅ Engine ${engineSerial} assigned to driver ${driverId} (Entry: ${entryId})`);
-      res.json({ success: true });
+      res.json({ success: true, warning: reassignWarning });
     } catch (err) {
       console.error('Error assigning engine:', err);
-      res.json({ success: false, error: 'Failed to assign engine' });
+      res.json({ success: false, error: err.message });
     }
   });
 
@@ -514,55 +520,134 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     }
   });
 
-  // Lookup driver by race number for tyre verification
+  // Lookup driver by race number — returns all confirmed entries with equipment
   router.get('/api/lookupDriverByNumber', async (req, res) => {
     try {
       const { raceNumber } = req.query;
-
-      if (!raceNumber) {
-        return res.json({ success: false, error: 'Race number required' });
-      }
+      if (!raceNumber) return res.json({ success: false, error: 'Race number required' });
 
       const result = await pool.query(`
         SELECT re.entry_id, re.driver_id, re.race_class,
+               re.engine_serial,
                re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
-               d.first_name, d.last_name, d.race_number
+               d.first_name, d.last_name, d.race_number,
+               e.event_name, e.event_date
         FROM race_entries re
         JOIN drivers d ON re.driver_id = d.driver_id
+        LEFT JOIN events e ON re.event_id = e.event_id
         WHERE d.race_number = $1
-        ORDER BY re.created_at DESC
-        LIMIT 1
+          AND re.payment_status IN ('Completed','completed','Confirmed','confirmed','paid')
+          AND re.entry_status NOT IN ('cancelled','canceled')
+        ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
       `, [raceNumber]);
 
       if (result.rows.length === 0) {
-        return res.json({ success: false, error: 'No entry found for this race number' });
+        return res.json({ success: false, error: 'No confirmed entry found for this race number' });
       }
 
-      const entry = result.rows[0];
-      const tyresRegistered = !!(entry.tyre_front_left && entry.tyre_front_right &&
-                                 entry.tyre_rear_left && entry.tyre_rear_right);
+      // Build entries array, falling back to scan log if DB columns are null
+      const entries = [];
+      for (const row of result.rows) {
+        let engineSerial = row.engine_serial || null;
+        let fl = row.tyre_front_left  || null;
+        let fr = row.tyre_front_right || null;
+        let rl = row.tyre_rear_left   || null;
+        let rr = row.tyre_rear_right  || null;
 
+        if (!engineSerial) {
+          const el = await pool.query(`
+            SELECT equipment_serial FROM equipment_scan_log
+            WHERE driver_id = $1 AND scan_type IN ('engine_assign','LOAN_ASSIGN')
+              AND action_result = 'success' AND equipment_serial IS NOT NULL
+            ORDER BY scan_timestamp DESC LIMIT 1
+          `, [row.driver_id]);
+          if (el.rows.length) engineSerial = el.rows[0].equipment_serial;
+        }
+
+        if (!fl || !fr || !rl || !rr) {
+          const tl = await pool.query(`
+            SELECT equipment_serial FROM equipment_scan_log
+            WHERE driver_id = $1 AND scan_type = 'tyres_register'
+              AND action_result = 'success' AND equipment_serial IS NOT NULL
+            ORDER BY scan_timestamp DESC LIMIT 1
+          `, [row.driver_id]);
+          if (tl.rows.length) {
+            const raw = tl.rows[0].equipment_serial;
+            const flM = raw.match(/FL:(\S+)/i); const frM = raw.match(/FR:(\S+)/i);
+            const rlM = raw.match(/RL:(\S+)/i); const rrM = raw.match(/RR:(\S+)/i);
+            if (flM) fl = flM[1]; if (frM) fr = frM[1];
+            if (rlM) rl = rlM[1]; if (rrM) rr = rrM[1];
+          }
+        }
+
+        const tyresOk = !!(fl && fr && rl && rr);
+        entries.push({
+          driver_id:        row.driver_id,
+          entry_id:         row.entry_id,
+          first_name:       row.first_name,
+          last_name:        row.last_name,
+          race_number:      row.race_number,
+          race_class:       row.race_class,
+          event_name:       row.event_name  || null,
+          event_date:       row.event_date  || null,
+          engine_serial:    engineSerial,
+          registered_tyres: tyresOk,
+          tyres: tyresOk ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null
+        });
+      }
+
+      const first = entries[0];
       res.json({
         success: true,
+        entries,
         driver: {
-          driver_id: entry.driver_id,
-          entry_id: entry.entry_id,
-          first_name: entry.first_name,
-          last_name: entry.last_name,
-          race_number: entry.race_number,
-          race_class: entry.race_class
+          driver_id:    first.driver_id,
+          entry_id:     first.entry_id,
+          first_name:   first.first_name,
+          last_name:    first.last_name,
+          race_number:  first.race_number,
+          race_class:   first.race_class,
+          engine_serial: first.engine_serial
         },
-        registered_tyres: tyresRegistered,
-        tyres: tyresRegistered ? {
-          front_left: entry.tyre_front_left,
-          front_right: entry.tyre_front_right,
-          rear_left: entry.tyre_rear_left,
-          rear_right: entry.tyre_rear_right
-        } : null
+        registered_tyres: first.registered_tyres,
+        tyres:            first.tyres
       });
     } catch (err) {
       console.error('Error looking up driver:', err);
-      res.json({ success: false, error: 'Failed to look up driver' });
+      res.json({ success: false, error: err.message });
+    }
+  });
+
+  // Log a driver check / engine verify from check.html → broadcasts to monitor
+  router.post('/api/logDriverCheck', async (req, res) => {
+    try {
+      const { driver_id, entry_id, driver_name, race_class, engine_serial, registered_tyres,
+              scan_type: customType, action_result: customResult, notes: customNotes } = req.body;
+      const scanType = customType || 'driver_check';
+      const actionResult = customResult || 'success';
+      let notes = customNotes;
+      if (!notes) {
+        const notesParts = [];
+        if (engine_serial) notesParts.push(`Engine: ${engine_serial}`);
+        else notesParts.push('No engine assigned');
+        notesParts.push(`Tyres: ${registered_tyres ? 'Registered ✓' : 'Not registered'}`);
+        notes = notesParts.join(' · ');
+      }
+      await logEquipmentScan({
+        scan_type:        scanType,
+        entry_id,
+        driver_id,
+        driver_name,
+        race_class,
+        equipment_serial: engine_serial || null,
+        scanned_by:       'Check Station',
+        action_result:    actionResult,
+        notes
+      });
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Error logging driver check:', err);
+      res.json({ success: false, error: err.message });
     }
   });
 
@@ -957,6 +1042,280 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     } catch (err) {
       console.error('Error fetching full engine history:', err);
       res.json({ success: false, error: 'Failed to fetch engine history' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Titan admin: full update of any payment record
+  // payment_type: 'race_entry' | 'direct' | 'pool_rental'
+  // ─────────────────────────────────────────────────────────────
+  router.post('/api/titan/updatePaymentAdmin', async (req, res) => {
+    const {
+      payment_type, id,
+      payment_status, amount_paid, payment_reference,
+      entry_status, race_class, race_number,
+      notes, performed_by
+    } = req.body;
+
+    if (!payment_type || !id) {
+      return res.status(400).json({ success: false, error: 'payment_type and id are required' });
+    }
+
+    try {
+      if (payment_type === 'race_entry') {
+        const cols = []; const vals = []; let p = 1;
+        if (payment_status  !== undefined) { cols.push(`payment_status=$${p++}`);    vals.push(payment_status); }
+        if (amount_paid     !== undefined) { cols.push(`amount_paid=$${p++}`);       vals.push(parseFloat(amount_paid) || 0); }
+        if (payment_reference !== undefined) { cols.push(`payment_reference=$${p++}`); vals.push(payment_reference); }
+        if (entry_status    !== undefined) { cols.push(`entry_status=$${p++}`);      vals.push(entry_status); }
+        if (race_class      !== undefined) { cols.push(`race_class=$${p++}`);        vals.push(race_class); }
+        if (race_number     !== undefined) { cols.push(`race_number=$${p++}`);       vals.push(race_number); }
+        if (!cols.length) throw new Error('No fields to update');
+        cols.push(`updated_at=NOW()`);
+        vals.push(id);
+        const result = await pool.query(
+          `UPDATE race_entries SET ${cols.join(',')} WHERE entry_id=$${p} RETURNING entry_id`,
+          vals
+        );
+        if (!result.rows.length) throw new Error('Race entry not found');
+
+        // Audit log
+        try {
+          await pool.query(
+            `INSERT INTO audit_log (action, performed_by, details, event_time)
+             VALUES ($1,$2,$3,NOW())`,
+            ['TITAN_PAYMENT_EDIT', performed_by || 'TITAN',
+             `entry_id=${id} status=${payment_status||'-'} amount=${amount_paid||'-'} ref=${payment_reference||'-'} ${notes||''}`]
+          );
+        } catch (_) {}
+
+      } else if (payment_type === 'direct') {
+        const cols = []; const vals = []; let p = 1;
+        if (payment_status  !== undefined) { cols.push(`payment_status=$${p++}`);    vals.push(payment_status); }
+        if (amount_paid     !== undefined) { cols.push(`amount_gross=$${p++}`);      vals.push(parseFloat(amount_paid) || 0); }
+        if (payment_reference !== undefined) { cols.push(`merchant_payment_id=$${p++}`); vals.push(payment_reference); }
+        if (!cols.length) throw new Error('No fields to update');
+        vals.push(id);
+        await pool.query(
+          `UPDATE payments SET ${cols.join(',')} WHERE payment_id=$${p}`,
+          vals
+        );
+
+      } else if (payment_type === 'pool_rental') {
+        const cols = []; const vals = []; let p = 1;
+        if (payment_status  !== undefined) { cols.push(`payment_status=$${p++}`);    vals.push(payment_status); }
+        if (amount_paid     !== undefined) { cols.push(`amount_paid=$${p++}`);       vals.push(parseFloat(amount_paid) || 0); }
+        if (payment_reference !== undefined) { cols.push(`payment_reference=$${p++}`); vals.push(payment_reference); }
+        if (!cols.length) throw new Error('No fields to update');
+        vals.push(id);
+        await pool.query(
+          `UPDATE pool_engine_rentals SET ${cols.join(',')} WHERE rental_id=$${p}`,
+          vals
+        );
+
+      } else {
+        throw new Error(`Unknown payment_type: ${payment_type}`);
+      }
+
+      res.json({ success: true, message: 'Payment updated' });
+    } catch (err) {
+      console.error('updatePaymentAdmin error:', err.message);
+      res.status(400).json({ success: false, error: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // MSA Licenses — all drivers in an event with license status
+  // ─────────────────────────────────────────────────────────────
+  router.get('/api/titan/msaStatus', async (req, res) => {
+    const { event_id } = req.query;
+    if (!event_id) return res.status(400).json({ success: false, error: 'event_id required' });
+    try {
+      const result = await pool.query(`
+        SELECT
+          d.driver_id,
+          d.first_name,
+          d.last_name,
+          re.race_class,
+          re.race_number,
+          re.entry_status,
+          re.payment_status,
+          CASE WHEN ml.document_id IS NOT NULL THEN true ELSE false END AS has_license,
+          ml.document_id,
+          ml.file_name,
+          ml.file_size,
+          ml.upload_date
+        FROM race_entries re
+        JOIN drivers d ON re.driver_id = d.driver_id
+        LEFT JOIN msa_licenses ml ON d.driver_id = ml.driver_id
+        WHERE re.event_id = $1
+          AND re.entry_status NOT IN ('cancelled')
+        ORDER BY re.race_class, d.last_name, d.first_name
+      `, [event_id]);
+      res.json({ success: true, drivers: result.rows });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Race Results — get results for event / class / session
+  // ─────────────────────────────────────────────────────────────
+  router.get('/api/titan/raceResults', async (req, res) => {
+    const { event_id, race_class, session_type } = req.query;
+    if (!event_id) return res.status(400).json({ success: false, error: 'event_id required' });
+    try {
+      // Ensure tables exist
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS race_results (
+          result_id     SERIAL PRIMARY KEY,
+          event_id      TEXT,
+          driver_id     TEXT,
+          race_class    TEXT,
+          session_type  TEXT,
+          position      INT,
+          best_lap_time TEXT,
+          fastest_lap   BOOLEAN DEFAULT false,
+          total_laps    INT,
+          dnf           BOOLEAN DEFAULT false,
+          dns           BOOLEAN DEFAULT false,
+          dsq           BOOLEAN DEFAULT false,
+          notes         TEXT,
+          created_at    TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(event_id, driver_id, session_type)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS points (
+          points_id         SERIAL PRIMARY KEY,
+          driver_id         TEXT,
+          season            TEXT,
+          event             TEXT,
+          round             INT,
+          class             TEXT,
+          qualifying_points NUMERIC DEFAULT 0,
+          heat1_points      NUMERIC DEFAULT 0,
+          heat2_points      NUMERIC DEFAULT 0,
+          final_points      NUMERIC DEFAULT 0,
+          penalties_points  NUMERIC DEFAULT 0,
+          total_points      NUMERIC DEFAULT 0,
+          position          INT,
+          championship_type TEXT DEFAULT 'Northern Regions',
+          notes             TEXT,
+          created_at        TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(driver_id, season, event, class, championship_type)
+        )
+      `);
+
+      // Get entries for class in event (all confirmed/pending)
+      let entryQ = `
+        SELECT re.driver_id, re.race_class, re.race_number,
+               d.first_name, d.last_name
+        FROM race_entries re
+        JOIN drivers d ON re.driver_id = d.driver_id
+        WHERE re.event_id = $1
+          AND re.entry_status NOT IN ('cancelled')
+      `;
+      const entryParams = [event_id];
+      if (race_class) { entryQ += ` AND re.race_class = $2`; entryParams.push(race_class); }
+      entryQ += ` ORDER BY re.race_class, d.last_name`;
+      const entries = await pool.query(entryQ, entryParams);
+
+      // Get existing results for this event/session
+      let resQ = `SELECT * FROM race_results WHERE event_id = $1`;
+      const resParams = [event_id];
+      if (session_type) { resQ += ` AND session_type = $2`; resParams.push(session_type); }
+      if (race_class)   { resQ += ` AND race_class = $${resParams.length+1}`; resParams.push(race_class); }
+      const results = await pool.query(resQ, resParams);
+
+      // Get existing points
+      const pointsQ = `SELECT * FROM points WHERE event = $1`;
+      const pts = await pool.query(pointsQ, [event_id]);
+
+      res.json({
+        success: true,
+        entries: entries.rows,
+        results: results.rows,
+        points: pts.rows
+      });
+    } catch (err) {
+      console.error('raceResults error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Save Race Results + Points (upsert per driver/session)
+  // ─────────────────────────────────────────────────────────────
+  router.post('/api/titan/saveRaceResults', async (req, res) => {
+    const { event_id, race_class, session_type, results, season, championship_type } = req.body;
+    if (!event_id || !session_type || !Array.isArray(results)) {
+      return res.status(400).json({ success: false, error: 'event_id, session_type and results[] required' });
+    }
+    try {
+      for (const r of results) {
+        // Upsert race_results
+        await pool.query(`
+          INSERT INTO race_results
+            (event_id, driver_id, race_class, session_type, position,
+             best_lap_time, fastest_lap, dnf, dns, dsq, notes)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+          ON CONFLICT (event_id, driver_id, session_type)
+          DO UPDATE SET
+            position      = EXCLUDED.position,
+            best_lap_time = EXCLUDED.best_lap_time,
+            fastest_lap   = EXCLUDED.fastest_lap,
+            dnf           = EXCLUDED.dnf,
+            dns           = EXCLUDED.dns,
+            dsq           = EXCLUDED.dsq,
+            notes         = EXCLUDED.notes,
+            race_class    = EXCLUDED.race_class
+        `, [
+          event_id, r.driver_id, race_class || r.race_class, session_type,
+          r.position || null, r.best_lap_time || null,
+          !!r.fastest_lap, !!r.dnf, !!r.dns, !!r.dsq, r.notes || null
+        ]);
+
+        // Upsert points if any provided
+        if (r.points !== undefined && r.points !== null && r.points !== '') {
+          const pts = parseFloat(r.points) || 0;
+          const qp  = session_type === 'qualifying' ? pts : 0;
+          const h1p = session_type === 'heat1'      ? pts : 0;
+          const h2p = session_type === 'heat2'      ? pts : 0;
+          const fp  = session_type === 'final'      ? pts : 0;
+
+          await pool.query(`
+            INSERT INTO points
+              (driver_id, season, event, class, championship_type,
+               qualifying_points, heat1_points, heat2_points, final_points,
+               total_points, position)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+            ON CONFLICT (driver_id, season, event, class, championship_type)
+            DO UPDATE SET
+              qualifying_points = CASE WHEN $6 > 0 THEN $6 ELSE points.qualifying_points END,
+              heat1_points      = CASE WHEN $7 > 0 THEN $7 ELSE points.heat1_points END,
+              heat2_points      = CASE WHEN $8 > 0 THEN $8 ELSE points.heat2_points END,
+              final_points      = CASE WHEN $9 > 0 THEN $9 ELSE points.final_points END,
+              total_points      = points.qualifying_points + points.heat1_points +
+                                  points.heat2_points + points.final_points
+                                  - COALESCE(points.penalties_points,0),
+              position          = EXCLUDED.position
+          `, [
+            r.driver_id,
+            season || new Date().getFullYear().toString(),
+            event_id,
+            race_class || r.race_class,
+            championship_type || 'Northern Regions',
+            qp, h1p, h2p, fp,
+            pts,
+            r.position || null
+          ]);
+        }
+      }
+      res.json({ success: true, saved: results.length });
+    } catch (err) {
+      console.error('saveRaceResults error:', err);
+      res.status(500).json({ success: false, error: err.message });
     }
   });
 

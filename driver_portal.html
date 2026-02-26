@@ -1062,10 +1062,19 @@
       background: transparent;
       opacity: 0.95;
     }
-    .ptab[data-accent="summer"] .tabBar{ background: var(--summer); }
-    .ptab[data-accent="autumn"] .tabBar{ background: var(--autumn); }
-    .ptab[data-accent="winter"] .tabBar{ background: var(--winter); }
-    .ptab[data-accent="spring"] .tabBar{ background: var(--spring); }
+    .ptab[data-accent="summer"] .tabBar{ background: var(--summer); opacity: 0.35; }
+    .ptab[data-accent="autumn"] .tabBar{ background: var(--autumn); opacity: 0.35; }
+    .ptab[data-accent="winter"] .tabBar{ background: var(--winter); opacity: 0.35; }
+    .ptab[data-accent="spring"] .tabBar{ background: var(--spring); opacity: 0.35; }
+
+    .ptab[data-accent="summer"]:hover .tabBar,
+    .ptab[data-accent="summer"].active .tabBar{ opacity: 1; }
+    .ptab[data-accent="autumn"]:hover .tabBar,
+    .ptab[data-accent="autumn"].active .tabBar{ opacity: 1; }
+    .ptab[data-accent="winter"]:hover .tabBar,
+    .ptab[data-accent="winter"].active .tabBar{ opacity: 1; }
+    .ptab[data-accent="spring"]:hover .tabBar,
+    .ptab[data-accent="spring"].active .tabBar{ opacity: 1; }
 
     /* Action tabs (Logout, Home) - dark styling */
     .ptab-action {
@@ -1225,7 +1234,12 @@
       background: #111111;
     }
 
-    /* Color-coded left borders */
+    /* Color-coded left borders — dim when inactive, bright when active/hovered */
+    .portal-sidebar-item[data-accent="summer"] { border-left-color: #78610a; }
+    .portal-sidebar-item[data-accent="autumn"] { border-left-color: #7c3308; }
+    .portal-sidebar-item[data-accent="winter"] { border-left-color: #0c4a6e; }
+    .portal-sidebar-item[data-accent="spring"] { border-left-color: #14532d; }
+
     .portal-sidebar-item[data-accent="summer"]:hover,
     .portal-sidebar-item[data-accent="summer"].active {
       border-left-color: #facc15;
@@ -1251,10 +1265,6 @@
       margin-top: 8px;
       padding-top: 16px;
       border-top: 1px solid #1f1f1f;
-    }
-
-    .portal-sidebar-item.portal-sidebar-action:hover {
-      border-left-color: #ef4444;
     }
 
     /* Mobile Portal Menu - FAB + Expandable Accordion */
@@ -2229,13 +2239,13 @@
     <button class="portal-sidebar-item" data-ptab="contacts" data-accent="autumn" type="button">Entrant Details</button>
     <button class="portal-sidebar-item" data-ptab="medical" data-accent="winter" type="button">Medical & Consent</button>
     <button class="portal-sidebar-item" data-ptab="events" data-accent="spring" type="button">My Events</button>
-    <button class="portal-sidebar-item" data-ptab="points" data-accent="spring" type="button">Points</button>
-    <button class="portal-sidebar-item active" data-ptab="payments" data-accent="spring" type="button">Entries & Rentals</button>
-    <button class="portal-sidebar-item" data-ptab="msa" data-accent="spring" type="button">MSA License</button>
-    <button class="portal-sidebar-item" data-ptab="notifications" data-accent="winter" type="button">Notifications</button>
-    <button class="portal-sidebar-item" data-ptab="requests" data-accent="autumn" type="button">Contact Admin</button>
-    <button class="portal-sidebar-item portal-sidebar-action" onclick="document.getElementById('btnLogout').click()" type="button">Logout</button>
-    <button class="portal-sidebar-item portal-sidebar-action" onclick="window.location.href='index.html'" type="button">Home</button>
+    <button class="portal-sidebar-item" data-ptab="points" data-accent="summer" type="button">Points</button>
+    <button class="portal-sidebar-item active" data-ptab="payments" data-accent="autumn" type="button">Entries & Rentals</button>
+    <button class="portal-sidebar-item" data-ptab="msa" data-accent="winter" type="button">MSA License</button>
+    <button class="portal-sidebar-item" data-ptab="notifications" data-accent="spring" type="button">Notifications</button>
+    <button class="portal-sidebar-item" data-ptab="requests" data-accent="summer" type="button">Contact Admin</button>
+    <button class="portal-sidebar-item portal-sidebar-action" data-accent="autumn" onclick="document.getElementById('btnLogout').click()" type="button">Logout</button>
+    <button class="portal-sidebar-item portal-sidebar-action" data-accent="winter" onclick="window.location.href='index.html'" type="button">Home</button>
   </nav>
 
   <div class="wrap">
@@ -2337,14 +2347,14 @@
               <button class="ptab" data-ptab="contacts" data-accent="autumn" type="button"><span class="tabBar"></span>Entrant Details</button>
               <button class="ptab" data-ptab="medical" data-accent="winter" type="button"><span class="tabBar"></span>Medical & Consent</button>
               <button class="ptab" data-ptab="events" data-accent="spring" type="button"><span class="tabBar"></span>My Events</button>
-              <button class="ptab" data-ptab="points" data-accent="spring" type="button"><span class="tabBar"></span>Points</button>
-              <button class="ptab active" data-ptab="payments" data-accent="spring" type="button"><span class="tabBar"></span>Entries & Rentals</button>
-              <button class="ptab" data-ptab="msa" data-accent="spring" type="button"><span class="tabBar"></span>MSA License</button>
-              <button class="ptab" data-ptab="notifications" data-accent="winter" type="button"><span class="tabBar"></span>Notifications</button>
-              <button class="ptab" data-ptab="requests" data-accent="autumn" type="button"><span class="tabBar"></span>Contact Admin</button>
+              <button class="ptab" data-ptab="points" data-accent="summer" type="button"><span class="tabBar"></span>Points</button>
+              <button class="ptab active" data-ptab="payments" data-accent="autumn" type="button"><span class="tabBar"></span>Entries & Rentals</button>
+              <button class="ptab" data-ptab="msa" data-accent="winter" type="button"><span class="tabBar"></span>MSA License</button>
+              <button class="ptab" data-ptab="notifications" data-accent="spring" type="button"><span class="tabBar"></span>Notifications</button>
+              <button class="ptab" data-ptab="requests" data-accent="summer" type="button"><span class="tabBar"></span>Contact Admin</button>
               <!-- Logout and Home at end of portal tabs -->
-              <button class="ptab ptab-action" onclick="document.getElementById('btnLogout').click()" type="button"><span class="tabBar" style="background:#ef4444"></span>Logout</button>
-              <button class="ptab ptab-action" onclick="window.location.href='index.html'" type="button"><span class="tabBar" style="background:#3b82f6"></span>Home</button>
+              <button class="ptab ptab-action" data-accent="autumn" onclick="document.getElementById('btnLogout').click()" type="button"><span class="tabBar"></span>Logout</button>
+              <button class="ptab ptab-action" data-accent="winter" onclick="window.location.href='index.html'" type="button"><span class="tabBar"></span>Home</button>
             </div>
 
             <!-- Portal tabs - Mobile 3D carousel -->
@@ -2597,36 +2607,30 @@
               </div>
 
               <div class="portalSection active" data-psection="payments">
-                <!-- ENTER A RACE BUTTON - BLACK GLOWING CONTAINER -->
-                <div class="panel">
-                  <div id="enterRaceBox" style="padding: 20px; background: #000000; border-radius: 8px; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);">
-                    <button id="btnQuickEntry" type="button" style="width: 100%; padding: 16px 24px; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: none; background: #3b82f6; color: white; border-radius: 6px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); position: relative; overflow: hidden; animation: slideInDown 0.5s ease-out;">
-                      ENTER A RACE
-                    </button>
-                    <style>
-                      @keyframes slideInDown {
-                        from {
-                          opacity: 0;
-                          transform: translateY(-20px);
-                        }
-                        to {
-                          opacity: 1;
-                          transform: translateY(0);
-                        }
-                      }
-                      #btnQuickEntry {
-                        cursor: pointer;
-                      }
-                      #btnQuickEntry:hover {
-                        background: #2563eb !important;
-                        box-shadow: 0 0 25px rgba(59, 130, 246, 0.8) !important;
-                        transform: translateY(-2px);
-                      }
-                      #btnQuickEntry:active {
-                        transform: translateY(0);
-                      }
-                    </style>
+                <!-- ENTER A RACE CARD -->
+                <div class="panel" style="padding:0;overflow:hidden;">
+                  <div style="background:linear-gradient(135deg,#0a0a0a 0%,#111827 100%);border:2px solid #facc15;border-radius:8px;box-shadow:0 0 32px rgba(250,204,21,0.18);">
+                    <!-- Top accent bar -->
+                    <div style="height:4px;background:linear-gradient(90deg,#facc15,#f97316,#facc15);background-size:200% 100%;animation:shimmer 2.5s linear infinite;"></div>
+                    <style>@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}</style>
+                    <div style="padding:24px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                        <div>
+                          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#facc15;margin-bottom:6px;">Ready to Compete?</div>
+                          <div style="font-size:22px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.04em;line-height:1.1;">Enter a Race</div>
+                          <div style="font-size:13px;color:#9ca3af;margin-top:6px;">Register for the next event, add engine rental &amp; more</div>
+                        </div>
+                        <button id="btnQuickEntry" type="button" style="flex-shrink:0;padding:14px 32px;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#000000;border-radius:6px;cursor:pointer;transition:all 0.25s ease;box-shadow:0 0 20px rgba(250,204,21,0.45);animation:slideInDown 0.5s ease-out;">
+                          Enter Now →
+                        </button>
+                      </div>
+                    </div>
                   </div>
+                  <style>
+                    @keyframes slideInDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+                    #btnQuickEntry:hover{background:linear-gradient(135deg,#fde047,#facc15) !important;box-shadow:0 0 32px rgba(250,204,21,0.7) !important;transform:translateY(-2px);}
+                    #btnQuickEntry:active{transform:translateY(0);}
+                  </style>
                 </div>
 
                 <!-- NEXT RACE DETAILS SECTION -->
@@ -2635,12 +2639,12 @@
                   <div id="nextRaceBox" style="padding: 20px; background: #000000; border-radius: 8px; border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);">
                     <div style="margin-bottom: 16px;">
                       <div style="font-size: 12px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Upcoming Event</div>
-                      <div style="font-size: 20px; font-weight: 700; color: #ffffff; text-transform: uppercase;" id="nextRaceTitle">14 FEBRUARY 2026 - REDSTAR RACEWAY (NORTHERN REGIONS CROWN)</div>
+                      <div style="font-size: 20px; font-weight: 700; color: #ffffff; text-transform: uppercase;" id="nextRaceTitle">Loading...</div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                       <div>
                         <div style="font-size: 12px; color: #9ca3af; margin-bottom: 4px; font-weight: 600;">Location</div>
-                        <div style="font-size: 14px; color: #ffffff;" id="nextRaceLocation">Redstar Raceway</div>
+                        <div style="font-size: 14px; color: #ffffff;" id="nextRaceLocation">—</div>
                       </div>
                       <div>
                         <div style="font-size: 12px; color: #9ca3af; margin-bottom: 4px; font-weight: 600;">Entry Status</div>
@@ -2737,8 +2741,23 @@
 
               <div class="portalSection" data-psection="msa">
                 <div class="panel">
-                  <div class="panelTitle"><span class="accentBar" style="background:#8b5cf6"></span>MSA License Upload</div>
-                  <div class="hint">Upload your Motor Sport Association license document. This helps us verify your racing credentials and maintains compliance records.</div>
+                  <div class="panelTitle"><span class="accentBar" style="background:#0ea5e9"></span>MSA License</div>
+                  <div class="hint">Enter your MSA license number and upload your Motor Sport Association license document.</div>
+
+                  <!-- MSA License Number -->
+                  <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <div style="font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9ca3af;margin-bottom:10px;">License Number</div>
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                      <input type="text" id="msaLicenseInput"
+                        placeholder="Enter your MSA license number"
+                        style="flex:1;min-width:180px;padding:10px 12px;background:#0a0a0a;border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:14px;outline:none;font-family:inherit;"
+                        oninput="clearMSAMsg()">
+                      <button onclick="saveMSALicense()" style="padding:10px 18px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">Save</button>
+                    </div>
+                    <div id="msaLicenseMsg" style="margin-top:8px;font-size:12px;"></div>
+                  </div>
+
+                  <div style="font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#9ca3af;margin-bottom:12px;">License Document Upload</div>
                   
                   <div style="margin-top: 20px; padding: 20px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.03); text-align: center;">
                     <input type="file" id="msaFileInput" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display: none;" onchange="handleMSAFileSelect(event)" />
@@ -3933,6 +3952,10 @@
       document.getElementById("p_race_number").value = d.race_number || "";
       document.getElementById("p_license_number").value = d.license_number || "";
       document.getElementById("p_transponder_number").value = d.transponder_number || "";
+
+      // Populate MSA license number in MSA tab (same field as Driver Profile license_number)
+      const msaInput = document.getElementById('msaLicenseInput');
+      if (msaInput) msaInput.value = d.license_number || '';
       document.getElementById("p_kart_brand").value = d.kart_brand || "";
       document.getElementById("p_team_name").value = d.team_name || "";
       document.getElementById("p_coach_name").value = d.coach_name || "";
@@ -3966,8 +3989,7 @@
         nextRaceEl.textContent = displayStatus;
         nextRaceEl.style.background = displayStatus === 'Registered' ? '#10b981' : '#ef4444';
         nextRaceEl.style.boxShadow = displayStatus === 'Registered' ? '0 0 12px 3px rgba(16, 185, 129, 0.6)' : 'none';
-        // Update label with next race date (14 Feb at Redstar)
-        nextRaceLabel.textContent = 'Next Race Entry (14 Feb - Redstar)';
+        // Label updated dynamically by updateNextRaceBox via event fetch
       }
 
       // Update engine rental status (Next Race Engine Rental)
@@ -4156,6 +4178,40 @@
       }
     }
 
+    // MSA License Number
+    function clearMSAMsg() { const m = document.getElementById('msaLicenseMsg'); if (m) m.textContent = ''; }
+    async function saveMSALicense() {
+      const input = document.getElementById('msaLicenseInput');
+      const msg   = document.getElementById('msaLicenseMsg');
+      if (!currentProfile || !currentProfile.driver || !currentProfile.driver.driver_id) {
+        if (msg) { msg.textContent = 'Not logged in.'; msg.style.color = '#ef4444'; } return;
+      }
+      try {
+        const resp = await fetch('/api/saveMSALicenseNumber', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ driver_id: currentProfile.driver.driver_id, license_number: input ? input.value.trim() : '' })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          if (msg) { msg.textContent = '\u2714 Saved'; msg.style.color = '#4ade80'; }
+          const val = input ? input.value.trim() : '';
+          if (currentProfile.driver) {
+            currentProfile.driver.license_number = val;
+            currentProfile.driver.msa_license_number = val;
+          }
+          // Keep Driver Profile tab in sync
+          const profileInput = document.getElementById('p_license_number');
+          if (profileInput) profileInput.value = val;
+          setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
+        } else {
+          if (msg) { msg.textContent = 'Error: ' + (data.error || 'Failed'); msg.style.color = '#ef4444'; }
+        }
+      } catch(e) {
+        if (msg) { msg.textContent = 'Network error'; msg.style.color = '#ef4444'; }
+      }
+    }
+
     // Function to load driver's registered events
     async function loadDriverEvents(driverId) {
       const container = document.getElementById('p_eventsBlock');
@@ -4254,11 +4310,22 @@
           `;
         }).join('');
         
+        const pastCount = data.events.filter(e => e.event_date && new Date(e.event_date) < new Date()).length;
+        const upcomingCount = data.events.length - pastCount;
+        
         container.innerHTML = `
-          <div style="margin-bottom: 16px; padding: 12px 16px; background: #000000; border-radius: var(--radius); border: 2px solid #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 18px;">ℹ️</span>
-            <div style="font-size: 14px; color: #3b82f6; font-weight: 600;">
-              You have <strong>${data.events.length}</strong> event registration${data.events.length !== 1 ? 's' : ''}
+          <div style="margin-bottom: 16px; padding: 14px 16px; background: #000000; border-radius: var(--radius); border: 2px solid #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <span style="font-size: 20px;">📋</span>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:baseline;gap:6px;">
+                <span style="font-size:22px;font-weight:800;color:#3b82f6;">${upcomingCount}</span>
+                <span style="font-size:13px;color:#9ca3af;font-weight:600;">upcoming registration${upcomingCount !== 1 ? 's' : ''}</span>
+              </div>
+              <div style="width:1px;background:rgba(255,255,255,0.12);align-self:stretch;"></div>
+              <div style="display:flex;align-items:baseline;gap:6px;">
+                <span style="font-size:22px;font-weight:800;color:#6b7280;">${pastCount}</span>
+                <span style="font-size:13px;color:#9ca3af;font-weight:600;">previous event${pastCount !== 1 ? 's' : ''}</span>
+              </div>
             </div>
           </div>
           <div style="overflow-x: auto;">
@@ -4625,11 +4692,47 @@
     }
 
     // Function to update the "Next Race" status box based on driver profile
-    function updateNextRaceBox(driver) {
+    async function updateNextRaceBox(driver) {
       if (!driver) return;
-      
-      const entryStatus = driver.next_race_entry_status || 'Not Registered';
+
+      // Fetch the next upcoming event to drive the display
+      let nextEvent = null;
+      try {
+        const evtResp = await fetch('/api/getUpcomingEvents');
+        const evtData = await evtResp.json();
+        if (evtData.success && evtData.events && evtData.events.length > 0) {
+          nextEvent = evtData.events[0];
+        }
+      } catch(e) { console.warn('Could not load next event:', e); }
+
+      // If next event registration is not open, treat as not registered regardless of DB flag
+      const regOpen = nextEvent ? nextEvent.registration_open : false;
+      const entryStatus = regOpen ? (driver.next_race_entry_status || 'Not Registered') : 'Not Open';
       const engineStatus = driver.next_race_engine_rental_status || 'No';
+
+      // Update title, location and label from live event data
+      const titleEl    = document.getElementById('nextRaceTitle');
+      const locationEl = document.getElementById('nextRaceLocation');
+      const labelEl    = document.getElementById('nextRaceLabel');
+      if (nextEvent) {
+        const evtDate = nextEvent.event_date
+          ? new Date(nextEvent.event_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
+          : '';
+        if (titleEl)    titleEl.textContent    = evtDate ? `${evtDate} — ${nextEvent.event_name}` : nextEvent.event_name;
+        if (locationEl) locationEl.textContent = nextEvent.location || '—';
+        if (labelEl) {
+          const shortDate = nextEvent.event_date
+            ? new Date(nextEvent.event_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })
+            : '';
+          labelEl.textContent = regOpen
+            ? `Next Race Entry (${shortDate}${nextEvent.location ? ' — ' + nextEvent.location : ''})`
+            : `Next Race (${shortDate}) — Registration Not Open`;
+        }
+      } else {
+        if (titleEl)    titleEl.textContent    = 'No upcoming events';
+        if (locationEl) locationEl.textContent = '—';
+        if (labelEl)    labelEl.textContent    = 'Next Race Entry';
+      }
       
       // Determine colors and styling
       let boxBg, boxBorder, accentColor, statusText, statusColor;
@@ -4641,6 +4744,13 @@
         accentColor = '#22c55e';
         statusText = '✓ Registered';
         statusColor = '#22c55e';
+      } else if (entryStatus === 'Not Open') {
+        // Grey for registration not open
+        boxBg = '#000000';
+        boxBorder = '#6b7280';
+        accentColor = '#6b7280';
+        statusText = '⏳ Registration Not Open';
+        statusColor = '#6b7280';
       } else {
         // Orange for pending or not registered
         boxBg = '#000000';
@@ -4666,7 +4776,7 @@
       
       if (statusDot) {
         statusDot.style.background = accentColor;
-        statusDot.style.boxShadow = `0 0 8px rgba(${accentColor === '#22c55e' ? '34, 197, 94' : '251, 146, 60'}, 0.6)`;
+        statusDot.style.boxShadow = `0 0 8px rgba(${accentColor === '#22c55e' ? '34, 197, 94' : accentColor === '#6b7280' ? '107, 114, 128' : '251, 146, 60'}, 0.6)`;
       }
       
       if (statusText_) {
@@ -4683,6 +4793,9 @@
         if (entryStatus === 'Registered' || entryStatus === 'Confirmed') {
           entryStatusDiv.innerHTML = '✓ Registered';
           entryStatusDiv.style.color = '#16a34a';
+        } else if (entryStatus === 'Not Open') {
+          entryStatusDiv.innerHTML = '⏳ Not Open Yet';
+          entryStatusDiv.style.color = '#9ca3af';
         } else {
           entryStatusDiv.innerHTML = '○ Not Registered';
           entryStatusDiv.style.color = '#dc2626';
@@ -5743,6 +5856,9 @@
           document.getElementById("p_kart_brand").value = d.kart_brand || "";
           document.getElementById("p_team_name").value = d.team_name || "";
           document.getElementById("p_coach_name").value = d.coach_name || "";
+          // Keep MSA license tab in sync
+          const msaSyncInput = document.getElementById('msaLicenseInput');
+          if (msaSyncInput) msaSyncInput.value = d.license_number || '';
           console.log("Form updated with data verified from database", d);
         }
         
@@ -6180,35 +6296,50 @@
         }
         
         events.forEach(event => {
+          const isOpen = event.registration_open === true || event.registration_open === 't' || event.registration_open === 1;
           const eventCard = document.createElement('div');
-          eventCard.style.cssText = 'border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; background: #f9fafb; cursor: pointer; transition: all 0.2s;';
-          eventCard.onmouseover = () => eventCard.style.background = '#f3f4f6';
-          eventCard.onmouseout = () => eventCard.style.background = '#f9fafb';
+          eventCard.style.cssText = `border: 1px solid ${isOpen ? '#e5e7eb' : '#374151'}; border-radius: 6px; padding: 16px; background: ${isOpen ? '#f9fafb' : '#111827'}; cursor: ${isOpen ? 'pointer' : 'default'}; transition: all 0.2s; opacity: ${isOpen ? '1' : '0.75'};`;
+          if (isOpen) {
+            eventCard.onmouseover = () => eventCard.style.background = '#f3f4f6';
+            eventCard.onmouseout = () => eventCard.style.background = '#f9fafb';
+          }
           
           const eventDate = new Date(event.event_date).toLocaleDateString('en-ZA');
           const deadline = event.registration_deadline ? new Date(event.registration_deadline).toLocaleDateString('en-ZA') : 'N/A';
           
+          const statusBadge = isOpen
+            ? `<span style="padding:3px 8px;background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;border-radius:4px;">OPEN</span>`
+            : `<span style="padding:3px 8px;background:#1f2937;color:#6b7280;font-size:11px;font-weight:700;border-radius:4px;border:1px solid #374151;">CLOSED</span>`;
+          
           eventCard.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
               <div>
-                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #1f2937;">${event.event_name}</h3>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                  <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: ${isOpen ? '#1f2937' : '#9ca3af'};">${event.event_name}</h3>
+                  ${statusBadge}
+                </div>
                 <div style="font-size: 13px; color: #6b7280; margin-bottom: 2px;">📅 ${eventDate}</div>
                 <div style="font-size: 13px; color: #6b7280;">📍 ${event.location || 'TBA'}</div>
               </div>
               <div style="text-align: right; margin-left: 24px;">
-                <div style="font-size: 18px; font-weight: 700; color: #22c55e;">R${parseFloat(event.entry_fee).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div style="font-size: 18px; font-weight: 700; color: ${isOpen ? '#22c55e' : '#6b7280'};">R${parseFloat(event.entry_fee).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Entry Fee</div>
               </div>
             </div>
-            <div style="padding-top: 12px; border-top: 1px solid #e5e7eb;">
+            <div style="padding-top: 12px; border-top: 1px solid ${isOpen ? '#e5e7eb' : '#374151'};">
               <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">Deadline: ${deadline}</div>
-              <button type="button" style="width: 100%; padding: 8px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600;">Select Event</button>
+              ${isOpen
+                ? `<button type="button" style="width: 100%; padding: 8px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600;">Select Event</button>`
+                : `<div style="width:100%;padding:8px;background:#1f2937;color:#6b7280;border:1px solid #374151;border-radius:4px;font-size:14px;font-weight:600;text-align:center;">Registration Closed</div>`
+              }
             </div>
           `;
           
-          eventCard.addEventListener('click', () => {
-            selectEvent(event.event_id, event.event_name, event.location);
-          });
+          if (isOpen) {
+            eventCard.addEventListener('click', () => {
+              selectEvent(event.event_id, event.event_name, event.location);
+            });
+          }
           
           eventsListContainer.appendChild(eventCard);
         });

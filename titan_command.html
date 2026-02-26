@@ -670,6 +670,8 @@
       <button class="tab-btn" onclick="switchTab('alerts')">ALERTS</button>
       <button class="tab-btn" onclick="switchTab('audit')">AUDIT</button>
       <button class="tab-btn" onclick="switchTab('payments')">PAYMENTS</button>
+      <button class="tab-btn" onclick="switchTab('licenses')">LICENSES</button>
+      <button class="tab-btn" onclick="switchTab('results')">RESULTS</button>
     </div>
 
     <!-- Content Area -->
@@ -769,7 +771,87 @@
 
       <!-- Payments Tab -->
       <div id="paymentsTab" class="tab-content">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="text" class="search-box" id="paymentSearch" placeholder="Search name or reference..." oninput="loadPayments()" style="flex:1;margin-bottom:0;">
+          <button class="cancel-btn-modal" onclick="loadPayments()" style="padding:10px 14px;font-size:12px;">&#x21BB; Refresh</button>
+        </div>
         <div id="paymentsList"></div>
+      </div>
+
+      <!-- MSA Licenses Tab -->
+      <div id="licensesTab" class="tab-content">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <select class="race-selector" id="licEvent" onchange="loadLicenses()" style="flex:1;margin-bottom:0;">
+            <option value="">Select Event...</option>
+          </select>
+          <button class="cancel-btn-modal" onclick="loadLicenses()" style="padding:10px 14px;font-size:12px;">&#x21BB;</button>
+        </div>
+        <div id="licStats" style="display:flex;gap:8px;margin-bottom:12px;"></div>
+        <div id="licList"></div>
+      </div>
+
+      <!-- Results Tab -->
+      <div id="resultsTab" class="tab-content">
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <button class="save-btn" id="res_btn_enter" onclick="showResultsView('enter')" style="flex:1;">✏️ Enter Results</button>
+          <button class="save-btn" id="res_btn_standings" onclick="showResultsView('standings')" style="flex:1;background:#7c3aed;color:white;">🏆 Standings</button>
+        </div>
+
+        <!-- Enter Results -->
+        <div id="resView_enter">
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+            <select class="race-selector" id="res_event" style="flex:2;margin:0;min-width:160px;">
+              <option value="">Select Event...</option>
+            </select>
+            <select class="race-selector" id="res_class" style="flex:1;margin:0;min-width:110px;">
+              <option value="">All Classes</option>
+              <option value="CADET">CADET</option>
+              <option value="MINI ROK U/10">MINI U/10</option>
+              <option value="MINI ROK">MINI ROK</option>
+              <option value="OK-J">OK-J</option>
+              <option value="OK-N">OK-N</option>
+              <option value="KZ2">KZ2</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:12px;">
+            <select class="race-selector" id="res_session" style="flex:1;margin:0;">
+              <option value="qualifying">Qualifying</option>
+              <option value="heat1">Heat 1</option>
+              <option value="heat2">Heat 2</option>
+              <option value="final">Final</option>
+            </select>
+            <button class="save-btn" onclick="loadResultsGrid()" style="padding:10px 16px;">LOAD GRID</button>
+          </div>
+          <div id="res_grid"></div>
+          <div id="res_savebar" style="display:none;margin-top:12px;">
+            <button class="save-btn" onclick="saveResults()" style="width:100%;padding:14px;font-size:15px;">💾 SAVE RESULTS</button>
+          </div>
+        </div>
+
+        <!-- Standings -->
+        <div id="resView_standings" style="display:none;">
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+            <input type="text" class="search-box" id="std_season" placeholder="Season e.g. 2025" value="2025"
+                   style="flex:1;margin:0;min-width:90px;">
+            <select class="race-selector" id="std_class" style="flex:1;margin:0;min-width:110px;">
+              <option value="CADET">CADET</option>
+              <option value="MINI ROK U/10">MINI U/10</option>
+              <option value="MINI ROK">MINI ROK</option>
+              <option value="OK-J">OK-J</option>
+              <option value="OK-N">OK-N</option>
+              <option value="KZ2">KZ2</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:12px;">
+            <select class="race-selector" id="std_champType" style="flex:1;margin:0;">
+              <option value="Northern Regions">Northern Regions</option>
+              <option value="National">National</option>
+              <option value="Western Cape">Western Cape</option>
+            </select>
+            <button class="save-btn" onclick="loadStandings()" style="padding:10px 16px;">LOAD</button>
+          </div>
+          <div id="std_list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -960,6 +1042,88 @@
     </div>
   </div>
 
+  <!-- Payment Edit Modal -->
+  <div id="paymentEditModal" class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="pmtModal_title">Edit Payment</div>
+      <button class="close-btn" onclick="closePaymentEditModal()">CLOSE</button>
+    </div>
+    <div class="modal-content">
+      <div class="edit-form">
+
+        <!-- READ-ONLY INFO -->
+        <h3 style="color:#fbbf24;margin-top:0;margin-bottom:12px;font-size:16px;border-bottom:2px solid #374151;padding-bottom:6px;">ℹ️ Record Info</h3>
+        <div class="form-group">
+          <label class="form-label">Driver</label>
+          <input type="text" class="form-input" id="pmtEdit_driver" readonly style="opacity:0.6;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Event / Item</label>
+          <input type="text" class="form-input" id="pmtEdit_event" readonly style="opacity:0.6;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="text" class="form-input" id="pmtEdit_date" readonly style="opacity:0.6;">
+        </div>
+
+        <!-- EDITABLE FIELDS -->
+        <h3 style="color:#22c55e;margin-top:20px;margin-bottom:12px;font-size:16px;border-bottom:2px solid #374151;padding-bottom:6px;">✏️ Editable Fields</h3>
+
+        <div class="form-group">
+          <label class="form-label">Payment Status</label>
+          <select class="form-select" id="pmtEdit_paymentStatus">
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+            <option value="Paid">Paid</option>
+            <option value="Partial">Partial</option>
+            <option value="Failed">Failed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Refunded">Refunded</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="pmtEdit_entryStatusGroup">
+          <label class="form-label">Entry Status</label>
+          <select class="form-select" id="pmtEdit_entryStatus">
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Amount (R)</label>
+          <input type="number" class="form-input" id="pmtEdit_amount" step="0.01" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Payment Reference</label>
+          <input type="text" class="form-input" id="pmtEdit_reference" placeholder="Reference / transaction ID" style="font-family:monospace;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Race Class</label>
+          <input type="text" class="form-input" id="pmtEdit_raceClass" placeholder="e.g. CADET" style="text-transform:uppercase;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Race Number</label>
+          <input type="text" class="form-input" id="pmtEdit_raceNumber" placeholder="e.g. 47">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (optional)</label>
+          <input type="text" class="form-input" id="pmtEdit_notes" placeholder="Reason for change...">
+        </div>
+
+        <div class="btn-group" style="margin-top:20px;padding-top:16px;border-top:2px solid #374151;">
+          <button class="save-btn-modal" onclick="savePaymentEdit()" style="background:#22c55e;flex:1;">💾 SAVE PAYMENT</button>
+          <button class="cancel-btn-modal" onclick="closePaymentEditModal()" style="flex:1;">❌ CANCEL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ============================================================
     // AUTH — Titan gets a real server token on login
@@ -1029,6 +1193,8 @@
       if (tabName === 'alerts') loadAlerts();
       if (tabName === 'audit') loadAuditTrail();
       if (tabName === 'payments') loadPayments();
+      if (tabName === 'licenses') loadLicenses();
+      if (tabName === 'results') showResultsView('enter');
       if (tabName === 'engines') {
         showEngTab('loan');
         const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16);
@@ -1075,15 +1241,20 @@
         return;
       }
 
-      list.innerHTML = drivers.map(driver => `
+      list.innerHTML = drivers.map(driver => {
+        const cc = classColour(driver.class);
+        return `
         <div class="driver-item" onclick='openDriverModal(${JSON.stringify(driver).replace(/'/g, "&#39;")})'>
           <div class="driver-info">
             <div class="driver-name">${driver.first_name} ${driver.last_name}</div>
-            <div class="driver-meta">${driver.class || 'No Class'} | ${driver.team_name || 'No Team'}</div>
+            <div class="driver-meta">
+              <span style="color:${cc};font-weight:700;letter-spacing:0.04em;">${driver.class || 'No Class'}</span>
+              <span style="color:var(--gray);"> | ${driver.team_name || 'No Team'}</span>
+            </div>
           </div>
-          <div class="driver-number">#${driver.race_number || '?'}</div>
-        </div>
-      `).join('');
+          <div class="driver-number" style="color:${cc};">#${driver.race_number || '?'}</div>
+        </div>`;
+      }).join('');
     }
 
     // Filter Drivers
@@ -1100,26 +1271,32 @@
     // Open Driver Modal
     function openDriverModal(driver) {
       selectedDriver = driver;
-      document.getElementById('modalDriverName').textContent = `${driver.first_name} ${driver.last_name} #${driver.race_number}`;
+      const cc = classColour(driver.class);
+      document.getElementById('modalDriverName').innerHTML =
+        `<span style="color:${cc};">#${driver.race_number || '?'}</span>&nbsp;${driver.first_name} ${driver.last_name}`;
       
+      // Status colour
+      const statusColour = { Active:'#22c55e', Approved:'#3b82f6', Pending:'#f59e0b', Inactive:'#6b7280' };
+      const sc = statusColour[(driver.status || '')] || '#94a3b8';
+
       const details = document.getElementById('modalDriverDetails');
       details.innerHTML = `
         <div class="detail-section">
           <div class="detail-row">
             <span class="detail-label">Status</span>
-            <span class="detail-value">${driver.status || 'N/A'}</span>
+            <span class="detail-value" style="color:${sc};font-weight:700;">${driver.status || 'N/A'}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Class</span>
-            <span class="detail-value">${driver.class || 'N/A'}</span>
+            <span class="detail-value" style="color:${cc};font-weight:700;">${driver.class || 'N/A'}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Race Number</span>
-            <span class="detail-value">${driver.race_number || 'N/A'}</span>
+            <span class="detail-value" style="color:${cc};font-size:1.3em;font-weight:800;">#${driver.race_number || 'N/A'}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Transponder</span>
-            <span class="detail-value">${driver.transponder_number || 'N/A'}</span>
+            <span class="detail-value" style="font-family:monospace;letter-spacing:0.05em;">${driver.transponder_number || 'N/A'}</span>
           </div>
         </div>
 
@@ -1141,11 +1318,11 @@
         <div class="detail-section">
           <div class="detail-row">
             <span class="detail-label">Email</span>
-            <span class="detail-value">${driver.email || 'N/A'}</span>
+            <span class="detail-value">${driver.email || driver.driver_email || 'N/A'}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">License</span>
-            <span class="detail-value">${driver.license_number || 'N/A'}</span>
+            <span class="detail-value" style="font-family:monospace;letter-spacing:0.05em;">${driver.license_number || 'N/A'}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Next Race</span>
@@ -1168,10 +1345,17 @@
         const response = await titanFetch('/api/getAllEvents');
         const data = await response.json();
         allEvents = data.events || [];
-        
-        const select = document.getElementById('raceSelect');
-        select.innerHTML = '<option value="">Select Race...</option>' + 
-          allEvents.map(event => `<option value="${event.event_id}">${event.event_name}</option>`).join('');
+
+        const opts = '<option value="">Select Race...</option>' +
+          allEvents.map(e => `<option value="${e.event_id}">${e.event_name}</option>`).join('');
+
+        document.getElementById('raceSelect').innerHTML = opts;
+        document.getElementById('licEvent').innerHTML =
+          '<option value="">Select Event...</option>' +
+          allEvents.map(e => `<option value="${e.event_id}">${e.event_name}</option>`).join('');
+        document.getElementById('res_event').innerHTML =
+          '<option value="">Select Event...</option>' +
+          allEvents.map(e => `<option value="${e.event_id}">${e.event_name}</option>`).join('');
       } catch (error) {
         console.error('Failed to load events:', error);
       }
@@ -1204,23 +1388,26 @@
             return;
           }
 
-          list.innerHTML = entries.map(entry => `
-            <div class="entry-card">
+          list.innerHTML = entries.map(entry => {
+            const border = entryAccent(entry.entry_status, entry.payment_status);
+            const cc = classColour(entry.race_class);
+            return `
+            <div class="entry-card" style="border-left-color:${border};">
               <div class="entry-header">
                 <div class="entry-driver">${entry.driver_first_name} ${entry.driver_last_name}</div>
                 <span class="entry-status status-${entry.entry_status || 'pending'}">${entry.entry_status || 'pending'}</span>
               </div>
               <div class="entry-field">
                 <label>Class:</label>
-                <span>${entry.race_class || 'N/A'}</span>
+                <span style="color:${cc};font-weight:700;">${entry.race_class || 'N/A'}</span>
               </div>
               <div class="entry-field">
                 <label>Number:</label>
-                <span>#${entry.race_number || 'N/A'}</span>
+                <span style="color:${cc};font-weight:800;">#${entry.race_number || 'N/A'}</span>
               </div>
               <div class="entry-field">
                 <label>Payment:</label>
-                <span>${entry.payment_status || 'Pending'}</span>
+                <span style="color:${border};">${entry.payment_status || 'Pending'}</span>
               </div>
               <div class="entry-field">
                 <label>Amount:</label>
@@ -1230,8 +1417,8 @@
                 <button class="edit-btn" onclick='openEntryEditModal(${JSON.stringify(entry).replace(/'/g, "&#39;")})' style="flex: 1;">EDIT</button>
                 <button class="edit-btn" onclick='resendTicketEmail("${entry.entry_id}")' style="flex: 1; background: #3b82f6;">📧 RESEND TICKETS</button>
               </div>
-            </div>
-          `).join('');
+            </div>`;
+          }).join('');
         } else {
           throw new Error('Failed to load entries');
         }
@@ -1299,18 +1486,20 @@
             return;
           }
 
-          list.innerHTML = logs.map(log => `
-            <div class="notif-item">
+          list.innerHTML = logs.map(log => {
+            const colour = auditColour(log.action_type || log.action);
+            return `
+            <div class="notif-item" style="border-left-color:${colour};">
               <div class="notif-header">
-                <div class="notif-action">${log.action_type || log.action || 'System Event'}</div>
+                <div class="notif-action" style="color:${colour};">${log.action_type || log.action || 'System Event'}</div>
                 <div class="notif-time">${formatDate(log.timestamp || log.created_at)}</div>
               </div>
               <div class="notif-body">
                 ${log.details || log.message || 'No details'}<br>
-                <small>By: ${log.performed_by || 'System'}</small>
+                <small style="color:var(--gray);">By: ${log.performed_by || 'System'}</small>
               </div>
-            </div>
-          `).join('');
+            </div>`;
+          }).join('');
         } else {
           throw new Error('Failed to load alerts');
         }
@@ -1340,18 +1529,6 @@
             return;
           }
 
-          const auditColour = (action) => {
-            const a = (action || '').toLowerCase();
-            if (/delete|remov|cancel|reject/.test(a))        return '#dc2626'; // red
-            if (/register|creat|add|insert|approv/.test(a))  return '#059669'; // green
-            if (/payment|paid|pay|refund/.test(a))           return '#0891b2'; // cyan
-            if (/engine|loan|return|replac/.test(a))         return '#7c3aed'; // purple
-            if (/scan|check.in|check_in|checkin/.test(a))    return '#d97706'; // amber
-            if (/issue|error|flag|warn|problem/.test(a))     return '#ea580c'; // orange
-            if (/updat|edit|chang|modif/.test(a))            return '#2563eb'; // blue
-            return '#6b7280'; // gray default
-          };
-
           list.innerHTML = logs.slice(0, 100).map(log => {
             const colour = auditColour(log.action);
             const sourceLabel = log.source === 'equipment' ? '\u2699 equipment' : '\uD83D\uDC64 driver';
@@ -1374,41 +1551,489 @@
       }
     }
 
-    // Load Payments
+    // Load Payments — shows all 3 sources with edit controls
     async function loadPayments() {
       const list = document.getElementById('paymentsList');
       list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading payments...</div>';
-      
-      try {
-        const response = await titanFetch('/api/getAllPayments', {
-          method: 'POST',
-          body: JSON.stringify({})
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-          const payments = data.payments || [];
-          
-          if (payments.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No payments</div>';
-            return;
-          }
 
-          list.innerHTML = payments.slice(0, 50).map(payment => `
-            <div class="payment-card">
-              <div class="payment-amount">R${payment.amount || '0.00'}</div>
-              <div class="payment-info"><strong>${payment.first_name} ${payment.last_name}</strong></div>
-              <div class="payment-info">Ref: ${payment.payment_reference || 'N/A'}</div>
-              <div class="payment-info">Status: ${payment.payment_status || 'Pending'}</div>
-              <div class="payment-info">${formatDate(payment.payment_date)}</div>
+      const payColour = s => {
+        const ps = (s || '').toLowerCase();
+        if (ps === 'completed' || ps === 'paid') return '#22c55e';
+        if (ps === 'partial')  return '#f59e0b';
+        if (ps === 'failed' || ps === 'cancelled' || ps === 'refunded') return '#dc2626';
+        return '#6b7280';
+      };
+
+      const search = (document.getElementById('paymentSearch')?.value || '').toLowerCase();
+      const matches = p => {
+        if (!search) return true;
+        return (`${p.first_name||''} ${p.last_name||''} ${p.payment_reference||''} ${p.event_name||''} ${p.item_name||''}`)
+          .toLowerCase().includes(search);
+      };
+
+      try {
+        const response = await titanFetch('/api/getAllPayments', { method: 'POST', body: JSON.stringify({}) });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.error?.message || 'Failed');
+
+        const entries = (data.data.payments       || []).filter(matches);
+        const directs = (data.data.directPayments || []).filter(matches);
+        const rentals = (data.data.poolRentals    || []).filter(matches);
+
+        const entryCards = entries.map(p => {
+          const pc = payColour(p.payment_status);
+          const cc = classColour(p.race_class);
+          const pObj = JSON.stringify(p).replace(/'/g, '&#39;');
+          return `
+          <div class="payment-card" style="border-left:3px solid ${pc};">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+              <div>
+                <div class="payment-amount" style="color:${pc};">R${p.amount_paid || '0.00'}</div>
+                <div class="payment-info"><strong>${p.first_name} ${p.last_name}</strong></div>
+                <div class="payment-info" style="color:${cc};font-weight:700;">${p.race_class||'—'} &nbsp;#${p.race_number||'?'}</div>
+                <div class="payment-info" style="font-size:11px;color:var(--gray);">${p.event_name||'—'} · ${formatDate(p.created_at)}</div>
+                <div class="payment-info">Ref: <span style="font-family:monospace;font-size:10px;">${p.payment_reference||'none'}</span></div>
+                <div class="payment-info">Pay: <span style="color:${pc};font-weight:700;">${p.payment_status||'—'}</span>
+                  &nbsp;·&nbsp;Entry: <span style="color:#94a3b8;">${p.entry_status||'—'}</span></div>
+              </div>
+              <button class="edit-btn" onclick='openPaymentEditModal(${pObj},"race_entry")' style="white-space:nowrap;">✏️ EDIT</button>
             </div>
-          `).join('');
-        } else {
-          throw new Error('Failed to load payments');
+          </div>`;
+        }).join('');
+
+        const directCards = directs.map(p => {
+          const pc = payColour(p.payment_status);
+          const pObj = JSON.stringify(p).replace(/'/g, '&#39;');
+          return `
+          <div class="payment-card" style="border-left:3px solid ${pc};">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+              <div>
+                <div class="payment-amount" style="color:${pc};">R${p.amount_gross || '0.00'}</div>
+                <div class="payment-info"><strong>${p.first_name||''} ${p.last_name||''}</strong></div>
+                <div class="payment-info" style="font-size:11px;">${p.item_name||'—'}</div>
+                <div class="payment-info" style="font-size:11px;color:var(--gray);">${formatDate(p.created_at)}</div>
+                <div class="payment-info">Ref: <span style="font-family:monospace;font-size:10px;">${p.payment_reference||'none'}</span></div>
+                <div class="payment-info">Status: <span style="color:${pc};font-weight:700;">${p.payment_status||'—'}</span></div>
+              </div>
+              <button class="edit-btn" onclick='openPaymentEditModal(${pObj},"direct")' style="white-space:nowrap;">✏️ EDIT</button>
+            </div>
+          </div>`;
+        }).join('');
+
+        const rentalCards = rentals.map(p => {
+          const pc = payColour(p.payment_status);
+          const pObj = JSON.stringify(p).replace(/'/g, '&#39;');
+          return `
+          <div class="payment-card" style="border-left:3px solid ${pc};">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+              <div>
+                <div class="payment-amount" style="color:${pc};">R${p.amount_paid || '0.00'}</div>
+                <div class="payment-info"><strong>${p.first_name||''} ${p.last_name||''}</strong></div>
+                <div class="payment-info" style="font-size:11px;">${p.rental_type||'—'} · ${p.championship_class||'—'} · ${p.season_year||''}</div>
+                <div class="payment-info" style="font-size:11px;color:var(--gray);">${formatDate(p.created_at)}</div>
+                <div class="payment-info">Ref: <span style="font-family:monospace;font-size:10px;">${p.payment_reference||'none'}</span></div>
+                <div class="payment-info">Status: <span style="color:${pc};font-weight:700;">${p.payment_status||'—'}</span></div>
+              </div>
+              <button class="edit-btn" onclick='openPaymentEditModal(${pObj},"pool_rental")' style="white-space:nowrap;">✏️ EDIT</button>
+            </div>
+          </div>`;
+        }).join('');
+
+        const total = entries.length + directs.length + rentals.length;
+        if (total === 0) {
+          list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No payments found</div>';
+          return;
         }
+
+        list.innerHTML = `
+          <div style="margin-bottom:20px;">
+            <h3 style="color:var(--primary);margin-bottom:10px;">🏁 Race Entry Payments (${entries.length})</h3>
+            ${entryCards || '<div class="empty-state" style="font-size:12px;">None</div>'}
+          </div>
+          <div style="margin-bottom:20px;">
+            <h3 style="color:#a855f7;margin-bottom:10px;">💳 Direct / PayFast (${directs.length})</h3>
+            ${directCards || '<div class="empty-state" style="font-size:12px;">None</div>'}
+          </div>
+          <div>
+            <h3 style="color:#06b6d4;margin-bottom:10px;">🔧 Pool Engine Rentals (${rentals.length})</h3>
+            ${rentalCards || '<div class="empty-state" style="font-size:12px;">None</div>'}
+          </div>`;
+
       } catch (error) {
         console.error('Error loading payments:', error);
         list.innerHTML = '<div class="empty-state"><div class="empty-icon">WARNING</div>Failed to load payments</div>';
+      }
+    }
+
+    // ── Payment Edit Modal ──────────────────────────────────────
+    let selectedPayment     = null;
+    let selectedPaymentType = null;
+
+    function openPaymentEditModal(payment, paymentType) {
+      selectedPayment     = payment;
+      selectedPaymentType = paymentType;
+
+      // Title
+      const typeLabel = { race_entry:'Race Entry', direct:'Direct Payment', pool_rental:'Pool Rental' };
+      document.getElementById('pmtModal_title').textContent =
+        `Edit ${typeLabel[paymentType]||paymentType}: ${payment.first_name||''} ${payment.last_name||''}`.trim();
+
+      // Read-only info
+      document.getElementById('pmtEdit_driver').value =
+        `${payment.first_name||''} ${payment.last_name||''}`.trim() || 'Unknown';
+      document.getElementById('pmtEdit_event').value =
+        payment.event_name || payment.item_name || payment.rental_type || '—';
+      document.getElementById('pmtEdit_date').value = formatDate(payment.created_at || payment.payment_date);
+
+      // Editable fields — amounts differ by type
+      const amount = paymentType === 'direct'
+        ? (payment.amount_gross || payment.amount_net || 0)
+        : (payment.amount_paid || 0);
+
+      document.getElementById('pmtEdit_paymentStatus').value = payment.payment_status || 'Pending';
+      document.getElementById('pmtEdit_amount').value        = amount;
+      document.getElementById('pmtEdit_reference').value     = payment.payment_reference ||
+        payment.merchant_payment_id || '';
+      document.getElementById('pmtEdit_raceClass').value  = payment.race_class  || payment.championship_class || '';
+      document.getElementById('pmtEdit_raceNumber').value = payment.race_number || '';
+      document.getElementById('pmtEdit_notes').value      = '';
+
+      // Show/hide race-specific fields
+      const isEntry = paymentType === 'race_entry';
+      document.getElementById('pmtEdit_entryStatusGroup').style.display = isEntry ? '' : 'none';
+      if (isEntry) {
+        document.getElementById('pmtEdit_entryStatus').value = payment.entry_status || 'pending';
+      }
+
+      document.getElementById('paymentEditModal').classList.add('active');
+    }
+
+    function closePaymentEditModal() {
+      document.getElementById('paymentEditModal').classList.remove('active');
+    }
+
+    async function savePaymentEdit() {
+      if (!selectedPayment || !selectedPaymentType) return;
+
+      const id = selectedPayment.entry_id    ||
+                 selectedPayment.payment_id  ||
+                 selectedPayment.rental_id;
+
+      const payload = {
+        payment_type:      selectedPaymentType,
+        id,
+        payment_status:    document.getElementById('pmtEdit_paymentStatus').value,
+        amount_paid:       document.getElementById('pmtEdit_amount').value,
+        payment_reference: document.getElementById('pmtEdit_reference').value.trim() || undefined,
+        notes:             document.getElementById('pmtEdit_notes').value.trim() || undefined,
+        performed_by:      'TITAN'
+      };
+
+      if (selectedPaymentType === 'race_entry') {
+        payload.entry_status = document.getElementById('pmtEdit_entryStatus').value;
+        payload.race_class   = document.getElementById('pmtEdit_raceClass').value.trim().toUpperCase() || undefined;
+        payload.race_number  = document.getElementById('pmtEdit_raceNumber').value.trim() || undefined;
+      }
+
+      // Remove undefined fields so server ignores them
+      Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+      try {
+        const res = await titanFetch('/api/titan/updatePaymentAdmin', {
+          method: 'POST',
+          body:   JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closePaymentEditModal();
+          await loadPayments();
+        } else {
+          alert('Save failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // ── MSA LICENSES TAB ───────────────────────────────────────
+    async function loadLicenses() {
+      const eventId = document.getElementById('licEvent').value;
+      const list    = document.getElementById('licList');
+      const stats   = document.getElementById('licStats');
+
+      if (!eventId) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>Select an event</div>';
+        stats.innerHTML = '';
+        return;
+      }
+
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+      stats.innerHTML = '';
+
+      try {
+        const res  = await titanFetch(`/api/titan/msaStatus?event_id=${eventId}`);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed');
+
+        const drivers = data.drivers || [];
+        const hasLic  = drivers.filter(d => d.has_license);
+        const missing = drivers.filter(d => !d.has_license);
+
+        stats.innerHTML = `
+          <div style="flex:1;background:#14532d;border-radius:8px;padding:10px 12px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:#22c55e;">${hasLic.length}</div>
+            <div style="font-size:11px;color:#86efac;">SUBMITTED</div>
+          </div>
+          <div style="flex:1;background:#7c2d12;border-radius:8px;padding:10px 12px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:#f97316;">${missing.length}</div>
+            <div style="font-size:11px;color:#fdba74;">MISSING</div>
+          </div>
+          <div style="flex:1;background:var(--surface);border-radius:8px;padding:10px 12px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:var(--primary);">${drivers.length}</div>
+            <div style="font-size:11px;color:var(--gray);">TOTAL</div>
+          </div>`;
+
+        if (!drivers.length) {
+          list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No confirmed entries for this event</div>';
+          return;
+        }
+
+        list.innerHTML = drivers.map(d => {
+          const cc  = classColour(d.race_class);
+          const has = d.has_license;
+          return `
+          <div style="background:var(--surface);border-left:3px solid ${has?'#22c55e':'#f97316'};
+                      border-radius:6px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+              <div>
+                <div style="font-weight:700;">${d.first_name} ${d.last_name}</div>
+                <div style="font-size:11px;margin-top:2px;">
+                  <span style="color:${cc};font-weight:700;">${d.race_class||'—'}</span>
+                  &nbsp;#${d.race_number||'?'}
+                  &nbsp;·&nbsp;<span style="color:var(--gray);">${d.entry_status}</span>
+                </div>
+                ${has ? `<div style="font-size:10px;color:#86efac;margin-top:3px;">📄 ${d.file_name} (${(d.file_size/1024).toFixed(1)} KB) · ${formatDate(d.upload_date)}</div>` : ''}
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+                <span style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;
+                       background:${has?'rgba(34,197,94,0.15)':'rgba(249,115,22,0.15)'};
+                       color:${has?'#22c55e':'#f97316'};">
+                  ${has ? '✅ LICENSE OK' : '⚠️ MISSING'}
+                </span>
+                ${has ? `
+                  <a href="/api/downloadMSALicense/${d.document_id}" target="_blank"
+                     style="font-size:11px;color:#3b82f6;text-decoration:none;">⬇️ Download</a>
+                  <button onclick="deleteMSALicense('${d.document_id}','${d.first_name} ${d.last_name}')"
+                     style="font-size:10px;padding:3px 8px;background:rgba(220,38,38,0.15);color:#ef4444;
+                            border:1px solid #ef4444;border-radius:4px;cursor:pointer;">🗑 Delete</button>
+                ` : ''}
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+
+      } catch (err) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">WARNING</div>${err.message}</div>`;
+      }
+    }
+
+    async function deleteMSALicense(docId, driverName) {
+      if (!confirm(`Delete MSA license for ${driverName}?`)) return;
+      try {
+        const res  = await fetch('/api/deleteMSALicense', {
+          method : 'POST',
+          headers: {
+            'Content-Type'  : 'application/json',
+            'x-admin-token' : titanToken,
+            'Authorization' : `Bearer ${titanToken}`
+          },
+          body: JSON.stringify({ document_id: docId })
+        });
+        const data = await res.json();
+        if (data.success) loadLicenses();
+        else alert('Delete failed: ' + (data.error?.message || data.error));
+      } catch (err) { alert('Error: ' + err.message); }
+    }
+
+    // ── RESULTS TAB ──────────────────────────────────────────
+    function showResultsView(view) {
+      document.getElementById('resView_enter').style.display     = view === 'enter'     ? '' : 'none';
+      document.getElementById('resView_standings').style.display = view === 'standings' ? '' : 'none';
+      const eBtn = document.getElementById('res_btn_enter');
+      const sBtn = document.getElementById('res_btn_standings');
+      eBtn.style.background = view === 'enter'     ? 'var(--primary)' : 'var(--border)';
+      eBtn.style.color      = view === 'enter'     ? 'var(--dark)'    : 'var(--light)';
+      sBtn.style.background = view === 'standings' ? '#7c3aed' : 'var(--border)';
+      sBtn.style.color      = 'white';
+    }
+
+    async function loadResultsGrid() {
+      const eventId = document.getElementById('res_event').value;
+      const cls     = document.getElementById('res_class').value;
+      const session = document.getElementById('res_session').value;
+      const grid    = document.getElementById('res_grid');
+
+      if (!eventId) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>Select an event</div>';
+        document.getElementById('res_savebar').style.display = 'none';
+        return;
+      }
+      grid.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+
+      try {
+        let url = `/api/titan/raceResults?event_id=${eventId}&session_type=${session}`;
+        if (cls) url += `&class=${encodeURIComponent(cls)}`;
+        const res  = await titanFetch(url);
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed');
+
+        const entries = data.entries || [];
+        if (!entries.length) {
+          grid.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No entries for this selection</div>';
+          document.getElementById('res_savebar').style.display = 'none';
+          return;
+        }
+
+        const existingMap = {};
+        (data.results || []).forEach(r => { existingMap[r.driver_id] = r; });
+        const ptsMap = {};
+        (data.points  || []).forEach(p => { ptsMap[p.driver_id] = p; });
+
+        const sessionLabel = { qualifying:'Qualifying', heat1:'Heat 1', heat2:'Heat 2', final:'Final' };
+
+        grid.innerHTML = `
+          <div style="font-size:11px;color:var(--gray);margin-bottom:10px;text-align:center;">
+            ${sessionLabel[session]||session} &nbsp;·&nbsp; ${entries.length} drivers
+          </div>
+          ${entries.map(e => {
+            const r   = existingMap[e.driver_id] || {};
+            const p   = ptsMap[e.driver_id] || {};
+            const pts = session==='qualifying' ? (p.qualifying_points||'')
+                      : session==='heat1'      ? (p.heat1_points||'')
+                      : session==='heat2'      ? (p.heat2_points||'')
+                      : session==='final'      ? (p.final_points||'') : '';
+            const cc  = classColour(e.race_class);
+            return `
+            <div class="payment-card" data-driver-id="${e.driver_id}" data-race-class="${e.race_class||''}"
+                 style="border-left:3px solid ${cc};padding:10px 12px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <input type="number" min="0" max="99" placeholder="Pos"
+                       class="form-input res-pos" value="${r.position||''}"
+                       style="width:52px;padding:6px;font-size:14px;font-weight:800;text-align:center;">
+                <div style="flex:1;">
+                  <span style="font-weight:700;">${e.last_name}, ${e.first_name}</span>
+                  <span style="color:${cc};font-size:11px;margin-left:6px;">${e.race_class||''} #${e.race_number||'?'}</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <input type="text" placeholder="Best lap e.g. 1:23.456"
+                       class="form-input res-lap" value="${r.best_lap_time||''}"
+                       style="flex:2;min-width:120px;padding:6px;font-family:monospace;">
+                <input type="number" placeholder="Pts" min="0" step="0.5"
+                       class="form-input res-pts" value="${pts}"
+                       style="width:60px;padding:6px;text-align:center;">
+                <label style="font-size:11px;color:#f59e0b;display:flex;align-items:center;gap:3px;cursor:pointer;">
+                  <input type="checkbox" class="res-fl" ${r.fastest_lap?'checked':''}> FL</label>
+                <label style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:3px;cursor:pointer;">
+                  <input type="checkbox" class="res-dnf" ${r.dnf?'checked':''}> DNF</label>
+                <label style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:3px;cursor:pointer;">
+                  <input type="checkbox" class="res-dns" ${r.dns?'checked':''}> DNS</label>
+                <label style="font-size:11px;color:#ef4444;display:flex;align-items:center;gap:3px;cursor:pointer;">
+                  <input type="checkbox" class="res-dsq" ${r.dsq?'checked':''}> DSQ</label>
+              </div>
+            </div>`;
+          }).join('')}`;
+
+        document.getElementById('res_savebar').style.display = 'block';
+
+      } catch (err) {
+        grid.innerHTML = `<div class="empty-state"><div class="empty-icon">WARNING</div>${err.message}</div>`;
+      }
+    }
+
+    async function saveResults() {
+      const eventId = document.getElementById('res_event').value;
+      const cls     = document.getElementById('res_class').value;
+      const session = document.getElementById('res_session').value;
+      if (!eventId || !session) { alert('Select event and session first'); return; }
+
+      const rows = document.querySelectorAll('#res_grid [data-driver-id]');
+      if (!rows.length) { alert('No grid loaded'); return; }
+
+      const results = Array.from(rows).map(row => ({
+        driver_id   : row.dataset.driverId,
+        race_class  : row.dataset.raceClass,
+        position    : parseInt(row.querySelector('.res-pos').value)  || null,
+        best_lap_time: row.querySelector('.res-lap').value.trim()    || null,
+        points      : row.querySelector('.res-pts').value,
+        fastest_lap : row.querySelector('.res-fl').checked,
+        dnf         : row.querySelector('.res-dnf').checked,
+        dns         : row.querySelector('.res-dns').checked,
+        dsq         : row.querySelector('.res-dsq').checked
+      }));
+
+      const evt    = allEvents.find(e => String(e.event_id) === String(eventId));
+      const season = evt ? new Date(evt.event_date).getFullYear().toString() : new Date().getFullYear().toString();
+
+      try {
+        const res  = await titanFetch('/api/titan/saveRaceResults', {
+          method: 'POST',
+          body  : JSON.stringify({ event_id: eventId, race_class: cls, session_type: session, results, season })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const saveBtn = document.querySelector('#res_savebar button');
+          saveBtn.textContent = `✅ Saved ${data.saved} rows`;
+          setTimeout(() => { saveBtn.textContent = '💾 SAVE RESULTS'; }, 2500);
+        } else alert('Save failed: ' + (data.error || 'Unknown error'));
+      } catch (err) { alert('Error: ' + err.message); }
+    }
+
+    async function loadStandings() {
+      const season = document.getElementById('std_season').value.trim();
+      const cls    = document.getElementById('std_class').value;
+      const champ  = document.getElementById('std_champType').value;
+      const list   = document.getElementById('std_list');
+      if (!season || !cls) { alert('Enter season and select class'); return; }
+
+      list.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+      try {
+        const res  = await titanFetch(
+          `/api/championship-standings/${encodeURIComponent(season)}/${encodeURIComponent(cls)}?championship_type=${encodeURIComponent(champ)}`
+        );
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed');
+
+        const rows = data.standings || [];
+        const cc   = classColour(cls);
+        if (!rows.length) {
+          list.innerHTML = '<div class="empty-state"><div class="empty-icon">INFO</div>No points data yet</div>';
+          return;
+        }
+
+        const medals = ['#eab308','#94a3b8','#b45309'];
+        list.innerHTML = `
+          <div style="text-align:center;margin-bottom:12px;color:var(--gray);font-size:11px;">
+            ${season} &nbsp;·&nbsp; ${cls} &nbsp;·&nbsp; ${champ} &nbsp;·&nbsp; ${rows.length} drivers
+          </div>
+          ${rows.map((r, i) => {
+            const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+            const col   = i < 3 ? medals[i] : cc;
+            const bg    = i===0?'rgba(234,179,8,0.08)':i===1?'rgba(148,163,184,0.06)':i===2?'rgba(180,83,9,0.06)':'var(--surface)';
+            return `
+            <div style="background:${bg};border-left:3px solid ${col};border-radius:6px;
+                        padding:10px 12px;margin-bottom:6px;
+                        display:flex;align-items:center;gap:10px;">
+              <div style="font-size:18px;min-width:28px;text-align:center;">${medal}</div>
+              <div style="flex:1;">
+                <div style="font-weight:700;">${r.first_name} ${r.last_name}</div>
+                <div style="font-size:11px;color:var(--gray);">#${r.race_number||'?'} · ${r.races_completed} rounds</div>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:${col};">${r.total_points}</div>
+            </div>`;
+          }).join('')}`;
+      } catch (err) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">WARNING</div>${err.message}</div>`;
       }
     }
 
@@ -1422,6 +2047,42 @@
         hour: '2-digit', 
         minute: '2-digit' 
       });
+    }
+
+    // Class colour — matches monitor.html palette
+    function classColour(cls) {
+      const c = (cls || '').toUpperCase();
+      if (c.includes('CADET'))                           return '#f97316'; // orange
+      if (c.includes('MINI') && c.includes('10'))        return '#ec4899'; // pink  (U/10)
+      if (c.includes('MINI'))                            return '#a855f7'; // purple
+      if (c.includes('OK-J') || c.includes('OKJ'))       return '#3b82f6'; // blue
+      if (c.includes('OK-N') || c.includes('OKN'))       return '#22c55e'; // green
+      if (c.includes('KZ') || c.includes('SHIFTER'))     return '#ef4444'; // red
+      if (c.includes('OK'))                              return '#06b6d4'; // cyan
+      return '#94a3b8'; // slate / default
+    }
+
+    // Entry-status accent colour
+    function entryAccent(entryStatus, paymentStatus) {
+      const es = (entryStatus || '').toLowerCase();
+      const ps = (paymentStatus || '').toLowerCase();
+      if (es === 'cancelled') return '#dc2626';
+      if (es === 'confirmed' && (ps === 'completed' || ps === 'paid')) return '#22c55e';
+      if (es === 'confirmed') return '#f59e0b';
+      return '#6b7280'; // pending / unknown
+    }
+
+    // Audit-action accent colour (used by audit trail AND alerts panel)
+    function auditColour(action) {
+      const a = (action || '').toLowerCase();
+      if (/delete|remov|cancel|reject/.test(a))        return '#dc2626'; // red
+      if (/register|creat|add|insert|approv/.test(a))  return '#059669'; // green
+      if (/payment|paid|pay|refund/.test(a))           return '#0891b2'; // cyan
+      if (/engine|loan|return|replac/.test(a))         return '#7c3aed'; // purple
+      if (/scan|check.in|check_in|checkin/.test(a))    return '#d97706'; // amber
+      if (/issue|error|flag|warn|problem/.test(a))     return '#ea580c'; // orange
+      if (/updat|edit|chang|modif/.test(a))            return '#2563eb'; // blue
+      return '#6b7280'; // gray default
     }
 
     // ========== DRIVER EDIT FUNCTIONS ==========

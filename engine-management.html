@@ -330,14 +330,14 @@
             padding: 20px;
             border-radius: var(--radius);
             text-align: center;
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
             margin-bottom: 16px;
             animation: slideIn 0.3s ease-out;
             border: 1px solid #ef4444;
             box-shadow: 0 20px 40px rgba(239, 68, 68, 0.35);
+            line-height: 1.5;
         }
         
         @keyframes slideIn {
@@ -448,6 +448,7 @@
             z-index: 9999;
             border: 1px solid #0ea5e9;
             display: none;
+            pointer-events: none;
         }
 
         #debugLog.show {
@@ -795,8 +796,8 @@
         </div>
     </div>
 
-    <!-- Debug Log (visible on screen) -->
-    <div id="debugLog" class="show"></div>
+    <!-- Debug Log (hidden until scanner activity) -->
+    <div id="debugLog"></div>
 
     <div class="container">
         <div class="header">
@@ -854,12 +855,12 @@
                 <button class="btn btn-secondary" onclick="backToMenu()">
                     ← Back
                 </button>
+                <div id="messageContainer" style="margin-top:12px;"></div>
             </div>
         </div>
 
         <!-- Driver Info & Context-Aware Assignment -->
         <div id="driverInfoSection" class="hidden">
-            <div id="messageContainer"></div>
             
             <div class="driver-info" id="driverInfo">
                 <!-- Will be populated dynamically -->
@@ -1264,6 +1265,7 @@
             div.className = type;
             div.textContent = `[${timestamp}] ${message}`;
             log.appendChild(div);
+            log.classList.add('show');
             log.scrollTop = log.scrollHeight;
             
             // Also log to console
@@ -1277,11 +1279,6 @@
 
         // Check if scanner libraries are loaded
         window.addEventListener('load', () => {
-            if (typeof Quagga === 'undefined') {
-                debugLog('ERROR: Quagga library not loaded', 'error');
-            } else {
-                debugLog('Quagga barcode library loaded OK', 'success');
-            }
             if (typeof jsQR === 'undefined') {
                 debugLog('ERROR: jsQR library not loaded', 'error');
             } else {
@@ -1644,12 +1641,16 @@
             const container = document.getElementById('messageContainer');
             container.innerHTML = `<div class="success-message">${message}</div>`;
             setTimeout(() => { container.innerHTML = ''; }, 3000);
+            // Also surface in debug panel so it's visible regardless of scroll position
+            debugLog('✅ ' + message, 'success');
         }
 
         function showError(message) {
             const container = document.getElementById('messageContainer');
             container.innerHTML = `<div class="error-message">${message}</div>`;
-            setTimeout(() => { container.innerHTML = ''; }, 5000);
+            setTimeout(() => { container.innerHTML = ''; }, 7000);
+            // Also surface in debug panel so it's visible regardless of scroll position
+            debugLog('❌ ' + message, 'error');
         }
 
         // Ticket Lookup
@@ -1670,7 +1671,12 @@
                     currentTicket = data.ticket;
                     displayDriverInfo();
                 } else {
-                    showError(data.error || 'Ticket not found');
+                    const msg = data.error === 'Invalid barcode format'
+                        ? `❌ "${barcode}" is not a valid ticket code. Engine tickets start with ENG, tyres with TYR, transponder with TX, fuel with GAS.`
+                        : data.error === 'No entry found for this ticket'
+                        ? `❌ No entry found for "${barcode}". Ticket may not exist or payment not completed.`
+                        : `❌ ${data.error || 'Ticket not found'}`;
+                    showError(msg);
                 }
             } catch (err) {
                 showError('Error looking up ticket: ' + err.message);
@@ -1753,8 +1759,16 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showSuccess(`Engine ${engineSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
-                    setTimeout(() => backToMenu(), 2000);
+                    if (data.warning) {
+                        showError(data.warning);
+                        setTimeout(() => {
+                            showSuccess(`Engine ${engineSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
+                            setTimeout(() => backToMenu(), 2000);
+                        }, 3000);
+                    } else {
+                        showSuccess(`Engine ${engineSerial} assigned to ${currentDriver.first_name} ${currentDriver.last_name}`);
+                        setTimeout(() => backToMenu(), 2000);
+                    }
                 } else {
                     showError(data.error || 'Failed to assign engine');
                 }
