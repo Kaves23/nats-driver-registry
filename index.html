@@ -4373,17 +4373,17 @@ body[data-season="spring"] .info-section-select {
     font-size: 1.2rem;
   }
 
-  /* Lockup: frosted-glass card floating in the centre, blue tinge */
+  /* Lockup: no background — title floats clean over the photos */
   body[data-season="northern"] .lockup {
     position: relative;
     z-index: 10;
-    background: rgba(10, 36, 99, 0.52);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(96, 165, 250, 0.22);
-    border-radius: 18px;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    border-radius: 0;
     padding: 3rem 4rem;
-    box-shadow: 0 12px 48px rgba(0, 10, 60, 0.60), 0 0 0 1px rgba(59, 130, 246, 0.12);
+    box-shadow: none;
     margin: 0 auto;
   }
 
@@ -4512,7 +4512,7 @@ body[data-season="spring"] .info-section-select {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 40px;
+  border-radius: 4px;
   padding: 8px 18px 8px 14px;
   color: #fff;
   font-size: 0.72rem;
