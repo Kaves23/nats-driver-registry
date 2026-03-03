@@ -4706,12 +4706,13 @@
         }
       } catch(e) { console.warn('Could not load next event:', e); }
 
-      // Always show a driver's actual registered status; only show 'Not Open' if they are NOT yet registered
       const regOpen = nextEvent ? nextEvent.registration_open : false;
       const dbStatus = driver.next_race_entry_status || 'Not Registered';
       const isAlreadyRegistered = dbStatus === 'Registered' || dbStatus === 'Confirmed';
       const entryStatus = isAlreadyRegistered ? dbStatus : (regOpen ? dbStatus : 'Not Open');
-      const engineStatus = driver.next_race_engine_rental_status || 'No';
+      // Engine is covered if they have a season pool rental OR an individual next-race rental
+      const hasSeasonEngine = driver.season_engine_rental === 'Y';
+      const engineStatus = hasSeasonEngine || driver.next_race_engine_rental_status === 'Yes' || driver.next_race_engine_rental_status === 'Registered' ? 'Yes' : 'No';
 
       // Update title, location and label from live event data
       const titleEl    = document.getElementById('nextRaceTitle');
