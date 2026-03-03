@@ -5298,12 +5298,14 @@ app.post('/api/paymentNotify', async (req, res) => {
       item_description, 
       item_name,
       amount_gross,
-      reference,
       email_address,
       signature,
       name_first,
       name_last
     } = req.body;
+
+    // PayFast sends the payment reference back as m_payment_id (not 'reference')
+    const reference = m_payment_id;
 
     console.log('🔍 Key Fields:');
     console.log(`   - Payment Reference: ${reference}`);
