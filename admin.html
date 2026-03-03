@@ -1223,6 +1223,29 @@
 
     <!-- Manual Payments / PayFast Webhooks Tab -->
     <div id="manualPaymentsTab" class="admin-content" style="display: none;">
+
+      <!-- ===== PAYFAST MODE TOGGLE BANNER ===== -->
+      <div id="payfastModeBanner" style="border-radius:10px; padding:16px 20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border:2px solid #e5e7eb; background:#f9fafb;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div id="payfastModeIcon" style="font-size:28px;">⏳</div>
+          <div>
+            <div style="font-size:14px; font-weight:700; color:#1e293b;" id="payfastModeLabel">Loading PayFast mode...</div>
+            <div style="font-size:12px; color:#64748b; margin-top:2px;" id="payfastModeDetails"> </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button id="payfastSandboxBtn" onclick="setPayFastMode(true)"
+            style="padding:9px 18px; border:none; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; background:#f59e0b; color:#000;">
+            🧪 Switch to SANDBOX
+          </button>
+          <button id="payfastLiveBtn" onclick="setPayFastMode(false)"
+            style="padding:9px 18px; border:none; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; background:#22c55e; color:#000;">
+            🔴 Switch to LIVE
+          </button>
+        </div>
+      </div>
+      <!-- ===== END MODE TOGGLE ===== -->
+
       <div style="margin-bottom: 24px;">
         <h2 style="margin: 0 0 8px 0; color: #1e293b;">💳 Manual Payments & PayFast Webhooks</h2>
         <p style="margin: 0; color: #64748b; font-size: 14px;">View ALL PayFast webhook notifications and manually reconcile payments that couldn't be automatically processed</p>
@@ -3653,6 +3676,7 @@
       } else if (tabName === 'manualPayments') {
         if (manualPaymentsTab) {
           manualPaymentsTab.style.display = 'block';
+          loadPayFastMode();
           loadPayFastWebhooks();
         }
       } else if (tabName === 'scanners') {
@@ -6045,7 +6069,71 @@
     // ========================================
     // PayFast Webhooks / Manual Payments Functions
     // ========================================
-    
+
+    // ===== PAYFAST MODE TOGGLE =====
+    async function loadPayFastMode() {
+      try {
+        const res = await fetch('/api/admin/payfastMode');
+        const data = await res.json();
+        if (!data.success) return;
+        applyPayFastModeUI(data);
+      } catch (err) {
+        console.error('Could not load PayFast mode:', err);
+      }
+    }
+
+    async function setPayFastMode(sandbox) {
+      const confirmMsg = sandbox
+        ? '🧪 Switch to SANDBOX mode?\n\nPayments will go to PayFast sandbox — NO real money will be charged.\nSandbox merchant ID: 10000100'
+        : '🔴 Switch back to LIVE mode?\n\nReal payments will be charged to drivers. Make sure you\'re ready for production.';
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const res = await fetch('/api/admin/payfastMode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sandbox })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        applyPayFastModeUI(data);
+        showToast(sandbox ? '🧪 Switched to SANDBOX mode' : '✅ Switched to LIVE mode', sandbox ? 'warning' : 'success');
+      } catch (err) {
+        showToast('Failed to switch mode: ' + err.message, 'error');
+      }
+    }
+
+    function applyPayFastModeUI(data) {
+      const banner  = document.getElementById('payfastModeBanner');
+      const icon    = document.getElementById('payfastModeIcon');
+      const label   = document.getElementById('payfastModeLabel');
+      const details = document.getElementById('payfastModeDetails');
+      const sbBtn   = document.getElementById('payfastSandboxBtn');
+      const liveBtn = document.getElementById('payfastLiveBtn');
+      if (!banner) return;
+
+      if (data.sandbox) {
+        banner.style.background  = '#fef3c7';
+        banner.style.borderColor = '#f59e0b';
+        icon.textContent  = '🧪';
+        label.textContent = 'SANDBOX MODE ACTIVE — Test payments only, no real money charged';
+        label.style.color = '#92400e';
+        details.textContent = `Sandbox merchant ID: 10000100 · URL: ${data.processUrl}`;
+        sbBtn.style.display   = 'none';
+        liveBtn.style.display = '';
+      } else {
+        banner.style.background  = '#f0fdf4';
+        banner.style.borderColor = '#22c55e';
+        icon.textContent  = '🔴';
+        label.textContent = 'LIVE MODE — Real PayFast payments are active';
+        label.style.color = '#14532d';
+        details.textContent = `Merchant ID: ${data.merchantId} · Notify URL: ${data.notifyUrl}`;
+        sbBtn.style.display   = '';
+        liveBtn.style.display = 'none';
+      }
+    }
+    // ===== END PAYFAST MODE TOGGLE =====
+
     async function loadPayFastWebhooks() {
       try {
         const status = document.getElementById('webhookStatusFilter').value;

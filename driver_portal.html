@@ -666,6 +666,39 @@
       to{ transform: translateX(110%); }
     }
 
+    /* Full-page payment redirect overlay */
+    #payRedirectOverlay{
+      display:none;
+      position:fixed;
+      inset:0;
+      z-index:99999;
+      background:rgba(0,0,0,0.78);
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:22px;
+    }
+    #payRedirectOverlay .pay-spin{
+      width:64px;
+      height:64px;
+      border:6px solid rgba(255,255,255,0.15);
+      border-top-color:#22c55e;
+      border-radius:50%;
+      animation:paySpin 0.75s linear infinite;
+    }
+    @keyframes paySpin{ to{ transform:rotate(360deg); } }
+    #payRedirectOverlay .pay-label{
+      color:#fff;
+      font-size:17px;
+      font-weight:700;
+      letter-spacing:.02em;
+    }
+    #payRedirectOverlay .pay-sub{
+      color:rgba(255,255,255,0.55);
+      font-size:13px;
+      margin-top:-14px;
+    }
+
     /* Inline spinner */
     .spinner{
       width: 16px; height: 16px;
@@ -6891,7 +6924,25 @@
               let amount = totalPrice.replace('R','').replace(/\s/g,'').trim();
               if (amount.includes(',') && amount.includes('.')) amount = amount.replace(/,/g,'');
               else if (amount.includes(',')) amount = amount.replace(',','.');
-              toast('info', 'Redirecting to payment…');
+
+              // Disable button immediately to prevent double-clicks
+              paymentBtn.disabled = true;
+              paymentBtn.textContent = 'Redirecting…';
+              paymentBtn.style.opacity = '0.6';
+
+              // Show full-screen loading overlay
+              let overlay = document.getElementById('payRedirectOverlay');
+              if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'payRedirectOverlay';
+                overlay.innerHTML =
+                  '<div class="pay-spin"></div>' +
+                  '<div class="pay-label">Connecting to PayFast…</div>' +
+                  '<div class="pay-sub">Please wait, do not close this page</div>';
+                document.body.appendChild(overlay);
+              }
+              overlay.style.display = 'flex';
+
               const itemsParam = encodeURIComponent(JSON.stringify(selectedItems));
               window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass)
                 + '&amount=' + amount

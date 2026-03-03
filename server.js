@@ -1,5 +1,33 @@
 require('dotenv').config();
 
+// ============================================================
+// PAYFAST SANDBOX / LIVE MODE SWITCHER
+// Set PAYFAST_SANDBOX=true in .env or toggle from admin panel
+// Live credentials are always kept in .env - never overwritten
+// ============================================================
+let payfastSandboxMode = process.env.PAYFAST_SANDBOX === 'true';
+
+const PAYFAST_LIVE_CONFIG = {
+  merchantId:  process.env.PAYFAST_MERCHANT_ID,
+  merchantKey: process.env.PAYFAST_MERCHANT_KEY,
+  passphrase:  process.env.PAYFAST_PASSPHRASE || '',
+  processUrl:  'https://www.payfast.co.za/eng/process'
+};
+
+// PayFast sandbox credentials are fixed/public - safe to hardcode
+// Sandbox passphrase from PayFast docs: https://developers.payfast.co.za/docs#test_transaction_setup
+const PAYFAST_SANDBOX_CONFIG = {
+  merchantId:  '10000100',
+  merchantKey: '46f0cd694581a',
+  passphrase:  'jt7NOE43FZPn',
+  processUrl:  'https://sandbox.payfast.co.za/eng/process'
+};
+
+function getPayFastConfig() {
+  return payfastSandboxMode ? PAYFAST_SANDBOX_CONFIG : PAYFAST_LIVE_CONFIG;
+}
+// ============================================================
+
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -4041,13 +4069,70 @@ app.post('/api/admin/restoreDriver', async (req, res) => {
 // Debug PayFast credentials
 app.get('/api/debug/payfast', (req, res) => {
   res.json({
-    merchantId: process.env.PAYFAST_MERCHANT_ID ? 'SET' : 'NOT SET',
-    merchantKey: process.env.PAYFAST_MERCHANT_KEY ? `SET (length: ${process.env.PAYFAST_MERCHANT_KEY.length})` : 'NOT SET',
-    passphrase: process.env.PAYFAST_PASSPHRASE ? 'SET' : 'NOT SET',
+    sandbox: payfastSandboxMode,
+    mode: payfastSandboxMode ? 'SANDBOX' : 'LIVE',
+    merchantId: getPayFastConfig().merchantId ? 'SET' : 'NOT SET',
+    merchantKey: getPayFastConfig().merchantKey ? `SET (length: ${getPayFastConfig().merchantKey.length})` : 'NOT SET',
+    passphrase: getPayFastConfig().passphrase ? 'SET' : 'NOT SET',
+    processUrl: getPayFastConfig().processUrl,
     returnUrl: process.env.PAYFAST_RETURN_URL || 'NOT SET',
     cancelUrl: process.env.PAYFAST_CANCEL_URL || 'NOT SET',
     notifyUrl: process.env.PAYFAST_NOTIFY_URL || 'NOT SET'
   });
+});
+
+// GET current PayFast mode (admin)
+app.get('/api/admin/payfastMode', (req, res) => {
+  const cfg = getPayFastConfig();
+  res.json({
+    success: true,
+    sandbox: payfastSandboxMode,
+    mode: payfastSandboxMode ? 'SANDBOX' : 'LIVE',
+    merchantId: cfg.merchantId,
+    processUrl: cfg.processUrl,
+    notifyUrl: process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify'
+  });
+});
+
+// POST toggle PayFast sandbox/live mode (admin)
+app.post('/api/admin/payfastMode', (req, res) => {
+  try {
+    const { sandbox } = req.body;
+    if (typeof sandbox !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'sandbox must be true or false' });
+    }
+
+    payfastSandboxMode = sandbox;
+
+    // Persist to .env so the setting survives a server restart
+    try {
+      const envPath = path.join(__dirname, '.env');
+      let envContent = fs.readFileSync(envPath, 'utf8');
+      if (envContent.includes('PAYFAST_SANDBOX=')) {
+        envContent = envContent.replace(/PAYFAST_SANDBOX=.*/g, `PAYFAST_SANDBOX=${payfastSandboxMode}`);
+      } else {
+        envContent += `\nPAYFAST_SANDBOX=${payfastSandboxMode}`;
+      }
+      fs.writeFileSync(envPath, envContent);
+      console.log(`💾 Persisted PAYFAST_SANDBOX=${payfastSandboxMode} to .env`);
+    } catch (writeErr) {
+      console.warn('⚠️ Could not write .env (mode still changed for this session):', writeErr.message);
+    }
+
+    const cfg = getPayFastConfig();
+    console.log(`🔄 PayFast mode switched to: ${payfastSandboxMode ? '🧪 SANDBOX' : '🔴 LIVE'} by admin`);
+
+    res.json({
+      success: true,
+      sandbox: payfastSandboxMode,
+      mode: payfastSandboxMode ? 'SANDBOX' : 'LIVE',
+      merchantId: cfg.merchantId,
+      processUrl: cfg.processUrl
+    });
+  } catch (err) {
+    console.error('❌ payfastMode toggle error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Initiate Race Entry Payment via PayFast
@@ -4110,12 +4195,14 @@ app.get('/api/initiateRacePayment', async (req, res) => {
 
     console.log(`💳 Initiating PayFast payment: ${raceClass} - R${numAmount.toFixed(2)} for event ${eventId}`);
 
-    // PayFast credentials - MUST be set in environment variables
-    const merchantId = process.env.PAYFAST_MERCHANT_ID;
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
+    // PayFast credentials - auto-switches between LIVE and SANDBOX based on admin toggle
+    const pfCfg = getPayFastConfig();
+    const merchantId = pfCfg.merchantId;
+    const merchantKey = pfCfg.merchantKey;
     if (!merchantId || !merchantKey) {
       throw new Error('PayFast credentials not configured on server');
     }
+    console.log(`💳 PayFast mode: ${payfastSandboxMode ? '🧪 SANDBOX' : '🔴 LIVE'}`);
     const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://www.rokthenats.co.za/payment-success.html';
     const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://www.rokthenats.co.za/payment-cancel.html';
     const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify';
@@ -4401,7 +4488,8 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     };
 
     // Build PayFast parameters in EXACT DOCUMENTATION ORDER per PayFast spec
-    // This is the official order PayFast requires (NOT alphabetical)
+    // PayFast signature spec: ALL form fields EXCEPT 'signature' itself are included
+    // merchant_key IS included in the hash (PayFast PHP SDK confirms this)
     const pfDataOrdered = [
       ['merchant_id', merchantId],
       ['merchant_key', merchantKey],
@@ -4411,10 +4499,10 @@ app.get('/api/initiateRacePayment', async (req, res) => {
       ['name_first', 'Race'],
       ['name_last', 'Entry'],
       ['email_address', driverEmail],
+      ['m_payment_id', reference],   // must match the form field name exactly
       ['amount', numAmount.toFixed(2)],
       ['item_name', `Race Entry - ${raceClass}`],
       ['item_description', `Race Entry for ${raceClass} Class`]
-      // NOTE: reference is NOT in PayFast's official signature list, so it's excluded here
     ];
 
     // Create MD5 signature in EXACT documentation order
@@ -4432,7 +4520,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     }
     
     // Append passphrase at the very end (as per PayFast spec)
-    const actualPassphrase = process.env.PAYFAST_PASSPHRASE || '';
+    const actualPassphrase = pfCfg.passphrase;
     const passphraseEncoded = encodeURIComponent(actualPassphrase).replace(/%20/g, '+');
     if (actualPassphrase) {
       pfParamString += `passphrase=${passphraseEncoded}`;
@@ -4472,8 +4560,9 @@ app.get('/api/initiateRacePayment', async (req, res) => {
           <p>Amount: <strong>R${numAmount.toFixed(2)}</strong></p>
           <p>Class: <strong>${raceClass}</strong></p>
           <p>Reference: <strong>${reference}</strong></p>
+          ${payfastSandboxMode ? '<p style="color:#f59e0b;font-weight:bold;">🧪 SANDBOX TEST MODE</p>' : ''}
         </div>
-        <form id="paymentForm" method="POST" action="https://www.payfast.co.za/eng/process">
+        <form id="paymentForm" method="POST" action="${pfCfg.processUrl}">
           <!-- RAW (unencoded) form values -->
           <input type="hidden" name="merchant_id" value="${merchantId}">
           <input type="hidden" name="merchant_key" value="${merchantKey}">
@@ -4483,10 +4572,10 @@ app.get('/api/initiateRacePayment', async (req, res) => {
           <input type="hidden" name="name_first" value="Race">
           <input type="hidden" name="name_last" value="Entry">
           <input type="hidden" name="email_address" value="${driverEmail}">
+          <input type="hidden" name="m_payment_id" value="${reference}">
           <input type="hidden" name="amount" value="${numAmount.toFixed(2)}">
           <input type="hidden" name="item_name" value="Race Entry - ${raceClass}">
           <input type="hidden" name="item_description" value="Race Entry for ${raceClass} Class">
-          <input type="hidden" name="reference" value="${reference}">
           <input type="hidden" name="signature" value="${signature}">
         </form>
         <script>
@@ -4536,18 +4625,21 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
 
     console.log(`💳 Initiating PayFast payment: Pool Engine ${rentalType} for ${rentalClass} - R${numAmount.toFixed(2)}`);
 
-    // PayFast credentials - MUST be set in environment variables
-    const merchantId = process.env.PAYFAST_MERCHANT_ID;
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
+    // PayFast credentials - auto-switches between LIVE and SANDBOX based on admin toggle
+    const pfCfg = getPayFastConfig();
+    const merchantId = pfCfg.merchantId;
+    const merchantKey = pfCfg.merchantKey;
     if (!merchantId || !merchantKey) {
       throw new Error('PayFast credentials not configured on server');
     }
+    console.log(`💳 PayFast mode (pool engine): ${payfastSandboxMode ? '🧪 SANDBOX' : '🔴 LIVE'}`);
     const returnUrl = process.env.PAYFAST_RETURN_URL || 'https://www.rokthenats.co.za/payment-success.html';
     const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://www.rokthenats.co.za/payment-cancel.html';
     const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify';
 
     const reference = `POOL-${rentalClass}-${rentalType}-${driverId}-${Date.now()}`;
 
+    // PayFast signature includes ALL fields except 'signature' itself — merchant_key IS included
     const pfDataOrdered = [
       ['merchant_id', merchantId],
       ['merchant_key', merchantKey],
@@ -4557,6 +4649,7 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
       ['name_first', 'Pool Engine'],
       ['name_last', 'Rental'],
       ['email_address', driverEmail],
+      ['m_payment_id', reference],   // must match the form field name exactly
       ['amount', numAmount.toFixed(2)],
       ['item_name', `Pool Engine Rental - ${rentalClass}`],
       ['item_description', `${rentalType} Pool Engine Rental for ${rentalClass}`]
@@ -4574,7 +4667,7 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
       }
     }
     
-    const actualPassphrase = process.env.PAYFAST_PASSPHRASE || '';
+    const actualPassphrase = pfCfg.passphrase;
     const passphraseEncoded = encodeURIComponent(actualPassphrase).replace(/%20/g, '+');
     if (actualPassphrase) {
       pfParamString += `passphrase=${passphraseEncoded}`;
@@ -4610,8 +4703,9 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
           <p>Rental: <strong>${rentalType}</strong></p>
           <p>Class: <strong>${rentalClass}</strong></p>
           <p>Reference: <strong>${reference}</strong></p>
+          ${payfastSandboxMode ? '<p style="color:#f59e0b;font-weight:bold;">🧪 SANDBOX TEST MODE</p>' : ''}
         </div>
-        <form id="paymentForm" method="POST" action="https://www.payfast.co.za/eng/process">
+        <form id="paymentForm" method="POST" action="${pfCfg.processUrl}">
           <input type="hidden" name="merchant_id" value="${merchantId}">
           <input type="hidden" name="merchant_key" value="${merchantKey}">
           <input type="hidden" name="return_url" value="${returnUrl}">
@@ -4620,10 +4714,11 @@ app.get('/api/initiatePoolEnginePayment', async (req, res) => {
           <input type="hidden" name="name_first" value="Pool Engine">
           <input type="hidden" name="name_last" value="Rental">
           <input type="hidden" name="email_address" value="${driverEmail}">
+          <input type="hidden" name="m_payment_id" value="${reference}">
           <input type="hidden" name="amount" value="${numAmount.toFixed(2)}">
           <input type="hidden" name="item_name" value="Pool Engine Rental - ${rentalClass}">
           <input type="hidden" name="item_description" value="${rentalType} Pool Engine Rental for ${rentalClass}">
-          <input type="hidden" name="reference" value="${reference}">
+          <input type="hidden" name="signature" value="${signature}">
           <input type="hidden" name="signature" value="${signature}">
         </form>
         <script>
@@ -5268,10 +5363,11 @@ app.post('/api/paymentNotify', async (req, res) => {
       throw new Error(errorMsg);
     }
 
-    // Verify PayFast signature
-    const merchantId = process.env.PAYFAST_MERCHANT_ID;
-    const merchantKey = process.env.PAYFAST_MERCHANT_KEY;
-    const passphrase = process.env.PAYFAST_PASSPHRASE || '';
+    // Verify PayFast signature - uses whichever mode (live or sandbox) is currently active
+    const pfCfg = getPayFastConfig();
+    const merchantId = pfCfg.merchantId;
+    const merchantKey = pfCfg.merchantKey;
+    const passphrase = pfCfg.passphrase;
 
     // Build signature string in PayFast order (excluding signature field itself)
     let pfParamString = '';
@@ -5293,7 +5389,12 @@ app.post('/api/paymentNotify', async (req, res) => {
       }
     }
     
-    pfParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`;
+    // Only append passphrase if it's set (sandbox has no passphrase)
+    if (passphrase) {
+      pfParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`;
+    } else {
+      pfParamString = pfParamString.replace(/&$/, '');
+    }
     
     const calculatedSignature = crypto.createHash('md5').update(pfParamString.trim()).digest('hex');
     const signatureValid = calculatedSignature === signature;
@@ -7592,7 +7693,10 @@ app.get('/api/getAllEvents', async (req, res) => {
     const result = await pool.query(
       `SELECT e.event_id, e.event_name, e.event_date, e.start_date, e.end_date, e.location, e.entry_fee, 
               e.registration_deadline, e.registration_open, e.created_at,
-              COUNT(r.entry_id) AS registration_count
+              COUNT(r.entry_id) FILTER (
+                WHERE r.entry_status != 'cancelled'
+                  AND r.payment_status IN ('Completed','completed','Confirmed','confirmed','paid')
+              ) AS registration_count
        FROM events e
        LEFT JOIN race_entries r ON e.event_id = r.event_id
        GROUP BY e.event_id
