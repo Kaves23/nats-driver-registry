@@ -4706,9 +4706,11 @@
         }
       } catch(e) { console.warn('Could not load next event:', e); }
 
-      // If next event registration is not open, treat as not registered regardless of DB flag
+      // Always show a driver's actual registered status; only show 'Not Open' if they are NOT yet registered
       const regOpen = nextEvent ? nextEvent.registration_open : false;
-      const entryStatus = regOpen ? (driver.next_race_entry_status || 'Not Registered') : 'Not Open';
+      const dbStatus = driver.next_race_entry_status || 'Not Registered';
+      const isAlreadyRegistered = dbStatus === 'Registered' || dbStatus === 'Confirmed';
+      const entryStatus = isAlreadyRegistered ? dbStatus : (regOpen ? dbStatus : 'Not Open');
       const engineStatus = driver.next_race_engine_rental_status || 'No';
 
       // Update title, location and label from live event data
@@ -6182,8 +6184,10 @@
       const pkg = window.driverNationalPackage || null;
       if (pkg && isNat) {
         if (pkg === 'engine' || pkg === 'full') {
-          // Remove engine from items — driver already has pool engine
-          base.items = base.items.filter(i => i.key !== 'engine');
+          // Season pass: keep engine at R0 so a ticket is still generated (driver must have a ticket)
+          base.items = base.items.map(i => i.key === 'engine'
+            ? { ...i, p1: 0, pb: 0, required: true, note: '🏎️ Season Package — engine included at no extra charge' }
+            : i);
         }
         if (pkg === 'full') {
           // Full package: entry fee is R0, and fuel + race tyres are also excluded
