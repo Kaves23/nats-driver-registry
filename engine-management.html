@@ -783,6 +783,7 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 </head>
 <body>
     <!-- Camera Scanner Overlay -->
@@ -1310,6 +1311,12 @@
         let currentTargetInput = null;
         let flashEnabled = false;
         let scanningActive = false;
+        let quaggaRunning = false;
+
+        // Fields that use QR codes — everything else is a 1D barcode
+        function isQrField(inputId) {
+            return inputId === 'ticketBarcode';
+        }
 
         // Debug logging to screen
         function debugLog(message, type = 'info') {
@@ -1358,16 +1365,19 @@
             }
         })();
 
-        // ── QR Scanner ──────────────────────────────────────────────
-        // Single entry point. Tries live streaming first; falls back to
-        // photo-from-file-input if getUserMedia is unavailable (LAN HTTP).
+        // ── Scanner entry point ──────────────────────────────────────
+        // Routes to jsQR (QR codes) or Quagga2 (1D barcodes) based on field.
         async function openCamera(inputId) {
             currentTargetInput = inputId;
-            debugLog('📷 Scan for: ' + inputId);
+            debugLog('📷 Scan for: ' + inputId + ' [' + (isQrField(inputId) ? 'QR' : '1D barcode') + ']');
 
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
-                    await openLiveScanner(inputId);
+                    if (isQrField(inputId)) {
+                        await openLiveScanner(inputId);
+                    } else {
+                        await openBarcodeScanner(inputId);
+                    }
                     return;
                 } catch(err) {
                     debugLog('Live camera unavailable (' + err.message + ') — using photo mode', 'error');
@@ -1468,6 +1478,62 @@
                 closeCamera();
                 openPhotoCapture(inputId);
             }
+        }
+
+        // ── 1D Barcode scanner via Quagga2 (engine seals, tyre serials) ──
+        async function openBarcodeScanner(inputId) {
+            if (typeof Quagga === 'undefined') {
+                debugLog('Quagga2 not loaded — using photo mode', 'error');
+                openPhotoCapture(inputId);
+                return;
+            }
+
+            const overlay = document.getElementById('cameraOverlay');
+            overlay.classList.add('active');
+            scanningActive = true;
+
+            const scannerDiv = document.querySelector('#scanner-reader');
+            scannerDiv.innerHTML = '';
+
+            await new Promise((resolve, reject) => {
+                Quagga.init({
+                    inputStream: {
+                        type: 'LiveStream',
+                        target: scannerDiv,
+                        constraints: {
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    },
+                    decoder: {
+                        readers: ['code_128_reader', 'code_39_reader', 'ean_reader', 'ean_8_reader', 'upc_reader'],
+                        multiple: false
+                    },
+                    locate: true
+                }, function(err) {
+                    if (err) { reject(err); return; }
+                    Quagga.start();
+                    quaggaRunning = true;
+                    debugLog('Live — Quagga2 barcode scanner ready', 'success');
+                    resolve();
+                });
+            });
+
+            // Style the Quagga video to fill the viewport
+            const video = scannerDiv.querySelector('video');
+            if (video) video.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+            const canvas = scannerDiv.querySelector('canvas.drawingBuffer');
+            if (canvas) canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;';
+
+            Quagga.onDetected(function handler(result) {
+                if (!scanningActive) return;
+                const code = result && result.codeResult && result.codeResult.code;
+                if (code) {
+                    Quagga.offDetected(handler);
+                    onQRFound(code);
+                }
+            });
         }
 
         // Photo capture fallback (file input — works on any HTTP context)
@@ -1597,6 +1663,10 @@
         // Close live scanner overlay and stop stream
         function closeCamera() {
             scanningActive = false;
+            if (quaggaRunning) {
+                try { Quagga.stop(); } catch(_) {}
+                quaggaRunning = false;
+            }
             const overlay = document.getElementById('cameraOverlay');
             overlay.classList.remove('active');
             if (cameraStream) {
