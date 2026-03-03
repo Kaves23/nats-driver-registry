@@ -1240,7 +1240,8 @@ function generateEngineRentalTicketHTML(ticketData) {
     eventLocation,
     raceClass,
     driverName,
-    raceNumber
+    raceNumber,
+    dayLabel = ''
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
@@ -1288,6 +1289,7 @@ function generateEngineRentalTicketHTML(ticketData) {
                   </table>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #f59e0b; text-transform: uppercase; margin-top: 10px;">Rental Engine</div>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">VORTEX ROK</div>
+                  ${dayLabel ? `<div style="font-family:'Courier New',monospace;font-weight:900;font-size:10px;letter-spacing:2px;color:#1e3a5f;background:#f59e0b;padding:5px 14px;border-radius:12px;margin-top:10px;display:inline-block;">${dayLabel.toUpperCase()}</div>` : ''}
                 </td>
               </tr>
               
@@ -1359,7 +1361,8 @@ function generateTyreRentalTicketHTML(ticketData) {
     eventLocation,
     raceClass,
     driverName,
-    raceNumber
+    raceNumber,
+    dayLabel = ''
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
@@ -1395,6 +1398,7 @@ function generateTyreRentalTicketHTML(ticketData) {
                   </table>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #0ea5e9; text-transform: uppercase;">Complete Set</div>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">RACE TYRES</div>
+                  ${dayLabel ? `<div style="font-family:'Courier New',monospace;font-weight:900;font-size:10px;letter-spacing:2px;color:#0c4a6e;background:#0ea5e9;padding:5px 14px;border-radius:12px;margin-top:10px;display:inline-block;">${dayLabel.toUpperCase()}</div>` : ''}
                 </td>
               </tr>
               
@@ -1460,7 +1464,8 @@ function generateTransponderRentalTicketHTML(ticketData) {
     eventLocation,
     raceClass,
     driverName,
-    raceNumber
+    raceNumber,
+    dayLabel = ''
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
@@ -1493,6 +1498,7 @@ function generateTransponderRentalTicketHTML(ticketData) {
                   </table>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #a78bfa; text-transform: uppercase;">Race Timing</div>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">TRANSPONDER</div>
+                  ${dayLabel ? `<div style="font-family:'Courier New',monospace;font-weight:900;font-size:10px;letter-spacing:2px;color:#3b0764;background:#a78bfa;padding:5px 14px;border-radius:12px;margin-top:10px;display:inline-block;">${dayLabel.toUpperCase()}</div>` : ''}
                 </td>
               </tr>
               
@@ -1557,7 +1563,8 @@ function generateFuelTicketHTML(ticketData) {
     eventLocation,
     raceClass,
     driverName,
-    raceNumber
+    raceNumber,
+    dayLabel = ''
   } = ticketData;
   
   const dateObj = eventDate ? new Date(eventDate) : new Date();
@@ -1590,6 +1597,7 @@ function generateFuelTicketHTML(ticketData) {
                   </table>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 10px; letter-spacing: 2px; color: #6ee7b7; text-transform: uppercase;">Pre-Mixed Racing</div>
                   <div style="font-family: 'Courier New', monospace; font-weight: 900; font-size: 18px; letter-spacing: 1px; color: #fff; margin-top: 4px;">RACE FUEL</div>
+                  ${dayLabel ? `<div style="font-family:'Courier New',monospace;font-weight:900;font-size:10px;letter-spacing:2px;color:#022c22;background:#34d399;padding:5px 14px;border-radius:12px;margin-top:10px;display:inline-block;">${dayLabel.toUpperCase()}</div>` : ''}
                 </td>
               </tr>
               
@@ -4732,7 +4740,7 @@ app.post('/api/sendEntryToTrello', async (req, res) => {
 
 app.post('/api/registerFreeRaceEntry', async (req, res) => {
   try {
-    const { eventId, driverId, raceClass, selectedItems, email, firstName, lastName, teamCode } = req.body;
+    const { eventId, driverId, raceClass, selectedItems, email, firstName, lastName, teamCode, raceDays } = req.body;
     
     if (!eventId || !driverId || !email) {
       throw new Error('Missing event ID, driver ID, or email');
@@ -4746,16 +4754,25 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     // Format selected items as JSON (entry_items column expects JSON format)
     const selectedItemsJson = selectedItems ? JSON.stringify(selectedItems) : JSON.stringify([]);
     
-    // Generate unique ticket references for purchased items
+    // Generate unique ticket references - multiple tickets for Both Days entries
     const selectedItemsArray = Array.isArray(selectedItems) ? selectedItems : [];
-    const ticketEngineRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('engine')) 
-      ? generateUniqueTicketRef('engine', driverId, eventId) : null;
-    const ticketTyresRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('tyre')) 
-      ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
-    const ticketTransponderRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('transponder')) 
-      ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
-    const ticketFuelRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('fuel')) 
-      ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
+    const isBothDays = (raceDays === 'Both');
+
+    // Helper: generate N refs; returns plain string for 1, JSON array string for N>1
+    const genRefs = (type, n) => {
+      const refs = [];
+      for (let i = 0; i < n; i++) refs.push(generateUniqueTicketRef(type, driverId, eventId));
+      return n === 1 ? refs[0] : JSON.stringify(refs);
+    };
+
+    const ticketEngineRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('engine'))
+      ? genRefs('engine', isBothDays ? 3 : 1) : null;
+    const ticketTyresRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('tyre'))
+      ? genRefs('tyres', isBothDays ? 2 : 1) : null;
+    const ticketTransponderRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('transponder'))
+      ? genRefs('transponder', isBothDays ? 2 : 1) : null;
+    const ticketFuelRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('fuel'))
+      ? genRefs('fuel', 1) : null;
     
     // Check if this is a regional race where season rentals don't apply
     const eventResult = await pool.query(
@@ -4797,7 +4814,7 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
       hasEngineRental = true; // Force charging for regional races
     }
     
-    const engineValue = hasEngineRental ? 1 : 0;
+    const engineValue = engineRentalSelected ? 1 : 0;
     
     // Store the free entry in database with unique ticket references
     await pool.query(
@@ -4846,38 +4863,58 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
       const hasEngineRentalItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('engine'));
       const hasTyresItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('tyre'));
       const hasTransponderItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('transponder'));
-      
-      // Build rental ticket HTML using new ticket generators with unique references
+      const hasFuelItem = selectedItemsArray.some(item => item && item.toLowerCase().includes('fuel'));
+
+      // Helper to parse ref field — single string or JSON array
+      const parseRefs = (field) => {
+        if (!field) return [];
+        try { const p = JSON.parse(field); return Array.isArray(p) ? p : [field]; } catch { return [field]; }
+      };
+
+      // Build rental ticket HTML — multiple tickets per item for Both Days entries
       let rentalTicketsHtml = '';
       if (hasEngineRentalItem && ticketEngineRef) {
-        rentalTicketsHtml += generateEngineRentalTicketHTML({
-          reference: ticketEngineRef,
-          eventName,
-          eventDate: eventDetails?.event_date,
-          eventLocation,
-          raceClass,
-          driverName,
-          raceNumber: driverRaceNumber
+        const engineRefs = parseRefs(ticketEngineRef);
+        const engineDayLabels = isBothDays
+          ? ['FRIDAY – PRACTICE DAY', 'SATURDAY', 'SUNDAY']
+          : [raceDays === 'Sunday' ? 'SUNDAY' : 'SATURDAY'];
+        engineRefs.forEach((ref, i) => {
+          rentalTicketsHtml += generateEngineRentalTicketHTML({
+            reference: ref, eventName, eventDate: eventDetails?.event_date,
+            eventLocation, raceClass, driverName, raceNumber: driverRaceNumber,
+            dayLabel: engineDayLabels[i] || ''
+          });
         });
       }
       if (hasTyresItem && ticketTyresRef) {
-        rentalTicketsHtml += generateTyreRentalTicketHTML({
-          reference: ticketTyresRef,
-          eventName,
-          eventDate: eventDetails?.event_date,
-          eventLocation,
-          raceClass,
-          driverName
+        const tyreRefs = parseRefs(ticketTyresRef);
+        const tyreDayLabels = isBothDays ? ['SATURDAY', 'SUNDAY'] : [raceDays === 'Sunday' ? 'SUNDAY' : 'SATURDAY'];
+        tyreRefs.forEach((ref, i) => {
+          rentalTicketsHtml += generateTyreRentalTicketHTML({
+            reference: ref, eventName, eventDate: eventDetails?.event_date,
+            eventLocation, raceClass, driverName,
+            dayLabel: tyreDayLabels[i] || ''
+          });
         });
       }
       if (hasTransponderItem && ticketTransponderRef) {
-        rentalTicketsHtml += generateTransponderRentalTicketHTML({
-          reference: ticketTransponderRef,
-          eventName,
-          eventDate: eventDetails?.event_date,
-          eventLocation,
-          raceClass,
-          driverName
+        const txRefs = parseRefs(ticketTransponderRef);
+        const txDayLabels = isBothDays ? ['SATURDAY', 'SUNDAY'] : [raceDays === 'Sunday' ? 'SUNDAY' : 'SATURDAY'];
+        txRefs.forEach((ref, i) => {
+          rentalTicketsHtml += generateTransponderRentalTicketHTML({
+            reference: ref, eventName, eventDate: eventDetails?.event_date,
+            eventLocation, raceClass, driverName,
+            dayLabel: txDayLabels[i] || ''
+          });
+        });
+      }
+      if (hasFuelItem && ticketFuelRef) {
+        const fuelDayLabel = isBothDays ? 'FRIDAY · SATURDAY · SUNDAY'
+          : raceDays === 'Sunday' ? 'SUNDAY' : 'SATURDAY';
+        rentalTicketsHtml += generateFuelTicketHTML({
+          reference: ticketFuelRef, eventName, eventDate: eventDetails?.event_date,
+          eventLocation, raceClass, driverName,
+          dayLabel: fuelDayLabel
         });
       }
       
@@ -6508,47 +6545,56 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
         [entry.ticket_fuel_ref, race_entry_id]);
     }
     
-    // Build rental tickets HTML using ticket generator functions with barcodes
+    // Helper to parse ref field — single string or JSON array
+    const parseTicketRefs = (field) => {
+      if (!field) return [];
+      try { const p = JSON.parse(field); return Array.isArray(p) ? p : [field]; } catch { return [field]; }
+    };
+
+    // Build rental tickets HTML — multiple tickets per item for Both Days entries
     let rentalTicketsHtml = '';
     if (hasEngine && entry.ticket_engine_ref) {
-      rentalTicketsHtml += generateEngineRentalTicketHTML({
-        reference: entry.ticket_engine_ref,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName,
-        raceNumber: entry.driver_race_number
+      const engineRefs = parseTicketRefs(entry.ticket_engine_ref);
+      const engineDayLabels = engineRefs.length >= 3
+        ? ['FRIDAY – PRACTICE DAY', 'SATURDAY', 'SUNDAY']
+        : engineRefs.length === 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      engineRefs.forEach((ref, i) => {
+        rentalTicketsHtml += generateEngineRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          raceNumber: entry.driver_race_number, dayLabel: engineDayLabels[i] || ''
+        });
       });
     }
     if (hasTyres && entry.ticket_tyres_ref) {
-      rentalTicketsHtml += generateTyreRentalTicketHTML({
-        reference: entry.ticket_tyres_ref,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName
+      const tyreRefs = parseTicketRefs(entry.ticket_tyres_ref);
+      const tyreDayLabels = tyreRefs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      tyreRefs.forEach((ref, i) => {
+        rentalTicketsHtml += generateTyreRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          dayLabel: tyreDayLabels[i] || ''
+        });
       });
     }
     if (hasTransponder && entry.ticket_transponder_ref) {
-      rentalTicketsHtml += generateTransponderRentalTicketHTML({
-        reference: entry.ticket_transponder_ref,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName
+      const txRefs = parseTicketRefs(entry.ticket_transponder_ref);
+      const txDayLabels = txRefs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      txRefs.forEach((ref, i) => {
+        rentalTicketsHtml += generateTransponderRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          dayLabel: txDayLabels[i] || ''
+        });
       });
     }
     if (hasFuel && entry.ticket_fuel_ref) {
+      const fuelRefs = parseTicketRefs(entry.ticket_fuel_ref);
+      const fuelDayLabel = fuelRefs.length >= 3 ? 'FRIDAY · SATURDAY · SUNDAY' : '';
       rentalTicketsHtml += generateFuelTicketHTML({
-        reference: entry.ticket_fuel_ref,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName
+        reference: fuelRefs[0] || entry.ticket_fuel_ref, eventName: entry.event_name,
+        eventDate: entry.event_date, eventLocation: entry.location,
+        raceClass: entry.race_class, driverName, dayLabel: fuelDayLabel
       });
     }
     
@@ -6748,47 +6794,56 @@ app.post('/api/updateAndResendTickets', async (req, res) => {
     console.log(`✅ Updated entry ${race_entry_id} with items:`, entry_items);
     console.log(`   Ticket refs - Engine: ${ticketEngineRef}, Tyres: ${ticketTyresRef}, Transponder: ${ticketTransponderRef}, Fuel: ${ticketFuelRef}`);
     
+    // Helper to parse ref field — single string or JSON array
+    const parseTicketRefsAdmin = (field) => {
+      if (!field) return [];
+      try { const p = JSON.parse(field); return Array.isArray(p) ? p : [field]; } catch { return [field]; }
+    };
+
     // Build rental tickets HTML
     let rentalTicketsHtml = '';
     if (hasEngine && ticketEngineRef) {
-      rentalTicketsHtml += generateEngineRentalTicketHTML({
-        reference: ticketEngineRef,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName,
-        raceNumber: entry.driver_race_number
+      const engineRefs = parseTicketRefsAdmin(ticketEngineRef);
+      const engineDayLabels = engineRefs.length >= 3
+        ? ['FRIDAY – PRACTICE DAY', 'SATURDAY', 'SUNDAY']
+        : engineRefs.length === 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      engineRefs.forEach((ref, i) => {
+        rentalTicketsHtml += generateEngineRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          raceNumber: entry.driver_race_number, dayLabel: engineDayLabels[i] || ''
+        });
       });
     }
     if (hasTyres && ticketTyresRef) {
-      rentalTicketsHtml += generateTyreRentalTicketHTML({
-        reference: ticketTyresRef,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName
+      const tyreRefs = parseTicketRefsAdmin(ticketTyresRef);
+      const tyreDayLabels = tyreRefs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      tyreRefs.forEach((ref, i) => {
+        rentalTicketsHtml += generateTyreRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          dayLabel: tyreDayLabels[i] || ''
+        });
       });
     }
     if (hasTransponder && ticketTransponderRef) {
-      rentalTicketsHtml += generateTransponderRentalTicketHTML({
-        reference: ticketTransponderRef,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName
+      const txRefs = parseTicketRefsAdmin(ticketTransponderRef);
+      const txDayLabels = txRefs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      txRefs.forEach((ref, i) => {
+        rentalTicketsHtml += generateTransponderRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          dayLabel: txDayLabels[i] || ''
+        });
       });
     }
     if (hasFuel && ticketFuelRef) {
+      const fuelRefs = parseTicketRefsAdmin(ticketFuelRef);
+      const fuelDayLabel = fuelRefs.length >= 3 ? 'FRIDAY · SATURDAY · SUNDAY' : '';
       rentalTicketsHtml += generateFuelTicketHTML({
-        reference: ticketFuelRef,
-        eventName: entry.event_name,
-        eventDate: entry.event_date,
-        eventLocation: entry.location,
-        raceClass: entry.race_class,
-        driverName
+        reference: fuelRefs[0] || ticketFuelRef, eventName: entry.event_name,
+        eventDate: entry.event_date, eventLocation: entry.location,
+        raceClass: entry.race_class, driverName, dayLabel: fuelDayLabel
       });
     }
     
@@ -6798,7 +6853,7 @@ app.post('/api/updateAndResendTickets', async (req, res) => {
       ? new Date(entry.event_date).toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
       : 'TBA';
     const eventLocation = entry.location || 'TBA';
-    
+
     // Send updated email with all tickets
     const emailHtml = `
       <!DOCTYPE html>
@@ -10473,13 +10528,14 @@ app.get('/api/lookupTicket', async (req, res) => {
       return res.json({ success: false, error: 'Invalid barcode format' });
     }
     
-    // Find entry with this ticket
+    // Find entry with this ticket (supports both single ref and JSON array stored refs)
     const result = await pool.query(`
       SELECT re.entry_id, re.driver_id, re.race_class, re.engine_serial,
              d.first_name, d.last_name, d.race_number, d.transponder_number
       FROM race_entries re
       JOIN drivers d ON re.driver_id = d.driver_id
       WHERE re.${ticketColumn} = $1
+         OR re.${ticketColumn}::text LIKE '%' || $1 || '%'
       ORDER BY re.created_at DESC
       LIMIT 1
     `, [barcodeUpper]);

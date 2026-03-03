@@ -6506,7 +6506,7 @@
               <div style="flex:1;">
                 <div style="font-weight:700;color:#fff;font-size:14px;margin-bottom:4px;">🌧️ ${item.name}</div>
                 <span style="font-size:10px;font-weight:700;color:#7dd3fc;background:rgba(56,189,248,0.10);padding:2px 7px;border-radius:10px;border:1px solid rgba(56,189,248,0.25);">OPTIONAL · 1 SET PER ENTRY</span>
-                <div style="font-size:11px;color:#6b7280;margin-top:5px;">${item.size} · Same price for 1 or 2 race days</div>
+                <div style="font-size:11px;color:#6b7280;margin-top:5px;">Wet tyres are ONLY available from Redstar Raceway and will not be for sale at events not at Redstar.</div>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
                 <div style="font-size:16px;font-weight:800;color:#7dd3fc;">R${item.p1.toLocaleString('en-ZA')}</div>
@@ -6840,8 +6840,32 @@
                 if (appliedDiscount?.code) {
                   fetch('/api/useDiscountCode', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({code: appliedDiscount.code}) }).catch(()=>{});
                 }
-                toast('good', 'Race entry confirmed! Welcome to the event.');
-                document.getElementById('raceEntryModal').style.display = 'none';
+                // Show prominent success screen inside the modal
+                const entryModal = document.getElementById('raceEntryModal');
+                entryModal.querySelector('div').innerHTML = `
+                  <div style="background:linear-gradient(135deg,#052e16,#14532d);padding:40px 30px;text-align:center;border-bottom:1px solid rgba(34,197,94,0.3);border-radius:8px 8px 0 0;">
+                    <div style="font-size:60px;margin-bottom:16px;">🏁</div>
+                    <h2 style="margin:0 0 8px;font-size:22px;font-weight:900;color:#4ade80;text-transform:uppercase;letter-spacing:.05em;">Entry Confirmed!</h2>
+                    <div style="font-size:14px;color:#86efac;">You're on the grid</div>
+                  </div>
+                  <div style="padding:28px 24px;">
+                    <div style="background:#111;border:1px solid rgba(255,255,255,0.10);border-radius:8px;padding:16px;margin-bottom:16px;text-align:center;">
+                      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#6b7280;margin-bottom:8px;">Reference Number</div>
+                      <div style="font-family:'Courier New',monospace;font-size:16px;font-weight:900;color:#22c55e;letter-spacing:.08em;">${data.reference}</div>
+                    </div>
+                    <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:14px;margin-bottom:16px;text-align:center;">
+                      <div style="font-size:13px;color:#86efac;line-height:1.7;">📧 Your tickets &amp; entry confirmation<br>have been sent to <strong style="color:#fff;">${currentEmail}</strong></div>
+                    </div>
+                    <div style="font-size:12px;color:#6b7280;text-align:center;margin-bottom:20px;">Check your inbox (and spam folder) for your race tickets and entry details.</div>
+                    <button id="entrySuccessBtn" style="width:100%;padding:14px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px;cursor:pointer;font-size:14px;text-transform:uppercase;letter-spacing:.06em;">View My Entries →</button>
+                  </div>
+                `;
+                document.getElementById('entrySuccessBtn').addEventListener('click', () => {
+                  entryModal.style.display = 'none';
+                  const t = document.querySelector('[data-ptab="payments"]');
+                  if (t) t.click();
+                });
+                // Reload profile in the background
                 api('getProfile', {email: currentEmail}).then(profileData => {
                   if (profileData?.driver) {
                     currentProfile = profileData;
@@ -6852,7 +6876,6 @@
                       klass: currentProfile.driver.class||'—', ident: currentEmail,
                       status:'Entered for Race', note:`Registered for ${window.selectedEventName||'the event'}`
                     });
-                    setTimeout(() => { const t = document.querySelector('[data-ptab="payments"]'); if(t) t.click(); }, 500);
                   }
                 }).catch(()=>{});
               } else { toast('bad', data.error || 'Registration failed'); }
