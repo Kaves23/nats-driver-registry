@@ -233,6 +233,7 @@ const ADMIN_ONLY_PATHS = [
   '/api/deleteEvent',
   '/api/getAllEvents',
   '/api/getEventRegistrations',
+  '/api/saveEventPricing',
   '/api/sendEntryToTrello',
   '/api/markPaymentReceived',
   '/api/getAuditLog',
@@ -250,6 +251,8 @@ const ADMIN_ONLY_PATHS = [
   '/api/check-schema',
   '/api/test-db',
   '/api/create-test-driver',
+  '/api/scanners',
+  '/api/poolEngines',
 ];
 
 app.use((req, res, next) => {
@@ -262,6 +265,14 @@ app.use((req, res, next) => {
   }
   // Protect all /api/debug/* routes
   if (req.path.startsWith('/api/debug/')) {
+    return requireAdmin(req, res, next);
+  }
+  // Protect scanner management (list, add, delete)
+  if (req.path === '/api/scanners' || req.path.startsWith('/api/scanners/')) {
+    return requireAdmin(req, res, next);
+  }
+  // Protect pool engine management
+  if (req.path === '/api/poolEngines' || req.path.startsWith('/api/poolEngines/')) {
     return requireAdmin(req, res, next);
   }
   // Protect specific non-/admin/-prefixed admin-only routes
@@ -508,12 +519,33 @@ const initRaceEntriesTable = async () => {
 
     // Ensure msa_license_number exists on drivers table
     await pool.query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS msa_license_number VARCHAR(100)`);
+    // Season package for entry pricing: null=none, 'engine'=engine included, 'full'=full national package
+    await pool.query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS national_package VARCHAR(20)`);
 
     console.log('✅ Race entries table initialized with all columns and unique constraints');
   } catch (err) {
     console.error('Error initializing race entries table:', err);
   }
 }
+
+// Initialize event class pricing table
+const initEventPricingTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS event_class_pricing (
+        id SERIAL PRIMARY KEY,
+        event_id VARCHAR(255) NOT NULL,
+        class_name VARCHAR(100) NOT NULL,
+        config_json JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (event_id, class_name)
+      )
+    `);
+    console.log('✅ Event class pricing table initialized');
+  } catch (err) {
+    console.error('Event pricing table init error:', err.message);
+  }
+};
 
 // Initialize equipment scan log table
 async function initEquipmentScanLog() {
@@ -551,8 +583,61 @@ async function initEquipmentScanLog() {
       CREATE INDEX IF NOT EXISTS idx_equipment_scan_driver 
       ON equipment_scan_log(driver_id)
     `);
+
+    // Migration: add signature_data column if not present
+    await pool.query(`
+      ALTER TABLE equipment_scan_log ADD COLUMN IF NOT EXISTS signature_data TEXT
+    `).catch(() => {});
     
     console.log('✅ Equipment scan log table initialized');
+
+    // Scanner identity table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS scanners (
+        scanner_id   SERIAL PRIMARY KEY,
+        scanner_name VARCHAR(100) NOT NULL,
+        pin_code     VARCHAR(4)   NOT NULL UNIQUE,
+        created_at   TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    // Seed the legacy hardcoded PIN as a default scanner if none exist
+    await pool.query(`
+      INSERT INTO scanners (scanner_name, pin_code)
+      SELECT 'Default Scanner', '5667'
+      WHERE NOT EXISTS (SELECT 1 FROM scanners)
+    `);
+    console.log('✅ Scanners table initialized');
+
+    // Pool engines table (for engine draw system)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pool_engines (
+        engine_id      SERIAL PRIMARY KEY,
+        draw_number    VARCHAR(20)  NOT NULL,
+        engine_serial  VARCHAR(100) NOT NULL DEFAULT '',
+        seal_number    VARCHAR(100) NOT NULL DEFAULT '',
+        carb_number    VARCHAR(100) NOT NULL DEFAULT '',
+        airbox_number  VARCHAR(100) NOT NULL DEFAULT '',
+        exhaust_number VARCHAR(100) NOT NULL DEFAULT '',
+        class          VARCHAR(50)  NOT NULL DEFAULT '',
+        notes          TEXT         NOT NULL DEFAULT '',
+        active         BOOLEAN      NOT NULL DEFAULT true,
+        created_at     TIMESTAMP    DEFAULT NOW(),
+        updated_at     TIMESTAMP    DEFAULT NOW(),
+        UNIQUE(draw_number, class)
+      )
+    `);
+    // Migration: replace old single-column unique with composite (draw_number, class)
+    await pool.query(`ALTER TABLE pool_engines DROP CONSTRAINT IF EXISTS pool_engines_draw_number_key`).catch(() => {});
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'pool_engines_draw_number_class_key'
+        ) THEN
+          ALTER TABLE pool_engines ADD CONSTRAINT pool_engines_draw_number_class_key UNIQUE (draw_number, class);
+        END IF;
+      END $$
+    `).catch(() => {});
+    console.log('✅ Pool engines table initialized');
   } catch (err) {
     console.error('Equipment scan log init error:', err.message);
   }
@@ -566,8 +651,8 @@ async function logEquipmentScan(scanData) {
     const result = await pool.query(`
       INSERT INTO equipment_scan_log 
       (scan_type, barcode_scanned, entry_id, driver_id, driver_name, 
-       equipment_serial, scanned_by, action_result, notes, event_id, race_class)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       equipment_serial, scanned_by, action_result, notes, event_id, race_class, signature_data)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING log_id, scan_timestamp
     `, [
       scanData.scan_type,
@@ -580,10 +665,19 @@ async function logEquipmentScan(scanData) {
       scanData.action_result || 'success',
       scanData.notes,
       scanData.event_id,
-      scanData.race_class
+      scanData.race_class,
+      scanData.signature_data || null
     ]);
     // Broadcast to live monitor clients
     const row = result.rows[0];
+    // Resolve event name for the broadcast (best-effort, non-blocking)
+    let broadcastEventName = null;
+    if (scanData.event_id) {
+      try {
+        const evtRow = await pool.query('SELECT event_name FROM events WHERE event_id=$1', [scanData.event_id]);
+        if (evtRow.rows.length) broadcastEventName = evtRow.rows[0].event_name;
+      } catch(_) {}
+    }
     const event = JSON.stringify({
       log_id: row.log_id,
       scan_timestamp: row.scan_timestamp,
@@ -593,7 +687,10 @@ async function logEquipmentScan(scanData) {
       race_class: scanData.race_class,
       equipment_serial: scanData.equipment_serial,
       action_result: scanData.action_result || 'success',
-      notes: scanData.notes
+      notes: scanData.notes,
+      event_id: scanData.event_id || null,
+      event_name: broadcastEventName,
+      scanned_by: scanData.scanned_by || 'Unknown'
     });
     for (const client of monitorClients) {
       try { client.write(`data: ${event}\n\n`); } catch (_) { monitorClients.delete(client); }
@@ -818,6 +915,7 @@ if (SKIP_DB_INIT) {
     initMessagesTable(),
     initNotificationHistoryTable(),
     initEventsTable(),
+    initEventPricingTable(),
     initRaceEntriesTable(),
     initEquipmentScanLog(),
     initEngineLoansTable(),
@@ -3416,6 +3514,14 @@ app.post('/api/getAllDrivers', async (req, res) => {
       if (d.approval_status !== undefined) obj.approval_status = d.approval_status || 'Pending';
       if (d.license_document !== undefined) obj.license_document = d.license_document;
       if (d.profile_photo !== undefined) obj.profile_photo = d.profile_photo;
+
+      // Season & rental status fields
+      obj.season_engine_rental         = d.season_engine_rental || 'N';
+      obj.paid_engine_fee              = d.season_engine_rental || 'N'; // alias used by admin modal
+      obj.season_entry_status          = d.season_entry_status || 'Not Registered';
+      obj.next_race_entry_status       = d.next_race_entry_status || 'Not Registered';
+      obj.next_race_engine_rental_status = d.next_race_engine_rental_status || 'No';
+      obj.national_package             = d.national_package || '';
       
       // Add medical data if available
       if (medicalMap[d.driver_id]) {
@@ -3480,6 +3586,7 @@ app.post('/api/updateDriver', async (req, res) => {
       driver_id, first_name, last_name, race_number, team_name, coach_name, kart_brand, 
       class: klass, email, status, paid_status, license_number, transponder_number, 
       season_engine_rental, season_entry_status, next_race_entry_status, next_race_engine_rental_status,
+      national_package,
       admin_override 
     } = req.body;
     
@@ -3560,6 +3667,11 @@ app.post('/api/updateDriver', async (req, res) => {
     if (next_race_engine_rental_status !== undefined && next_race_engine_rental_status !== null) {
       updates.push(`next_race_engine_rental_status = $${paramCount++}`);
       values.push(next_race_engine_rental_status);
+    }
+    if (national_package !== undefined) {
+      // Allow empty string to clear the package
+      updates.push(`national_package = $${paramCount++}`);
+      values.push(national_package === '' ? null : national_package);
     }
 
     // Add driver_id as final parameter
@@ -7404,6 +7516,22 @@ app.put('/api/emergency-contacts/:contactId', async (req, res) => {
 // ============= ADMIN EVENT MANAGEMENT ENDPOINTS =============
 
 // Get all events with registration counts
+// Lightweight public endpoint — id/name/date only, no auth required
+// Used by operational pages (engine management, clerk, etc.)
+app.get('/api/publicEvents', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT event_id, event_name, event_date, location
+         FROM events
+        ORDER BY event_date DESC`
+    );
+    res.json({ success: true, events: result.rows });
+  } catch (err) {
+    console.error('❌ publicEvents error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/getAllEvents', async (req, res) => {
   try {
     const result = await pool.query(
@@ -7544,6 +7672,45 @@ app.delete('/api/deleteEvent/:eventId', async (req, res) => {
     res.json({ success: true, message: 'Event deleted successfully' });
   } catch (err) {
     console.error('❌ deleteEvent error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Get event class pricing config (public — used by driver portal)
+app.get('/api/getEventPricing/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const result = await pool.query(
+      `SELECT class_name, config_json FROM event_class_pricing WHERE event_id = $1`,
+      [eventId]
+    );
+    const pricing = {};
+    result.rows.forEach(r => { pricing[r.class_name] = r.config_json; });
+    res.json({ success: true, pricing });
+  } catch (err) {
+    console.error('❌ getEventPricing error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Save event class pricing config (admin only — protected via ADMIN_ONLY_PATHS)
+app.post('/api/saveEventPricing', async (req, res) => {
+  try {
+    const { eventId, className, config } = req.body;
+    if (!eventId || !className || !config) {
+      return res.status(400).json({ success: false, error: 'Missing eventId, className or config' });
+    }
+    await pool.query(
+      `INSERT INTO event_class_pricing (event_id, class_name, config_json, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (event_id, class_name)
+       DO UPDATE SET config_json = $3, updated_at = NOW()`,
+      [eventId, className, JSON.stringify(config)]
+    );
+    console.log(`✅ Event pricing saved: event=${eventId} class=${className}`);
+    res.json({ success: true, message: 'Pricing saved' });
+  } catch (err) {
+    console.error('❌ saveEventPricing error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 });
@@ -10003,6 +10170,272 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
 // Fix #14: Equipment management routes extracted to routes/equipment.js
 // The inline routes below are now superseded by this router.
 // They can be removed in a future cleanup pass.
+
+// ── Scanner identity ──────────────────────────────────────────────────
+// Public: verify a scanner PIN and return the scanner name
+app.post('/api/verifyScanner', async (req, res) => {
+  try {
+    const { pin } = req.body;
+    if (!pin) return res.json({ success: false, error: 'PIN required' });
+    const result = await pool.query(
+      'SELECT scanner_id, scanner_name FROM scanners WHERE pin_code = $1',
+      [String(pin).trim()]
+    );
+    if (!result.rows.length) return res.json({ success: false, error: 'Invalid code' });
+    res.json({ success: true, scanner_id: result.rows[0].scanner_id, scanner_name: result.rows[0].scanner_name });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Admin: list scanners
+app.get('/api/scanners', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT scanner_id, scanner_name, pin_code, created_at FROM scanners ORDER BY created_at');
+    res.json({ success: true, scanners: result.rows });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Admin: add scanner
+app.post('/api/scanners', async (req, res) => {
+  try {
+    const { scanner_name, pin_code } = req.body;
+    if (!scanner_name || !pin_code) return res.json({ success: false, error: 'Name and PIN required' });
+    if (!/^\d{4}$/.test(String(pin_code))) return res.json({ success: false, error: 'PIN must be exactly 4 digits' });
+    const result = await pool.query(
+      'INSERT INTO scanners (scanner_name, pin_code) VALUES ($1, $2) RETURNING scanner_id, scanner_name, pin_code',
+      [scanner_name.trim(), String(pin_code).trim()]
+    );
+    res.json({ success: true, scanner: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.json({ success: false, error: 'That PIN is already in use' });
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Admin: delete scanner
+app.delete('/api/scanners/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM scanners WHERE scanner_id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Public read-only endpoint for draw station (engine-draw.html — no admin auth needed)
+app.get('/api/drawEngines', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT pe.*,
+             d.first_name || ' ' || d.last_name AS assigned_driver_name,
+             d.race_number                        AS assigned_race_number
+      FROM pool_engines pe
+      LEFT JOIN race_entries re
+             ON UPPER(re.engine_serial) = UPPER(pe.engine_serial)
+            AND re.engine_returned IS NOT TRUE
+            AND re.engine_serial IS NOT NULL
+            AND pe.engine_serial IS NOT NULL
+            AND pe.engine_serial <> ''
+      LEFT JOIN drivers d ON re.driver_id = d.driver_id
+      ORDER BY pe.class, pe.draw_number
+    `);
+    res.json({ success: true, engines: result.rows });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// \u2500\u2500 Pool Engines ─────────────────────────────────────────────
+// GET: list all pool engines (with current driver assignment if any)
+app.get('/api/poolEngines', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT pe.*,
+             d.first_name || ' ' || d.last_name AS assigned_driver_name,
+             d.race_number                        AS assigned_race_number
+      FROM pool_engines pe
+      LEFT JOIN race_entries re
+             ON UPPER(re.engine_serial) = UPPER(pe.engine_serial)
+            AND re.engine_returned IS NOT TRUE
+            AND re.engine_serial IS NOT NULL
+            AND pe.engine_serial IS NOT NULL
+            AND pe.engine_serial <> ''
+      LEFT JOIN drivers d ON re.driver_id = d.driver_id
+      ORDER BY pe.class, pe.draw_number
+    `);
+    res.json({ success: true, engines: result.rows });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// POST: add a pool engine
+app.post('/api/poolEngines', async (req, res) => {
+  try {
+    const { draw_number, engine_serial, seal_number, carb_number, airbox_number, exhaust_number, class: cls, notes } = req.body;
+    if (!draw_number) return res.json({ success: false, error: 'Draw number is required' });
+    const result = await pool.query(
+      `INSERT INTO pool_engines (draw_number, engine_serial, seal_number, carb_number, airbox_number, exhaust_number, class, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       RETURNING *`,
+      [String(draw_number).trim(), engine_serial||'', seal_number||'', carb_number||'', airbox_number||'', exhaust_number||'', cls||'', notes||'']
+    );
+    res.json({ success: true, engine: result.rows[0] });
+    // Log initial seal to audit trail (so history exists even if never edited)
+    if (seal_number && String(seal_number).trim()) {
+      try {
+        await pool.query(
+          `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at) VALUES ($1,$2,$3,$4,$5,NOW())`,
+          ['pool_engine_seal_changed', 'seal_number', '(none)', String(seal_number).trim(),
+           `Draw #${String(draw_number).trim()} | Serial: ${engine_serial || 'N/A'}`]
+        );
+      } catch (_) {}
+    }
+  } catch (err) {
+    if (err.code === '23505') return res.json({ success: false, error: 'Draw number already exists for this class' });
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// PUT: update a pool engine
+app.put('/api/poolEngines/:id', async (req, res) => {
+  try {
+    const { draw_number, engine_serial, seal_number, carb_number, airbox_number, exhaust_number, class: cls, notes, active } = req.body;
+
+    // Fetch current row so we can detect seal changes for audit log
+    const prev = await pool.query('SELECT seal_number, draw_number, engine_serial FROM pool_engines WHERE engine_id=$1', [req.params.id]);
+    const prevRow = prev.rows[0];
+
+    const result = await pool.query(
+      `UPDATE pool_engines SET
+         draw_number=$1, engine_serial=$2, seal_number=$3, carb_number=$4,
+         airbox_number=$5, exhaust_number=$6, class=$7, notes=$8, active=$9, updated_at=NOW()
+       WHERE engine_id=$10 RETURNING *`,
+      [draw_number, engine_serial||'', seal_number||'', carb_number||'', airbox_number||'', exhaust_number||'', cls||'', notes||'', active !== false, req.params.id]
+    );
+    if (!result.rows.length) return res.json({ success: false, error: 'Engine not found' });
+
+    // Audit log: record seal number changes
+    if (prevRow) {
+      const oldSeal = (prevRow.seal_number || '').trim();
+      const newSeal = (seal_number || '').trim();
+      if (oldSeal !== newSeal) {
+        await pool.query(
+          `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at)
+           VALUES ($1,$2,$3,$4,$5,NOW())`,
+          [
+            'pool_engine_seal_changed',
+            'seal_number',
+            oldSeal || '(none)',
+            newSeal || '(none)',
+            `Draw #${prevRow.draw_number} | Serial: ${prevRow.engine_serial || 'N/A'}`
+          ]
+        );
+      }
+    }
+
+    res.json({ success: true, engine: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.json({ success: false, error: 'Draw number already exists for this class' });
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// DELETE: remove a pool engine (preserve to audit_log first)
+app.delete('/api/poolEngines/:id', async (req, res) => {
+  try {
+    const prev = await pool.query(
+      'SELECT draw_number, engine_serial, seal_number, carb_number, airbox_number, exhaust_number, class, notes FROM pool_engines WHERE engine_id=$1',
+      [req.params.id]
+    );
+    if (prev.rows.length) {
+      const r = prev.rows[0];
+      try {
+        await pool.query(
+          `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at) VALUES ($1,$2,$3,$4,$5,NOW())`,
+          [
+            'pool_engine_deleted', 'engine_serial',
+            r.engine_serial || '(none)', '(deleted)',
+            `Draw #${r.draw_number} | Serial: ${r.engine_serial || 'N/A'} | Seal: ${r.seal_number || 'N/A'} | Class: ${r.class || 'N/A'} | Carb: ${r.carb_number || '-'} | Airbox: ${r.airbox_number || '-'} | Exhaust: ${r.exhaust_number || '-'}`
+          ]
+        );
+      } catch (_) {}
+    }
+    await pool.query('DELETE FROM pool_engines WHERE engine_id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// GET: seal number history for an engine (by serial) — works even if engine was deleted
+app.get('/api/engineSealHistory', async (req, res) => {
+  try {
+    const { serial } = req.query;
+    if (!serial) return res.json({ success: false, error: 'serial parameter required' });
+
+    // Try live engine table first
+    const eng = await pool.query(
+      `SELECT engine_id, draw_number, engine_serial, seal_number, class, created_at
+       FROM pool_engines WHERE LOWER(engine_serial)=LOWER($1) LIMIT 1`,
+      [serial]
+    );
+
+    // All seal-change audit entries for this serial
+    const hist = await pool.query(
+      `SELECT old_value, new_value, created_at FROM audit_log
+       WHERE action='pool_engine_seal_changed'
+         AND driver_email ILIKE $1
+       ORDER BY created_at ASC`,
+      [`%Serial: ${serial}%`]
+    );
+
+    // Check if it was ever deleted
+    const delLog = await pool.query(
+      `SELECT driver_email, created_at FROM audit_log
+       WHERE action='pool_engine_deleted'
+         AND driver_email ILIKE $1
+       ORDER BY created_at DESC LIMIT 1`,
+      [`%Serial: ${serial}%`]
+    );
+
+    let engine;
+    if (eng.rows.length) {
+      engine = eng.rows[0];
+    } else if (hist.rows.length || delLog.rows.length) {
+      // Reconstruct from audit log (engine was deleted)
+      const ref        = (delLog.rows[0] || hist.rows[hist.rows.length - 1])?.driver_email || '';
+      const drawMatch  = ref.match(/Draw #([^\s|]+)/);
+      const classMatch = ref.match(/Class: ([^|]+)/);
+      const sealMatch  = ref.match(/Seal: ([^|]+)/);
+      engine = {
+        engine_id:     null,
+        draw_number:   drawMatch  ? drawMatch[1].trim()  : '?',
+        engine_serial: serial.toUpperCase(),
+        seal_number:   sealMatch  ? sealMatch[1].trim()  : null,
+        class:         classMatch ? classMatch[1].trim() : null,
+        created_at:    hist.rows[0]?.created_at || null,
+        deleted:       true
+      };
+    } else {
+      return res.json({ success: false, error: 'Engine not found — no records exist for this serial' });
+    }
+
+    res.json({
+      success:     true,
+      engine,
+      history:     hist.rows,
+      was_deleted: !!delLog.rows.length,
+      deleted_at:  delLog.rows[0]?.created_at || null
+    });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 app.use(require('./routes/equipment')(pool, logEquipmentScan));
 
 // =============================================
@@ -10098,9 +10531,11 @@ app.post('/api/assignEngine', async (req, res) => {
   try {
     const { ticketBarcode, engineSerial, driverId, entryId } = req.body;
     
-    if (!ticketBarcode || !engineSerial || !driverId || !entryId) {
+    if (!engineSerial || !driverId || !entryId) {
       return res.json({ success: false, error: 'Missing required fields' });
     }
+    const barcodeKey = (ticketBarcode && ticketBarcode !== 'NO-TICKET') ? ticketBarcode : null;
+    const noTicketFlag = !barcodeKey;
     
     // Check if engine is already assigned to someone else — if so, clear it and reassign
     const existingAssignment = await pool.query(`
@@ -10146,80 +10581,56 @@ app.post('/api/assignEngine', async (req, res) => {
     // Log the scan
     await logEquipmentScan({
       scan_type: 'engine_assign',
-      barcode_scanned: ticketBarcode,
+      barcode_scanned: barcodeKey || 'NO-TICKET',
       entry_id: entryId,
       driver_id: driverId,
       driver_name: driverName,
       equipment_serial: engineSerial.toUpperCase(),
       scanned_by: 'System',
       action_result: 'success',
-      notes: `Engine ${engineSerial} assigned`,
+      notes: `Engine ${engineSerial} assigned${noTicketFlag ? ' [NO TICKET SCANNED]' : ''}`,
       event_id: assignResult.rows[0]?.event_id,
       race_class: assignResult.rows[0]?.race_class
     });
     
-    console.log(`✅ Engine ${engineSerial} assigned to driver ${driverId} (Entry: ${entryId})`);
+    console.log(`✅ Engine ${engineSerial} assigned to driver ${driverId} (Entry: ${entryId})${noTicketFlag ? ' [NO TICKET]' : ''}`);
 
-    res.json({ success: true, warning: reassignWarning });
+    const warnings = [reassignWarning, noTicketFlag ? '⚠️ No ticket scanned — assignment flagged' : null].filter(Boolean);
+    res.json({ success: true, warning: warnings.length ? warnings.join(' | ') : null });
   } catch (err) {
     console.error('Error assigning engine:', err);
     res.json({ success: false, error: err.message });
   }
 });
 
-// Return engine
-app.post('/api/returnEngine', async (req, res) => {
+// returnEngine is now handled by routes/equipment.js (mounted below)
+// This inline version is intentionally removed to avoid conflicts.
+
+// Return signature viewer
+app.get('/api/engineReturnSignature', async (req, res) => {
   try {
-    const { engineSerial } = req.body;
-    
-    if (!engineSerial) {
-      return res.json({ success: false, error: 'Engine serial required' });
-    }
-    
-    // Find assignment
+    const { entryId } = req.query;
+    if (!entryId) return res.json({ success: false, error: 'entryId required' });
     const result = await pool.query(`
-      SELECT re.entry_id, d.first_name, d.last_name
-      FROM race_entries re
-      JOIN drivers d ON re.driver_id = d.driver_id
-      WHERE re.engine_serial = $1 AND re.engine_returned = false
-    `, [engineSerial.toUpperCase()]);
-    
-    if (result.rows.length === 0) {
-      return res.json({ success: false, error: 'No active assignment found for this engine' });
-    }
-    
-    // Mark engine as returned
-    const returnResult = await pool.query(`
-      UPDATE race_entries 
-      SET engine_returned = true,
-          engine_returned_at = NOW(),
-          updated_at = NOW()
-      WHERE engine_serial = $1 AND engine_returned = false
-      RETURNING entry_id, driver_id, event_id, race_class
-    `, [engineSerial.toUpperCase()]);
-    
-    const driverName = `${result.rows[0].first_name} ${result.rows[0].last_name}`;
-    
-    // Log the scan
-    await logEquipmentScan({
-      scan_type: 'engine_return',
-      barcode_scanned: engineSerial.toUpperCase(),
-      entry_id: returnResult.rows[0]?.entry_id,
-      driver_id: returnResult.rows[0]?.driver_id,
-      driver_name: driverName,
-      equipment_serial: engineSerial.toUpperCase(),
-      scanned_by: 'System',
-      action_result: 'success',
-      notes: `Engine ${engineSerial} returned`,
-      event_id: returnResult.rows[0]?.event_id,
-      race_class: returnResult.rows[0]?.race_class
+      SELECT log_id, scan_timestamp, driver_name, equipment_serial, notes, signature_data
+      FROM equipment_scan_log
+      WHERE entry_id = $1 AND scan_type = 'engine_return'
+      ORDER BY scan_timestamp DESC
+      LIMIT 1
+    `, [entryId]);
+    if (!result.rows.length) return res.json({ success: false, error: 'No return record found' });
+    const row = result.rows[0];
+    res.json({
+      success: true,
+      log_id:         row.log_id,
+      returned_at:    row.scan_timestamp,
+      driver_name:    row.driver_name,
+      engine_serial:  row.equipment_serial,
+      notes:          row.notes,
+      has_signature:  !!row.signature_data,
+      signature_data: row.signature_data
     });
-    
-    console.log(`✅ Engine ${engineSerial} returned from ${driverName}`);
-    
-    res.json({ success: true });
   } catch (err) {
-    console.error('Error returning engine:', err);
     res.json({ success: false, error: err.message });
   }
 });
@@ -10483,21 +10894,23 @@ app.get('/api/getEquipmentScanLog', async (req, res) => {
     
     const result = await pool.query(`
       SELECT 
-        log_id,
-        scan_timestamp,
-        scan_type,
-        barcode_scanned,
-        entry_id,
-        driver_id,
-        driver_name,
-        equipment_serial,
-        scanned_by,
-        action_result,
-        notes,
-        event_id,
-        race_class
-      FROM equipment_scan_log
-      ORDER BY scan_timestamp DESC
+        esl.log_id,
+        esl.scan_timestamp,
+        esl.scan_type,
+        esl.barcode_scanned,
+        esl.entry_id,
+        esl.driver_id,
+        esl.driver_name,
+        esl.equipment_serial,
+        esl.scanned_by,
+        esl.action_result,
+        esl.notes,
+        esl.event_id,
+        esl.race_class,
+        e.event_name
+      FROM equipment_scan_log esl
+      LEFT JOIN events e ON e.event_id = esl.event_id
+      ORDER BY esl.scan_timestamp DESC
       LIMIT $1
     `, [limit]);
     
@@ -10679,8 +11092,10 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
       SELECT re.entry_id, re.driver_id, re.race_class,
              re.engine_serial,
              re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
+             re.ticket_engine_ref, re.ticket_tyres_ref, re.ticket_transponder_ref, re.ticket_fuel_ref,
+             re.entry_items,
              d.first_name, d.last_name, d.race_number,
-             e.event_name, e.event_date
+             e.event_name, e.event_date, re.event_id
       FROM race_entries re
       JOIN drivers d ON re.driver_id = d.driver_id
       LEFT JOIN events e ON re.event_id = e.event_id
@@ -10739,9 +11154,15 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
         race_class:  row.race_class,
         event_name:  row.event_name  || null,
         event_date:  row.event_date  || null,
+        event_id:    row.event_id    || null,
         engine_serial:    engineSerial,
         registered_tyres: tyresOk,
-        tyres: tyresOk ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null
+        tyres: tyresOk ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null,
+        ticket_engine_ref:      row.ticket_engine_ref      || null,
+        ticket_tyres_ref:       row.ticket_tyres_ref       || null,
+        ticket_transponder_ref: row.ticket_transponder_ref || null,
+        ticket_fuel_ref:        row.ticket_fuel_ref        || null,
+        entry_items: row.entry_items || []
       });
     }
 
@@ -10749,7 +11170,15 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
     res.json({
       success: true,
       entries,
-      driver:           { driver_id: first.driver_id, entry_id: first.entry_id, first_name: first.first_name, last_name: first.last_name, race_number: first.race_number, race_class: first.race_class, engine_serial: first.engine_serial },
+      driver: {
+        driver_id:   first.driver_id,
+        entry_id:    first.entry_id,
+        first_name:  first.first_name,
+        last_name:   first.last_name,
+        race_number: first.race_number,
+        race_class:  first.race_class,
+        engine_serial: first.engine_serial
+      },
       registered_tyres: first.registered_tyres,
       tyres:            first.tyres
     });

@@ -105,9 +105,11 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     try {
       const { ticketBarcode, engineSerial, driverId, entryId } = req.body;
 
-      if (!ticketBarcode || !engineSerial || !driverId || !entryId) {
+      if (!engineSerial || !driverId || !entryId) {
         return res.json({ success: false, error: 'Missing required fields' });
       }
+      const barcodeKey = (ticketBarcode && ticketBarcode !== 'NO-TICKET') ? ticketBarcode : null;
+      const noTicketFlag = !barcodeKey;
 
       // Check if engine is already assigned — if so, clear and force-reassign
       const existingAssignment = await pool.query(`
@@ -150,76 +152,112 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       await logEquipmentScan({
         scan_type: 'engine_assign',
-        barcode_scanned: ticketBarcode,
+        barcode_scanned: barcodeKey || 'NO-TICKET',
         entry_id: entryId,
         driver_id: driverId,
         driver_name: driverName,
         equipment_serial: engineSerial.toUpperCase(),
         scanned_by: 'System',
         action_result: 'success',
-        notes: `Engine ${engineSerial} assigned`,
+        notes: `Engine ${engineSerial} assigned${noTicketFlag ? ' [NO TICKET SCANNED]' : ''}`,
         event_id: assignResult.rows[0]?.event_id,
         race_class: assignResult.rows[0]?.race_class
       });
 
-      console.log(`✅ Engine ${engineSerial} assigned to driver ${driverId} (Entry: ${entryId})`);
-      res.json({ success: true, warning: reassignWarning });
+      console.log(`✅ Engine ${engineSerial} assigned to driver ${driverId} (Entry: ${entryId})${noTicketFlag ? ' [NO TICKET]' : ''}`);
+      const warnings = [reassignWarning, noTicketFlag ? '⚠️ No ticket scanned — assignment flagged' : null].filter(Boolean);
+      res.json({ success: true, warning: warnings.length ? warnings.join(' | ') : null });
     } catch (err) {
       console.error('Error assigning engine:', err);
       res.json({ success: false, error: err.message });
     }
   });
 
-  // Return engine
+  // Return engine — full version with peripherals, signature & scannedBy
   router.post('/api/returnEngine', async (req, res) => {
     try {
-      const { engineSerial } = req.body;
+      const {
+        engineSerial, entryId, driverId,
+        peripheralsChecked, signatureData, scannedBy,
+        notes: clientNotes
+      } = req.body;
 
-      if (!engineSerial) {
-        return res.json({ success: false, error: 'Engine serial required' });
+      if (!engineSerial && !entryId) {
+        return res.json({ success: false, error: 'Engine serial or entry ID required' });
       }
 
-      const result = await pool.query(`
-        SELECT re.entry_id, d.first_name, d.last_name
-        FROM race_entries re
-        JOIN drivers d ON re.driver_id = d.driver_id
-        WHERE re.engine_serial = $1 AND re.engine_returned = false
-      `, [engineSerial.toUpperCase()]);
+      let result;
+      if (entryId) {
+        result = await pool.query(`
+          SELECT re.entry_id, re.engine_serial, re.driver_id, re.event_id, re.race_class,
+                 d.first_name, d.last_name
+          FROM race_entries re JOIN drivers d ON re.driver_id = d.driver_id
+          WHERE re.entry_id = $1 AND (re.engine_returned = false OR re.engine_returned IS NULL)
+        `, [entryId]);
+      } else {
+        result = await pool.query(`
+          SELECT re.entry_id, re.engine_serial, re.driver_id, re.event_id, re.race_class,
+                 d.first_name, d.last_name
+          FROM race_entries re JOIN drivers d ON re.driver_id = d.driver_id
+          WHERE UPPER(re.engine_serial) = UPPER($1) AND (re.engine_returned = false OR re.engine_returned IS NULL)
+        `, [engineSerial.toUpperCase()]);
+      }
 
       if (result.rows.length === 0) {
-        return res.json({ success: false, error: 'No active assignment found for this engine' });
+        return res.json({ success: false, error: 'No active engine assignment found' });
       }
 
-      const returnResult = await pool.query(`
-        UPDATE race_entries 
-        SET engine_returned = true,
-            engine_returned_at = NOW(),
-            updated_at = NOW()
-        WHERE engine_serial = $1 AND engine_returned = false
-        RETURNING entry_id, driver_id, event_id, race_class
-      `, [engineSerial.toUpperCase()]);
+      const row        = result.rows[0];
+      const theSerial  = (engineSerial || row.engine_serial || '').toUpperCase();
+      const driverName = `${row.first_name} ${row.last_name}`;
 
-      const driverName = `${result.rows[0].first_name} ${result.rows[0].last_name}`;
+      await pool.query(`
+        UPDATE race_entries
+        SET engine_returned = true, engine_returned_at = NOW(), updated_at = NOW()
+        WHERE entry_id = $1
+      `, [row.entry_id]);
+
+      const periSummary = peripheralsChecked
+        ? Object.entries(peripheralsChecked)
+            .map(([k, v]) => `${k.replace('_number', '').toUpperCase()}:${v}`)
+            .join(' ')
+        : 'no component check';
+
+      const fullNotes = [
+        `Engine ${theSerial} returned by ${driverName}`,
+        `Components: ${periSummary}`,
+        clientNotes || null,
+        scannedBy ? `Operator: ${scannedBy}` : null
+      ].filter(Boolean).join(' | ');
 
       await logEquipmentScan({
-        scan_type: 'engine_return',
-        barcode_scanned: engineSerial.toUpperCase(),
-        entry_id: returnResult.rows[0]?.entry_id,
-        driver_id: returnResult.rows[0]?.driver_id,
-        driver_name: driverName,
-        equipment_serial: engineSerial.toUpperCase(),
-        scanned_by: 'System',
-        action_result: 'success',
-        notes: `Engine ${engineSerial} returned`,
-        event_id: returnResult.rows[0]?.event_id,
-        race_class: returnResult.rows[0]?.race_class
+        scan_type:        'engine_return',
+        barcode_scanned:  theSerial || 'N/A',
+        entry_id:         row.entry_id,
+        driver_id:        row.driver_id || driverId,
+        driver_name:      driverName,
+        equipment_serial: theSerial || 'N/A',
+        scanned_by:       scannedBy || 'Return Station',
+        action_result:    'success',
+        notes:            fullNotes,
+        event_id:         row.event_id,
+        race_class:       row.race_class,
+        signature_data:   signatureData || null
       });
 
-      console.log(`✅ Engine ${engineSerial} returned from ${driverName}`);
+      try {
+        await pool.query(
+          `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at) VALUES ($1,$2,$3,$4,$5,NOW())`,
+          ['engine_returned', 'engine_returned', `assigned: ${theSerial}`, 'returned',
+           `${driverName} | ${periSummary}`]
+        );
+      } catch (_) {}
+
+      console.log(`✅ Engine ${theSerial} returned from ${driverName}${signatureData ? ' [signed]' : ''}`);
       res.json({ success: true });
     } catch (err) {
       console.error('Error returning engine:', err);
-      res.json({ success: false, error: 'Failed to return engine' });
+      res.json({ success: false, error: err.message });
     }
   });
 
@@ -253,6 +291,18 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
             updated_at = NOW()
         WHERE engine_serial = $1 AND engine_returned = false
       `, [engineSerial.toUpperCase(), issueDescription]);
+
+      await logEquipmentScan({
+        scan_type:        'engine_issue',
+        barcode_scanned:  engineSerial.toUpperCase(),
+        entry_id:         entry.entry_id,
+        driver_id:        entry.driver_id,
+        driver_name:      `${entry.first_name} ${entry.last_name}`,
+        equipment_serial: engineSerial.toUpperCase(),
+        scanned_by:       'Issue Reporter',
+        action_result:    'issue',
+        notes:            `Issue reported: ${issueDescription}`
+      });
 
       console.log(`⚠️ Engine ${engineSerial} reported with issue: ${issueDescription}`);
       res.json({ success: true, driverId: entry.driver_id, entryId: entry.entry_id });
@@ -295,6 +345,24 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
             updated_at = NOW()
         WHERE entry_id = $2
       `, [replacementSerial.toUpperCase(), entryId, returnedSerial.toUpperCase()]);
+
+      const _repDriverInfo = await pool.query(
+        'SELECT first_name, last_name FROM drivers WHERE driver_id=$1', [driverId]
+      );
+      const _repName = _repDriverInfo.rows[0]
+        ? `${_repDriverInfo.rows[0].first_name} ${_repDriverInfo.rows[0].last_name}`
+        : 'Unknown';
+      await logEquipmentScan({
+        scan_type:        'engine_replacement',
+        barcode_scanned:  replacementSerial.toUpperCase(),
+        entry_id:         entryId,
+        driver_id:        driverId,
+        driver_name:      _repName,
+        equipment_serial: replacementSerial.toUpperCase(),
+        scanned_by:       'System',
+        action_result:    'success',
+        notes:            `Replacement engine ${replacementSerial} assigned (replaced ${returnedSerial})`
+      });
 
       console.log(`✅ Replacement engine ${replacementSerial} assigned (replaced ${returnedSerial})`);
       res.json({ success: true });
@@ -528,8 +596,10 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       const result = await pool.query(`
         SELECT re.entry_id, re.driver_id, re.race_class,
-               re.engine_serial,
+               re.engine_serial, re.transponder_serial,
                re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
+               re.ticket_engine_ref, re.ticket_tyres_ref, re.ticket_transponder_ref, re.ticket_fuel_ref,
+               re.entry_items, re.event_id,
                d.first_name, d.last_name, d.race_number,
                e.event_name, e.event_date
         FROM race_entries re
@@ -549,6 +619,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       const entries = [];
       for (const row of result.rows) {
         let engineSerial = row.engine_serial || null;
+        let transponderSerial = row.transponder_serial || null;
         let fl = row.tyre_front_left  || null;
         let fr = row.tyre_front_right || null;
         let rl = row.tyre_rear_left   || null;
@@ -562,6 +633,16 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
             ORDER BY scan_timestamp DESC LIMIT 1
           `, [row.driver_id]);
           if (el.rows.length) engineSerial = el.rows[0].equipment_serial;
+        }
+
+        if (!transponderSerial) {
+          const tsl = await pool.query(`
+            SELECT equipment_serial FROM equipment_scan_log
+            WHERE driver_id = $1 AND scan_type = 'transponder_assign'
+              AND action_result = 'success' AND equipment_serial IS NOT NULL
+            ORDER BY scan_timestamp DESC LIMIT 1
+          `, [row.driver_id]);
+          if (tsl.rows.length) transponderSerial = tsl.rows[0].equipment_serial;
         }
 
         if (!fl || !fr || !rl || !rr) {
@@ -590,9 +671,16 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
           race_class:       row.race_class,
           event_name:       row.event_name  || null,
           event_date:       row.event_date  || null,
+          event_id:         row.event_id    || null,
           engine_serial:    engineSerial,
+          transponder_serial: transponderSerial,
           registered_tyres: tyresOk,
-          tyres: tyresOk ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null
+          tyres: tyresOk ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null,
+          ticket_engine_ref:      row.ticket_engine_ref      || null,
+          ticket_tyres_ref:       row.ticket_tyres_ref       || null,
+          ticket_transponder_ref: row.ticket_transponder_ref || null,
+          ticket_fuel_ref:        row.ticket_fuel_ref        || null,
+          entry_items:     row.entry_items || []
         });
       }
 
@@ -622,6 +710,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
   router.post('/api/logDriverCheck', async (req, res) => {
     try {
       const { driver_id, entry_id, driver_name, race_class, engine_serial, registered_tyres,
+              scanned_by: reqScannedBy,
               scan_type: customType, action_result: customResult, notes: customNotes } = req.body;
       const scanType = customType || 'driver_check';
       const actionResult = customResult || 'success';
@@ -640,7 +729,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         driver_name,
         race_class,
         equipment_serial: engine_serial || null,
-        scanned_by:       'Check Station',
+        scanned_by:       reqScannedBy || 'Check Station',
         action_result:    actionResult,
         notes
       });

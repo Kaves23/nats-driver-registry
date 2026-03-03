@@ -209,20 +209,20 @@
     }
 
     .tab-btn {
-      padding: 16px 24px;
+      padding: 10px 14px;
       background: transparent;
       color: #64748b;
       border: none;
       cursor: pointer;
       font-weight: 500;
-      font-size: 14px;
+      font-size: 12px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       white-space: nowrap;
       position: relative;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .tab-btn:hover {
@@ -881,6 +881,8 @@
       <button class="tab-btn" onclick="switchTab('audit')" data-tab="audit">Audit Trail</button>
       <button class="tab-btn" onclick="switchTab('discountCodes')" data-tab="discountCodes">Discount Codes</button>
       <button class="tab-btn" onclick="switchTab('manualPayments')" data-tab="manualPayments">💳 Manual Payments</button>
+      <button class="tab-btn" onclick="switchTab('scanners')" data-tab="scanners">📱 Scanners</button>
+      <button class="tab-btn" onclick="switchTab('poolEngines')" data-tab="poolEngines">🔧 Pool Engines</button>
       <a href="/clerk.html" target="_blank" class="tab-btn" style="margin-left: auto; color: #dc2626; font-weight: 600;">Race Control →</a>
       <a href="/engine-management.html" target="_blank" class="tab-btn" style="color: #f97316; font-weight: 600;">⚙ Engine Mgmt →</a>
     </div>
@@ -1289,6 +1291,142 @@
     </div>
 
     <!-- ✅ Payment Status Dashboard Tab -->
+    <div id="scannersTab" class="admin-content" style="display:none;">
+      <div style="margin-bottom:24px;">
+        <h2 style="margin:0 0 8px 0;color:#1e293b;">📱 Scanner Identities</h2>
+        <p style="margin:0;color:#64748b;font-size:14px;">Each scanning device uses a unique 4-digit PIN. When a user signs into the Check app with that PIN, their scanner name is shown on the monitor feed and captured in the audit log.</p>
+      </div>
+      <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:20px;">
+        <h3 style="margin:0 0 14px 0;font-size:14px;color:#1e293b;">Add New Scanner</h3>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div>
+            <label style="display:block;font-size:12px;color:#64748b;margin-bottom:4px;">Scanner Name</label>
+            <input type="text" id="newScannerName" placeholder="e.g. Gate 1, Pit Lane" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;width:200px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;color:#64748b;margin-bottom:4px;">4-Digit PIN</label>
+            <input type="text" id="newScannerPin" placeholder="e.g. 1234" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;width:120px;letter-spacing:4px;font-weight:700;">
+          </div>
+          <button onclick="addScanner()" style="padding:8px 20px;background:#1e3a5f;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">+ Add Scanner</button>
+        </div>
+        <div id="scannersMsg" style="margin-top:12px;font-size:13px;"></div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Name</th><th>PIN</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="scannersTableBody"><tr><td colspan="4" class="loading">Loading scanners…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pool Engines Tab -->
+    <div id="poolEnginesTab" class="admin-content" style="display:none;">
+      <div style="margin-bottom:20px;">
+        <h2 style="margin:0 0 6px 0;color:#1e293b;">🔧 Pool Engines</h2>
+        <p style="margin:0;color:#64748b;font-size:14px;">Define the engine pool for draws. Each engine is identified by its draw number and linked to its peripherals (seal, carb, airbox, exhaust).</p>
+      </div>
+
+      <!-- Add / Edit Form -->
+      <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:24px;">
+        <h3 id="peFormTitle" style="margin:0 0 16px 0;font-size:14px;font-weight:700;color:#1e293b;">Add Engine to Pool</h3>
+        <input type="hidden" id="peEditId">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:14px;">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">DRAW NUMBER <span style="color:#ef4444">*</span></label>
+            <input type="text" id="peDrawNum" placeholder="e.g. 1" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">ENGINE SERIAL</label>
+            <input type="text" id="peEngineSerial" placeholder="e.g. VR1002" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">SEAL NUMBER</label>
+            <input type="text" id="peSealNum" placeholder="e.g. S-44812" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">CARB NUMBER</label>
+            <input type="text" id="peCarbNum" placeholder="e.g. C-001" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">AIRBOX NUMBER</label>
+            <input type="text" id="peAirboxNum" placeholder="e.g. AB-17" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">EXHAUST NUMBER</label>
+            <input type="text" id="peExhaustNum" placeholder="e.g. EX-99" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">CLASS</label>
+            <select id="peClass" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+              <option value="">-- Select class --</option>
+              <option value="Cadet">Cadet ROK</option>
+              <option value="Mini ROK">Mini ROK</option>
+              <option value="Mini ROK U10">Mini ROK U10</option>
+              <option value="OK Junior">OK Junior</option>
+              <option value="OK National">OK National</option>
+              <option value="KZ2">KZ2</option>
+              <option value="Senior ROK">Senior ROK</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div style="grid-column:span 2;">
+            <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">NOTES</label>
+            <input type="text" id="peNotes" placeholder="Optional notes" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button id="peSaveBtn" onclick="savePoolEngine()" style="padding:9px 22px;background:#1e3a5f;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">+ Add Engine</button>
+          <button id="peCancelBtn" onclick="cancelPoolEngineEdit()" style="display:none;padding:9px 18px;background:#f1f5f9;color:#1e293b;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;cursor:pointer;">Cancel</button>
+          <span id="peMsg" style="font-size:13px;"></span>
+        </div>
+      </div>
+
+      <!-- Filter / search -->
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="peSearch" placeholder="🔍 Search draw #, engine, class…" oninput="renderPoolEngines()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+        <select id="peClassFilter" onchange="renderPoolEngines()" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+          <option value="">All classes</option>
+          <option value="Cadet">Cadet ROK</option>
+          <option value="Mini ROK">Mini ROK</option>
+          <option value="Mini ROK U10">Mini ROK U10</option>
+          <option value="OK Junior">OK Junior</option>
+          <option value="OK National">OK National</option>
+          <option value="KZ2">KZ2</option>
+          <option value="Senior ROK">Senior ROK</option>
+        </select>
+        <span id="peCount" style="font-size:12px;color:#94a3b8;"></span>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="peTable">
+          <thead>
+            <tr>
+              <th style="width:70px;">Draw #</th>
+              <th>Engine Serial</th>
+              <th style="width:160px;">Driver / Status</th>
+              <th>Seal #</th>
+              <th>Carb #</th>
+              <th>Airbox #</th>
+              <th>Exhaust #</th>
+              <th style="width:110px;">Class</th>
+              <th>Notes</th>
+              <th style="width:110px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="peTableBody"><tr><td colspan="10" class="loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- Seal History Panel -->
+      <div id="sealHistoryPanel" style="display:none;margin-top:20px;background:white;border:1px solid #e2e8f0;border-radius:10px;padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h3 id="sealHistoryTitle" style="margin:0;font-size:15px;color:#1e293b;">🔒 Seal Number History</h3>
+          <button onclick="document.getElementById('sealHistoryPanel').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#64748b;">✕</button>
+        </div>
+        <div id="sealHistoryBody" style="font-size:13px;">Loading…</div>
+      </div>
+    </div>
+
     <div id="paymentStatusTab" class="admin-content" style="display: none;">
       <div style="margin-bottom: 24px;">
         <h2 style="margin: 0 0 8px 0; color:  #1e293b;">💳 Payment Status Dashboard</h2>
@@ -1732,6 +1870,15 @@
           <option value="Y">Paid</option>
         </select>
         <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">For cash payments: Set to "Paid" if driver has paid season engine rental fee</small>
+      </div>
+      <div class="form-group">
+        <label>National Season Package</label>
+        <select id="editNationalPackage">
+          <option value="">None — standard pricing</option>
+          <option value="engine">Engine Included — no engine charge at entry</option>
+          <option value="full">Full Package — entry fee, engine, fuel &amp; tyres all included</option>
+        </select>
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">Controls what the driver is NOT charged for when entering a National or Both-champ event</small>
       </div>
       <div class="form-group">
         <label>Season Entry Status (ALL-IN Package)</label>
@@ -2491,6 +2638,7 @@
       setVal('editCoachName', driver.coach_name);
       setVal('editKartBrand', driver.kart_brand);
       setVal('editEngineRentalStatus', driver.paid_engine_fee || 'N');
+      setVal('editNationalPackage', driver.national_package || '');
       setVal('editSeasonEntryStatus', driver.season_entry_status || 'Not Registered');
       setVal('editNextRaceEntry', driver.next_race_entry_status || 'Not Registered');
       setVal('editNextRaceEngineRental', driver.next_race_engine_rental_status || 'No');
@@ -2611,6 +2759,7 @@
           coach_name: getVal('editCoachName'),
           kart_brand: getVal('editKartBrand'),
           season_engine_rental: getVal('editEngineRentalStatus'),
+          national_package: getVal('editNationalPackage'),
           season_entry_status: getVal('editSeasonEntryStatus'),
           next_race_entry_status: getVal('editNextRaceEntry'),
           next_race_engine_rental_status: getVal('editNextRaceEngineRental'),
@@ -3433,6 +3582,8 @@
       const auditTab = document.getElementById('auditTab');
       const discountCodesTab = document.getElementById('discountCodesTab');
       const manualPaymentsTab = document.getElementById('manualPaymentsTab');
+      const scannersTab = document.getElementById('scannersTab');
+      const poolEnginesTab = document.getElementById('poolEnginesTab');
       const tabs = document.querySelectorAll('.tab-btn');
 
       // Hide all tabs
@@ -3448,6 +3599,8 @@
       auditTab.style.display = 'none';
       if (discountCodesTab) discountCodesTab.style.display = 'none';
       if (manualPaymentsTab) manualPaymentsTab.style.display = 'none';
+      if (scannersTab) scannersTab.style.display = 'none';
+      if (poolEnginesTab) poolEnginesTab.style.display = 'none';
       
       // Remove active from all tab buttons
       tabs.forEach(t => t.classList.remove('active'));
@@ -3502,6 +3655,236 @@
           manualPaymentsTab.style.display = 'block';
           loadPayFastWebhooks();
         }
+      } else if (tabName === 'scanners') {
+        if (scannersTab) {
+          scannersTab.style.display = 'block';
+          loadScanners();
+        }
+      } else if (tabName === 'poolEngines') {
+        if (poolEnginesTab) {
+          poolEnginesTab.style.display = 'block';
+          loadPoolEngines();
+        }
+      }
+    }
+
+    // ── Scanner Management ──────────────────────────────────────────────────────
+    async function loadScanners() {
+      const tbody = document.getElementById('scannersTableBody');
+      try {
+        const r = await fetch('/api/scanners');
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Failed to load');
+        if (!d.scanners || d.scanners.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:20px;">No scanners configured</td></tr>';
+          return;
+        }
+        tbody.innerHTML = d.scanners.map(s => `
+          <tr>
+            <td style="font-weight:600;">${s.scanner_name}</td>
+            <td><span style="font-family:monospace;font-size:16px;font-weight:700;letter-spacing:4px;">${s.pin_code}</span></td>
+            <td style="color:#64748b;font-size:13px;">${s.created_at ? new Date(s.created_at).toLocaleDateString('en-ZA', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
+            <td><button onclick="deleteScanner(${s.scanner_id},'${s.scanner_name}')" style="padding:4px 12px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">Delete</button></td>
+          </tr>`).join('');
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:#ef4444;padding:16px;">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function addScanner() {
+      const name = (document.getElementById('newScannerName').value || '').trim();
+      const pin  = (document.getElementById('newScannerPin').value  || '').trim();
+      const msg  = document.getElementById('scannersMsg');
+      if (!name) { msg.style.color='#ef4444'; msg.textContent='Please enter a scanner name.'; return; }
+      if (!/^\d{4}$/.test(pin)) { msg.style.color='#ef4444'; msg.textContent='PIN must be exactly 4 digits.'; return; }
+      try {
+        const r = await fetch('/api/scanners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scanner_name: name, pin_code: pin })
+        });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Failed to add');
+        msg.style.color = '#22c55e';
+        msg.textContent = `\u2713 Scanner "${name}" added with PIN ${pin}`;
+        document.getElementById('newScannerName').value = '';
+        document.getElementById('newScannerPin').value  = '';
+        setTimeout(() => msg.textContent = '', 3000);
+        loadScanners();
+      } catch(e) {
+        msg.style.color = '#ef4444';
+        msg.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    async function deleteScanner(id, name) {
+      if (!confirm(`Delete scanner "${name}"? This cannot be undone.`)) return;
+      try {
+        const r = await fetch(`/api/scanners/${id}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Failed to delete');
+        loadScanners();
+      } catch(e) {
+        alert('Error deleting scanner: ' + e.message);
+      }
+    }
+
+    // ── Pool Engines ────────────────────────────────────────────────────────────
+    let _peAll = []; // cached full list for client-side filter
+
+    async function loadPoolEngines() {
+      const tbody = document.getElementById('peTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="9" class="loading">Loading…</td></tr>';
+      try {
+        const r = await fetch('/api/poolEngines');
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Failed to load');
+        _peAll = d.engines || [];
+        renderPoolEngines();
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="9" style="color:#ef4444;padding:16px;">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    function renderPoolEngines() {
+      const tbody = document.getElementById('peTableBody');
+      const q = (document.getElementById('peSearch')?.value || '').toLowerCase();
+      const cls = document.getElementById('peClassFilter')?.value || '';
+      let rows = _peAll.filter(e => {
+        if (cls && e.class !== cls) return false;
+        if (!q) return true;
+        return [e.draw_number, e.engine_serial, e.seal_number, e.carb_number, e.airbox_number, e.exhaust_number, e.class, e.notes, e.assigned_driver_name, e.assigned_race_number]
+          .some(v => (v||'').toLowerCase().includes(q));
+      });
+      // Sort by class then by draw_number numerically
+      rows.sort((a, b) => {
+        const cc = (a.class||'').localeCompare(b.class||'');
+        return cc !== 0 ? cc : (parseInt(a.draw_number)||0) - (parseInt(b.draw_number)||0);
+      });
+      document.getElementById('peCount').textContent = rows.length + ' engine' + (rows.length !== 1 ? 's' : '');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">No engines found</td></tr>';
+        return;
+      }
+      const classBadge = c => {
+        const map = {
+          'Cadet':'#e74c3c','Mini ROK':'#f1c40f','Mini ROK U10':'#f39c12',
+          'OK Junior':'#27ae60','OK National':'#3498db','KZ2':'#9b59b6','Senior ROK':'#2980b9'
+        };
+        const bg = map[c] || '#64748b';
+        const fg = ['Mini ROK'].includes(c) ? '#2c3e50' : 'white';
+        return c ? `<span style="background:${bg};color:${fg};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${c}</span>` : '—';
+      };
+      const sealBtn = s => s ? `<button onclick="showSealHistory('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'  )" title="Seal history" style="padding:4px 8px;background:#7c3aed;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">&#x1F512;</button>` : '';
+      let html = '';
+      let lastClass = null;
+      rows.forEach(e => {
+        const rowClass = e.class || '(No Class)';
+        // Insert group header when no class filter is active and class changes
+        if (!cls && rowClass !== lastClass) {
+          lastClass = rowClass;
+          html += `<tr style="background:#f1f5f9;"><td colspan="10" style="font-weight:700;font-size:11px;letter-spacing:1px;color:#1e293b;padding:6px 10px;border-bottom:2px solid #cbd5e1;">${rowClass.toUpperCase()}</td></tr>`;
+        }
+        html += `
+        <tr>
+          <td style="font-weight:800;font-size:20px;color:#1e293b;">${e.draw_number}</td>
+          <td style="font-family:monospace;font-weight:600;">${e.engine_serial||'—'}</td>
+          <td>${e.assigned_driver_name
+            ? `<span style="font-weight:600;color:#1e293b;">#${e.assigned_race_number||'?'} ${e.assigned_driver_name}</span>`
+            : (e.engine_serial ? '<span style="color:#16a34a;font-weight:700;font-size:12px;">✅ Available</span>' : '<span style="color:#94a3b8;font-size:12px;">No serial</span>')}</td>
+          <td style="font-family:monospace;">${e.seal_number||'—'}</td>
+          <td style="font-family:monospace;">${e.carb_number||'—'}</td>
+          <td style="font-family:monospace;">${e.airbox_number||'—'}</td>
+          <td style="font-family:monospace;">${e.exhaust_number||'—'}</td>
+          <td>${classBadge(e.class)}</td>
+          <td style="color:#64748b;font-size:12px;">${e.notes||''}</td>
+          <td>
+            <div style="display:flex;gap:4px;">
+              <button onclick="editPoolEngine(${e.engine_id})" style="padding:4px 10px;background:#3b82f6;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">Edit</button>
+              <button onclick="deletePoolEngine(${e.engine_id},'${(e.draw_number||'').replace(/'/g,"\\'")}\')" style="padding:4px 10px;background:#ef4444;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">Del</button>
+              ${sealBtn(e.engine_serial)}
+            </div>
+          </td>
+        </tr>`;
+      });
+      tbody.innerHTML = html;
+    }
+
+    async function savePoolEngine() {
+      const id = document.getElementById('peEditId').value;
+      const body = {
+        draw_number:    (document.getElementById('peDrawNum').value    || '').trim(),
+        engine_serial:  (document.getElementById('peEngineSerial').value || '').trim(),
+        seal_number:    (document.getElementById('peSealNum').value     || '').trim(),
+        carb_number:    (document.getElementById('peCarbNum').value     || '').trim(),
+        airbox_number:  (document.getElementById('peAirboxNum').value   || '').trim(),
+        exhaust_number: (document.getElementById('peExhaustNum').value  || '').trim(),
+        class:          document.getElementById('peClass').value || '',
+        notes:          (document.getElementById('peNotes').value       || '').trim(),
+      };
+      const msg = document.getElementById('peMsg');
+      if (!body.draw_number) { msg.style.color='#ef4444'; msg.textContent='Draw number is required.'; return; }
+      try {
+        const url = id ? `/api/poolEngines/${id}` : '/api/poolEngines';
+        const method = id ? 'PUT' : 'POST';
+        const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Failed to save');
+        msg.style.color = '#22c55e';
+        msg.textContent = id ? '✓ Engine updated.' : `✓ Engine #${body.draw_number} added.`;
+        setTimeout(() => msg.textContent = '', 3000);
+        cancelPoolEngineEdit();
+        loadPoolEngines();
+      } catch(e) {
+        msg.style.color = '#ef4444';
+        msg.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function editPoolEngine(id) {
+      const e = _peAll.find(x => x.engine_id === id);
+      if (!e) return;
+      document.getElementById('peEditId').value          = e.engine_id;
+      document.getElementById('peDrawNum').value         = e.draw_number;
+      document.getElementById('peEngineSerial').value    = e.engine_serial;
+      document.getElementById('peSealNum').value         = e.seal_number;
+      document.getElementById('peCarbNum').value         = e.carb_number;
+      document.getElementById('peAirboxNum').value       = e.airbox_number;
+      document.getElementById('peExhaustNum').value      = e.exhaust_number;
+      document.getElementById('peClass').value           = e.class;
+      document.getElementById('peNotes').value           = e.notes;
+      document.getElementById('peFormTitle').textContent = `Edit Engine — Draw #${e.draw_number}`;
+      document.getElementById('peSaveBtn').textContent   = '💾 Save Changes';
+      document.getElementById('peCancelBtn').style.display = 'inline-block';
+      document.getElementById('peDrawNum').scrollIntoView({ behavior:'smooth', block:'center' });
+      document.getElementById('peDrawNum').focus();
+    }
+
+    function cancelPoolEngineEdit() {
+      document.getElementById('peEditId').value          = '';
+      document.getElementById('peDrawNum').value         = '';
+      document.getElementById('peEngineSerial').value    = '';
+      document.getElementById('peSealNum').value         = '';
+      document.getElementById('peCarbNum').value         = '';
+      document.getElementById('peAirboxNum').value       = '';
+      document.getElementById('peExhaustNum').value      = '';
+      document.getElementById('peClass').value           = '';
+      document.getElementById('peNotes').value           = '';
+      document.getElementById('peFormTitle').textContent = 'Add Engine to Pool';
+      document.getElementById('peSaveBtn').textContent   = '+ Add Engine';
+      document.getElementById('peCancelBtn').style.display = 'none';
+    }
+
+    async function deletePoolEngine(id, drawNum) {
+      if (!confirm(`Delete engine Draw #${drawNum} from the pool? This cannot be undone.`)) return;
+      try {
+        const r = await fetch(`/api/poolEngines/${id}`, { method:'DELETE' });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Failed to delete');
+        loadPoolEngines();
+      } catch(e) {
+        alert('Error: ' + e.message);
       }
     }
 
@@ -3516,6 +3899,7 @@
 
         const result = await response.json();
         if (!result.success) throw new Error(result.error?.message || 'Failed to load messages');
+
 
         const messages = result.data.messages || [];
         displayMessages(messages);
@@ -3611,7 +3995,8 @@
         
         if (!data.success) throw new Error(data.message || 'Failed to load events');
         
-        displayEvents(data.events || []);
+        window._adminEvents = data.events || [];
+        displayEvents(window._adminEvents);
       } catch (err) {
         console.error('loadEvents error:', err);
         document.getElementById('eventsTable').innerHTML = `<tr><td colspan="8" style="color: #ef4444;">Error: ${err.message}</td></tr>`;
@@ -3656,6 +4041,7 @@
             <td>${created}</td>
             <td>
               <button class="action-btn" onclick="editEvent('${event.event_id}')" style="margin-right: 5px;">Edit</button>
+              <button class="action-btn" onclick="openEventPricingModal('${event.event_id}')" style="background:#a855f7;margin-right:5px;">⚙ Pricing</button>
               <button class="action-btn" onclick="viewRegistrations('${event.event_id}')" style="background: #3b82f6;">Registrations</button>
             </td>
           </tr>
@@ -3787,6 +4173,190 @@
     function closeEventModal() {
       document.getElementById('eventModal').style.display = 'none';
       currentEvent = null;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // EVENT PRICING CONFIG MODAL
+    // ═══════════════════════════════════════════════════════════
+    const EP_CLASSES = ['CADET', 'MINI ROK', 'MINI ROK U/10', 'OK-J', 'OK-N', 'KZ2'];
+    const EP_BASE_DEFAULTS = {
+      'CADET':         { natP1:2950, natPB:5900, regP1:2950, regPB:5900, hasEngine:false, hasFuel:false, hasTyres:false, tyrP1:3520, tyrPB:5800, engP1:0, engPB:0, fuelP1:0, fuelPB:0, transP1:250, transPB:500, pracUnit:3520, wetPrice:4400 },
+      'MINI ROK':      { natP1:3950, natPB:6500, regP1:2950, regPB:5900, hasEngine:true,  hasFuel:true,  hasTyres:true,  tyrP1:3520, tyrPB:5800, engP1:3500, engPB:5800, fuelP1:405, fuelPB:810,  transP1:250, transPB:500, pracUnit:3520, wetPrice:4400 },
+      'MINI ROK U/10': { natP1:3950, natPB:6500, regP1:2950, regPB:5900, hasEngine:true,  hasFuel:true,  hasTyres:true,  tyrP1:3520, tyrPB:5800, engP1:3500, engPB:5800, fuelP1:405, fuelPB:810,  transP1:250, transPB:500, pracUnit:3520, wetPrice:4400 },
+      'OK-J':          { natP1:3950, natPB:6500, regP1:2950, regPB:5900, hasEngine:true,  hasFuel:true,  hasTyres:true,  tyrP1:4730, tyrPB:8000, engP1:6500, engPB:11000, fuelP1:720, fuelPB:1440, transP1:250, transPB:500, pracUnit:4730, wetPrice:5500 },
+      'OK-N':          { natP1:3950, natPB:6500, regP1:2950, regPB:5900, hasEngine:true,  hasFuel:true,  hasTyres:true,  tyrP1:4730, tyrPB:8000, engP1:6500, engPB:11000, fuelP1:720, fuelPB:1440, transP1:250, transPB:500, pracUnit:4730, wetPrice:5500 },
+      'KZ2':           { natP1:3950, natPB:6500, regP1:2950, regPB:5900, hasEngine:true,  hasFuel:true,  hasTyres:true,  tyrP1:4730, tyrPB:8000, engP1:6500, engPB:11000, fuelP1:720, fuelPB:1440, transP1:250, transPB:500, pracUnit:4730, wetPrice:5500 },
+    };
+
+    // Build modal DOM once
+    (function buildEPModal() {
+      const modal = document.createElement('div');
+      modal.id = 'eventPricingModal';
+      modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:2000;overflow-y:auto;padding:16px;';
+      modal.innerHTML = `
+        <div style="background:#0f0f0f;border:1px solid rgba(255,255,255,0.14);max-width:700px;margin:36px auto;border-radius:10px;box-shadow:0 30px 60px rgba(0,0,0,.8);">
+          <div style="padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.10);display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <h2 style="margin:0 0 3px;font-size:17px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.06em;">⚙ Entry Pricing Config</h2>
+              <div style="font-size:12px;color:#a855f7;font-weight:600;" id="epEventLabel">—</div>
+            </div>
+            <button type="button" onclick="closeEventPricingModal()" style="background:none;border:none;font-size:26px;cursor:pointer;color:#6b7280;line-height:1;">×</button>
+          </div>
+          <div style="padding:14px 20px 0;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:6px;flex-wrap:wrap;overflow-x:auto;" id="epClassTabs"></div>
+          <div style="padding:20px;" id="epPanelContainer"></div>
+          <div style="padding:14px 20px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div style="font-size:11px;color:#6b7280;">Purple dot = custom config saved. Other classes use portal defaults.</div>
+            <div style="display:flex;gap:8px;">
+              <button type="button" onclick="closeEventPricingModal()" style="padding:8px 18px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:#9ca3af;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Close</button>
+              <button type="button" id="epSaveBtn" onclick="saveCurrentEPClass()" style="padding:8px 22px;background:#a855f7;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:700;">Save Class</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    })();
+
+    let _epEventId = '', _epEventName = '', _epCurrentClass = 'MINI ROK', _epConfigs = {};
+
+    async function openEventPricingModal(eventId) {
+      const evRec = (window._adminEvents || []).find(e => e.event_id === eventId);
+      _epEventId = eventId;
+      _epEventName = evRec ? evRec.event_name : eventId;
+      _epConfigs = {};
+      document.getElementById('epEventLabel').textContent = eventName;
+      document.getElementById('eventPricingModal').style.display = 'block';
+      try {
+        const res  = await fetch('/api/getEventPricing/' + eventId);
+        const data = await res.json();
+        if (data.success) _epConfigs = data.pricing || {};
+      } catch(e) {}
+      renderEPTabs();
+      switchEPClass('MINI ROK');
+    }
+
+    function closeEventPricingModal() {
+      document.getElementById('eventPricingModal').style.display = 'none';
+    }
+
+    function renderEPTabs() {
+      document.getElementById('epClassTabs').innerHTML = EP_CLASSES.map(cls => {
+        const sid = cls.replace(/[\s/]/g,'_');
+        const dot = _epConfigs[cls] ? ' <span style="color:#a855f7;font-size:9px;vertical-align:super;">●</span>' : '';
+        return `<button id="epTab_${sid}" type="button" onclick="switchEPClass('${cls}')"
+          style="padding:7px 13px;border:1px solid rgba(255,255,255,0.12);border-radius:6px 6px 0 0;
+                 background:transparent;color:#9ca3af;font-size:12px;font-weight:700;cursor:pointer;
+                 white-space:nowrap;position:relative;bottom:-1px;border-bottom:none;">${cls}${dot}</button>`;
+      }).join('');
+    }
+
+    function switchEPClass(cls) {
+      _epCurrentClass = cls;
+      EP_CLASSES.forEach(c => {
+        const btn = document.getElementById('epTab_' + c.replace(/[\s/]/g,'_'));
+        if (!btn) return;
+        const active = c === cls;
+        btn.style.background  = active ? '#0f0f0f' : 'transparent';
+        btn.style.color       = active ? '#fff'    : '#9ca3af';
+        btn.style.borderColor = active ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)';
+      });
+      const c = Object.assign({}, EP_BASE_DEFAULTS[cls] || EP_BASE_DEFAULTS['MINI ROK'], _epConfigs[cls] || {});
+      renderEPPanel(cls, c);
+    }
+
+    function epNum(key, label, val) {
+      return `<div style="flex:1;min-width:110px;">
+        <div style="font-size:10px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">${label}</div>
+        <input id="ep_${key}" type="number" value="${val}"
+          style="width:100%;padding:8px 10px;background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.14);
+                 border-radius:5px;font-size:14px;font-weight:700;outline:none;box-sizing:border-box;">
+      </div>`;
+    }
+
+    function epCheck(key, label, checked) {
+      return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:#9ca3af;padding-bottom:6px;">
+        <input type="checkbox" id="ep_${key}" ${checked?'checked':''} style="width:15px;height:15px;accent-color:#a855f7;cursor:pointer;">${label}
+      </label>`;
+    }
+
+    function epRow(fields) {
+      return `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">${fields}</div>`;
+    }
+
+    function epHeading(txt, col) {
+      return `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.10em;color:${col};margin-bottom:6px;">${txt}</div>`;
+    }
+
+    function renderEPPanel(cls, c) {
+      const isCadet = cls === 'CADET';
+      const isMini  = cls === 'MINI ROK' || cls === 'MINI ROK U/10';
+      let html = `<div style="font-size:11px;color:#6b7280;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.18);border-radius:6px;padding:10px 12px;margin-bottom:16px;">
+        Configuring prices for <strong style="color:#c084fc;">${cls}</strong> at <strong style="color:#fff;">${_epEventName}</strong>.
+        Leave as default or adjust for this specific event. Save per class independently.
+      </div>`;
+
+      // Entry fees
+      html += epHeading('Entry Fee', '#22c55e');
+      html += epRow(epNum('natP1','National · 1 Day',c.natP1) + epNum('natPB','National · Both Days',c.natPB) + epNum('regP1','Regional · 1 Day',c.regP1) + epNum('regPB','Regional · Both Days',c.regPB));
+
+      // Race tyres
+      html += epHeading('Race Tyres (' + (isMini||isCadet ? 'Mini/Cadet spec' : 'Senior spec') + ')', '#93c5fd');
+      html += epRow(epNum('tyrP1','1 Day',c.tyrP1) + epNum('tyrPB','Both Days',c.tyrPB) + epCheck('hasTyres','Available for this class',!!c.hasTyres));
+
+      // Engine + fuel (not cadet)
+      if (!isCadet) {
+        html += epHeading('Engine Rental (' + (isMini ? 'Mini ROK' : 'OK / KZ2') + ')', '#fcd34d');
+        html += epRow(epNum('engP1','1 Day',c.engP1) + epNum('engPB','Both Days',c.engPB) + epCheck('hasEngine','Required for class',!!c.hasEngine));
+        html += epHeading('Controlled Fuel', '#fcd34d');
+        html += epRow(epNum('fuelP1','1 Day',c.fuelP1) + epNum('fuelPB','Both Days',c.fuelPB) + epCheck('hasFuel','Required for class',!!c.hasFuel));
+      }
+
+      // Transponder
+      html += epHeading('Transponder Rental', '#a855f7');
+      html += epRow(epNum('transP1','1 Day',c.transP1) + epNum('transPB','Both Days',c.transPB));
+
+      // Practice tyres + wets
+      html += epHeading('Practice Tyres &amp; Wet Tyres (optional add-ons)', '#f97316');
+      html += epRow(
+        epNum('pracUnit','Practice Tyres — per set',c.pracUnit) +
+        epNum('wetPrice','Wet Tyres — flat price (1 set)',c.wetPrice)
+      );
+
+      document.getElementById('epPanelContainer').innerHTML = html;
+    }
+
+    async function saveCurrentEPClass() {
+      const cls = _epCurrentClass;
+      const btn = document.getElementById('epSaveBtn');
+      const orig = btn.textContent;
+      btn.textContent = 'Saving…'; btn.disabled = true;
+      const g = k => {
+        const el = document.getElementById('ep_' + k);
+        if (!el) return undefined;
+        return el.type === 'checkbox' ? el.checked : (parseFloat(el.value) || 0);
+      };
+      const config = {
+        natP1:g('natP1'), natPB:g('natPB'), regP1:g('regP1'), regPB:g('regPB'),
+        tyrP1:g('tyrP1'), tyrPB:g('tyrPB'), hasTyres:g('hasTyres'),
+        engP1:g('engP1'), engPB:g('engPB'), hasEngine:g('hasEngine'),
+        fuelP1:g('fuelP1'), fuelPB:g('fuelPB'), hasFuel:g('hasFuel'),
+        transP1:g('transP1'), transPB:g('transPB'),
+        pracUnit:g('pracUnit'), wetPrice:g('wetPrice')
+      };
+      try {
+        const res = await fetch('/api/saveEventPricing', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ eventId: _epEventId, className: cls, config })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Save failed');
+        _epConfigs[cls] = config;
+        renderEPTabs();
+        switchEPClass(cls);
+        showToast('✅ ' + cls + ' pricing saved', 'success');
+      } catch(err) {
+        showToast('Error: ' + err.message, 'error');
+      } finally {
+        btn.textContent = orig; btn.disabled = false;
+      }
     }
 
     // Quick Add Entry Functions
@@ -6377,7 +6947,12 @@
             <td style="padding: 8px; text-align: center; color: #475569; border: 1px solid #e5e7eb;">${entry.race_class || '-'}</td>
             <td class="${getFlashClass('engine_serial')}" style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #059669; border: 1px solid #e5e7eb;">${entry.engine_serial || '-'}</td>
             <td class="${getFlashClass('engine_serial')}" style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.engine_assigned_at)}</td>
-            <td class="${getFlashClass('engine_returned')}" style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">${formatBool(entry.engine_returned)}</td>
+            <td class="${getFlashClass('engine_returned')}" style="padding: 8px; text-align: center; color: #64748b; border: 1px solid #e5e7eb;">
+              ${entry.engine_returned
+                ? `<span style="color:#22c55e;font-weight:700;">✅</span>&nbsp;<button onclick="viewReturnSig('${entry.entry_id}')" title="View return signature" style="font-size:14px;background:none;border:1px solid #d1d5db;border-radius:6px;padding:2px 6px;cursor:pointer;color:#0ea5e9;">🖊️ Sig</button>`
+                : formatBool(entry.engine_returned)
+              }
+            </td>
             <td class="${getFlashClass('engine_returned')}" style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.engine_returned_at)}</td>
             <td class="${getFlashClass('transponder_serial')}" style="padding: 8px; text-align: center; font-family: monospace; font-weight: bold; color: #3b82f6; border: 1px solid #e5e7eb;">${entry.transponder_serial || '-'}</td>
             <td class="${getFlashClass('transponder_serial')}" style="padding: 8px; text-align: center; font-size: 10px; color: #64748b; border: 1px solid #e5e7eb;">${formatDate(entry.transponder_assigned_at)}</td>
@@ -6608,6 +7183,130 @@
         `;
       }
     }
+
+    async function showSealHistory(serial) {
+      const panel = document.getElementById('sealHistoryPanel');
+      const title = document.getElementById('sealHistoryTitle');
+      const body  = document.getElementById('sealHistoryBody');
+      title.textContent = '🔒 Seal Number History — Engine: ' + serial;
+      body.textContent = 'Loading…';
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      try {
+        const r = await fetch('/api/engineSealHistory?serial=' + encodeURIComponent(serial));
+        const d = await r.json();
+        if (!d.success) { body.textContent = 'Error: ' + d.error; return; }
+        const { engine, history, was_deleted, deleted_at } = d;
+        const fmt = iso => iso ? new Date(iso).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+        // Deleted-engine notice
+        let deletedBanner = '';
+        if (was_deleted || engine.deleted) {
+          deletedBanner = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 12px;margin-bottom:12px;color:#991b1b;font-size:12px;">'
+            + '⚠️ <strong>This engine has been deleted</strong> from the pool'
+            + (deleted_at ? ' (removed ' + fmt(deleted_at) + ')' : '') + '. History shown from audit records.'
+            + '</div>';
+        }
+
+        const seals = [];
+        if (history.length === 0) {
+          if (engine.seal_number) {
+            seals.push({ seal: engine.seal_number, first: engine.created_at, last: null, current: true });
+          } else {
+            body.innerHTML = deletedBanner + '<p style="color:#94a3b8;font-style:italic;">No seal numbers recorded for this engine yet.</p>';
+            return;
+          }
+        } else {
+          if (history[0].old_value && history[0].old_value !== '(none)') {
+            seals.push({ seal: history[0].old_value, first: engine.created_at, last: history[0].created_at, current: false });
+          }
+          history.forEach((h, i) => {
+            if (h.new_value && h.new_value !== '(none)') {
+              const next = history[i + 1];
+              seals.push({ seal: h.new_value, first: h.created_at, last: next ? next.created_at : null, current: !next });
+            }
+          });
+        }
+        if (!seals.length) {
+          body.innerHTML = deletedBanner + '<p style="color:#94a3b8;font-style:italic;">No seal numbers recorded for this engine yet.</p>';
+          return;
+        }
+        let html = deletedBanner + '<div style="font-size:12px;color:#64748b;margin-bottom:14px;">Draw&nbsp;#<strong>'
+          + (engine.draw_number || '—') + '</strong>&nbsp;&middot;&nbsp;Class:&nbsp;<strong>'
+          + (engine.class || '—') + '</strong>&nbsp;&middot;&nbsp;First added:&nbsp;<strong>'
+          + fmt(engine.created_at) + '</strong></div>';
+        html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+        [...seals].reverse().forEach(function(s) {
+          var isCurrent = s.current;
+          var badge = isCurrent
+            ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:8px;">CURRENT</span>'
+            : '<span style="background:#f1f5f9;color:#64748b;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:8px;">PREVIOUS</span>';
+          var range = isCurrent
+            ? '<span style="color:#16a34a;">First seen: ' + fmt(s.first) + ' → <strong>Still active</strong></span>'
+            : '<span style="color:#64748b;">First seen: ' + fmt(s.first) + ' → Replaced: ' + fmt(s.last) + '</span>';
+          html += '<div style="display:flex;align-items:center;gap:12px;background:' + (isCurrent ? '#f0fdf4' : '#f8fafc')
+            + ';border:1px solid ' + (isCurrent ? '#bbf7d0' : '#e2e8f0')
+            + ';border-radius:8px;padding:10px 14px;">'
+            + '<span style="font-size:20px;">🔒</span>'
+            + '<div style="flex:1;">'
+            + '<div style="font-family:monospace;font-weight:700;font-size:15px;color:#1e293b;">' + s.seal + badge + '</div>'
+            + '<div style="font-size:11px;margin-top:3px;">' + range + '</div>'
+            + '</div></div>';
+        });
+        html += '</div>';
+        body.innerHTML = html;
+      } catch (e) {
+        body.textContent = 'Error: ' + e.message;
+      }
+    }
+
+      async function viewReturnSig(entryId) {
+    const modal = document.getElementById('sigViewerModal');
+    document.getElementById('sigModalMeta').textContent = 'Loading…';
+    document.getElementById('sigModalImg').innerHTML = '';
+    document.getElementById('sigModalNotes').textContent = '';
+    modal.style.display = 'flex';
+    try {
+      const r = await fetch(`/api/engineReturnSignature?entryId=${encodeURIComponent(entryId)}`);
+      const d = await r.json();
+      if (!d.success) {
+        document.getElementById('sigModalMeta').textContent = 'No return record found for this entry.';
+        return;
+      }
+      document.getElementById('sigModalMeta').innerHTML = `
+        <strong>Driver:</strong> ${d.driver_name || '—'}<br>
+        <strong>Engine:</strong> ${d.engine_serial || '—'}<br>
+        <strong>Returned:</strong> ${d.returned_at ? new Date(d.returned_at).toLocaleString('en-ZA') : '—'}
+      `;
+      if (d.has_signature && d.signature_data) {
+        document.getElementById('sigModalImg').innerHTML = `<img src="${d.signature_data}" style="max-width:100%;border-radius:6px;">`;
+      } else {
+        document.getElementById('sigModalImg').innerHTML = '<p style="color:#94a3b8;padding:20px;text-align:center;">No signature image recorded</p>';
+      }
+      if (d.notes) document.getElementById('sigModalNotes').textContent = 'Notes: ' + d.notes;
+    } catch(e) {
+      document.getElementById('sigModalMeta').textContent = 'Error loading record: ' + e.message;
+    }
+  }
+
+  function closeSigModal() {
+    document.getElementById('sigViewerModal').style.display = 'none';
+  }
+
   </script>
+
+  <!-- Return Signature Viewer Modal -->
+  <div id="sigViewerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSigModal()">
+    <div style="background:#fff;border-radius:16px;padding:24px;max-width:480px;width:90%;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;color:#1e293b;font-size:18px;">🖊️ Engine Return Signature</h3>
+        <button onclick="closeSigModal()" style="font-size:22px;background:none;border:none;cursor:pointer;color:#64748b;line-height:1;">✕</button>
+      </div>
+      <div id="sigModalMeta" style="font-size:13px;color:#475569;line-height:1.8;background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0;"></div>
+      <div id="sigModalImg" style="text-align:center;background:#0f172a;border-radius:8px;padding:8px;min-height:80px;display:flex;align-items:center;justify-content:center;"></div>
+      <div id="sigModalNotes" style="font-size:11px;color:#94a3b8;word-break:break-word;"></div>
+    </div>
+  </div>
+
 </body>
 </html>

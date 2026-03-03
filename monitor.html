@@ -258,7 +258,21 @@
     }
 
     /* right meta column */
-    .card .meta-col { text-align: right; }
+    .card .meta-col {
+      text-align: right;
+      min-width: 0;
+      max-width: 150px;
+    }
+    .card .event-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      margin-bottom: 4px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
     .card .time {
       font-size: 22px;
       font-weight: 900;
@@ -267,6 +281,30 @@
       line-height: 1;
     }
     .card .ago { font-size: 10px; color: #334155; margin-top: 3px; letter-spacing: 1px; }
+
+    /* engine serial centre column — only present on .card--eng */
+    .card--eng {
+      grid-template-columns: 80px 1fr 1fr auto;
+    }
+    .card .serial-col {
+      text-align: center;
+      padding: 0 8px;
+    }
+    .card .serial-col .serial-val {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      line-height: 1;
+      color: var(--serial-color, #f59e0b);
+    }
+    .card .serial-col .serial-lbl {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #334155;
+      margin-top: 3px;
+    }
 
     /* error state */
     .card.is-error { background: #1a0a0a; }
@@ -533,9 +571,16 @@ function buildCard(evt, isNew = false) {
   const clsColor = classColour(cls);
   const serial = evt.equipment_serial ? evt.equipment_serial.toUpperCase() : null;
   const notes = (evt.notes || '').replace(/ ?· ?SN:.*$/i, '').trim(); // strip SN from notes, render separately
+  const noTicket = (evt.barcode_scanned || '').toUpperCase() === 'NO-TICKET' || notes.includes('[NO TICKET SCANNED]');
+  const eventName = evt.event_name || null;
+
+  // Engine serial shown in its own centre column for all engine-type events
+  const isEngineEvent = ['engine_assign','engine_return','LOAN_ASSIGN','LOAN_RETURN','engine_verify'].includes(evt.scan_type);
+  const showSerialCentre = isEngineEvent && serial;
 
   const card = document.createElement('div');
-  card.className = `card ${cfg.cssClass}`;
+  card.className = `card ${cfg.cssClass}${showSerialCentre ? ' card--eng' : ''}`;
+  card.style.setProperty('--serial-color', clsColor);
   card.setAttribute('data-id', evt.log_id || '');
   card.innerHTML = `
     <div class="badge-col">
@@ -547,16 +592,26 @@ function buildCard(evt, isNew = false) {
         <span class="driver-name">${driverName}</span>
         ${cls ? `<span class="class-badge" style="color:${clsColor};border-color:${clsColor}44;">${cls}</span>` : ''}
       </div>
-      ${barcode ? `<div class="barcode">${barcode}</div>` : ''}
+      ${!showSerialCentre && barcode ? `<div class="barcode">${barcode}</div>` : ''}
       <div class="notes-row">
-        ${serial ? `<span style="color:#ffffff;font-weight:900;letter-spacing:1px;">SN: ${serial}</span>` : ''}
-        ${serial && notes ? ' &nbsp;·&nbsp; ' : ''}
+        ${!showSerialCentre && serial ? `<span style="color:#ffffff;font-weight:900;letter-spacing:1px;">SN: ${serial}</span>` : ''}
+        ${!showSerialCentre && serial && notes ? ' &nbsp;·&nbsp; ' : ''}
         ${notes}
+        ${noTicket ? ' &nbsp;<span style="color:#f87171;font-weight:900;font-size:10px;letter-spacing:.5px;">⚠ NO TICKET</span>' : ''}
       </div>
     </div>
+    ${showSerialCentre ? `
+    <div class="serial-col">
+      <div class="serial-val">${serial}</div>
+      <div class="serial-lbl">Engine</div>
+    </div>` : ''}
     <div class="meta-col">
+      ${eventName ? `<div class="event-tag">${eventName}</div>` : ''}
       <div class="time">${formatTime(evt.scan_timestamp)}</div>
       <div class="ago">${isNew ? 'just now' : timeAgo(evt.scan_timestamp)}</div>
+      ${evt.scanned_by && evt.scanned_by !== 'Unknown' && evt.scanned_by !== 'System' && evt.scanned_by !== 'Check Station'
+        ? `<div style="font-size:9px;color:#475569;letter-spacing:.5px;margin-top:3px;">${evt.scanned_by.toUpperCase()}</div>`
+        : ''}
     </div>
   `;
   return card;

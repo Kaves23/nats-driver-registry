@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Race Entry — Offline Test</title>
+  <style>
+    :root {
+      --bg: #000;
+      --surface: #0a0a0a;
+      --surface2: #111;
+      --border: rgba(255,255,255,0.10);
+      --border-strong: rgba(255,255,255,0.18);
+      --ink: #ffffff;
+      --muted: #9ca3af;
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.10);
+      --green-border: rgba(34,197,94,0.35);
+      --blue: #3b82f6;
+      --blue-dim: rgba(59,130,246,0.10);
+      --blue-border: rgba(59,130,246,0.30);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245,158,11,0.10);
+      --amber-border: rgba(245,158,11,0.35);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.08);
+      --radius: 8px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+    }
+    .container { max-width: 540px; margin: 0 auto; }
+
+    /* ── HEADER ── */
+    .hdr {
+      text-align: center;
+      margin-bottom: 28px;
+      padding: 24px 20px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+    }
+    .hdr-eyebrow {
+      font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 6px; font-weight: 700;
+    }
+    .hdr h1 { font-size: 22px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .hdr-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .offline-badge {
+      display: inline-block; margin-top: 10px;
+      padding: 3px 10px; background: var(--amber-dim);
+      color: var(--amber); border: 1px solid var(--amber-border);
+      border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+
+    /* ── STEP HEADER ── */
+    .step-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .14em; color: var(--muted); margin-bottom: 6px;
+    }
+    .step-title {
+      font-size: 16px; font-weight: 800; margin-bottom: 20px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      margin-bottom: 16px;
+    }
+
+    /* ── CHOICE TILES ── */
+    .tile-group { display: grid; gap: 10px; }
+    .tile-group.cols2 { grid-template-columns: 1fr 1fr; }
+    .tile-group.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+    .tile {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+    }
+    .tile:hover { border-color: var(--border-strong); background: var(--surface2); }
+    .tile.selected { border-color: var(--green); background: var(--green-dim); }
+    .tile.selected.amber { border-color: var(--amber); background: var(--amber-dim); }
+    .tile.selected.blue { border-color: var(--blue); background: var(--blue-dim); }
+    .tile-icon { font-size: 22px; margin-bottom: 6px; }
+    .tile-name { font-size: 13px; font-weight: 700; }
+    .tile-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .tile.selected .tile-sub { color: inherit; }
+
+    /* ── FORM FIELDS ── */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .field input, .field select {
+      width: 100%; padding: 12px 14px;
+      background: var(--surface2); color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px; font-size: 15px; outline: none;
+      transition: border-color .15s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--green); }
+    .field select option { background: #111; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── PRICING ITEMS ── */
+    .price-item {
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 14px;
+      margin-bottom: 10px;
+      transition: border-color .15s, background .15s;
+    }
+    .price-item.required { border-color: var(--blue-border); background: var(--blue-dim); }
+    .price-item.optional { border-color: var(--border); }
+    .price-item.optional.checked { border-color: var(--green-border); background: var(--green-dim); }
+    .price-item.locked { opacity: .45; }
+    .price-item-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .price-item-name { font-size: 14px; font-weight: 700; }
+    .price-item-amount { font-size: 14px; font-weight: 800; color: var(--green); white-space: nowrap; margin-left: 10px; }
+    .price-item-tag {
+      display: inline-block; margin-top: 4px;
+      padding: 2px 8px; border-radius: 12px;
+      font-size: 10px; font-weight: 700;
+    }
+    .tag-required { background: var(--blue-dim); color: #93c5fd; border: 1px solid var(--blue-border); }
+    .tag-optional { background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); }
+    .tag-locked { background: rgba(255,255,255,.04); color: var(--muted); border: 1px solid var(--border); }
+    .price-item-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .price-item label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .price-item input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--green); flex-shrink: 0; }
+
+    /* ── TOTAL BAR ── */
+    .total-bar {
+      background: var(--surface2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 18px 18px 14px;
+      margin-bottom: 16px;
+    }
+    .total-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .total-divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+    .total-final { display: flex; justify-content: space-between; align-items: center; }
+    .total-final-label { font-size: 14px; font-weight: 700; }
+    .total-final-amount { font-size: 22px; font-weight: 900; color: var(--green); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      width: 100%; padding: 14px; border: none; border-radius: 6px;
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      text-transform: uppercase; letter-spacing: .06em;
+      transition: filter .15s;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn:active { filter: brightness(.9); }
+    .btn-green { background: var(--green); color: #000; }
+    .btn-outline { background: transparent; color: var(--muted); border: 1px solid var(--border-strong); margin-top: 10px; }
+    .btn-red { background: var(--red); color: #fff; }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── STEP NAVIGATION ── */
+    .step-nav { display: flex; gap: 6px; margin-bottom: 22px; }
+    .step-dot {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: var(--border-strong);
+      transition: background .2s;
+    }
+    .step-dot.done { background: var(--green); }
+    .step-dot.active { background: var(--amber); }
+
+    /* ── SUMMARY / ENTRIES LIST ── */
+    .entry-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .entry-card-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .entry-card-meta { font-size: 12px; color: var(--muted); }
+    .entry-card-total { font-size: 18px; font-weight: 800; color: var(--green); margin-top: 8px; }
+    .badge {
+      display: inline-block; padding: 2px 9px;
+      border-radius: 12px; font-size: 10px; font-weight: 700;
+      margin-right: 4px;
+    }
+    .badge-national { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber-border); }
+    .badge-regional { background: var(--blue-dim); color: #93c5fd; border: 1px solid var(--blue-border); }
+    .badge-both { background: rgba(34,197,94,.12); color: var(--green); border: 1px solid var(--green-border); }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #1a1a1a; border: 1px solid var(--border-strong);
+      color: var(--ink); padding: 12px 22px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; z-index: 9999;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .toast.show { opacity: 1; }
+
+    .empty-state {
+      text-align: center; padding: 40px 20px; color: var(--muted);
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .3; }
+    .section-toggle {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; cursor: pointer;
+    }
+    .section-toggle-line { flex: 1; height: 1px; background: var(--border); }
+
+    @media (max-width: 400px) {
+      .tile-group.cols3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-eyebrow">ROK Cup South Africa · 2026</div>
+    <h1>Race Entry</h1>
+    <div class="hdr-sub">Weekend 2 — National Rnd 1 &amp; 2 · NR Rnd 2 &amp; 3</div>
+    <div class="offline-badge">⚡ OFFLINE TEST MODE — entries saved locally</div>
+    <div style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <label for="testClassSelect" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Testing as:</label>
+      <select id="testClassSelect" onchange="setTestClass(this.value)"
+        style="padding:6px 12px;background:#111;color:#fff;border:1px solid rgba(255,255,255,0.20);border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;outline:none;">
+        <option value="CADET">CADET</option>
+        <option value="MINI ROK U/10">MINI ROK U/10</option>
+        <option value="MINI ROK" selected>MINI ROK</option>
+        <option value="OK-J">OK-J</option>
+        <option value="OK-N">OK-N</option>
+        <option value="KZ2">KZ2</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- STEP PROGRESS -->
+  <div class="step-nav" id="stepNav">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+
+  <!-- STEP 0: Championship & Days -->
+  <div id="step0">
+    <div class="card">
+      <div class="step-label">Step 1 of 4</div>
+      <div class="step-title">Championship &amp; Race Days</div>
+
+      <div class="field">
+        <label>I am entering as a…</label>
+        <div class="tile-group cols3" id="champTiles">
+          <div class="tile" data-val="National" onclick="selectChamp('National')">
+            <div class="tile-icon">🏆</div>
+            <div class="tile-name">National</div>
+            <div class="tile-sub">ROK NATS</div>
+          </div>
+          <div class="tile" data-val="Regional" onclick="selectChamp('Regional')">
+            <div class="tile-icon">🗺️</div>
+            <div class="tile-name">Regional</div>
+            <div class="tile-sub">NR Crown</div>
+          </div>
+          <div class="tile" data-val="Both" onclick="selectChamp('Both')">
+            <div class="tile-icon">⚡</div>
+            <div class="tile-name">Both</div>
+            <div class="tile-sub">NR + NATS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:20px;">
+        <label>Race day(s)</label>
+        <div class="tile-group cols3" id="dayTiles">
+          <div class="tile" data-val="Saturday" onclick="selectDay('Saturday')">
+            <div class="tile-icon">1️⃣</div>
+            <div class="tile-name">Saturday</div>
+            <div class="tile-sub">Day 1 only</div>
+          </div>
+          <div class="tile" data-val="Sunday" onclick="selectDay('Sunday')">
+            <div class="tile-icon">2️⃣</div>
+            <div class="tile-name">Sunday</div>
+            <div class="tile-sub">Day 2 only</div>
+          </div>
+          <div class="tile" data-val="Both" onclick="selectDay('Both')">
+            <div class="tile-icon">📅</div>
+            <div class="tile-name">Both Days</div>
+            <div class="tile-sub">Save on packages</div>
+          </div>
+        </div>
+        <div id="bothDaySaving" style="display:none; margin-top:12px; padding:10px 14px; background:var(--green-dim); border:1px solid var(--green-border); border-radius:6px; font-size:12px; color:#86efac;">
+          ✅ Both-day package pricing applied automatically
+        </div>
+      </div>
+
+      <button class="btn btn-green" style="margin-top:8px;" onclick="goStep(1)">Continue →</button>
+    </div>
+  </div>
+
+
+
+  <!-- STEP 1: Driver Details -->
+  <div id="step1" style="display:none;">
+    <div class="card">
+      <div class="step-label">Step 2 of 4</div>
+      <div class="step-title">Driver Details</div>
+
+      <div class="row2">
+        <div class="field">
+          <label>First Name *</label>
+          <input id="d_first_name" type="text" placeholder="e.g. Kayde" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label>Last Name *</label>
+          <input id="d_last_name" type="text" placeholder="e.g. Cornofsky" autocomplete="family-name">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Race Number</label>
+          <input id="d_race_number" type="text" placeholder="e.g. 17">
+        </div>
+        <div class="field">
+          <label>MSA License No.</label>
+          <input id="d_license" type="text" placeholder="e.g. 27945">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Date of Birth</label>
+          <input id="d_dob" type="date">
+        </div>
+        <div class="field">
+          <label>Team / Academy</label>
+          <input id="d_team" type="text" placeholder="Optional">
+        </div>
+      </div>
+      <div class="field">
+        <label>Transponder Number <span style="color:var(--muted);font-weight:400;">(if owned)</span></label>
+        <input id="d_transponder" type="text" placeholder="Leave blank if renting">
+      </div>
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="btn btn-outline" onclick="goStep(0)">← Back</button>
+        <button class="btn btn-green" onclick="goStep(2)">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Pricing & Add-ons -->
+  <div id="step2" style="display:none;">
+    <div class="card">
+      <div class="step-label">Step 3 of 4</div>
+      <div class="step-title" id="pricingTitle">Entry &amp; Add-ons</div>
+      <div id="pricingItemsContainer"></div>
+    </div>
+
+    <div class="total-bar" id="totalBar">
+      <div id="totalBreakdownRows"></div>
+      <hr class="total-divider">
+      <div class="total-final">
+        <div class="total-final-label">TOTAL</div>
+        <div class="total-final-amount" id="totalAmount">R0</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-green" onclick="goStep(3)">Review →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Review & Submit -->
+  <div id="step3" style="display:none;">
+    <div class="card">
+      <div class="step-label">Step 4 of 4</div>
+      <div class="step-title">Review &amp; Submit</div>
+      <div id="reviewContent"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(2)">← Edit</button>
+      <button class="btn btn-green" id="submitBtn" onclick="submitEntry()">✅ Submit Entry</button>
+    </div>
+  </div>
+
+  <!-- ENTRIES LIST -->
+  <div style="margin-top:32px;">
+    <div class="section-toggle" onclick="toggleEntries()">
+      <div class="section-toggle-line"></div>
+      <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;padding:0 10px;" id="entriesToggleLabel">📋 SAVED ENTRIES (0)</span>
+      <div class="section-toggle-line"></div>
+    </div>
+    <div id="entriesListWrap" style="display:none;">
+      <div id="entriesList"></div>
+      <button class="btn btn-outline btn-red" id="clearAllBtn" style="display:none;border-color:var(--red);color:var(--red);margin-top:6px;" onclick="clearAllEntries()">🗑 Clear All Entries</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── STATE ───────────────────────────────────────────────────────────────
+  function setTestClass(val) {
+    state.cls = val;
+  }
+
+  let state = {
+    champ: '',      // 'National' | 'Regional' | 'Both'
+    days:  '',      // 'Saturday' | 'Sunday' | 'Both'
+    cls:   'MINI ROK',   // comes from header selector
+    firstName: '', lastName: '', raceNumber: '', license: '',
+    dob: '', team: '', transponder: '',
+    items: {}       // { itemKey: true/false }
+  };
+
+  // ─── PRICING TABLES ──────────────────────────────────────────────────────
+  // Each entry = { name, price1Day, priceBoth, required(fn), optional, disabled, note }
+  // required(state) => true if mandatory given championship
+
+  const NATIONAL_MINI = [
+    { key:'entry',       name:'Race Entry',        price1: 3950, priceBoth: 6500,  required: ()=>true, tag:'entry' },
+    { key:'tyres',       name:'Race Tyres (set)',   price1: 3520, priceBoth: 5800,  required: s=> s.champ!=='Regional', note:'National entrants must take a new set per day' },
+    { key:'fuel',        name:'Controlled Fuel',    price1:  405, priceBoth:  810,  required: ()=>true },
+    { key:'engine',      name:'Engine Rental',      price1: 3500, priceBoth: 5800,  required: ()=>true },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  const NATIONAL_OK = [
+    { key:'entry',       name:'Race Entry',        price1: 3950, priceBoth: 6500,  required: ()=>true, tag:'entry' },
+    { key:'tyres',       name:'Race Tyres (set)',   price1: 4730, priceBoth: 8000,  required: s=> s.champ!=='Regional', note:'National entrants must take a new set per day' },
+    { key:'fuel',        name:'Controlled Fuel',    price1:  720, priceBoth: 1440,  required: ()=>true },
+    { key:'engine',      name:'Engine Rental',      price1: 6500, priceBoth:11000,  required: ()=>true },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  const CADET_NATIONAL = [
+    { key:'entry',       name:'Race Entry',        price1: 2950, priceBoth: 5900,  required: ()=>true, tag:'entry' },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  // Regional pricing (existing rates — tyres optional)
+  const REGIONAL_MINI = [
+    { key:'entry',       name:'Regional Entry',     price1: 2950, priceBoth: 5900,  required: ()=>true, tag:'entry' },
+    { key:'tyres',       name:'Race Tyres (set)',   price1: 3520, priceBoth: 5800,  optional: true,     note:'Optional for Regional entrants' },
+    { key:'fuel',        name:'Controlled Fuel',    price1:  405, priceBoth:  810,  required: ()=>true },
+    { key:'engine',      name:'Engine Rental',      price1: 3500, priceBoth: 5800,  required: ()=>true },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  const REGIONAL_OK = [
+    { key:'entry',       name:'Regional Entry',     price1: 2950, priceBoth: 5900,  required: ()=>true, tag:'entry' },
+    { key:'tyres',       name:'Race Tyres (set)',   price1: 4730, priceBoth: 8000,  optional: true,     note:'Optional for Regional entrants' },
+    { key:'fuel',        name:'Controlled Fuel',    price1:  720, priceBoth: 1440,  required: ()=>true },
+    { key:'engine',      name:'Engine Rental',      price1: 6500, priceBoth:11000,  required: ()=>true },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  const REGIONAL_CADET = [
+    { key:'entry',       name:'Regional Entry',     price1: 2950, priceBoth: 5900,  required: ()=>true, tag:'entry' },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  const BOTH_MINI = [
+    { key:'entry_nr',    name:'NR Regional Entry',     price1: 2950, priceBoth: 5900,  required: ()=>true, tag:'entry', note:'Scores Northern Regions Crown' },
+    { key:'entry_nats',  name:'National Entry (ROK NATS)', price1:1000, priceBoth: 1500, required: ()=>true, tag:'addon', note:'Top-up fee to add National scoring', note2:true },
+    { key:'tyres',       name:'Race Tyres (set)',   price1: 3520, priceBoth: 5800,  required: ()=>true, note:'Required — National entry included' },
+    { key:'fuel',        name:'Controlled Fuel',    price1:  405, priceBoth:  810,  required: ()=>true },
+    { key:'engine',      name:'Engine Rental',      price1: 3500, priceBoth: 5800,  required: ()=>true },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  const BOTH_OK = [
+    { key:'entry_nr',    name:'NR Regional Entry',     price1: 2950, priceBoth: 5900,  required: ()=>true, tag:'entry', note:'Scores Northern Regions Crown' },
+    { key:'entry_nats',  name:'National Entry (ROK NATS)', price1:1000, priceBoth:600*2, required: ()=>true, tag:'addon', note:'Top-up fee to add National scoring', note2:true },
+    { key:'tyres',       name:'Race Tyres (set)',   price1: 4730, priceBoth: 8000,  required: ()=>true, note:'Required — National entry included' },
+    { key:'fuel',        name:'Controlled Fuel',    price1:  720, priceBoth: 1440,  required: ()=>true },
+    { key:'engine',      name:'Engine Rental',      price1: 6500, priceBoth:11000,  required: ()=>true },
+    { key:'transponder', name:'Transponder Rental', price1:  250, priceBoth:  500,  optional: true }
+  ];
+
+  const BOTH_CADET = [
+    { key:'entry_nr',    name:'NR Regional Entry',     price1: 2950, priceBoth: 5900,  required: ()=>true, tag:'entry' },
+    { key:'entry_nats',  name:'National Entry top-up', price1: 500, priceBoth: 900,   required: ()=>true, tag:'addon', note2:true },
+    { key:'transponder', name:'Transponder Rental',    price1: 250, priceBoth:  500,  optional: true }
+  ];
+
+  function getPricingConfig() {
+    const { cls, champ } = state;
+    const isMini = cls === 'MINI ROK' || cls === 'MINI ROK U/10';
+    const isOK   = cls === 'OK-J' || cls === 'OK-N';
+    const isCad  = cls === 'CADET';
+    // KZ2 — use regional OK structure for now
+    const isKZ2  = cls === 'KZ2';
+
+    if (champ === 'National') {
+      if (isCad)         return CADET_NATIONAL;
+      if (isMini)        return NATIONAL_MINI;
+      if (isOK || isKZ2) return NATIONAL_OK;
+    }
+    if (champ === 'Regional') {
+      if (isCad)         return REGIONAL_CADET;
+      if (isMini)        return REGIONAL_MINI;
+      if (isOK || isKZ2) return REGIONAL_OK;
+    }
+    if (champ === 'Both') {
+      if (isCad)         return BOTH_CADET;
+      if (isMini)        return BOTH_MINI;
+      if (isOK || isKZ2) return BOTH_OK;
+    }
+    return REGIONAL_MINI;
+  }
+
+  function itemPrice(item) {
+    return state.days === 'Both' ? item.priceBoth : item.price1;
+  }
+
+  // ─── NAVIGATION ─────────────────────────────────────────────────────────
+  const STEPS = 4;
+
+  function goStep(n) {
+    // Validate before advancing
+    if (n > 0 && !state.champ) { showToast('Please select a championship type'); return; }
+    if (n > 0 && !state.days)  { showToast('Please select race day(s)'); return; }
+    if (n > 1) {
+      const fn = document.getElementById('d_first_name').value.trim();
+      const ln = document.getElementById('d_last_name').value.trim();
+      if (!fn || !ln) { showToast('First and last name are required'); return; }
+      state.firstName  = fn;
+      state.lastName   = ln;
+      state.raceNumber = document.getElementById('d_race_number').value.trim();
+      state.license    = document.getElementById('d_license').value.trim();
+      state.dob        = document.getElementById('d_dob').value;
+      state.team       = document.getElementById('d_team').value.trim();
+      state.transponder= document.getElementById('d_transponder').value.trim();
+    }
+    if (n === 2) buildPricingStep();
+    if (n === 3) buildReview();
+
+    for (let i = 0; i < STEPS; i++) {
+      document.getElementById('step' + i).style.display = i === n ? '' : 'none';
+    }
+    updateDots(n);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateDots(active) {
+    for (let i = 0; i < STEPS; i++) {
+      const d = document.getElementById('dot' + i);
+      d.classList.remove('done', 'active');
+      if (i < active) d.classList.add('done');
+      else if (i === active) d.classList.add('active');
+    }
+  }
+
+  // ─── SELECTORS ──────────────────────────────────────────────────────────
+  function selectChamp(val) {
+    state.champ = val;
+    document.querySelectorAll('#champTiles .tile').forEach(t => {
+      t.classList.remove('selected','amber','blue');
+      if (t.dataset.val === val) {
+        t.classList.add('selected');
+        if (val === 'National') t.classList.add('amber');
+        else if (val === 'Regional') t.classList.add('blue');
+      }
+    });
+  }
+
+  function selectDay(val) {
+    state.days = val;
+    document.querySelectorAll('#dayTiles .tile').forEach(t => {
+      t.classList.remove('selected','amber');
+      if (t.dataset.val === val) t.classList.add('selected','amber');
+    });
+    document.getElementById('bothDaySaving').style.display = val === 'Both' ? 'block' : 'none';
+  }
+
+  // ─── PRICING STEP ────────────────────────────────────────────────────────
+  function buildPricingStep() {
+    const config = getPricingConfig();
+    const bothDays = state.days === 'Both';
+    const dayLabel = bothDays ? 'Both Days Package' : state.days + ' only';
+
+    document.getElementById('pricingTitle').textContent =
+      state.cls + ' · ' + state.champ + ' · ' + dayLabel;
+
+    // Initialise item state for required items
+    config.forEach(item => {
+      const isReq = typeof item.required === 'function' ? item.required(state) : !!item.required;
+      if (isReq && !(item.key in state.items)) state.items[item.key] = true;
+      if (item.optional && !(item.key in state.items)) state.items[item.key] = false;
+    });
+
+    let html = '';
+    config.forEach(item => {
+      const isReq = typeof item.required === 'function' ? item.required(state) : !!item.required;
+      const price = itemPrice(item);
+      const checked = isReq ? true : !!state.items[item.key];
+      const priceFmt = 'R' + price.toLocaleString('en-ZA');
+
+      let tagHtml = '';
+      if (item.tag === 'entry')   tagHtml = `<span class="price-item-tag tag-required" style="background:rgba(34,197,94,.12);color:#86efac;border-color:var(--green-border);">ENTRY FEE</span>`;
+      else if (item.tag === 'addon') tagHtml = `<span class="price-item-tag tag-required" style="background:var(--amber-dim);color:var(--amber);border-color:var(--amber-border);">ADD-ON</span>`;
+      else if (isReq)             tagHtml = `<span class="price-item-tag tag-required">REQUIRED</span>`;
+      else                        tagHtml = `<span class="price-item-tag tag-optional">OPTIONAL</span>`;
+
+      const cardClass = isReq ? 'price-item required' : ('price-item optional' + (checked ? ' checked' : ''));
+      const disabledAttr = isReq ? 'disabled checked' : (checked ? 'checked' : '');
+      const onchange = isReq ? '' : `onchange="toggleItem('${item.key}', this.checked)"`;
+
+      html += `
+        <div class="price-item ${isReq ? 'required' : 'optional' + (checked?' checked':'')}" id="picard_${item.key}">
+          <div class="price-item-top">
+            <div>
+              <div class="price-item-name">${item.name}</div>
+              ${tagHtml}
+              ${item.note ? `<div class="price-item-note">${item.note}</div>` : ''}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+              <div class="price-item-amount">${priceFmt}</div>
+              <input type="checkbox" ${disabledAttr} ${onchange}
+                style="width:18px;height:18px;accent-color:var(--green);cursor:${isReq?'not-allowed':'pointer'};">
+            </div>
+          </div>
+          ${bothDays && item.price1 !== item.priceBoth ? `<div style="font-size:11px;color:#86efac;margin-top:6px;">📅 Both-day rate applied — saving R${(item.price1*2 - item.priceBoth).toLocaleString('en-ZA')} vs 2×single</div>` : ''}
+        </div>`;
+    });
+
+    // Transponder note if driver has own
+    if (state.transponder) {
+      html += `<div style="padding:10px 14px;background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:6px;font-size:12px;color:var(--amber);margin-bottom:10px;">⚠️ Driver has own transponder (${state.transponder}) — deselect Transponder Rental if not needed</div>`;
+    }
+
+    document.getElementById('pricingItemsContainer').innerHTML = html;
+    recalcTotal(config);
+  }
+
+  function toggleItem(key, checked) {
+    state.items[key] = checked;
+    const card = document.getElementById('picard_' + key);
+    if (card) {
+      card.classList.toggle('checked', checked);
+    }
+    recalcTotal(getPricingConfig());
+  }
+
+  function recalcTotal(config) {
+    let total = 0;
+    let rows = '';
+    config.forEach(item => {
+      const isReq = typeof item.required === 'function' ? item.required(state) : !!item.required;
+      const include = isReq || !!state.items[item.key];
+      if (include) {
+        const price = itemPrice(item);
+        total += price;
+        rows += `<div class="total-row"><span>${item.name}</span><span>R${price.toLocaleString('en-ZA')}</span></div>`;
+      }
+    });
+    document.getElementById('totalBreakdownRows').innerHTML = rows;
+    document.getElementById('totalAmount').textContent = 'R' + total.toLocaleString('en-ZA');
+  }
+
+  // ─── REVIEW ─────────────────────────────────────────────────────────────
+  function buildReview() {
+    const config = getPricingConfig();
+    let total = 0;
+    let itemLines = '';
+    config.forEach(item => {
+      const isReq = typeof item.required === 'function' ? item.required(state) : !!item.required;
+      const include = isReq || !!state.items[item.key];
+      if (include) {
+        const price = itemPrice(item);
+        total += price;
+        itemLines += `<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+          <span style="color:var(--muted);">${item.name}</span>
+          <span style="font-weight:600;">R${price.toLocaleString('en-ZA')}</span>
+        </div>`;
+      }
+    });
+
+    const champBadge = state.champ === 'National'
+      ? `<span class="badge badge-national">NATIONAL</span>`
+      : state.champ === 'Regional'
+        ? `<span class="badge badge-regional">REGIONAL</span>`
+        : `<span class="badge badge-both">BOTH</span>`;
+
+    const dayBadge = `<span style="font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:10px;">${state.days === 'Both' ? '📅 Both Days' : '1️⃣ ' + state.days}</span>`;
+
+    document.getElementById('reviewContent').innerHTML = `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">DRIVER</div>
+        <div style="font-size:18px;font-weight:800;">${esc(state.firstName)} ${esc(state.lastName)}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px;">
+          ${state.raceNumber ? '#' + esc(state.raceNumber) + ' · ' : ''}${esc(state.cls)}
+          ${state.license ? ' · Lic: ' + esc(state.license) : ''}
+          ${state.team ? ' · ' + esc(state.team) : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+        ${champBadge}${dayBadge}
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:18px;">
+        ${itemLines}
+        <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;font-size:14px;">TOTAL</span>
+          <span style="font-size:20px;font-weight:900;color:var(--green);">R${total.toLocaleString('en-ZA')}</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;">⚡ This is an offline test — entry will be saved to browser storage only</div>
+    `;
+  }
+
+  // ─── SUBMIT ─────────────────────────────────────────────────────────────
+  function submitEntry() {
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Saving…';
+    btn.disabled = true;
+
+    const config = getPricingConfig();
+    let total = 0;
+    const selectedItems = [];
+    config.forEach(item => {
+      const isReq = typeof item.required === 'function' ? item.required(state) : !!item.required;
+      const include = isReq || !!state.items[item.key];
+      if (include) { total += itemPrice(item); selectedItems.push(item.name); }
+    });
+
+    const entry = {
+      id: Date.now(),
+      submittedAt: new Date().toISOString(),
+      firstName: state.firstName,
+      lastName: state.lastName,
+      raceNumber: state.raceNumber,
+      license: state.license,
+      dob: state.dob,
+      team: state.team,
+      transponder: state.transponder,
+      class: state.cls,
+      championship: state.champ,
+      days: state.days,
+      items: [...selectedItems],
+      total
+    };
+
+    const existing = JSON.parse(localStorage.getItem('offlineEntries') || '[]');
+    existing.push(entry);
+    localStorage.setItem('offlineEntries', JSON.stringify(existing));
+
+    setTimeout(() => {
+      btn.textContent = '✅ Submit Entry';
+      btn.disabled = false;
+      showToast('Entry saved for ' + entry.firstName + ' ' + entry.lastName + '!');
+      resetForm();
+      loadEntriesList();
+      document.getElementById('entriesListWrap').style.display = 'block';
+    }, 400);
+  }
+
+  function resetForm() {
+    const cls = document.getElementById('testClassSelect') ? document.getElementById('testClassSelect').value : 'MINI ROK';
+    state = { champ:'', days:'', cls, firstName:'', lastName:'', raceNumber:'', license:'', dob:'', team:'', transponder:'', items:{} };
+    document.getElementById('d_first_name').value = '';
+    document.getElementById('d_last_name').value = '';
+    document.getElementById('d_race_number').value = '';
+    document.getElementById('d_license').value = '';
+    document.getElementById('d_dob').value = '';
+    document.getElementById('d_team').value = '';
+    document.getElementById('d_transponder').value = '';
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected','amber','blue'));
+    document.getElementById('bothDaySaving').style.display = 'none';
+    goStep(0);
+  }
+
+  // ─── ENTRIES LIST ────────────────────────────────────────────────────────
+  function loadEntriesList() {
+    const entries = JSON.parse(localStorage.getItem('offlineEntries') || '[]');
+    const list = document.getElementById('entriesList');
+    const btn  = document.getElementById('clearAllBtn');
+    const lbl  = document.getElementById('entriesToggleLabel');
+    lbl.textContent = '📋 SAVED ENTRIES (' + entries.length + ')';
+
+    if (!entries.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div>No entries yet</div></div>';
+      btn.style.display = 'none';
+      return;
+    }
+    btn.style.display = 'block';
+
+    list.innerHTML = entries.slice().reverse().map(e => {
+      const badge = e.championship === 'National'
+        ? `<span class="badge badge-national">NATIONAL</span>`
+        : e.championship === 'Regional'
+          ? `<span class="badge badge-regional">REGIONAL</span>`
+          : `<span class="badge badge-both">BOTH</span>`;
+      const d = new Date(e.submittedAt);
+      const dStr = d.toLocaleTimeString('en-ZA', {hour:'2-digit',minute:'2-digit'}) + ' · ' + d.toLocaleDateString('en-ZA');
+      return `
+        <div class="entry-card">
+          <div class="entry-card-name">${esc(e.firstName)} ${esc(e.lastName)}</div>
+          <div class="entry-card-meta">
+            ${badge}
+            <span style="font-size:11px;color:var(--muted);">${esc(e.class)} · ${e.days === 'Both' ? '📅 Both Days' : '1️⃣ ' + e.days}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">${e.items.join(' · ')}</div>
+          <div class="entry-card-total">R${e.total.toLocaleString('en-ZA')}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+            <div style="font-size:10px;color:var(--muted);">${dStr}</div>
+            <button onclick="deleteEntry(${e.id})" style="background:none;border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;">Remove</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function deleteEntry(id) {
+    let entries = JSON.parse(localStorage.getItem('offlineEntries') || '[]');
+    entries = entries.filter(e => e.id !== id);
+    localStorage.setItem('offlineEntries', JSON.stringify(entries));
+    loadEntriesList();
+    showToast('Entry removed');
+  }
+
+  function clearAllEntries() {
+    if (!confirm('Clear all saved entries? This cannot be undone.')) return;
+    localStorage.removeItem('offlineEntries');
+    loadEntriesList();
+    showToast('All entries cleared');
+  }
+
+  function toggleEntries() {
+    const wrap = document.getElementById('entriesListWrap');
+    wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // ─── UTILITIES ───────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ─── INIT ────────────────────────────────────────────────────────────────
+  loadEntriesList();
+</script>
+</body>
+</html>

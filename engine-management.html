@@ -56,8 +56,8 @@
             border: 1px solid var(--border-strong);
             box-shadow: var(--shadow-strong);
             border-radius: var(--radius);
-            padding: 22px 22px 20px;
-            text-align: center;
+            padding: 10px 14px 10px;
+            text-align: left;
             margin-bottom: 16px;
             position: relative;
             overflow: hidden;
@@ -83,23 +83,37 @@
         }
         
         .header h1 {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 900;
-            letter-spacing: 0.18em;
+            letter-spacing: 0.16em;
             text-transform: uppercase;
             color: var(--ink);
             position: relative;
             z-index: 1;
+            margin: 0;
         }
-        
-        .header p {
-            font-size: 11px;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            color: var(--muted);
+
+        .event-select {
+            width: 100%;
+            padding: 7px 10px;
             margin-top: 8px;
+            background: #0a0a0a;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: var(--radius);
+            font-size: 13px;
+            letter-spacing: 0.03em;
+            cursor: pointer;
             position: relative;
             z-index: 1;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .event-select:focus {
+            outline: none;
+            border-color: var(--winter);
+            box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
         }
         
         .card {
@@ -767,7 +781,7 @@
             }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
 </head>
 <body>
     <!-- Camera Scanner Overlay -->
@@ -801,14 +815,22 @@
 
     <div class="container">
         <div class="header">
-            <h1>Engine Management</h1>
-            <p>Scan tickets & manage engine rentals</p>
+            <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:1;">
+                <h1 style="flex:1;">Engine Management</h1>
+                <span id="eventStatusDot" title="No event selected" style="width:9px;height:9px;border-radius:50%;background:#ef4444;flex-shrink:0;display:inline-block;transition:background .3s;"></span>
+            </div>
+            <select id="eventSelect" class="event-select" onchange="onEventChange()">
+                <option value="">&#9888; No event selected — tap to choose</option>
+            </select>
         </div>
 
         <!-- Main Menu -->
         <div id="mainMenu" class="card">
             <button class="btn btn-primary" onclick="startTicketScan()">
                 Scan Ticket Barcode
+            </button>
+            <button class="btn" style="background:#0369a1;color:#fff;" onclick="showRaceNumberLookup()">
+                🔢 Lookup by Race Number
             </button>
             <button class="btn btn-success" onclick="showReturnEngine()">
                 Return Engine
@@ -867,8 +889,9 @@
             </div>
             
             <!-- Engine Assignment -->
-            <div class="card hidden" id="engineAssignmentCard">
-                <h3 style="margin-bottom: 20px;">Assign Engine</h3>
+            <div class="card hidden" id="engineAssignmentCard" style="border-left:4px solid var(--eng-clr,#94a3b8);">
+                <h3 style="margin-bottom:16px;color:var(--eng-clr,#94a3b8);">🔧 Assign Engine</h3>
+                <div id="engineTicketWarn" style="display:none;margin-bottom:14px;padding:10px 12px;background:#2d0007;border:1px solid #f87171;border-radius:6px;color:#f87171;font-size:12px;font-weight:700;letter-spacing:.5px;"></div>
                 
                 <div class="input-group">
                     <label>Engine Serial Number:</label>
@@ -879,7 +902,7 @@
                     </div>
                 </div>
                 
-                <button class="btn btn-success" onclick="assignEngine()">
+                <button class="btn" style="background:var(--eng-clr,#94a3b8);color:#000;font-weight:700;" onclick="assignEngine()">
                     Assign Engine to Driver
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
@@ -888,8 +911,9 @@
             </div>
             
             <!-- Transponder Assignment -->
-            <div class="card hidden" id="transponderAssignmentCard">
-                <h3 style="margin-bottom: 20px;">Assign Transponder</h3>
+            <div class="card hidden" id="transponderAssignmentCard" style="border-left:4px solid #eab308;">
+                <h3 style="margin-bottom:16px;color:#eab308;">📡 Assign Transponder</h3>
+                <div id="transponderTicketWarn" style="display:none;margin-bottom:14px;padding:10px 12px;background:#2d0007;border:1px solid #f87171;border-radius:6px;color:#f87171;font-size:12px;font-weight:700;letter-spacing:.5px;"></div>
                 
                 <div class="input-group">
                     <label>Transponder Serial Number:</label>
@@ -900,7 +924,7 @@
                     </div>
                 </div>
                 
-                <button class="btn btn-success" onclick="assignTransponder()">
+                <button class="btn" style="background:#eab308;color:#000;font-weight:700;" onclick="assignTransponder()">
                     Assign Transponder to Driver
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
@@ -909,8 +933,9 @@
             </div>
             
             <!-- Tyre Registration -->
-            <div class="card hidden" id="tyreAssignmentCard">
-                <h3 style="margin-bottom: 20px;">Register Tyres (4 Required)</h3>
+            <div class="card hidden" id="tyreAssignmentCard" style="border-left:4px solid #3b82f6;">
+                <h3 style="margin-bottom:16px;color:#3b82f6;">🛞 Register Tyres (4 Required)</h3>
+                <div id="tyreTicketWarn" style="display:none;margin-bottom:14px;padding:10px 12px;background:#2d0007;border:1px solid #f87171;border-radius:6px;color:#f87171;font-size:12px;font-weight:700;letter-spacing:.5px;"></div>
                 
                 <div class="input-group">
                     <label>Front Left Tyre Serial:</label>
@@ -948,7 +973,7 @@
                     </div>
                 </div>
                 
-                <button class="btn btn-success" onclick="assignTyres()">
+                <button class="btn" style="background:#3b82f6;color:#fff;font-weight:700;" onclick="assignTyres()">
                     Register All Tyres
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
@@ -957,14 +982,14 @@
             </div>
             
             <!-- Fuel Collected -->
-            <div class="card hidden" id="fuelAssignmentCard">
-                <h3 style="margin-bottom: 20px;">⛽ Mark Fuel Collected</h3>
+            <div class="card hidden" id="fuelAssignmentCard" style="border-left:4px solid #22c55e;">
+                <h3 style="margin-bottom:20px;color:#22c55e;">⛽ Mark Fuel Collected</h3>
                 
                 <p style="margin-bottom: 20px; color: #666;">
                     Confirm that the driver has collected their controlled fuel allocation.
                 </p>
                 
-                <button class="btn btn-success" onclick="markFuelCollected()">
+                <button class="btn" style="background:#22c55e;color:#000;font-weight:700;" onclick="markFuelCollected()">
                     Confirm Fuel Collected
                 </button>
                 <button class="btn btn-secondary" onclick="backToMenu()">
@@ -1149,6 +1174,31 @@
         </div>
     </div>
 
+        <!-- Race Number Lookup Section -->
+        <div id="raceNumberSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom:20px;">🔢 Lookup by Race Number</h2>
+                <div class="input-group">
+                    <label>Race Number:</label>
+                    <input type="text" id="lookupRaceNumber" placeholder="e.g. 47" inputmode="numeric"
+                           style="font-size:24px;font-weight:900;letter-spacing:4px;text-align:center;">
+                </div>
+                <button class="btn btn-primary" onclick="lookupByRaceNumber()">Find Driver</button>
+                <button class="btn btn-secondary" onclick="backToMenu()">← Back</button>
+                <div id="raceNumberMessage" style="margin-top:12px;"></div>
+            </div>
+        </div>
+
+        <!-- Class Picker (when same race number in multiple classes) -->
+        <div id="classPickerSection" class="hidden">
+            <div class="card">
+                <h2 style="margin-bottom:6px;">Multiple Entries Found</h2>
+                <p style="margin-bottom:20px;">Select the correct class for this driver:</p>
+                <div id="classPickerOptions"></div>
+                <button class="btn btn-secondary" onclick="showRaceNumberLookup()">← Back</button>
+            </div>
+        </div>
+
         <!-- Manual / Practice Loan Section -->
         <div id="manualLoanSection" class="hidden">
             <div class="card">
@@ -1249,6 +1299,11 @@
         let currentTicket = null;
         let returnedEngine = null;
 
+        // Global HTML escape helper
+        function escapeHtml(str) {
+            return String(str||'').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+        }
+
         // Camera Scanner Variables
         let cameraStream = null;
         let currentTargetInput = null;
@@ -1279,12 +1334,28 @@
 
         // Check if scanner libraries are loaded
         window.addEventListener('load', () => {
-            if (typeof jsQR === 'undefined') {
-                debugLog('ERROR: jsQR library not loaded', 'error');
+            if (typeof ZXing === 'undefined') {
+                debugLog('ERROR: ZXing library not loaded', 'error');
             } else {
-                debugLog('jsQR QR code library loaded OK', 'success');
+                debugLog('ZXing multi-format barcode library loaded OK', 'success');
             }
         });
+
+        // Shared decoder instances — created once, reused across all scans
+        let _nativeDet = null;
+        let _zxReader  = null;
+        (function initDecoders() {
+            if (window.BarcodeDetector) {
+                _nativeDet = new BarcodeDetector({ formats: [
+                    'qr_code', 'code_128', 'code_39', 'code_93',
+                    'ean_13', 'ean_8', 'itf', 'data_matrix', 'aztec', 'pdf_417'
+                ]});
+                debugLog('Native BarcodeDetector ready (multi-format)', 'success');
+            }
+            if (window.ZXing) {
+                try { _zxReader = new ZXing.BrowserMultiFormatReader(); debugLog('ZXing reader ready', 'success'); } catch(_) {}
+            }
+        })();
 
         // ── QR Scanner ──────────────────────────────────────────────
         // Single entry point. Tries live streaming first; falls back to
@@ -1312,9 +1383,23 @@
             scanningActive = true;
 
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1920 }, height: { ideal: 1080 },
+                    focusMode: { ideal: 'continuous' },
+                    exposureMode: { ideal: 'continuous' },
+                    whiteBalanceMode: { ideal: 'continuous' }
+                }
             });
             cameraStream = stream;
+            // Request continuous autofocus on the track if the device supports it
+            try {
+                const track = stream.getVideoTracks()[0];
+                const caps = track.getCapabilities ? track.getCapabilities() : {};
+                if (caps.focusMode && caps.focusMode.includes('continuous')) {
+                    track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+                }
+            } catch(_) {}
 
             const scannerDiv = document.querySelector('#scanner-reader');
             scannerDiv.innerHTML = '';
@@ -1326,14 +1411,13 @@
             video.srcObject = stream;
             await video.play();
 
-            // Use native BarcodeDetector (Chrome/Android) if available, else jsQR
-            if ('BarcodeDetector' in window) {
-                const det = new BarcodeDetector({ formats: ['qr_code'] });
-                debugLog('Live — BarcodeDetector ready', 'success');
+            // Use native BarcodeDetector if available, else ZXing multi-format fallback
+            if (_nativeDet) {
+                debugLog('Live — BarcodeDetector ready (hardware-accelerated)', 'success');
                 async function liveDetect() {
                     if (!scanningActive) return;
                     try {
-                        const results = await det.detect(video);
+                        const results = await _nativeDet.detect(video);
                         if (results.length > 0) {
                             onQRFound(results[0].rawValue);
                             return;
@@ -1342,26 +1426,26 @@
                     if (scanningActive) requestAnimationFrame(liveDetect);
                 }
                 requestAnimationFrame(liveDetect);
-            } else {
-                debugLog('Live — jsQR ready', 'success');
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                function liveJsQR() {
+            } else if (_zxReader) {
+                debugLog('Live — ZXing multi-format reader ready', 'success');
+                const zxCanvas = document.createElement('canvas');
+                const zxCtx = zxCanvas.getContext('2d', { willReadFrequently: true });
+                let lastZxTime = 0;
+                function liveZXing() {
                     if (!scanningActive) return;
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                        canvas.width  = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        ctx.drawImage(video, 0, 0);
-                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
-                        if (qr && qr.data) {
-                            onQRFound(qr.data);
-                            return;
-                        }
+                    const now = Date.now();
+                    if (now - lastZxTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
+                        lastZxTime = now;
+                        zxCanvas.width = video.videoWidth;
+                        zxCanvas.height = video.videoHeight;
+                        zxCtx.drawImage(video, 0, 0);
+                        _zxReader.decodeFromCanvas(zxCanvas)
+                            .then(r => { if (r && scanningActive) { onQRFound(r.getText()); return; } })
+                            .catch(() => {});
                     }
-                    if (scanningActive) requestAnimationFrame(liveJsQR);
+                    if (scanningActive) requestAnimationFrame(liveZXing);
                 }
-                requestAnimationFrame(liveJsQR);
+                requestAnimationFrame(liveZXing);
             }
         }
 
@@ -1407,80 +1491,55 @@
             fileInput.click();
         }
 
-        // Decode QR from a loaded <img> element — tries BarcodeDetector then jsQR
+        // Decode barcode from a loaded <img> element — tries native BarcodeDetector then ZXing
         function decodeQRFromImage(img, url, inputId) {
-            if ('BarcodeDetector' in window) {
-                const det = new BarcodeDetector({ formats: ['qr_code'] });
-                det.detect(img).then(results => {
+            if (_nativeDet) {
+                _nativeDet.detect(img).then(results => {
                     URL.revokeObjectURL(url);
                     if (results.length > 0) {
                         debugLog('✓ BarcodeDetector: ' + results[0].rawValue, 'success');
                         onQRFound(results[0].rawValue);
                     } else {
-                        debugLog('BarcodeDetector found nothing, trying jsQR...', 'info');
-                        decodeWithJsQR(img, inputId);
+                        debugLog('BarcodeDetector found nothing, trying ZXing...', 'info');
+                        decodeWithZXing(img, inputId);
                     }
                 }).catch(err => {
                     URL.revokeObjectURL(url);
-                    debugLog('BarcodeDetector error: ' + err.message + ', trying jsQR...', 'error');
-                    decodeWithJsQR(img, inputId);
+                    debugLog('BarcodeDetector error: ' + err.message + ', trying ZXing...', 'error');
+                    decodeWithZXing(img, inputId);
                 });
             } else {
                 URL.revokeObjectURL(url);
-                decodeWithJsQR(img, inputId);
+                decodeWithZXing(img, inputId);
             }
         }
 
-        // jsQR decode from a loaded <img> element
-        function decodeWithJsQR(img, inputId) {
-            try {
-                // Resize large images before passing to jsQR.
-                // iPhone photos are 4032x3024 — jsQR fails when QR is tiny relative to image.
-                // Target: longest side ~800px for fast, reliable decode.
-                const MAX = 800;
-                let w = img.naturalWidth;
-                let h = img.naturalHeight;
-                if (w > MAX || h > MAX) {
-                    const scale = MAX / Math.max(w, h);
-                    w = Math.round(w * scale);
-                    h = Math.round(h * scale);
-                }
-                debugLog('jsQR decode at ' + w + 'x' + h, 'info');
-                const canvas = document.createElement('canvas');
-                canvas.width  = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                const imgData = ctx.getImageData(0, 0, w, h);
-                const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
-                if (qr && qr.data) {
-                    debugLog('✓ jsQR: ' + qr.data, 'success');
-                    onQRFound(qr.data);
-                } else {
-                    // Try once more at a higher resolution if image was big
-                    if (img.naturalWidth > MAX) {
-                        const MAX2 = 1600;
-                        let w2 = img.naturalWidth, h2 = img.naturalHeight;
-                        if (w2 > MAX2 || h2 > MAX2) { const s = MAX2 / Math.max(w2, h2); w2 = Math.round(w2*s); h2 = Math.round(h2*s); }
-                        debugLog('Retry jsQR at ' + w2 + 'x' + h2, 'info');
-                        const c2 = document.createElement('canvas');
-                        c2.width = w2; c2.height = h2;
-                        c2.getContext('2d').drawImage(img, 0, 0, w2, h2);
-                        const id2 = c2.getContext('2d').getImageData(0, 0, w2, h2);
-                        const qr2 = jsQR(id2.data, id2.width, id2.height, { inversionAttempts: 'attemptBoth' });
-                        if (qr2 && qr2.data) {
-                            debugLog('✓ jsQR retry: ' + qr2.data, 'success');
-                            onQRFound(qr2.data);
-                            return;
-                        }
-                    }
-                    debugLog('No QR code found (orig: ' + img.naturalWidth + 'x' + img.naturalHeight + ')', 'error');
-                    showError('No QR code found. Get closer to the QR code and try again.');
-                }
-            } catch(err) {
-                debugLog('jsQR error: ' + err.message, 'error');
-                showError('Decode failed — try again or type manually.');
+        // ZXing decode from a loaded <img> element (replaces jsQR — handles 1D + 2D barcodes)
+        function decodeWithJsQR(img, inputId) { decodeWithZXing(img, inputId); } // legacy alias
+        function decodeWithZXing(img, inputId) {
+            if (!_zxReader) { showError('Barcode decoder not loaded — try refreshing.'); return; }
+            // Render image onto an off-screen canvas then let ZXing decode it
+            // Resize large photos (e.g. 4032×3024) to 1600px max before decode — ZXing is accurate enough at this res
+            const MAX = 1600;
+            let w = img.naturalWidth, h = img.naturalHeight;
+            if (w > MAX || h > MAX) {
+                const scale = MAX / Math.max(w, h);
+                w = Math.round(w * scale);
+                h = Math.round(h * scale);
             }
+            debugLog('ZXing decode at ' + w + 'x' + h, 'info');
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            _zxReader.decodeFromCanvas(canvas)
+                .then(result => {
+                    debugLog('✓ ZXing: ' + result.getText(), 'success');
+                    onQRFound(result.getText());
+                })
+                .catch(() => {
+                    debugLog('No barcode found (' + img.naturalWidth + 'x' + img.naturalHeight + ')', 'error');
+                    showError('No barcode found. Get closer and ensure good lighting, then try again.');
+                });
         }
 
         // Called when any scanner method finds a QR code
@@ -1572,7 +1631,233 @@
             }
         }
 
-        // Navigation Functions
+        // ── Race Number Lookup ─────────────────────────────────────────────
+        function showRaceNumberLookup() {
+            hideAllSections();
+            document.getElementById('raceNumberSection').classList.remove('hidden');
+            const inp = document.getElementById('lookupRaceNumber');
+            inp.value = '';
+            document.getElementById('raceNumberMessage').innerHTML = '';
+            inp.focus();
+        }
+
+        async function lookupByRaceNumber() {
+            const raw = document.getElementById('lookupRaceNumber').value.trim();
+            if (!raw) { showRaceNumberMsg('Please enter a race number', 'error'); return; }
+
+            try {
+                const res  = await fetch(`/api/lookupDriverByNumber?raceNumber=${encodeURIComponent(raw)}`);
+                const data = await res.json();
+                if (!data.success) { showRaceNumberMsg(data.error || 'No confirmed entry found for that number', 'error'); return; }
+
+                // Narrow to selected event if one is active
+                const eventId = getSelectedEventId();
+                let entries = data.entries || [];
+                if (eventId) {
+                    const filtered = entries.filter(e => e.event_id === eventId);
+                    if (filtered.length) entries = filtered;
+                }
+
+                if (entries.length === 1) {
+                    resolveEntryByNumber(entries[0]);
+                } else {
+                    showClassPicker(entries);
+                }
+            } catch(err) {
+                showRaceNumberMsg('Error: ' + err.message, 'error');
+            }
+        }
+
+        function showRaceNumberMsg(msg, type) {
+            const cls = type === 'error' ? 'error-message' : 'success-message';
+            document.getElementById('raceNumberMessage').innerHTML = `<div class="${cls}">${msg}</div>`;
+        }
+
+        function showClassPicker(entries) {
+            hideAllSections();
+            const CLASS_CLRS = {'MINI ROK':'#a855f7','CADET ROK':'#f97316','MINI 10':'#ec4899','OK-J':'#3b82f6','OKJ':'#3b82f6','OK-N':'#22c55e','OKN':'#22c55e','OK':'#06b6d4'};
+            function clsColor(c) {
+                const u = (c||'').toUpperCase();
+                return Object.entries(CLASS_CLRS).find(([k])=>u.includes(k))?.[1] || '#94a3b8';
+            }
+            const container = document.getElementById('classPickerOptions');
+            container.innerHTML = '';
+            entries.forEach(entry => {
+                const clr = clsColor(entry.race_class);
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.style.cssText = `background:#0d1117;border:2px solid ${clr};color:#fff;text-align:left;padding:14px 16px;margin-bottom:10px;`;
+                btn.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:16px;font-weight:900;color:${clr};">${escapeHtml(entry.race_class)}</span>
+                        <span style="font-size:11px;color:#64748b;">${escapeHtml(entry.event_name||'')}</span>
+                    </div>
+                    <div style="font-size:13px;color:#94a3b8;margin-top:4px;">
+                        ${escapeHtml(entry.first_name)} ${escapeHtml(entry.last_name)} &nbsp;·&nbsp; #${escapeHtml(String(entry.race_number||''))}
+                    </div>`;
+                btn.onclick = () => resolveEntryByNumber(entry);
+                container.appendChild(btn);
+            });
+            document.getElementById('classPickerSection').classList.remove('hidden');
+        }
+
+        function resolveEntryByNumber(entry) {
+            currentDriver = {
+                driver_id:   entry.driver_id,
+                entry_id:    entry.entry_id,
+                first_name:  entry.first_name,
+                last_name:   entry.last_name,
+                race_class:  entry.race_class,
+                race_number: entry.race_number,
+                _tickets: {
+                    engine:      entry.ticket_engine_ref      || null,
+                    transponder: entry.ticket_transponder_ref || null,
+                    tyres:       entry.ticket_tyres_ref       || null,
+                    fuel:        entry.ticket_fuel_ref        || null
+                }
+            };
+            currentTicket = null; // cleared; each action will pick up from _tickets
+            displayDriverInfoFull(entry);
+        }
+
+        function displayDriverInfoFull(entry) {
+            hideAllSections();
+            document.getElementById('driverInfoSection').classList.remove('hidden');
+
+            const CLASS_CLRS = {'MINI ROK':'#a855f7','CADET ROK':'#f97316','MINI 10':'#ec4899','OK-J':'#3b82f6','OKJ':'#3b82f6','OK-N':'#22c55e','OKN':'#22c55e','OK':'#06b6d4'};
+            const cls = (entry.race_class||'').toUpperCase();
+            const clr = Object.entries(CLASS_CLRS).find(([k])=>cls.includes(k))?.[1] || '#94a3b8';
+            const tkts = currentDriver._tickets;
+
+            // Build the equipment status table
+            function tktCell(ref) {
+                if (ref) return `<span style="color:#64748b;font-size:11px;letter-spacing:.5px;">${escapeHtml(ref)}</span>`;
+                return `<span style="color:#f87171;font-size:11px;font-weight:700;">⚠ MISSING</span>`;
+            }
+            function valCell(val, fallback) {
+                if (val) return `<span style="color:#f1f5f9;font-weight:700;font-size:12px;letter-spacing:.5px;">${escapeHtml(val)}</span>`;
+                return `<span style="color:#475569;font-size:11px;">${fallback || '— not assigned'}</span>`;
+            }
+            function greenCell(label) {
+                return `<span style="color:#4ade80;font-weight:700;font-size:12px;">&#10003; ${label}</span>`;
+            }
+
+            const tyres = entry.tyres;
+            const tyreVal = tyres
+                ? `<span style="color:#f1f5f9;font-weight:700;font-size:11px;line-height:1.8;">
+                    FL: ${escapeHtml(tyres.front_left)} &nbsp; FR: ${escapeHtml(tyres.front_right)}<br>
+                    RL: ${escapeHtml(tyres.rear_left)} &nbsp; RR: ${escapeHtml(tyres.rear_right)}
+                  </span>`
+                : `<span style="color:#475569;font-size:11px;">— not registered</span>`;
+
+            document.getElementById('driverInfo').innerHTML = `
+                <h2 style="margin-bottom:4px;">${escapeHtml(entry.first_name)} ${escapeHtml(entry.last_name)}</h2>
+                <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+                    <span style="color:${clr};font-weight:900;font-size:13px;">${escapeHtml(entry.race_class)}</span>
+                    <span style="color:#64748b;font-size:13px;">#${escapeHtml(String(entry.race_number||''))}</span>
+                    <span style="color:#334155;font-size:11px;">${escapeHtml(entry.event_name||'')}</span>
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr>
+                      <th style="text-align:left;color:#475569;font-weight:600;padding:4px 8px 8px 0;font-size:10px;letter-spacing:.8px;text-transform:uppercase;width:40%;">Ticket</th>
+                      <th style="text-align:left;color:#475569;font-weight:600;padding:4px 0 8px 0;font-size:10px;letter-spacing:.8px;text-transform:uppercase;">Assigned</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-top:1px solid #1e293b;">
+                      <td style="padding:8px 8px 8px 0;vertical-align:top;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <span style="color:#94a3b8;font-size:14px;">🔧</span>
+                          ${tktCell(tkts.engine)}
+                        </div>
+                      </td>
+                      <td style="padding:8px 0;vertical-align:top;">${valCell(entry.engine_serial)}</td>
+                    </tr>
+                    <tr style="border-top:1px solid #1e293b;">
+                      <td style="padding:8px 8px 8px 0;vertical-align:top;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <span style="color:#94a3b8;font-size:14px;">🛞</span>
+                          ${tktCell(tkts.tyres)}
+                        </div>
+                      </td>
+                      <td style="padding:8px 0;vertical-align:top;">${tyreVal}</td>
+                    </tr>
+                    <tr style="border-top:1px solid #1e293b;">
+                      <td style="padding:8px 8px 8px 0;vertical-align:top;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <span style="color:#94a3b8;font-size:14px;">📡</span>
+                          ${tktCell(tkts.transponder)}
+                        </div>
+                      </td>
+                      <td style="padding:8px 0;vertical-align:top;">${valCell(entry.transponder_serial)}</td>
+                    </tr>
+                    <tr style="border-top:1px solid #1e293b;">
+                      <td style="padding:8px 8px 8px 0;vertical-align:top;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <span style="color:#94a3b8;font-size:14px;">⛽</span>
+                          ${tktCell(tkts.fuel)}
+                        </div>
+                      </td>
+                      <td style="padding:8px 0;vertical-align:top;">${greenCell('Collected')}</td>
+                    </tr>
+                  </tbody>
+                </table>
+            `;
+
+            // Helper: show/clear the warning banner inside an assignment card
+            function setCardWarn(warnId, ref) {
+                const b = document.getElementById(warnId);
+                if (!b) return;
+                if (!ref) {
+                    b.style.display = 'block';
+                    b.textContent = '⚠️ NO TICKET SCANNED — assignment will be flagged on monitor';
+                } else {
+                    b.style.display = 'none';
+                    b.textContent = '';
+                }
+            }
+
+            // Always show engine card (most critical — can assign even without ticket)
+            document.getElementById('engineAssignmentCard').classList.remove('hidden');
+            document.getElementById('engineAssignmentCard').style.setProperty('--eng-clr', clr);
+            setCardWarn('engineTicketWarn', tkts.engine);
+            document.getElementById('engineSerial').value = '';
+            document.getElementById('engineSerial').focus();
+
+            // Show other cards only if the entry_items suggest they rented those items, or if ticket ref exists
+            const items = (entry.entry_items || []);
+            const hasTransponder = tkts.transponder || items.some(i=>(i||'').toLowerCase().includes('transponder'));
+            const hasTyres      = tkts.tyres       || items.some(i=>(i||'').toLowerCase().includes('tyre'));
+            const hasFuel       = tkts.fuel        || items.some(i=>(i||'').toLowerCase().includes('fuel'));
+
+            if (hasTransponder) {
+                document.getElementById('transponderAssignmentCard').classList.remove('hidden');
+                setCardWarn('transponderTicketWarn', tkts.transponder);
+                document.getElementById('transponderSerial').value = '';
+            }
+            if (hasTyres) {
+                document.getElementById('tyreAssignmentCard').classList.remove('hidden');
+                setCardWarn('tyreTicketWarn', tkts.tyres);
+                document.getElementById('tyreFrontLeft').value = '';
+            }
+            if (hasFuel) {
+                document.getElementById('fuelAssignmentCard').classList.remove('hidden');
+            }
+        }
+
+        // Ensure currentTicket is set from _tickets when no ticket scan was done
+        function ensureTicket(type) {
+            if (currentTicket) return true;
+            if (!currentDriver?._tickets) return false;
+            const ref = currentDriver._tickets[type];
+            const typeLabel = {engine:'Engine Rental',transponder:'Transponder',tyres:'Tyres',fuel:'Fuel'}[type];
+            // Allow proceeding even without a ticket ref — server will flag it
+            currentTicket = { barcode: ref || null, type: typeLabel };
+            return true;
+        }
+
+        // ── Navigation ─────────────────────────────────────────────────────
         function backToMenu() {
             hideAllSections();
             document.getElementById('mainMenu').classList.remove('hidden');
@@ -1592,6 +1877,8 @@
             document.getElementById('manualLoanSection').classList.add('hidden');
             document.getElementById('activeLoansSection').classList.add('hidden');
             document.getElementById('returnLoanSection').classList.add('hidden');
+            document.getElementById('raceNumberSection').classList.add('hidden');
+            document.getElementById('classPickerSection').classList.add('hidden');
             
             // Hide all assignment cards
             document.getElementById('engineAssignmentCard').classList.add('hidden');
@@ -1732,6 +2019,7 @@
 
         // Engine Assignment
         async function assignEngine() {
+            if (!ensureTicket('engine')) return;
             const engineSerial = document.getElementById('engineSerial').value.trim().toUpperCase();
             
             if (!engineSerial) {
@@ -1752,7 +2040,8 @@
                         ticketBarcode: currentTicket.barcode,
                         engineSerial: engineSerial,
                         driverId: currentDriver.driver_id,
-                        entryId: currentDriver.entry_id
+                        entryId: currentDriver.entry_id,
+                        eventId: getSelectedEventId()
                     })
                 });
                 
@@ -1779,6 +2068,7 @@
 
         // Assign Transponder
         async function assignTransponder() {
+            if (!ensureTicket('transponder')) return;
             const transponderSerial = document.getElementById('transponderSerial').value.trim().toUpperCase();
             
             if (!transponderSerial) {
@@ -1799,7 +2089,8 @@
                         ticketBarcode: currentTicket.barcode,
                         transponderSerial: transponderSerial,
                         driverId: currentDriver.driver_id,
-                        entryId: currentDriver.entry_id
+                        entryId: currentDriver.entry_id,
+                        eventId: getSelectedEventId()
                     })
                 });
                 
@@ -1818,6 +2109,7 @@
 
         // Assign Tyres
         async function assignTyres() {
+            if (!ensureTicket('tyres')) return;
             const tyreFrontLeft = document.getElementById('tyreFrontLeft').value.trim().toUpperCase();
             const tyreFrontRight = document.getElementById('tyreFrontRight').value.trim().toUpperCase();
             const tyreRearLeft = document.getElementById('tyreRearLeft').value.trim().toUpperCase();
@@ -1846,7 +2138,8 @@
                             rear_right: tyreRearRight
                         },
                         driverId: currentDriver.driver_id,
-                        entryId: currentDriver.entry_id
+                        entryId: currentDriver.entry_id,
+                        eventId: getSelectedEventId()
                     })
                 });
                 
@@ -1865,6 +2158,7 @@
 
         // Mark Fuel Collected
         async function markFuelCollected() {
+            if (!ensureTicket('fuel')) return;
             if (!currentTicket) {
                 showError('No ticket selected');
                 return;
@@ -1877,7 +2171,8 @@
                     body: JSON.stringify({
                         ticketBarcode: currentTicket.barcode,
                         driverId: currentDriver.driver_id,
-                        entryId: currentDriver.entry_id
+                        entryId: currentDriver.entry_id,
+                        eventId: getSelectedEventId()
                     })
                 });
                 
@@ -1907,7 +2202,7 @@
                 const response = await fetch('/api/returnEngine', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ engineSerial: engineSerial })
+                    body: JSON.stringify({ engineSerial: engineSerial, eventId: getSelectedEventId() })
                 });
                 
                 const data = await response.json();
@@ -1944,7 +2239,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         engineSerial: engineSerial,
-                        issueDescription: issueDescription
+                        issueDescription: issueDescription,
+                        eventId: getSelectedEventId()
                     })
                 });
                 
@@ -2212,7 +2508,7 @@
                 const response = await fetch('/api/loanEngine', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ engineSerial, driverName, purpose, loanDate, notes, assignedBy })
+                    body: JSON.stringify({ engineSerial, driverName, purpose, loanDate, notes, assignedBy, eventId: getSelectedEventId() })
                 });
                 const data = await response.json();
                 if (data.success) {
@@ -2322,8 +2618,68 @@
             return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         }
 
+        // ── Event Selection (persisted to localStorage) ────────────────────
+        function getSelectedEventId() {
+            return document.getElementById('eventSelect').value || null;
+        }
+
+        function onEventChange() {
+            const eventId = document.getElementById('eventSelect').value;
+            if (eventId) {
+                localStorage.setItem('engmgmt_event_id', eventId);
+            } else {
+                localStorage.removeItem('engmgmt_event_id');
+            }
+            updateEventDot(!!eventId);
+        }
+
+        function updateEventDot(hasEvent) {
+            const dot = document.getElementById('eventStatusDot');
+            if (!dot) return;
+            dot.style.background = hasEvent ? '#22c55e' : '#ef4444';
+            dot.title = hasEvent ? 'Event selected' : 'No event selected';
+        }
+
+        async function loadEventsDropdown() {
+            try {
+                const res  = await fetch('/api/publicEvents');
+                if (!res.ok) {
+                    console.warn('Could not load events — HTTP ' + res.status);
+                    return;
+                }
+                const data = await res.json();
+                const sel  = document.getElementById('eventSelect');
+                if (!sel) return;
+
+                const events = Array.isArray(data.events) ? data.events : [];
+                // Most recent first
+                events.sort((a, b) => (b.event_date || '').localeCompare(a.event_date || ''));
+
+                sel.innerHTML = '<option value="">&#9888; No event selected \u2014 tap to choose</option>';
+                events.forEach(evt => {
+                    const opt = document.createElement('option');
+                    opt.value = evt.event_id;
+                    const dateStr = evt.event_date
+                        ? new Date(evt.event_date).toLocaleDateString('en-ZA', { day:'2-digit', month:'short', year:'numeric' })
+                        : '';
+                    opt.textContent = dateStr ? `${evt.event_name}  (${dateStr})` : evt.event_name;
+                    sel.appendChild(opt);
+                });
+
+                // Restore saved selection
+                const saved = localStorage.getItem('engmgmt_event_id');
+                if (saved && sel.querySelector(`option[value="${saved}"]`)) {
+                    sel.value = saved;
+                }
+                updateEventDot(!!sel.value);
+            } catch (err) {
+                console.warn('Could not load events:', err.message);
+            }
+        }
+
         // Allow Enter key to submit
         document.addEventListener('DOMContentLoaded', () => {
+            loadEventsDropdown();
             // Default datetime-local to now for loan form
             const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             const loanDateEl = document.getElementById('loanDate');
@@ -2351,6 +2707,10 @@
             
             document.getElementById('verifyRaceNumber').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') lookupDriverForTyres();
+            });
+
+            document.getElementById('lookupRaceNumber').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') lookupByRaceNumber();
             });
 
             document.getElementById('loanEngineSerial').addEventListener('keypress', (e) => {

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Engine Draw</title>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#04080f;--card:#0a1628;--line:#0f2040;--text:#e2e8f0;--dim:#475569;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#38bdf8;--purple:#a78bfa;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden}
+
+.screen{display:none;flex-direction:column;height:100%;padding:16px;gap:12px}
+.screen.active{display:flex}
+
+/* ── PIN ─────────────────────────────────── */
+#s-pin{align-items:center;justify-content:center;gap:20px}
+.pin-brand .sup{font-size:10px;letter-spacing:3px;color:var(--dim);text-align:center}
+.pin-brand .big{font-size:28px;font-weight:900;letter-spacing:4px;text-align:center}
+.pin-brand .sub{font-size:11px;letter-spacing:2px;color:var(--blue);text-align:center;margin-top:4px}
+.pin-dots{display:flex;gap:14px;margin:4px 0}
+.pin-dot{width:18px;height:18px;border-radius:50%;background:var(--line);border:2px solid var(--dim);transition:background .15s}
+.pin-dot.filled{background:var(--blue);border-color:var(--blue)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
+.pin-btn{height:72px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--text);font-family:inherit;font-size:24px;font-weight:700;cursor:pointer;transition:background .1s,transform .1s}
+.pin-btn:active{background:var(--blue);transform:scale(.93)}
+.pin-err{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
+
+/* ── SCAN DRIVER ─────────────────────────── */
+#s-scan{justify-content:center;align-items:stretch;gap:18px}
+.station-badge{font-size:10px;letter-spacing:2px;color:var(--green);text-align:center}
+.section-label{font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center}
+.scan-form{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.input-row{display:flex;gap:8px;width:100%}
+.big-input{flex:1;min-width:0;background:var(--card);border:2px solid var(--line);border-radius:10px;color:var(--text);font-family:inherit;font-size:32px;font-weight:900;text-align:center;padding:12px;outline:none}
+.big-input:focus{border-color:var(--blue)}
+.cam-btn{flex-shrink:0;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:12px 16px;color:var(--blue);font-size:22px;cursor:pointer}
+.cam-btn:active{background:var(--blue);color:#fff}
+.go-btn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--blue);color:#000;font-family:inherit;font-size:18px;font-weight:900;letter-spacing:2px;cursor:pointer}
+.go-btn:active{opacity:.8}
+.err-msg{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
+.cam-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.cam-overlay.active{display:flex}
+#camVideo{width:100%;max-width:480px;border-radius:12px;object-fit:cover}
+.cam-close{padding:12px 32px;border-radius:10px;border:2px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.cam-hint{font-size:11px;letter-spacing:1px;color:var(--dim)}
+
+/* ── DRAW SCREEN ─────────────────────────── */
+#s-draw{gap:10px;overflow:hidden}
+.driver-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-radius:10px;border:1px solid var(--line);flex-shrink:0}
+.driver-num{font-size:34px;font-weight:900;color:var(--blue);min-width:52px;text-align:center;line-height:1}
+.driver-info{flex:1;min-width:0}
+.driver-name{font-size:16px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.driver-class{font-size:11px;letter-spacing:2px;color:var(--dim);margin-top:2px}
+.driver-engine{font-size:11px;color:var(--amber);margin-top:2px}
+.back-btn{background:none;border:1px solid var(--line);border-radius:8px;color:var(--dim);font-size:12px;font-family:inherit;padding:6px 10px;cursor:pointer}
+.back-btn:active{color:var(--text)}
+.draw-header{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.draw-title{font-size:11px;letter-spacing:2px;color:var(--dim)}
+.rand-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--purple);background:transparent;color:var(--purple);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.rand-btn:active{background:var(--purple);color:#fff}
+.draw-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.draw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-bottom:8px}
+@media(min-width:480px){.draw-grid{grid-template-columns:repeat(5,1fr)}}
+.draw-card{border-radius:12px;border:2px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;cursor:pointer;transition:transform .1s,border-color .15s,background .15s;min-height:80px;position:relative}
+.draw-card:active{transform:scale(.93)}
+.draw-card.available{border-color:var(--green)}
+.draw-card.available .draw-num{color:var(--green)}
+.draw-card.taken{border-color:var(--line);opacity:.55;cursor:not-allowed}
+.draw-card.taken .draw-num{color:var(--dim)}
+.draw-card.mine{border-color:var(--amber);background:#130e00}
+.draw-card.mine .draw-num{color:var(--amber)}
+.draw-card.selected{border-color:var(--blue);background:#041828}
+.draw-card.selected .draw-num{color:var(--blue)}
+.draw-num{font-size:28px;font-weight:900;line-height:1}
+.draw-serial{font-size:9px;color:var(--dim);margin-top:3px;text-align:center;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.draw-who{font-size:9px;color:var(--amber);text-align:center;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.no-engines{text-align:center;color:var(--dim);font-size:13px;padding:40px 20px;letter-spacing:1px}
+
+/* ── CONFIRM SCREEN ──────────────────────── */
+#s-confirm{justify-content:center;align-items:center;gap:16px}
+.confirm-card{width:100%;max-width:380px;background:var(--card);border:2px solid var(--blue);border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;gap:14px}
+.confirm-draw{text-align:center}
+.confirm-draw .label{font-size:10px;letter-spacing:3px;color:var(--dim)}
+.confirm-draw .num{font-size:72px;font-weight:900;color:var(--blue);line-height:1}
+.confirm-row{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:10px}
+.confirm-row .key{font-size:10px;letter-spacing:2px;color:var(--dim)}
+.confirm-row .val{font-size:13px;font-weight:700;text-align:right;max-width:60%}
+.confirm-btns{display:flex;gap:10px;width:100%;max-width:380px}
+.cancel-btn{flex:1;padding:14px;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--dim);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.cancel-btn:active{border-color:var(--red);color:var(--red)}
+.confirm-btn{flex:2;padding:14px;border-radius:12px;border:none;background:var(--green);color:#000;font-family:inherit;font-size:15px;font-weight:900;letter-spacing:2px;cursor:pointer}
+.confirm-btn:active{opacity:.8}
+.confirm-btn:disabled{background:var(--dim);cursor:not-allowed}
+
+/* ── SUCCESS SCREEN ──────────────────────── */
+#s-done{justify-content:center;align-items:center;gap:20px}
+.done-icon{font-size:72px;animation:pop .4s ease}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.done-card{width:100%;max-width:380px;background:var(--card);border:2px solid var(--green);border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.done-driver{font-size:18px;font-weight:900}
+.done-sub{font-size:11px;letter-spacing:2px;color:var(--green)}
+.done-engine{font-size:28px;font-weight:900;color:var(--blue);margin:4px 0}
+.done-detail{font-size:11px;color:var(--dim);letter-spacing:1px}
+.next-btn{width:100%;max-width:380px;padding:16px;border-radius:12px;border:none;background:var(--blue);color:#000;font-family:inherit;font-size:18px;font-weight:900;letter-spacing:2px;cursor:pointer}
+.next-btn:active{opacity:.8}
+
+/* ── ENTRY PICKER ───────────────────────────── */
+#s-pick{justify-content:center;align-items:center;gap:14px}
+.pick-name{font-size:20px;font-weight:900;text-align:center}
+.pick-sub{font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center}
+.pick-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px}
+.pick-entry{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:border-color .15s,background .15s}
+.pick-entry:active{background:#041828;border-color:var(--blue)}
+.pick-entry .pe-class{font-size:22px;font-weight:900;color:var(--blue)}
+.pick-entry .pe-event{font-size:11px;color:var(--dim);margin-top:3px;letter-spacing:.5px}
+.pick-entry .pe-engine{font-size:11px;color:var(--amber);margin-top:2px}
+.pick-back{padding:10px 24px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:inherit;font-size:13px;cursor:pointer}
+
+/* ── RETURN BUTTON ─────────────────────────── */
+.return-btn{padding:8px 14px;border-radius:8px;border:2px solid var(--amber);background:transparent;color:var(--amber);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;display:none}
+.return-btn.show{display:block}
+.return-btn:active{background:var(--amber);color:#000}
+
+/* ── RETURN SCREEN ─────────────────────────── */
+#s-return{gap:10px;overflow:hidden}
+.ret-engine-card{background:var(--card);border:2px solid var(--amber);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.ret-draw-badge{font-size:36px;font-weight:900;color:var(--amber);line-height:1;min-width:54px;text-align:center}
+.ret-engine-info{flex:1;min-width:0}
+.ret-engine-serial{font-size:14px;font-weight:900;letter-spacing:1px;color:var(--blue)}
+.ret-engine-class{font-size:10px;letter-spacing:2px;color:var(--dim);margin-top:2px}
+.ret-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px}
+.ret-section{font-size:10px;letter-spacing:2px;color:var(--dim);padding:4px 0 2px}
+.peri-row{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:10px 12px;transition:border-color .2s}
+.peri-row.peri-ok{border-color:var(--green)}
+.peri-row.peri-fail{border-color:var(--red)}
+.peri-info{flex:1;min-width:0}
+.peri-label{font-size:10px;letter-spacing:2px;color:var(--dim)}
+.peri-val{font-size:14px;font-weight:700;margin-top:2px;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.peri-actions{display:flex;gap:6px;flex-shrink:0}
+.peri-tick-btn{padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.peri-tick-btn.ok{border-color:var(--green);color:var(--green);background:#001800}
+.peri-tick-btn:active{opacity:.7}
+.peri-scan-btn{padding:7px 10px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:15px;cursor:pointer;flex-shrink:0}
+.peri-scan-btn.ok{border-color:var(--green);background:#001800}
+.peri-scan-btn.fail{border-color:var(--red);background:#180000}
+.peri-status{font-size:18px;min-width:22px;text-align:center;flex-shrink:0}
+.sig-wrap{background:var(--card);border:2px solid var(--line);border-radius:12px;overflow:hidden;flex-shrink:0}
+.sig-wrap.has-sig{border-color:var(--green)}
+#sigCanvas{width:100%;display:block;touch-action:none;cursor:crosshair;background:#060e1c}
+.sig-foot{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-top:1px solid var(--line)}
+.sig-hint{font-size:10px;letter-spacing:1px;color:var(--dim)}
+.sig-clear{font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit;letter-spacing:1px;padding:4px}
+#retConfirmBtn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--amber);color:#000;font-family:inherit;font-size:15px;font-weight:900;letter-spacing:2px;cursor:pointer;flex-shrink:0}
+#retConfirmBtn:active{opacity:.8}
+#retConfirmBtn:disabled{background:var(--dim);cursor:not-allowed;color:#888}
+
+/* ── RETURN DONE ─────────────────────────── */
+#s-return-done{justify-content:center;align-items:center;gap:20px}
+.rdone-icon{font-size:64px;animation:pop .4s ease}
+.rdone-card{width:100%;max-width:380px;background:var(--card);border:2px solid var(--amber);border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.rdone-sub{font-size:11px;letter-spacing:2px;color:var(--amber)}
+.rdone-driver{font-size:18px;font-weight:900}
+.rdone-engine{font-size:26px;font-weight:900;color:var(--blue);margin:4px 0}
+.rdone-detail{font-size:11px;color:var(--dim);letter-spacing:1px}
+
+/* ── ALREADY ASSIGNED WARNING ─────────────── */
+.warn-banner{width:100%;max-width:340px;background:#130900;border:2px solid var(--amber);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--amber);letter-spacing:.5px;line-height:1.5;display:none;text-align:center}
+.warn-banner.show{display:block}
+
+/* ── TOP LOGO BAR ───────────────────────────── */
+.top-logo-bar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:54px;
+  background:linear-gradient(180deg,#020508 0%,#030c1a 100%);
+  border-bottom:1px solid #0a1e3a;
+  display:flex;align-items:center;justify-content:center;
+}
+.top-logo-bar img{height:32px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(56,189,248,.35))}
+.screen{padding-top:70px}
+#s-pin{padding-top:54px}
+</style>
+</head>
+<body>
+
+<!-- ── ROK LOGO BAR (fixed, all screens) ──────── -->
+<div class="top-logo-bar">
+  <img src="/images/rok-logo.png" alt="ROK">
+</div>
+
+<!-- ── PIN SCREEN ─────────────────────────────── -->
+<div id="s-pin" class="screen active">
+  <div class="pin-brand">
+    <div class="sup">POOL ENGINE</div>
+    <div class="big">DRAW STATION</div>
+    <div class="sub">🎯 ENGINE DRAW</div>
+  </div>
+  <div class="pin-dots" id="pinDots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinKey('1')">1</button>
+    <button class="pin-btn" onclick="pinKey('2')">2</button>
+    <button class="pin-btn" onclick="pinKey('3')">3</button>
+    <button class="pin-btn" onclick="pinKey('4')">4</button>
+    <button class="pin-btn" onclick="pinKey('5')">5</button>
+    <button class="pin-btn" onclick="pinKey('6')">6</button>
+    <button class="pin-btn" onclick="pinKey('7')">7</button>
+    <button class="pin-btn" onclick="pinKey('8')">8</button>
+    <button class="pin-btn" onclick="pinKey('9')">9</button>
+    <button class="pin-btn" onclick="pinKey('')" style="font-size:18px;">⌫</button>
+    <button class="pin-btn" onclick="pinKey('0')">0</button>
+    <button class="pin-btn" onclick="pinKey('')" style="font-size:16px;color:var(--dim);">CLR</button>
+  </div>
+  <div class="pin-err" id="pinErr"></div>
+</div>
+
+<!-- ── SCAN DRIVER SCREEN ─────────────────── -->
+<div id="s-scan" class="screen">
+  <div class="station-badge" id="stationBadge">🎯 DRAW STATION</div>
+  <div class="scan-form">
+    <div class="section-label">ENTER RACE NUMBER OR SCAN TICKET</div>
+    <div class="input-row">
+      <input type="number" id="raceNumInput" class="big-input" placeholder="##" maxlength="4"
+             oninput="lookupErr('')" onkeydown="if(event.key==='Enter')doLookup()">
+      <button class="cam-btn" onclick="startCam()" title="Scan barcode">📷</button>
+    </div>
+    <div class="warn-banner" id="warnBanner"></div>
+    <div class="err-msg" id="lookupErr"></div>
+    <button class="go-btn" onclick="doLookup()">LOOKUP DRIVER →</button>
+  </div>
+</div>
+
+<!-- ── ENTRY PICKER SCREEN ─────────────────── -->
+<div id="s-pick" class="screen">
+  <div class="pick-name" id="pickDriverName">—</div>
+  <div class="pick-sub">MULTIPLE ENTRIES FOUND — SELECT CLASS</div>
+  <div class="pick-list" id="pickList"></div>
+  <button class="pick-back" onclick="goScan()">← BACK</button>
+</div>
+
+<!-- ── CAMERA OVERLAY ─────────────────────── -->
+<div class="cam-overlay" id="camOverlay">
+  <div class="cam-hint">AIM AT TICKET BARCODE</div>
+  <video id="camVideo" autoplay muted playsinline></video>
+  <button class="cam-close" onclick="stopCam()">✕ CANCEL</button>
+</div>
+
+<!-- ── DRAW SCREEN ───────────────────────── -->
+<div id="s-draw" class="screen">
+  <div class="driver-bar">
+    <div class="driver-num" id="drawDriverNum">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="drawDriverName">—</div>
+      <div class="driver-class" id="drawDriverClass">—</div>
+      <div class="driver-engine" id="drawDriverEngine" style="display:none"></div>
+    </div>
+    <button class="back-btn" onclick="goScan()">← BACK</button>
+  </div>
+  <div class="draw-header">
+    <div class="draw-title" id="drawClassLabel">SELECT DRAW NUMBER</div>
+    <button class="return-btn" id="returnBtn" onclick="showReturnScreen()">↩ RETURN ENGINE</button>
+  </div>
+  <div class="draw-scroll">
+    <div class="draw-grid" id="drawGrid"></div>
+    <div class="no-engines" id="noEnginesMsg" style="display:none">No engines configured for this class.<br>Contact admin.</div>
+  </div>
+</div>
+
+<!-- ── SEAL VERIFY SCREEN ───────────────────── -->
+<div id="s-seal" class="screen">
+  <div class="driver-bar">
+    <div class="driver-num" id="sealDrawNum" style="color:var(--blue)">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="sealDriverName">—</div>
+      <div class="driver-class" id="sealEngineSerial" style="color:var(--dim)">—</div>
+    </div>
+    <button class="back-btn" onclick="showScreen('s-draw')">← BACK</button>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:16px;">
+    <div style="text-align:center;">
+      <div style="font-size:10px;letter-spacing:3px;color:var(--dim)">STEP 2 OF 2</div>
+      <div style="font-size:18px;font-weight:900;margin-top:6px;">SCAN ENGINE TO CONFIRM</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px;">Scan the seal barcode <em>or</em> the engine serial</div>
+    </div>
+    <button onclick="startCam('seal-confirm')" style="align-self:center;width:110px;height:110px;border-radius:50%;border:3px solid var(--blue);background:var(--card);color:var(--blue);font-size:44px;cursor:pointer;">📷</button>
+    <input id="sealManualInput" type="text" class="big-input" placeholder="or type seal / serial" style="font-size:18px;text-transform:uppercase;" onkeydown="if(event.key==='Enter')submitSealInput()">
+    <button class="go-btn" onclick="submitSealInput()">VERIFY →</button>
+    <div id="sealErr" style="text-align:center;font-size:13px;min-height:18px;letter-spacing:.5px;"></div>
+    <button onclick="showConfirm()" style="font-size:11px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;letter-spacing:1px;padding:4px;">SKIP SCAN — CONFIRM ANYWAY</button>
+  </div>
+</div>
+
+<!-- ── CONFIRM SCREEN ──────────────────────── -->
+<div id="s-confirm" class="screen">
+  <div class="confirm-card">
+    <div class="confirm-draw">
+      <div class="label">DRAW NUMBER</div>
+      <div class="num" id="cfDrawNum">—</div>
+    </div>
+    <div class="confirm-row">
+      <span class="key">DRIVER</span>
+      <span class="val" id="cfDriver">—</span>
+    </div>
+    <div class="confirm-row">
+      <span class="key">CLASS</span>
+      <span class="val" id="cfClass">—</span>
+    </div>
+    <div class="confirm-row">
+      <span class="key">ENGINE SERIAL</span>
+      <span class="val" id="cfSerial" style="color:var(--blue)">—</span>
+    </div>
+    <div class="confirm-row" id="cfSealRow">
+      <span class="key">SEAL #</span>
+      <span class="val" id="cfSeal" style="color:var(--dim)">—</span>
+    </div>
+    <div class="confirm-row" id="cfCarbRow">
+      <span class="key">CARB #</span>
+      <span class="val" id="cfCarb" style="color:var(--dim)">—</span>
+    </div>
+    <div class="confirm-row" id="cfAirboxRow">
+      <span class="key">AIRBOX #</span>
+      <span class="val" id="cfAirbox" style="color:var(--dim)">—</span>
+    </div>
+    <div class="confirm-row" id="cfExhaustRow">
+      <span class="key">EXHAUST #</span>
+      <span class="val" id="cfExhaust" style="color:var(--dim)">—</span>
+    </div>
+  </div>
+  <div id="cfErr" class="err-msg"></div>
+  <div class="confirm-btns">
+    <button class="cancel-btn" onclick="showScreen('s-seal')">← BACK</button>
+    <button class="confirm-btn" id="cfConfirmBtn" onclick="confirmDraw()">✅ CONFIRM DRAW</button>
+  </div>
+</div>
+
+<!-- ── DONE SCREEN ────────────────────────── -->
+<div id="s-done" class="screen">
+  <div class="done-icon">🏆</div>
+  <div class="done-card">
+    <div class="done-sub">ENGINE DRAWN</div>
+    <div class="done-driver" id="doneDriver">—</div>
+    <div class="done-detail" id="doneClass">—</div>
+    <div class="done-engine" id="doneSerial">—</div>
+    <div class="done-detail" id="doneSeal"></div>
+  </div>
+  <button class="next-btn" onclick="nextDriver()">NEXT DRIVER →</button>
+</div>
+
+<!-- ── RETURN ENGINE SCREEN ────────────────── -->
+<div id="s-return" class="screen">
+  <div class="driver-bar">
+    <div class="driver-num" id="retDriverNum">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="retDriverName">—</div>
+      <div class="driver-class" id="retDriverClass">—</div>
+    </div>
+    <button class="back-btn" onclick="showScreen('s-draw')">← BACK</button>
+  </div>
+
+  <div class="ret-engine-card">
+    <div class="ret-draw-badge" id="retDrawBadge">—</div>
+    <div class="ret-engine-info">
+      <div class="ret-engine-serial" id="retEngineSerial">—</div>
+      <div class="ret-engine-class" id="retEngineClass">—</div>
+    </div>
+  </div>
+
+  <div class="ret-body" id="retBody">
+    <!-- populated by renderRetBody() -->
+  </div>
+
+  <div id="retErr" class="err-msg" style="flex-shrink:0"></div>
+  <button id="retConfirmBtn" onclick="confirmReturn()">♻️ CONFIRM RETURN</button>
+</div>
+
+<!-- ── RETURN DONE SCREEN ────────────────────── -->
+<div id="s-return-done" class="screen">
+  <div class="rdone-icon">♻️</div>
+  <div class="rdone-card">
+    <div class="rdone-sub">ENGINE RETURNED</div>
+    <div class="rdone-driver" id="rdoneDriver">—</div>
+    <div class="rdone-detail" id="rdoneClass">—</div>
+    <div class="rdone-engine" id="rdoneSerial">—</div>
+    <div class="rdone-detail" id="rdoneDraw"></div>
+  </div>
+  <button class="next-btn" onclick="nextDriver()">NEXT DRIVER →</button>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────
+let currentScanner = null; // set after PIN
+let currentDriver  = null; // { driver_id, entry_id, first_name, last_name, race_number, race_class, engine_serial, event_id }
+let allEngines     = [];   // all pool engines from API (incl. assigned_driver_name)
+let classEngines   = [];   // engines for current driver's class
+let selectedEngine = null; // the pool engine record the driver picked
+
+// ZXing
+let _nativeDet = null;
+let _zxReader  = null;
+let _scanStream = null;
+let _zxInterval = null;
+
+function initZX() {
+  try {
+    _nativeDet = new BarcodeDetector({
+      formats: ['qr_code','code_128','code_39','code_93','ean_13','ean_8','itf','data_matrix','aztec','pdf_417']
+    });
+  } catch(_) { _nativeDet = null; }
+  try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
+}
+initZX();
+
+// ─────────────────────────────────────────────────
+// SCREENS
+// ─────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─────────────────────────────────────────────────
+// PIN
+// ─────────────────────────────────────────────────
+let pinVal = '';
+function pinKey(d) {
+  document.getElementById('pinErr').textContent = '';
+  if (d === '') { pinVal = pinVal.slice(0, -1); }
+  else if (pinVal.length < 4) { pinVal += d; }
+  renderDots();
+  if (pinVal.length === 4) submitPin();
+}
+function renderDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinVal.length);
+  }
+}
+async function submitPin() {
+  try {
+    const r = await fetch('/api/verifyScanner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: pinVal })
+    });
+    const d = await r.json();
+    if (d.success && (d.scanner || d.scanner_id)) {
+      currentScanner = d.scanner || { name: d.scanner_name, id: d.scanner_id };
+      document.getElementById('stationBadge').textContent = `🎯 ${currentScanner.name || currentScanner.scanner_name || 'DRAW STATION'}`;
+      showScreen('s-scan');
+      await preloadEngines();
+    } else {
+      document.getElementById('pinErr').textContent = 'INCORRECT PIN — TRY AGAIN';
+      pinVal = ''; renderDots();
+    }
+  } catch(e) {
+    document.getElementById('pinErr').textContent = 'CONNECTION ERROR';
+    pinVal = ''; renderDots();
+  }
+}
+
+// ─────────────────────────────────────────────────
+// PRE-LOAD ENGINES
+// ─────────────────────────────────────────────────
+async function preloadEngines() {
+  try {
+    const r = await fetch('/api/drawEngines');
+    const d = await r.json();
+    if (d.success) allEngines = d.engines || [];
+  } catch(_) { allEngines = []; }
+}
+
+// ─────────────────────────────────────────────────
+// CAMERA / BARCODE
+// ─────────────────────────────────────────────────
+let _camContext = 'driver'; // 'driver' | 'seal'
+async function startCam(context) {
+  _camContext = context || 'driver';
+  try {
+    _scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    const vid = document.getElementById('camVideo');
+    vid.srcObject = _scanStream;
+    document.getElementById('camOverlay').classList.add('active');
+    _zxInterval = setInterval(async () => {
+      if (!vid.videoWidth) return;
+      if (_nativeDet) {
+        try {
+          const codes = await _nativeDet.detect(vid);
+          if (codes.length) { stopCam(); handleBarcode(codes[0].rawValue); return; }
+        } catch(_) {}
+      }
+      if (_zxReader) {
+        try {
+          const c = document.createElement('canvas');
+          c.width = vid.videoWidth; c.height = vid.videoHeight;
+          c.getContext('2d').drawImage(vid, 0, 0);
+          const res = await _zxReader.decodeFromCanvas(c);
+          if (res) { stopCam(); handleBarcode(res.getText()); }
+        } catch(_) {}
+      }
+    }, 80);
+  } catch(e) {
+    alert('Camera not available: ' + e.message);
+  }
+}
+function stopCam() {
+  clearInterval(_zxInterval); _zxInterval = null;
+  if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
+  document.getElementById('camVideo').srcObject = null;
+  document.getElementById('camOverlay').classList.remove('active');
+}
+function handleBarcode(raw) {
+  // peri-scan context: scanning a component barcode on the return screen
+  if (_camContext === 'peri-scan') {
+    _camContext = 'driver';
+    onPeriScanned(raw.toUpperCase().trim());
+    return;
+  }
+
+  // seal-confirm context: came from camera on seal-verify screen
+  if (_camContext === 'seal-confirm') {
+    _camContext = 'driver';
+    verifySealOrSerial(raw.toUpperCase().trim());
+    return;
+  }
+
+  // Default: treat scan as race number for driver lookup
+  const numMatch = raw.match(/\d+/);
+  if (numMatch) {
+    document.getElementById('raceNumInput').value = numMatch[0];
+    doLookup();
+  } else {
+    lookupErr('Could not read barcode');
+  }
+}
+
+// ─────────────────────────────────────────────────
+// SEAL VERIFY SCREEN
+// ─────────────────────────────────────────────────
+function showSealScreen() {
+  const e = selectedEngine;
+  const d = currentDriver;
+  document.getElementById('sealDrawNum').textContent    = 'DRAW #' + e.draw_number;
+  document.getElementById('sealDriverName').textContent = `#${d.race_number} ${d.first_name} ${d.last_name}`;
+  document.getElementById('sealEngineSerial').textContent = e.engine_serial
+    ? 'Engine: ' + e.engine_serial : '(No serial recorded)';
+  document.getElementById('sealManualInput').value = '';
+  const errEl = document.getElementById('sealErr');
+  errEl.textContent = '';
+  errEl.style.color = '';
+  showScreen('s-seal');
+}
+
+function submitSealInput() {
+  const val = (document.getElementById('sealManualInput').value || '').trim().toUpperCase();
+  if (!val) {
+    const errEl = document.getElementById('sealErr');
+    errEl.style.color = 'var(--red)';
+    errEl.textContent = 'Enter the seal number or engine serial';
+    return;
+  }
+  verifySealOrSerial(val);
+}
+
+function verifySealOrSerial(input) {
+  const upper = input.toUpperCase().trim();
+  const errEl  = document.getElementById('sealErr');
+
+  // Search ALL engines (not just this class) for seal_number OR engine_serial match
+  const match = allEngines.find(e =>
+    (e.seal_number   && e.seal_number.toUpperCase()   === upper) ||
+    (e.engine_serial && e.engine_serial.toUpperCase() === upper)
+  );
+
+  if (!match) {
+    errEl.style.color = 'var(--red)';
+    errEl.textContent = `❌ Not found: ${input} — try again`;
+    return;
+  }
+
+  if (match.engine_id === selectedEngine.engine_id) {
+    errEl.style.color = 'var(--green)';
+    errEl.textContent = '✅ Engine verified!';
+    setTimeout(showConfirm, 600);
+  } else {
+    // Scanned the wrong physical engine
+    errEl.style.color = 'var(--amber)';
+    errEl.textContent = `⚠️ That's Draw #${match.draw_number} (${match.class}) — wrong engine!`;
+  }
+}
+
+// ─────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────
+function buildDriver(entry) {
+  return {
+    driver_id:    entry.driver_id,
+    entry_id:     entry.entry_id,
+    first_name:   entry.first_name,
+    last_name:    entry.last_name,
+    race_number:  entry.race_number,
+    race_class:   entry.race_class,
+    engine_serial: entry.engine_serial || null,
+    event_id:     entry.event_id || null
+  };
+}
+
+function showEntryPicker(entries) {
+  const first = entries[0];
+  document.getElementById('pickDriverName').textContent =
+    `#${first.race_number} ${first.first_name} ${first.last_name}`;
+
+  const classBgMap = {
+    'Cadet':'#e74c3c','Mini ROK':'#f1c40f','Mini ROK U10':'#f39c12',
+    'OK Junior':'#27ae60','OK National':'#3498db','KZ2':'#9b59b6','Senior ROK':'#2980b9'
+  };
+
+  document.getElementById('pickList').innerHTML = entries.map((e, i) => {
+    const bg = classBgMap[e.race_class] || '#64748b';
+    const fg = e.race_class === 'Mini ROK' ? '#000' : '#fff';
+    return `<div class="pick-entry" onclick="pickEntry(${i})">
+      <div class="pe-class" style="color:${bg}">${e.race_class || '(No class)'}</div>
+      <div class="pe-event">${e.event_name || e.event_id || 'Event'}</div>
+      ${e.engine_serial ? `<div class="pe-engine">⚠️ Already drawn: ${e.engine_serial}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Store entries for selection
+  window._pickEntries = entries;
+  showScreen('s-pick');
+}
+
+function pickEntry(index) {
+  const entries = window._pickEntries || [];
+  const entry = entries[index];
+  if (!entry) return;
+  currentDriver = buildDriver(entry);
+  openDraw();
+}
+
+// ─────────────────────────────────────────────────
+// DRIVER LOOKUP
+// ─────────────────────────────────────────────────
+function lookupErr(msg) {
+  document.getElementById('lookupErr').textContent = msg;
+}
+async function doLookup() {
+  const num = (document.getElementById('raceNumInput').value || '').trim();
+  if (!num) { lookupErr('Enter a race number'); return; }
+  lookupErr('');
+  document.querySelector('#s-scan .go-btn').disabled = true;
+  document.querySelector('#s-scan .go-btn').textContent = 'LOOKING UP…';
+  try {
+    const r = await fetch(`/api/lookupDriverByNumber?raceNumber=${encodeURIComponent(num)}`);
+    const d = await r.json();
+    if (!d.success) { lookupErr(d.error || 'Driver not found'); return; }
+
+    // API returns { success, driver: {...}, entries: [...] }
+    const entries = d.entries || [];
+    if (!entries.length) { lookupErr('No entry data returned'); return; }
+
+    // If driver has entries in multiple classes, let operator pick
+    const uniqueClasses = [...new Set(entries.map(e => e.race_class))];
+    if (uniqueClasses.length > 1) {
+      await preloadEngines();
+      showEntryPicker(entries);
+      return;
+    }
+
+    // Single class — use first entry
+    const entry = entries[0];
+    currentDriver = buildDriver(entry);
+
+    // Refresh engine list
+    await preloadEngines();
+    openDraw();
+  } catch(e) {
+    lookupErr('Server error — try again');
+  } finally {
+    document.querySelector('#s-scan .go-btn').disabled = false;
+    document.querySelector('#s-scan .go-btn').textContent = 'LOOKUP DRIVER →';
+  }
+}
+
+// ─────────────────────────────────────────────────
+// DRAW SCREEN
+// ─────────────────────────────────────────────────
+function openDraw() {
+  const d = currentDriver;
+  document.getElementById('drawDriverNum').textContent  = '#' + d.race_number;
+  document.getElementById('drawDriverName').textContent = d.first_name + ' ' + d.last_name;
+  document.getElementById('drawDriverClass').textContent = d.race_class || '—';
+
+  const engEl = document.getElementById('drawDriverEngine');
+  if (d.engine_serial) {
+    engEl.textContent = '⚠️ Already drawn: ' + d.engine_serial;
+    engEl.style.display = 'block';
+  } else {
+    engEl.style.display = 'none';
+  }
+
+  // Show RETURN button only when driver already has an engine assigned
+  const retBtn = document.getElementById('returnBtn');
+  if (retBtn) retBtn.classList.toggle('show', !!d.engine_serial);
+
+  // Filter engines for this class, sorted by draw_number numerically
+  classEngines = allEngines
+    .filter(e => (e.class || '').toLowerCase() === (d.race_class || '').toLowerCase())
+    .sort((a, b) => (parseInt(a.draw_number)||0) - (parseInt(b.draw_number)||0));
+
+  document.getElementById('drawClassLabel').textContent =
+    (d.race_class || 'ALL') + ' — PICK DRAW NUMBER';
+
+  renderDrawGrid();
+  showScreen('s-draw');
+}
+
+function renderDrawGrid() {
+  const grid = document.getElementById('drawGrid');
+  const noMsg = document.getElementById('noEnginesMsg');
+
+  if (!classEngines.length) {
+    grid.innerHTML = '';
+    noMsg.style.display = 'block';
+    return;
+  }
+  noMsg.style.display = 'none';
+
+  grid.innerHTML = classEngines.map(e => {
+    // Determine state
+    const isMyEngine = currentDriver.engine_serial &&
+      e.engine_serial &&
+      e.engine_serial.toUpperCase() === currentDriver.engine_serial.toUpperCase();
+
+    const takenByOther = e.assigned_driver_name && !isMyEngine;
+    const isSelected   = selectedEngine && selectedEngine.engine_id === e.engine_id;
+
+    let cls = 'draw-card';
+    if (isSelected)     cls += ' selected';
+    else if (isMyEngine) cls += ' mine';
+    else if (takenByOther) cls += ' taken';
+    else                cls += ' available';
+
+    const serialDisp = e.engine_serial || '—';
+    const whoDisp    = isMyEngine
+      ? '✓ YOURS'
+      : (takenByOther ? `#${e.assigned_race_number||'?'} ${(e.assigned_driver_name||'').split(' ')[1]||''}` : '');
+
+    const clickable = !takenByOther || isMyEngine;
+    const onclick   = clickable ? `selectDraw(${e.engine_id})` : '';
+
+    return `<div class="${cls}" onclick="${onclick}" data-id="${e.engine_id}">
+      <div class="draw-num">${e.draw_number}</div>
+      <div class="draw-serial">${serialDisp}</div>
+      ${whoDisp ? `<div class="draw-who">${whoDisp}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectDraw(engineId) {
+  const engine = classEngines.find(e => e.engine_id === engineId);
+  if (!engine) return;
+  selectedEngine = engine;
+  renderDrawGrid(); // re-render to show selected state
+  showSealScreen();
+}
+
+
+// ─────────────────────────────────────────────────
+// CONFIRM SCREEN
+// ─────────────────────────────────────────────────
+function showConfirm() {
+  const e = selectedEngine;
+  const d = currentDriver;
+
+  document.getElementById('cfDrawNum').textContent  = e.draw_number;
+  document.getElementById('cfDriver').textContent   = `#${d.race_number} ${d.first_name} ${d.last_name}`;
+  document.getElementById('cfClass').textContent    = d.race_class || '—';
+  document.getElementById('cfSerial').textContent   = e.engine_serial || '(no serial)';
+  document.getElementById('cfSeal').textContent     = e.seal_number   || '—';
+  document.getElementById('cfCarb').textContent     = e.carb_number   || '—';
+  document.getElementById('cfAirbox').textContent   = e.airbox_number || '—';
+  document.getElementById('cfExhaust').textContent  = e.exhaust_number|| '—';
+
+  // Hide rows with no data
+  ['cfSealRow','cfCarbRow','cfAirboxRow','cfExhaustRow'].forEach(id => {
+    const row = document.getElementById(id);
+    const val = row.querySelector('.val').textContent;
+    row.style.display = (val && val !== '—') ? 'flex' : 'none';
+  });
+
+  document.getElementById('cfErr').textContent = '';
+  document.getElementById('cfConfirmBtn').disabled = false;
+  showScreen('s-confirm');
+}
+
+async function confirmDraw() {
+  const e = selectedEngine;
+  const d = currentDriver;
+
+  if (!e.engine_serial) {
+    // Still confirm even without serial — just record by draw number in notes
+    // (assignEngine needs a serial; skip API call, just record locally)
+    showDone(e, d);
+    return;
+  }
+
+  document.getElementById('cfConfirmBtn').disabled = true;
+  document.getElementById('cfConfirmBtn').textContent = 'ASSIGNING…';
+  document.getElementById('cfErr').textContent = '';
+
+  try {
+    const body = {
+      engineSerial: e.engine_serial,
+      driverId:     d.driver_id,
+      entryId:      d.entry_id,
+      ticketBarcode: null
+    };
+    const r = await fetch('/api/assignEngine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const resp = await r.json();
+    if (resp.success) {
+      // Update our local state
+      currentDriver.engine_serial = e.engine_serial;
+      // Mark engine as assigned in our local cache
+      const eng = allEngines.find(x => x.engine_id === e.engine_id);
+      if (eng) {
+        eng.assigned_driver_name  = d.first_name + ' ' + d.last_name;
+        eng.assigned_race_number  = d.race_number;
+      }
+      showDone(e, d);
+    } else {
+      document.getElementById('cfErr').textContent = resp.error || 'Assignment failed';
+      document.getElementById('cfConfirmBtn').disabled = false;
+      document.getElementById('cfConfirmBtn').textContent = '✅ CONFIRM DRAW';
+    }
+  } catch(err) {
+    document.getElementById('cfErr').textContent = 'Server error — try again';
+    document.getElementById('cfConfirmBtn').disabled = false;
+    document.getElementById('cfConfirmBtn').textContent = '✅ CONFIRM DRAW';
+  }
+}
+
+// ─────────────────────────────────────────────────
+// DONE SCREEN
+// ─────────────────────────────────────────────────
+function showDone(engine, driver) {
+  document.getElementById('doneDriver').textContent = `#${driver.race_number} ${driver.first_name} ${driver.last_name}`;
+  document.getElementById('doneClass').textContent  = driver.race_class || '';
+  document.getElementById('doneSerial').textContent = engine.engine_serial || `Draw #${engine.draw_number}`;
+  const sealParts = [];
+  if (engine.seal_number)    sealParts.push('SEAL ' + engine.seal_number);
+  if (engine.carb_number)    sealParts.push('CARB ' + engine.carb_number);
+  document.getElementById('doneSeal').textContent = sealParts.join('  ·  ');
+  showScreen('s-done');
+}
+
+// ─────────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────────
+function nextDriver() {
+  selectedEngine = null;
+  currentDriver  = null;
+  document.getElementById('raceNumInput').value = '';
+  document.getElementById('lookupErr').textContent = '';
+  document.getElementById('warnBanner').textContent = '';
+  document.getElementById('warnBanner').classList.remove('show');
+  document.getElementById('cfConfirmBtn').textContent = '✅ CONFIRM DRAW';
+  showScreen('s-scan');
+}
+
+function goScan() {
+  selectedEngine = null;
+  document.getElementById('raceNumInput').value = '';
+  document.getElementById('lookupErr').textContent = '';
+  showScreen('s-scan');
+}
+
+// ─────────────────────────────────────────────────
+// RETURN ENGINE FLOW
+// ─────────────────────────────────────────────────
+let _returnEngine   = null;  // pool engine record matching driver's serial
+let _periState      = {};    // { seal_number: 'pending'|'ok'|'fail', ... }
+let _periScanTarget = null;  // which peripheral is being camera-scanned
+let _sigCanvas = null, _sigCtx = null, _sigDrawing = false, _sigHasMark = false;
+
+const PERI_DEFS = [
+  { key: 'seal_number',    label: 'SEAL #',    icon: '🔒' },
+  { key: 'carb_number',    label: 'CARB #',    icon: '⚙️' },
+  { key: 'airbox_number',  label: 'AIRBOX #',  icon: '💨' },
+  { key: 'exhaust_number', label: 'EXHAUST #', icon: '🔩' },
+];
+
+function showReturnScreen() {
+  const d = currentDriver;
+  if (!d || !d.engine_serial) { alert('No engine assigned to return'); return; }
+
+  // Find matching pool engine record
+  _returnEngine = allEngines.find(e =>
+    e.engine_serial && e.engine_serial.toUpperCase() === d.engine_serial.toUpperCase()
+  ) || { engine_serial: d.engine_serial, draw_number: '?', class: d.race_class };
+
+  _periState      = {};
+  _periScanTarget = null;
+  _sigHasMark     = false;
+
+  document.getElementById('retDriverNum').textContent   = '#' + d.race_number;
+  document.getElementById('retDriverName').textContent  = d.first_name + ' ' + d.last_name;
+  document.getElementById('retDriverClass').textContent = d.race_class || '—';
+  document.getElementById('retDrawBadge').textContent   = 'DRAW #' + (_returnEngine.draw_number || '?');
+  document.getElementById('retEngineSerial').textContent = _returnEngine.engine_serial || d.engine_serial;
+  document.getElementById('retEngineClass').textContent  = (_returnEngine.class || d.race_class || '').toUpperCase();
+  document.getElementById('retErr').textContent = '';
+  document.getElementById('retConfirmBtn').disabled = false;
+  document.getElementById('retConfirmBtn').textContent = '♻️ CONFIRM RETURN';
+
+  renderRetBody();
+  showScreen('s-return');
+  setTimeout(initSigCanvas, 80);
+}
+
+function renderRetBody() {
+  const e = _returnEngine;
+  const activePeri = PERI_DEFS.filter(p => e[p.key]);
+  let html = '';
+
+  if (activePeri.length) {
+    html += `<div class="ret-section">COMPONENT CHECK</div>`;
+    html += activePeri.map(p => {
+      const st  = _periState[p.key] || 'pending';
+      const rowCls  = st === 'ok' ? 'peri-row peri-ok' : st === 'fail' ? 'peri-row peri-fail' : 'peri-row';
+      const tickCls = st === 'ok' ? 'peri-tick-btn ok' : 'peri-tick-btn';
+      const scanCls = st === 'ok' ? 'peri-scan-btn ok' : st === 'fail' ? 'peri-scan-btn fail' : 'peri-scan-btn';
+      const icon    = st === 'ok' ? '✅' : st === 'fail' ? '❌' : '○';
+      return `<div class="${rowCls}" id="peri-row-${p.key}">
+        <div class="peri-status">${icon}</div>
+        <div class="peri-info">
+          <div class="peri-label">${p.icon} ${p.label}</div>
+          <div class="peri-val">${e[p.key]}</div>
+        </div>
+        <div class="peri-actions">
+          <button class="${tickCls}" onclick="tickPeri('${p.key}')">✓ TICK</button>
+          <button class="${scanCls}" onclick="scanPeri('${p.key}')" title="Scan barcode">📷</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  html += `<div class="ret-section">DRIVER SIGNATURE</div>
+  <div class="sig-wrap" id="sigWrap">
+    <canvas id="sigCanvas" height="160"></canvas>
+    <div class="sig-foot">
+      <span class="sig-hint">Driver signs to confirm return</span>
+      <button class="sig-clear" onclick="clearSig()">✕ CLEAR</button>
+    </div>
+  </div>`;
+
+  document.getElementById('retBody').innerHTML = html;
+}
+
+// ── Peripheral actions ───────────────────────
+function tickPeri(key) {
+  _periState[key] = 'ok';
+  renderRetBody();
+  setTimeout(initSigCanvas, 50);
+}
+
+function scanPeri(key) {
+  _periScanTarget = key;
+  startCam('peri-scan');
+}
+
+function onPeriScanned(raw) {
+  const key = _periScanTarget;
+  _periScanTarget = null;
+  if (!key || !_returnEngine) return;
+  const expected = (_returnEngine[key] || '').toUpperCase().replace(/\s/g, '');
+  const scanned  = raw.toUpperCase().replace(/\s/g, '');
+  _periState[key] = (scanned === expected || expected.includes(scanned) || scanned.includes(expected))
+    ? 'ok' : 'fail';
+  renderRetBody();
+  setTimeout(initSigCanvas, 50);
+}
+
+// ── Signature canvas ─────────────────────────
+function initSigCanvas() {
+  const wrap = document.getElementById('sigWrap');
+  const old  = document.getElementById('sigCanvas');
+  if (!old || !wrap) return;
+
+  // Clone to remove old listeners
+  const canvas = old.cloneNode(false);
+  canvas.height = 160;
+  wrap.replaceChild(canvas, old);
+  _sigCanvas = canvas;
+  _sigCtx    = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth || canvas.parentElement.offsetWidth || 300;
+  _sigCtx.strokeStyle = '#e2e8f0';
+  _sigCtx.lineWidth   = 2.5;
+  _sigCtx.lineCap     = 'round';
+  _sigCtx.lineJoin    = 'round';
+  _sigDrawing = false;
+
+  const pos = ev => {
+    const r   = canvas.getBoundingClientRect();
+    const src = ev.touches ? ev.touches[0] : ev;
+    return { x: (src.clientX - r.left) * (canvas.width / r.width),
+             y: (src.clientY - r.top)  * (canvas.height / r.height) };
+  };
+  canvas.addEventListener('pointerdown', ev => {
+    ev.preventDefault(); _sigDrawing = true;
+    const p = pos(ev); _sigCtx.beginPath(); _sigCtx.moveTo(p.x, p.y);
+  }, { passive: false });
+  canvas.addEventListener('pointermove', ev => {
+    if (!_sigDrawing) return; ev.preventDefault();
+    const p = pos(ev); _sigCtx.lineTo(p.x, p.y); _sigCtx.stroke();
+    _sigHasMark = true;
+    document.getElementById('sigWrap')?.classList.add('has-sig');
+  }, { passive: false });
+  canvas.addEventListener('pointerup',    () => { _sigDrawing = false; });
+  canvas.addEventListener('pointerleave', () => { _sigDrawing = false; });
+}
+
+function clearSig() {
+  if (!_sigCanvas || !_sigCtx) return;
+  _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height);
+  _sigHasMark = false;
+  document.getElementById('sigWrap')?.classList.remove('has-sig');
+}
+
+// ── Confirm return ───────────────────────────
+async function confirmReturn() {
+  if (!_sigHasMark) {
+    document.getElementById('retErr').textContent = 'Driver signature required before confirming';
+    return;
+  }
+
+  const btn = document.getElementById('retConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'PROCESSING…';
+  document.getElementById('retErr').textContent = '';
+
+  let signatureData = null;
+  try { signatureData = _sigCanvas.toDataURL('image/png'); } catch(_) {}
+
+  const d = currentDriver;
+  const e = _returnEngine;
+
+  try {
+    const body = {
+      engineSerial:       e.engine_serial || null,
+      entryId:            d.entry_id,
+      driverId:           d.driver_id,
+      peripheralsChecked: _periState,
+      signatureData:      signatureData,
+      scannedBy:          currentScanner?.name || currentScanner?.scanner_name || 'Return Station',
+      notes: `Draw #${e.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`
+    };
+    const r    = await fetch('/api/returnEngine', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const resp = await r.json();
+    if (resp.success) {
+      // Update local cache
+      currentDriver.engine_serial = null;
+      const cached = allEngines.find(x => x.engine_serial && e.engine_serial &&
+        x.engine_serial.toUpperCase() === e.engine_serial.toUpperCase());
+      if (cached) { cached.assigned_driver_name = null; cached.assigned_race_number = null; }
+      showReturnDone(e, d);
+    } else {
+      document.getElementById('retErr').textContent = resp.error || 'Return failed — try again';
+      btn.disabled = false;
+      btn.textContent = '♻️ CONFIRM RETURN';
+    }
+  } catch(err) {
+    document.getElementById('retErr').textContent = 'Server error — try again';
+    btn.disabled = false;
+    btn.textContent = '♻️ CONFIRM RETURN';
+  }
+}
+
+function showReturnDone(engine, driver) {
+  document.getElementById('rdoneDriver').textContent = `#${driver.race_number} ${driver.first_name} ${driver.last_name}`;
+  document.getElementById('rdoneClass').textContent  = driver.race_class || '';
+  document.getElementById('rdoneSerial').textContent = engine.engine_serial || '—';
+  document.getElementById('rdoneDraw').textContent   = engine.draw_number !== '?' ? `Draw #${engine.draw_number}` : '';
+  showScreen('s-return-done');
+}
+</script>
+</body>
+</html>

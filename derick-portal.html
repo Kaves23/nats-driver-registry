@@ -515,7 +515,7 @@
             display:block;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
 </head>
 <body>
 
@@ -731,6 +731,21 @@ let currentTargetInput = null;
 let scanningActive  = false;
 let flashEnabled    = false;
 let searchDebounce  = null;
+
+// Shared decoder instances — created once, reused
+let _nativeDet = null;
+let _zxReader  = null;
+(function initDecoders() {
+    if (window.BarcodeDetector) {
+        _nativeDet = new BarcodeDetector({ formats: [
+            'qr_code', 'code_128', 'code_39', 'code_93',
+            'ean_13', 'ean_8', 'itf', 'data_matrix', 'aztec', 'pdf_417'
+        ]});
+    }
+    if (window.ZXing) {
+        try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
+    }
+})();
 
 // ── Navigation ───────────────────────────────────────────────────────────────
 function showSection(id) {
@@ -993,9 +1008,23 @@ async function openLiveScanner() {
     overlay.classList.add('active');
     scanningActive = true;
     const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode:'environment', width:{ ideal:1280 }, height:{ ideal:720 } }
+        video: {
+            facingMode: 'environment',
+            width: { ideal: 1920 }, height: { ideal: 1080 },
+            focusMode: { ideal: 'continuous' },
+            exposureMode: { ideal: 'continuous' },
+            whiteBalanceMode: { ideal: 'continuous' }
+        }
     });
     cameraStream = stream;
+    // Request continuous autofocus if the device supports it
+    try {
+        const track = stream.getVideoTracks()[0];
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.focusMode && caps.focusMode.includes('continuous')) {
+            track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+        }
+    } catch(_) {}
     const div = document.querySelector('#scanner-reader');
     div.innerHTML = '';
     const video = document.createElement('video');
@@ -1005,32 +1034,34 @@ async function openLiveScanner() {
     div.appendChild(video);
     video.srcObject = stream;
     await video.play();
-    if ('BarcodeDetector' in window) {
-        const det = new BarcodeDetector({ formats:['qr_code'] });
+    if (_nativeDet) {
         async function detect() {
             if (!scanningActive) return;
             try {
-                const results = await det.detect(video);
+                const results = await _nativeDet.detect(video);
                 if (results.length > 0) { onQRFound(results[0].rawValue); return; }
             } catch(e) {}
             if (scanningActive) requestAnimationFrame(detect);
         }
         requestAnimationFrame(detect);
-    } else {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        function liveJsQR() {
+    } else if (_zxReader) {
+        const zxCanvas = document.createElement('canvas');
+        const zxCtx = zxCanvas.getContext('2d', { willReadFrequently: true });
+        let lastZxTime = 0;
+        function liveZXing() {
             if (!scanningActive) return;
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0);
-                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts:'attemptBoth' });
-                if (qr && qr.data) { onQRFound(qr.data); return; }
+            const now = Date.now();
+            if (now - lastZxTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
+                lastZxTime = now;
+                zxCanvas.width = video.videoWidth; zxCanvas.height = video.videoHeight;
+                zxCtx.drawImage(video, 0, 0);
+                _zxReader.decodeFromCanvas(zxCanvas)
+                    .then(r => { if (r && scanningActive) { onQRFound(r.getText()); return; } })
+                    .catch(() => {});
             }
-            if (scanningActive) requestAnimationFrame(liveJsQR);
+            if (scanningActive) requestAnimationFrame(liveZXing);
         }
-        requestAnimationFrame(liveJsQR);
+        requestAnimationFrame(liveZXing);
     }
 }
 
@@ -1056,8 +1087,8 @@ function openPhotoCapture(inputId) {
 }
 
 function decodeQRFromImage(img, url, inputId) {
-    if ('BarcodeDetector' in window) {
-        new BarcodeDetector({ formats:['qr_code'] }).detect(img).then(results => {
+    if (_nativeDet) {
+        _nativeDet.detect(img).then(results => {
             URL.revokeObjectURL(url);
             if (results.length > 0) { onQRFound(results[0].rawValue); }
             else { decodeWithJsQR(img, inputId); }
@@ -1066,16 +1097,16 @@ function decodeQRFromImage(img, url, inputId) {
 }
 
 function decodeWithJsQR(img, inputId) {
-    const MAX = 800;
+    if (!_zxReader) { alert('Barcode decoder not loaded — try refreshing.'); return; }
+    const MAX = 1600;
     let w = img.naturalWidth, h = img.naturalHeight;
     if (w > MAX || h > MAX) { const s = MAX / Math.max(w,h); w = Math.round(w*s); h = Math.round(h*s); }
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    const imgData = canvas.getContext('2d').getImageData(0, 0, w, h);
-    const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts:'attemptBoth' });
-    if (qr && qr.data) { onQRFound(qr.data); }
-    else { alert('No QR/barcode found. Try getting closer or enter manually.'); }
+    _zxReader.decodeFromCanvas(canvas)
+        .then(r => { onQRFound(r.getText()); })
+        .catch(() => { alert('No barcode found. Try getting closer or enter manually.'); });
 }
 
 function onQRFound(value) {

@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Paddock Check</title>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<!-- ZXing: multi-format barcode decoder (QR + Code128/39/EAN/DataMatrix/Aztec/PDF417) -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--bg:#04080f;--card:#0a1628;--line:#0f2040;--text:#e2e8f0;--dim:#475569;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#38bdf8}
@@ -29,14 +30,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .pin-err{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
 
 /* ─ scan driver screen ─ */
-#s-driver{justify-content:center;gap:20px;align-items:center}
+#s-driver{justify-content:center;gap:20px;align-items:stretch}
 .label-small{font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center}
-.bib-input-row{display:flex;gap:8px;width:100%;max-width:320px}
-.bib-input{flex:1;background:var(--card);border:2px solid var(--line);border-radius:10px;color:var(--text);font-family:inherit;font-size:32px;font-weight:900;text-align:center;padding:12px;outline:none}
+.bib-input-row{display:flex;gap:8px;width:100%}
+.bib-input{flex:1;min-width:0;background:var(--card);border:2px solid var(--line);border-radius:10px;color:var(--text);font-family:inherit;font-size:32px;font-weight:900;text-align:center;padding:12px;outline:none}
 .bib-input:focus{border-color:var(--blue)}
-.scan-cam-btn{background:var(--card);border:2px solid var(--line);border-radius:10px;padding:12px 16px;color:var(--blue);font-size:22px;cursor:pointer}
+.scan-cam-btn{flex-shrink:0;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:12px 16px;color:var(--blue);font-size:22px;cursor:pointer}
 .scan-cam-btn:active{background:var(--blue);color:#fff}
-.go-btn{width:100%;max-width:320px;padding:16px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-family:inherit;font-size:18px;font-weight:900;letter-spacing:2px;cursor:pointer}
+.go-btn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-family:inherit;font-size:18px;font-weight:900;letter-spacing:2px;cursor:pointer}
 .go-btn:active{opacity:.8}
 .lookup-err{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
 
@@ -55,7 +56,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .eng-btn.ok{border-color:var(--green);background:#001a00;color:var(--green)}
 .eng-btn.fail{border-color:var(--red);background:#1a0000;color:var(--red)}
 .eng-btn:active{opacity:.8}
-.eng-serial{font-size:11px;letter-spacing:1px;color:var(--dim);text-align:center;margin-top:-4px}
+.eng-serial{font-size:11px;letter-spacing:1px;color:var(--dim);text-align:center;margin-top:-4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* kart area */
 .kart-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-height:0}
@@ -76,6 +77,8 @@ svg#kart{width:100%;max-width:300px;height:auto;overflow:visible}
 .tyre-ok-mark{font-size:14px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
 
 .scan-hint{text-align:center;font-size:11px;letter-spacing:1px;color:var(--dim);min-height:18px}
+.home-btn{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--dim);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;flex-shrink:0}
+.home-btn:active{border-color:var(--blue);color:var(--blue)}
 
 /* ─ camera overlay ─ */
 #cam-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column}
@@ -149,6 +152,7 @@ svg#kart{width:100%;max-width:300px;height:auto;overflow:visible}
     <div class="sup">STEP 1</div>
     <div class="big" style="font-size:18px">SCAN DRIVER BIB</div>
   </div>
+  <div id="scanner-name-lbl" style="font-size:11px;letter-spacing:2px;color:var(--green);text-align:center;margin-top:-10px;min-height:14px;"></div>
   <div class="bib-input-row">
     <input class="bib-input" id="bib-input" type="number" inputmode="numeric" placeholder="##" maxlength="4">
     <button class="scan-cam-btn" onclick="openBibScanner()">📷</button>
@@ -188,48 +192,130 @@ svg#kart{width:100%;max-width:300px;height:auto;overflow:visible}
   <div class="eng-serial" id="eng-serial-lbl"></div>
 
   <div class="kart-wrap">
-    <svg id="kart" viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg">
-      <!-- chassis body -->
-      <rect x="72" y="68" width="76" height="208" rx="14" fill="#0d1e38" stroke="#1e3a5f" stroke-width="1.5"/>
-      <!-- front nose -->
-      <polygon points="94,68 126,68 118,42 102,42" fill="#0d1e38" stroke="#1e3a5f" stroke-width="1.5"/>
-      <!-- rear diffuser -->
-      <rect x="78" y="268" width="64" height="12" rx="4" fill="#0a1628"/>
-      <!-- cockpit/seat -->
-      <ellipse cx="110" cy="168" rx="22" ry="28" fill="#060e1c" stroke="#1e3a5f" stroke-width="1.5"/>
-      <ellipse cx="110" cy="158" rx="10" ry="12" fill="#0a1628" stroke="#334155" stroke-width="1"/>
-      <!-- front axle -->
-      <rect x="38" y="84" width="144" height="7" rx="3" fill="#1e3a5f"/>
-      <!-- rear axle -->
-      <rect x="38" y="264" width="144" height="7" rx="3" fill="#1e3a5f"/>
+    <svg id="kart" viewBox="0 0 220 350" xmlns="http://www.w3.org/2000/svg">
 
+      <!-- ══ FRONT WING ══ -->
+      <!-- end plates -->
+      <rect x="20" y="18" width="9" height="30" rx="3" fill="#0d2040" stroke="#1e4a7f" stroke-width="1"/>
+      <rect x="191" y="18" width="9" height="30" rx="3" fill="#0d2040" stroke="#1e4a7f" stroke-width="1"/>
+      <!-- upper cascade element -->
+      <rect x="30" y="22" width="160" height="7" rx="3" fill="#0a1628" stroke="#1e3a5f" stroke-width="1"/>
+      <!-- main flap -->
+      <rect x="22" y="30" width="176" height="10" rx="3" fill="#0d2040" stroke="#2a5a9f" stroke-width="1.5"/>
+      <!-- nose attachment pillars -->
+      <rect x="90" y="38" width="7" height="14" rx="2" fill="#1e3a5f"/>
+      <rect x="123" y="38" width="7" height="14" rx="2" fill="#1e3a5f"/>
+
+      <!-- ══ NOSE CONE ══ -->
+      <polygon points="99,93 87,56 110,40 133,56 121,93" fill="#0d1e38" stroke="#1e3a5f" stroke-width="1.5"/>
+      <!-- nose tip line detail -->
+      <line x1="110" y1="42" x2="110" y2="92" stroke="#1e4060" stroke-width="1" opacity="0.5"/>
+
+      <!-- ══ FRONT SUSPENSION WISHBONES ══ -->
+      <line x1="42" y1="100" x2="99" y2="105" stroke="#1e3a5f" stroke-width="2"/>
+      <line x1="178" y1="100" x2="121" y2="105" stroke="#1e3a5f" stroke-width="2"/>
+      <line x1="42" y1="112" x2="99" y2="114" stroke="#1e3a5f" stroke-width="1.5"/>
+      <line x1="178" y1="112" x2="121" y2="114" stroke="#1e3a5f" stroke-width="1.5"/>
+
+      <!-- ══ MAIN MONOCOQUE / CHASSIS ══ -->
+      <path d="M 99,93 L 74,108 L 71,162 L 149,162 L 146,108 L 121,93 Z"
+            fill="#0d1e38" stroke="#1e3a5f" stroke-width="1.5"/>
+
+      <!-- ══ SIDEPODS ══ -->
+      <!-- left sidepod -->
+      <path d="M 71,160 L 36,172 L 34,228 L 54,236 L 71,232 Z"
+            fill="#0d1e38" stroke="#1e3a5f" stroke-width="1.5"/>
+      <!-- right sidepod -->
+      <path d="M 149,160 L 184,172 L 186,228 L 166,236 L 149,232 Z"
+            fill="#0d1e38" stroke="#1e3a5f" stroke-width="1.5"/>
+      <!-- sidepod radiator inlet (left) -->
+      <ellipse cx="49" cy="183" rx="9" ry="18" fill="#060e1c" stroke="#1e4a7f" stroke-width="1"/>
+      <!-- sidepod radiator inlet (right) -->
+      <ellipse cx="171" cy="183" rx="9" ry="18" fill="#060e1c" stroke="#1e4a7f" stroke-width="1"/>
+      <!-- sidepod highlight stripe (left) -->
+      <line x1="38" y1="185" x2="38" y2="218" stroke="#38bdf8" stroke-width="1.5" opacity="0.25"/>
+      <!-- sidepod highlight stripe (right) -->
+      <line x1="182" y1="185" x2="182" y2="218" stroke="#38bdf8" stroke-width="1.5" opacity="0.25"/>
+
+      <!-- ══ COCKPIT OPENING ══ -->
+      <ellipse cx="110" cy="148" rx="17" ry="21" fill="#060e1c" stroke="#334155" stroke-width="1.5"/>
+
+      <!-- ══ HALO STRUCTURE ══ -->
+      <path d="M 94,144 Q 110,128 126,144" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+      <line x1="94" y1="144" x2="97" y2="164" stroke="#38bdf8" stroke-width="2.5"/>
+      <line x1="126" y1="144" x2="123" y2="164" stroke="#38bdf8" stroke-width="2.5"/>
+      <!-- centre halo mirror -->
+      <rect x="107" y="126" width="6" height="8" rx="2" fill="#1e3a5f" stroke="#38bdf8" stroke-width="1"/>
+
+      <!-- ══ ENGINE AIRBOX / COVER ══ -->
+      <!-- airbox intake -->
+      <rect x="105" y="157" width="10" height="9" rx="3" fill="#060e1c" stroke="#38bdf8" stroke-width="1"/>
+      <!-- engine cover panel -->
+      <path d="M 71,232 L 74,256 L 80,284 L 140,284 L 146,256 L 149,232 Z" fill="#0d1e38" stroke="#1e3a5f" stroke-width="1.5"/>
+      <!-- engine fin detail -->
+      <line x1="110" y1="168" x2="110" y2="280" stroke="#1e4060" stroke-width="1.5" opacity="0.4"/>
+
+      <!-- ══ LIVERY STRIPE (centre line) ══ -->
+      <line x1="110" y1="95" x2="110" y2="165" stroke="#38bdf8" stroke-width="1" opacity="0.35"/>
+
+      <!-- ══ REAR AXLE ══ -->
+      <rect x="34" y="260" width="152" height="7" rx="3" fill="#1e3a5f"/>
+
+      <!-- ══ REAR SUSPENSION ══ -->
+      <line x1="44" y1="262" x2="76" y2="268" stroke="#1e3a5f" stroke-width="2"/>
+      <line x1="176" y1="262" x2="144" y2="268" stroke="#1e3a5f" stroke-width="2"/>
+
+      <!-- ══ DIFFUSER ══ -->
+      <rect x="78" y="283" width="64" height="10" rx="4" fill="#060e1c" stroke="#334155" stroke-width="1"/>
+      <!-- diffuser fins -->
+      <line x1="93" y1="284" x2="93" y2="292" stroke="#1e3a5f" stroke-width="1"/>
+      <line x1="102" y1="284" x2="102" y2="292" stroke="#1e3a5f" stroke-width="1"/>
+      <line x1="110" y1="284" x2="110" y2="292" stroke="#1e3a5f" stroke-width="1"/>
+      <line x1="118" y1="284" x2="118" y2="292" stroke="#1e3a5f" stroke-width="1"/>
+      <line x1="127" y1="284" x2="127" y2="292" stroke="#1e3a5f" stroke-width="1"/>
+
+      <!-- ══ REAR WING ══ -->
+      <!-- end plates -->
+      <rect x="22" y="300" width="10" height="36" rx="3" fill="#0d2040" stroke="#1e4a7f" stroke-width="1"/>
+      <rect x="188" y="300" width="10" height="36" rx="3" fill="#0d2040" stroke="#1e4a7f" stroke-width="1"/>
+      <!-- lower beam wing -->
+      <rect x="30" y="306" width="160" height="7" rx="3" fill="#0a1628" stroke="#1e3a5f" stroke-width="1"/>
+      <!-- main plane -->
+      <rect x="24" y="315" width="172" height="11" rx="3" fill="#0d2040" stroke="#2a5a9f" stroke-width="1.5"/>
+      <!-- DRS flap gap detail -->
+      <rect x="32" y="327" width="156" height="5" rx="2" fill="#060e1c" stroke="#1e3a5f" stroke-width="1"/>
+
+      <!-- ══ TYRES (rendered last — on top) ══ -->
       <!-- FL tyre -->
       <g class="tyre-zone idle" id="tyr-fl" onclick="selectTyre('front_left')">
-        <rect x="16" y="68" width="36" height="58" rx="8"/>
-        <text class="tyre-label" id="lbl-fl" x="34" y="136">FL</text>
-        <text class="tyre-ok-mark" id="ok-fl" x="34" y="98" style="display:none">✓</text>
+        <rect x="10" y="64" width="34" height="62" rx="9"/>
+        <text class="tyre-label" id="lbl-fl" x="27" y="136">FL</text>
+        <text class="tyre-ok-mark" id="ok-fl" x="27" y="96" style="display:none">✓</text>
       </g>
       <!-- FR tyre -->
       <g class="tyre-zone idle" id="tyr-fr" onclick="selectTyre('front_right')">
-        <rect x="168" y="68" width="36" height="58" rx="8"/>
-        <text class="tyre-label" id="lbl-fr" x="186" y="136">FR</text>
-        <text class="tyre-ok-mark" id="ok-fr" x="186" y="98" style="display:none">✓</text>
+        <rect x="176" y="64" width="34" height="62" rx="9"/>
+        <text class="tyre-label" id="lbl-fr" x="193" y="136">FR</text>
+        <text class="tyre-ok-mark" id="ok-fr" x="193" y="96" style="display:none">✓</text>
       </g>
       <!-- RL tyre -->
       <g class="tyre-zone idle" id="tyr-rl" onclick="selectTyre('rear_left')">
-        <rect x="14" y="250" width="38" height="64" rx="9"/>
-        <text class="tyre-label" id="lbl-rl" x="33" y="326">RL</text>
-        <text class="tyre-ok-mark" id="ok-rl" x="33" y="283" style="display:none">✓</text>
+        <rect x="8" y="248" width="38" height="70" rx="10"/>
+        <text class="tyre-label" id="lbl-rl" x="27" y="328">RL</text>
+        <text class="tyre-ok-mark" id="ok-rl" x="27" y="284" style="display:none">✓</text>
       </g>
       <!-- RR tyre -->
       <g class="tyre-zone idle" id="tyr-rr" onclick="selectTyre('rear_right')">
-        <rect x="168" y="250" width="38" height="64" rx="9"/>
-        <text class="tyre-label" id="lbl-rr" x="187" y="326">RR</text>
-        <text class="tyre-ok-mark" id="ok-rr" x="187" y="283" style="display:none">✓</text>
+        <rect x="174" y="248" width="38" height="70" rx="10"/>
+        <text class="tyre-label" id="lbl-rr" x="193" y="328">RR</text>
+        <text class="tyre-ok-mark" id="ok-rr" x="193" y="284" style="display:none">✓</text>
       </g>
+
     </svg>
     <div class="scan-hint" id="scan-hint">Tap a tyre to begin scan</div>
   </div>
+
+  <button class="home-btn" onclick="goBack()">🏠 &nbsp;HOME — NEW DRIVER</button>
 </div>
 
 <!-- ═══ CAMERA OVERLAY ═══ -->
@@ -265,8 +351,8 @@ function beepPin(){beep(660,.06,undefined,.2)}
 function flash(color,dur=120){const f=document.getElementById('flash');f.style.background=color;f.style.opacity='1';setTimeout(()=>f.style.opacity='0',dur)}
 
 // ── PIN ────────────────────────────────────────────────
-const PIN='5667';
 let pinVal='';
+let currentScanner=null;
 function pinKey(k){
   if(k==='del'){pinVal=pinVal.slice(0,-1)}
   else if(k==='ok'){checkPin()}
@@ -277,16 +363,36 @@ function pinKey(k){
 function updatePinDots(){
   for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pinVal.length);
 }
-function checkPin(){
-  if(pinVal===PIN){flash('rgba(34,197,94,.2)',200);showScreen('s-driver')}
-  else{document.getElementById('pin-err').textContent='WRONG CODE';flash('rgba(239,68,68,.25)',250);beepFail();pinVal='';updatePinDots();setTimeout(()=>document.getElementById('pin-err').textContent='',1500)}
+async function checkPin(){
+  if(pinVal.length<4) return;
+  const entered=pinVal;
+  try{
+    const r=await fetch('/api/verifyScanner',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:entered})});
+    const d=await r.json();
+    if(d.success){
+      currentScanner={name:d.scanner_name,id:d.scanner_id};
+      flash('rgba(34,197,94,.2)',200);
+      document.getElementById('scanner-name-lbl').textContent=d.scanner_name.toUpperCase();
+      showScreen('s-driver');
+    } else {
+      document.getElementById('pin-err').textContent='WRONG CODE';
+      flash('rgba(239,68,68,.25)',250);beepFail();
+      pinVal='';updatePinDots();
+      setTimeout(()=>document.getElementById('pin-err').textContent='',1500);
+    }
+  }catch(e){
+    document.getElementById('pin-err').textContent='ERROR — TRY AGAIN';
+    flash('rgba(239,68,68,.25)',250);
+    pinVal='';updatePinDots();
+    setTimeout(()=>document.getElementById('pin-err').textContent='',2000);
+  }
 }
 
 // ── screens ────────────────────────────────────────────
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
 // ── driver lookup ──────────────────────────────────────
-let driver=null, tyres=null, allEntries=null;
+let driver=null, tyres=null, allEntries=null, driverSealNumber=null;
 async function lookupDriver(){
   const num=(document.getElementById('bib-input').value||'').trim();
   if(!num){document.getElementById('lookup-err').textContent='Enter race number';return}
@@ -328,35 +434,58 @@ function pickEntry(entry){
   driver={driver_id:entry.driver_id,entry_id:entry.entry_id,first_name:entry.first_name,last_name:entry.last_name,race_number:entry.race_number,race_class:entry.race_class,engine_serial:entry.engine_serial};
   tyres=entry.tyres||null;
   // Broadcast check event to live monitor
-  fetch('/api/logDriverCheck',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:driver.driver_id,entry_id:driver.entry_id,driver_name:driver.first_name+' '+driver.last_name+' #'+driver.race_number,race_class:driver.race_class,engine_serial:driver.engine_serial||null,registered_tyres:!!(tyres&&tyres.front_left)})}).catch(e=>console.error('[monitor] driver_check failed:',e));
+  fetch('/api/logDriverCheck',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:driver.driver_id,entry_id:driver.entry_id,driver_name:driver.first_name+' '+driver.last_name+' #'+driver.race_number,race_class:driver.race_class,engine_serial:driver.engine_serial||null,registered_tyres:!!(tyres&&tyres.front_left),scanned_by:currentScanner?.name||'Check Station'})}).catch(e=>console.error('[monitor] driver_check failed:',e));
   openCheckScreen();
 }
 function openCheckScreen(){
+  driverSealNumber=null;
   document.getElementById('chk-num').textContent='#'+(driver.race_number||'?');
   document.getElementById('chk-name').textContent=(driver.first_name+' '+driver.last_name).toUpperCase();
   document.getElementById('chk-class').textContent=(driver.race_class||'').toUpperCase();
   document.getElementById('eng-label').textContent='SCAN ENGINE';
-  document.getElementById('eng-serial-lbl').textContent=driver.engine_serial?'ASSIGNED: '+driver.engine_serial:'NO ENGINE ASSIGNED';
   resetEngineBtn();
   resetTyres();
   showScreen('s-check');
+  // Load pool engines to find seal number for this driver's engine
+  if(driver.engine_serial){
+    fetch('/api/drawEngines')
+      .then(r=>r.json())
+      .then(d=>{
+        if(!d.success||!d.engines)return;
+        const pe=d.engines.find(e=>e.engine_serial&&e.engine_serial.toUpperCase()===driver.engine_serial.toUpperCase());
+        driverSealNumber=pe?.seal_number||null;
+        const serial='SERIAL: '+driver.engine_serial+(driverSealNumber?' | SEAL: '+driverSealNumber:'');
+        document.getElementById('eng-serial-lbl').textContent=serial;
+      })
+      .catch(()=>{});
+    document.getElementById('eng-serial-lbl').textContent='SERIAL: '+driver.engine_serial;
+  } else {
+    document.getElementById('eng-serial-lbl').textContent='NO ENGINE ASSIGNED';
+  }
 }
-function goBack(){driver=null;tyres=null;allEntries=null;document.getElementById('bib-input').value='';document.getElementById('lookup-err').textContent='';showScreen('s-driver')}
+function goBack(){driver=null;tyres=null;allEntries=null;driverSealNumber=null;document.getElementById('bib-input').value='';document.getElementById('lookup-err').textContent='';showScreen('s-driver')}
 
 // ── engine check ───────────────────────────────────────
 function resetEngineBtn(){const b=document.getElementById('eng-btn');b.className='eng-btn';b.querySelector('#eng-label').textContent='SCAN ENGINE'}
 function scanEngine(){
   if(!driver.engine_serial){alert('No engine assigned to this driver');return}
-  openCamera('engine','SCAN ENGINE SERIAL');
+  openCamera('engine','SCAN ENGINE SERIAL OR SEAL');
 }
 function onEngineScanned(serial){
-  const assigned=(driver.engine_serial||'').toUpperCase().replace(/\s/g,'');
+  const assignedSerial=(driver.engine_serial||'').toUpperCase().replace(/\s/g,'');
+  const assignedSeal=(driverSealNumber||'').toUpperCase().replace(/\s/g,'');
   const scanned=serial.toUpperCase().replace(/\s/g,'');
   const btn=document.getElementById('eng-btn');
   const lbl=document.getElementById('eng-label');
-  const pass=scanned===assigned||assigned.includes(scanned)||scanned.includes(assigned);
+
+  // Match against both engine serial AND seal number (interchangeable)
+  const matchSerial=assignedSerial&&(scanned===assignedSerial||assignedSerial.includes(scanned)||scanned.includes(assignedSerial));
+  const matchSeal=assignedSeal&&(scanned===assignedSeal||assignedSeal.includes(scanned)||scanned.includes(assignedSeal));
+  const pass=matchSerial||matchSeal;
+
   if(pass){
-    btn.className='eng-btn ok';lbl.textContent='✓ ENGINE OK — '+scanned;
+    const matchType=matchSeal&&!matchSerial?'SEAL':'ENGINE';
+    btn.className='eng-btn ok';lbl.textContent='✓ '+matchType+' OK — '+scanned;
     beepOk();flash('rgba(34,197,94,.3)',300);
   } else {
     btn.className='eng-btn fail';lbl.textContent='✗ WRONG ENGINE';
@@ -368,7 +497,8 @@ function onEngineScanned(serial){
     race_class:driver.race_class,engine_serial:scanned,
     scan_type:'engine_verify',
     action_result:pass?'success':'error',
-    notes:pass?'✓ Engine '+scanned+' verified':'✗ Scanned '+scanned+' — expected '+assigned
+    notes:pass?'✓ Engine '+scanned+' verified':'✗ Scanned '+scanned+' — expected serial '+assignedSerial+(assignedSeal?' or seal '+assignedSeal:''),
+    scanned_by:currentScanner?.name||'Check Station'
   })}).catch(e=>console.error('[monitor] engine_verify failed:',e));
 }
 
@@ -422,7 +552,8 @@ function onTyreScanned(serial, tyreKey){
       driver_name:driver.first_name+' '+driver.last_name+' #'+driver.race_number,
       race_class:driver.race_class,engine_serial:s,
       scan_type:'tyre_verify',action_result:'success',
-      notes:'🛵 Tyre '+pos+' ✓ — SN: '+s
+      notes:'🛵 Tyre '+pos+' ✓ — SN: '+s,
+      scanned_by:currentScanner?.name||'Check Station'
     })}).catch(e=>console.error('[monitor] tyre ok failed:',e));
     // advance clockwise to next un-verified tyre
     const allOk=CW.every(k=>tyreState[k]==='ok');
@@ -441,7 +572,8 @@ function onTyreScanned(serial, tyreKey){
       driver_name:driver.first_name+' '+driver.last_name+' #'+driver.race_number,
       race_class:driver.race_class,engine_serial:s,
       scan_type:'tyre_verify',action_result:'error',
-      notes:'🛵 Tyre '+pos+' ✗ — unrecognised SN: '+s
+      notes:'🛵 Tyre '+pos+' ✗ — unrecognised SN: '+s,
+      scanned_by:currentScanner?.name||'Check Station'
     })}).catch(e=>console.error('[monitor] tyre fail failed:',e));
     setTimeout(()=>{if(tyreState[key]==='fail')setTyreState(key,'idle');},1800);
   }
@@ -455,8 +587,27 @@ function openCamera(mode,label){
   document.getElementById('cam-manual-input').value='';
   document.getElementById('cam-overlay').classList.add('show');
   if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}})
-      .then(stream=>{camStream=stream;const v=document.getElementById('cam-video');v.srcObject=stream;v.onloadedmetadata=()=>{v.play();startDecode()}})
+    const constraints={video:{
+      facingMode:'environment',
+      width:{ideal:1920},height:{ideal:1080},
+      focusMode:{ideal:'continuous'},
+      exposureMode:{ideal:'continuous'},
+      whiteBalanceMode:{ideal:'continuous'}
+    }};
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(stream=>{
+        camStream=stream;
+        // Request continuous autofocus on the track if supported
+        try{
+          const track=stream.getVideoTracks()[0];
+          if(track.getCapabilities&&track.getCapabilities().focusMode&&track.getCapabilities().focusMode.includes('continuous')){
+            track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+          }
+        }catch(_){}
+        const v=document.getElementById('cam-video');
+        v.srcObject=stream;
+        v.onloadedmetadata=()=>{v.play();startDecode()};
+      })
       .catch(()=>{}); // fails gracefully — user can type manually
   }
 }
@@ -469,26 +620,52 @@ function closeCamera(){
   activeTyre=null;
   document.getElementById('scan-hint').textContent='Tap a tyre to begin scan';
 }
+// Decoder instances — created once per session, not per frame
+let _nativeDet=null, _zxReader=null;
+(function initDecoders(){
+  // Native BarcodeDetector (Chrome 83+, Android Chrome, Samsung Browser)
+  if(window.BarcodeDetector){
+    // getSupportedFormats is async — create with all commonly-available formats
+    _nativeDet=new BarcodeDetector({formats:[
+      'qr_code','code_128','code_39','code_93','ean_13','ean_8',
+      'itf','data_matrix','aztec','pdf_417','upc_a','upc_e'
+    ]});
+  }
+  // ZXing multi-format reader (QR + all 1D) — fallback for Safari/Firefox and any format
+  // BrowserMultiFormatReader is available in the ZXing UMD build as window.ZXing
+  if(window.ZXing){
+    try{_zxReader=new ZXing.BrowserMultiFormatReader();}catch(_){}
+  }
+})();
+
 function startDecode(){
   const v=document.getElementById('cam-video');
   const c=document.getElementById('cam-canvas');
   const ctx=c.getContext('2d',{willReadFrequently:true});
+  let lastZxTime=0;
   function tick(){
     if(!scanning){return}
     if(v.readyState>=2&&v.videoWidth>0){
-      c.width=v.videoWidth;c.height=v.videoHeight;
-      ctx.drawImage(v,0,0);
-      // Try BarcodeDetector first (fast native)
-      if(window.BarcodeDetector){
-        new BarcodeDetector({formats:['qr_code','code_128','code_39','ean_13','ean_8','itf','data_matrix']}).detect(v)
-          .then(r=>{if(r.length&&scanning){onScan(r[0].rawValue)}})
+      // ── Path 1: native BarcodeDetector (fastest, hardware-accelerated on Android)
+      if(_nativeDet){
+        _nativeDet.detect(v)
+          .then(r=>{if(r.length&&scanning)onScan(r[0].rawValue)})
           .catch(()=>{});
+        // Don't bother with software fallback when native is running
+        if(scanning)rafId=requestAnimationFrame(tick);
+        return;
       }
-      // jsQR fallback
-      if(typeof jsQR!=='undefined'){
-        const d=ctx.getImageData(0,0,c.width,c.height);
-        const q=jsQR(d.data,d.width,d.height,{inversionAttempts:'dontInvert'});
-        if(q&&scanning)onScan(q.data);
+      // ── Path 2: ZXing software decoder (throttled — handles 1D + 2D barcodes)
+      const now=Date.now();
+      if(now-lastZxTime>80){
+        lastZxTime=now;
+        c.width=v.videoWidth;c.height=v.videoHeight;
+        ctx.drawImage(v,0,0);
+        if(_zxReader){
+          _zxReader.decodeFromCanvas(c)
+            .then(r=>{if(r&&scanning)onScan(r.getText())})
+            .catch(()=>{});
+        }
       }
     }
     if(scanning)rafId=requestAnimationFrame(tick);
