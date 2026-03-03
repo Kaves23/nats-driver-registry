@@ -782,6 +782,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
     <!-- Camera Scanner Overlay -->
@@ -1411,43 +1412,61 @@
             video.srcObject = stream;
             await video.play();
 
-            // Use native BarcodeDetector if available, else ZXing multi-format fallback
+            // Decoder priority: native BarcodeDetector (Android) → jsQR (fast, iOS-friendly) → ZXing fallback
+            const liveCanvas = document.createElement('canvas');
+            const liveCtx = liveCanvas.getContext('2d', { willReadFrequently: true });
+            let lastScanTime = 0;
+
             if (_nativeDet) {
-                debugLog('Live — BarcodeDetector ready (hardware-accelerated)', 'success');
+                debugLog('Live — BarcodeDetector (hardware-accelerated)', 'success');
                 async function liveDetect() {
                     if (!scanningActive) return;
                     try {
                         const results = await _nativeDet.detect(video);
-                        if (results.length > 0) {
-                            onQRFound(results[0].rawValue);
-                            return;
-                        }
+                        if (results.length > 0) { onQRFound(results[0].rawValue); return; }
                     } catch(e) {}
                     if (scanningActive) requestAnimationFrame(liveDetect);
                 }
                 requestAnimationFrame(liveDetect);
+            } else if (window.jsQR) {
+                debugLog('Live — jsQR fast scanner ready', 'success');
+                function liveJsQR() {
+                    if (!scanningActive) return;
+                    const now = Date.now();
+                    if (now - lastScanTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
+                        lastScanTime = now;
+                        liveCanvas.width = video.videoWidth;
+                        liveCanvas.height = video.videoHeight;
+                        liveCtx.drawImage(video, 0, 0);
+                        const imgData = liveCtx.getImageData(0, 0, liveCanvas.width, liveCanvas.height);
+                        const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+                        if (code && scanningActive) { onQRFound(code.data); return; }
+                    }
+                    if (scanningActive) requestAnimationFrame(liveJsQR);
+                }
+                requestAnimationFrame(liveJsQR);
             } else if (_zxReader) {
-                debugLog('Live — ZXing multi-format reader ready', 'success');
-                const zxCanvas = document.createElement('canvas');
-                const zxCtx = zxCanvas.getContext('2d', { willReadFrequently: true });
-                let lastZxTime = 0;
+                debugLog('Live — ZXing fallback reader', 'success');
                 function liveZXing() {
                     if (!scanningActive) return;
                     const now = Date.now();
-                    if (now - lastZxTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
-                        lastZxTime = now;
-                        zxCanvas.width = video.videoWidth;
-                        zxCanvas.height = video.videoHeight;
-                        zxCtx.drawImage(video, 0, 0);
-                        // decodeFromCanvas is synchronous in ZXing 0.19.x — use try/catch not .then()
+                    if (now - lastScanTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
+                        lastScanTime = now;
+                        liveCanvas.width = video.videoWidth;
+                        liveCanvas.height = video.videoHeight;
+                        liveCtx.drawImage(video, 0, 0);
                         try {
-                            const r = _zxReader.decodeFromCanvas(zxCanvas);
+                            const r = _zxReader.decodeFromCanvas(liveCanvas);
                             if (r && scanningActive) { onQRFound(r.getText()); return; }
                         } catch(_) {}
                     }
                     if (scanningActive) requestAnimationFrame(liveZXing);
                 }
                 requestAnimationFrame(liveZXing);
+            } else {
+                debugLog('⚠️ No live decoder available — switching to photo mode', 'error');
+                closeCamera();
+                openPhotoCapture(inputId);
             }
         }
 
