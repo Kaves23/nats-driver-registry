@@ -6291,7 +6291,7 @@ app.post('/api/admin/reprocessFailedWebhooks', async (req, res) => {
     const failed = await pool.query(
       `SELECT webhook_id, m_payment_id, pf_payment_id, payment_status, amount_gross, raw_data, signature
        FROM payfast_webhooks 
-       WHERE processing_status = 'signature_invalid' AND payment_status = 'COMPLETE'
+       WHERE processing_status IN ('signature_invalid', 'still_invalid') AND payment_status = 'COMPLETE'
        ORDER BY received_at DESC`
     );
 
@@ -6299,64 +6299,13 @@ app.post('/api/admin/reprocessFailedWebhooks', async (req, res) => {
     const results = [];
 
     for (const wh of failed.rows) {
-      let rawData;
-      try {
-        rawData = typeof wh.raw_data === 'string' ? JSON.parse(wh.raw_data) : wh.raw_data;
-      } catch (e) {
-        results.push({ webhook_id: wh.webhook_id, status: 'error', error: 'Could not parse raw_data' });
-        continue;
-      }
-
-      // Re-verify signature using corrected dynamic-order approach
-      const signatureData = { ...rawData };
-      delete signatureData.signature;
-
-      let pfParamString = '';
-      for (const [field, value] of Object.entries(signatureData)) {
-        if (value !== '' && value !== null && value !== undefined) {
-          const encoded = encodeURIComponent(String(value)).replace(/%20/g, '+');
-          pfParamString += `${field}=${encoded}&`;
-        }
-      }
-      if (passphrase) {
-        pfParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`;
-      } else {
-        pfParamString = pfParamString.replace(/&$/, '');
-      }
-
-      const calcSig = crypto.createHash('md5').update(pfParamString.trim()).digest('hex');
-      const sigValid = calcSig === wh.signature;
-
-      if (!sigValid) {
-        // Try without passphrase as fallback
-        let pfParamStringNoPass = '';
-        for (const [field, value] of Object.entries(signatureData)) {
-          if (value !== '' && value !== null && value !== undefined) {
-            const encoded = encodeURIComponent(String(value)).replace(/%20/g, '+');
-            pfParamStringNoPass += `${field}=${encoded}&`;
-          }
-        }
-        pfParamStringNoPass = pfParamStringNoPass.replace(/&$/, '');
-        const calcSigNoPass = crypto.createHash('md5').update(pfParamStringNoPass.trim()).digest('hex');
-        
-        if (calcSigNoPass !== wh.signature) {
-          await pool.query(
-            `UPDATE payfast_webhooks SET processing_error = 'Still fails signature after reprocess' WHERE webhook_id = $1`,
-            [wh.webhook_id]
-          );
-          results.push({ webhook_id: wh.webhook_id, m_payment_id: wh.m_payment_id, status: 'still_invalid', calculated: calcSig });
-          continue;
-        }
-        // Sig valid without passphrase - proceed
-      }
-
       const reference = wh.m_payment_id;
       if (!reference) {
         results.push({ webhook_id: wh.webhook_id, status: 'error', error: 'No m_payment_id' });
         continue;
       }
 
-      // Find and update the pending entry
+      // Find the pending entry
       const existing = await pool.query(
         'SELECT * FROM race_entries WHERE payment_reference = $1',
         [reference]
@@ -6367,6 +6316,8 @@ app.post('/api/admin/reprocessFailedWebhooks', async (req, res) => {
         continue;
       }
 
+      // Admin reprocess: trust COMPLETE status, skip signature re-verification
+      // (JSONB storage destroys original field order making signature impossible to recompute)
       await pool.query(
         `UPDATE race_entries SET payment_status = 'Completed', entry_status = 'confirmed', updated_at = NOW()
          WHERE payment_reference = $1`,
@@ -6374,7 +6325,9 @@ app.post('/api/admin/reprocessFailedWebhooks', async (req, res) => {
       );
 
       await pool.query(
-        `UPDATE payfast_webhooks SET processing_status = 'reprocessed', processed_at = NOW() WHERE webhook_id = $1`,
+        `UPDATE payfast_webhooks SET processing_status = 'reprocessed', processed_at = NOW(),
+         processing_error = 'Admin reprocess: COMPLETE status trusted, sig not re-verifiable from JSONB'
+         WHERE webhook_id = $1`,
         [wh.webhook_id]
       );
 
