@@ -1533,15 +1533,15 @@
             const canvas = document.createElement('canvas');
             canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            _zxReader.decodeFromCanvas(canvas)
-                .then(result => {
-                    debugLog('✓ ZXing: ' + result.getText(), 'success');
-                    onQRFound(result.getText());
-                })
-                .catch(() => {
-                    debugLog('No barcode found (' + img.naturalWidth + 'x' + img.naturalHeight + ')', 'error');
-                    showError('No barcode found. Get closer and ensure good lighting, then try again.');
-                });
+            // decodeFromCanvas is synchronous in ZXing 0.19.x — throws NotFoundException on no result
+            try {
+                const result = _zxReader.decodeFromCanvas(canvas);
+                debugLog('✓ ZXing: ' + result.getText(), 'success');
+                onQRFound(result.getText());
+            } catch(_e) {
+                debugLog('No barcode found (' + img.naturalWidth + 'x' + img.naturalHeight + ')', 'error');
+                showError('No barcode found. Get closer and ensure good lighting, then try again.');
+            }
         }
 
         // Called when any scanner method finds a QR code
