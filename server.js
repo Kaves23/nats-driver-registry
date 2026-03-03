@@ -8,9 +8,9 @@ require('dotenv').config();
 let payfastSandboxMode = process.env.PAYFAST_SANDBOX === 'true';
 
 const PAYFAST_LIVE_CONFIG = {
-  merchantId:  process.env.PAYFAST_MERCHANT_ID,
-  merchantKey: process.env.PAYFAST_MERCHANT_KEY,
-  passphrase:  process.env.PAYFAST_PASSPHRASE || '',
+  merchantId:  process.env.PAYFAST_MERCHANT_ID  || '18906399',
+  merchantKey: process.env.PAYFAST_MERCHANT_KEY || 'fbxpiwtzoh1gg',
+  passphrase:  process.env.PAYFAST_PASSPHRASE   || 'RokCupZA2024',
   processUrl:  'https://www.payfast.co.za/eng/process'
 };
 
