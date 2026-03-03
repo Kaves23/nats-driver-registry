@@ -8348,8 +8348,19 @@ app.post('/api/confirmRaceEntry', async (req, res) => {
     const oldStatus = entryData.payment_status;
 
     const result = await pool.query(
-      `UPDATE race_entries SET payment_status = 'Confirmed', updated_at = NOW() WHERE entry_id = $1 RETURNING *`,
+      `UPDATE race_entries SET payment_status = 'Confirmed', entry_status = 'confirmed', updated_at = NOW() WHERE entry_id = $1 RETURNING *`,
       [entryId]
+    );
+
+    // Update driver's next_race_entry_status so the portal shows them as registered
+    await pool.query(
+      `UPDATE drivers SET next_race_entry_status = 'Registered',
+        next_race_engine_rental_status = CASE
+          WHEN (SELECT engine FROM race_entries WHERE entry_id = $1) = 1 THEN 'Yes'
+          ELSE next_race_engine_rental_status
+        END
+       WHERE driver_id = $2`,
+      [entryId, entryData.driver_id]
     );
 
     // Get driver email for audit log
