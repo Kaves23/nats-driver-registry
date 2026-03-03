@@ -48,13 +48,14 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         return res.json({ success: false, error: 'Invalid barcode format' });
       }
 
-      // Find entry with this ticket
+      // Find entry with this ticket (supports both single ref and JSON array stored refs)
       const result = await pool.query(`
         SELECT re.entry_id, re.driver_id, re.race_class, re.engine_serial,
                d.first_name, d.last_name, d.race_number, d.transponder_number
         FROM race_entries re
         JOIN drivers d ON re.driver_id = d.driver_id
         WHERE re.${ticketColumn} = $1
+           OR re.${ticketColumn}::text LIKE '%' || $1 || '%'
         ORDER BY re.created_at DESC
         LIMIT 1
       `, [barcodeUpper]);
