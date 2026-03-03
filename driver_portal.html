@@ -6749,7 +6749,7 @@
           codeMessage.style.display = 'block';
           codeMessage.style.color   = '#22c55e';
           codeMessage.textContent   = label;
-          const isFree = totalEl.textContent === 'R0.00' || totalEl.textContent === 'R0';
+          const isFree = (parseFloat(totalEl.textContent.replace('R','').replace(/\s/g,'').replace(',','.')) || 0) === 0;
           proceedBtn.textContent    = isFree ? 'Enter Race' : 'Pay →';
           proceedBtn.style.background = isFree ? '#3b82f6' : '#22c55e';
           proceedBtn.style.color      = '#000';
@@ -6809,7 +6809,8 @@
           hideModalError();
 
           const appliedDiscount = window.appliedDiscountCode;
-          const isFreeEntry     = totalPrice === 'R0.00' || totalPrice === 'R0' || totalPrice === 'R 0.00';
+          const _parsedTotal    = parseFloat(totalPrice.replace('R','').replace(/\s/g,'').replace(',','.')) || 0;
+          const isFreeEntry     = _parsedTotal === 0;
 
           if (isFreeEntry) {
             // R0 entries still go through the registration API so the entry is recorded
