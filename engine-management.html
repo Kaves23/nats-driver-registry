@@ -1439,9 +1439,11 @@
                         zxCanvas.width = video.videoWidth;
                         zxCanvas.height = video.videoHeight;
                         zxCtx.drawImage(video, 0, 0);
-                        _zxReader.decodeFromCanvas(zxCanvas)
-                            .then(r => { if (r && scanningActive) { onQRFound(r.getText()); return; } })
-                            .catch(() => {});
+                        // decodeFromCanvas is synchronous in ZXing 0.19.x — use try/catch not .then()
+                        try {
+                            const r = _zxReader.decodeFromCanvas(zxCanvas);
+                            if (r && scanningActive) { onQRFound(r.getText()); return; }
+                        } catch(_) {}
                     }
                     if (scanningActive) requestAnimationFrame(liveZXing);
                 }
