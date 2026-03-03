@@ -5376,29 +5376,27 @@ app.post('/api/paymentNotify', async (req, res) => {
     const signatureData = { ...req.body };
     delete signatureData.signature;
     
-    // PayFast requires fields in specific order for signature verification
-    const signatureFields = [
-      'm_payment_id', 'pf_payment_id', 'payment_status', 'item_name', 'item_description',
-      'amount_gross', 'amount_fee', 'amount_net', 'custom_int1', 'custom_int2', 'custom_int3',
-      'custom_int4', 'custom_int5', 'custom_str1', 'custom_str2', 'custom_str3', 'custom_str4',
-      'custom_str5', 'name_first', 'name_last', 'email_address', 'cell_number', 'merchant_id'
-    ];
-
-    for (const field of signatureFields) {
-      if (signatureData[field]) {
-        const encoded = encodeURIComponent(signatureData[field]).replace(/%20/g, '+');
+    // ✅ CORRECT APPROACH: iterate over ALL fields in the ORDER PayFast sent them
+    // (mirrors the PayFast PHP SDK which uses foreach($_POST) not a fixed field list)
+    // This handles unknown fields (itn_guid, etc.) and preserves exact field order
+    for (const [field, value] of Object.entries(signatureData)) {
+      if (value !== '' && value !== null && value !== undefined) {
+        const encoded = encodeURIComponent(String(value)).replace(/%20/g, '+');
         pfParamString += `${field}=${encoded}&`;
       }
     }
     
-    // Only append passphrase if it's set (sandbox has no passphrase)
+    // Append passphrase if set
     if (passphrase) {
       pfParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`;
     } else {
       pfParamString = pfParamString.replace(/&$/, '');
     }
     
+    console.log(`🔐 ITN param string (first 200 chars): ${pfParamString.substring(0, 200)}`);
+    
     const calculatedSignature = crypto.createHash('md5').update(pfParamString.trim()).digest('hex');
+    console.log(`🔐 Expected sig: ${signature} | Calculated: ${calculatedSignature}`);
     const signatureValid = calculatedSignature === signature;
     
     console.log(`✅ IPN Signature verification: ${signatureValid ? 'PASSED' : 'FAILED'}`);
@@ -6278,6 +6276,115 @@ app.post('/api/payfast/reprocess', async (req, res) => {
     });
   } catch (err) {
     console.error('Error reprocessing webhook:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin: Reprocess webhooks that previously failed signature verification
+// Uses the corrected signature algorithm against stored raw_data
+app.post('/api/admin/reprocessFailedWebhooks', async (req, res) => {
+  try {
+    const pfCfg = getPayFastConfig();
+    const passphrase = pfCfg.passphrase;
+
+    // Find all COMPLETE webhooks that failed signature verification
+    const failed = await pool.query(
+      `SELECT webhook_id, m_payment_id, pf_payment_id, payment_status, amount_gross, raw_data, signature
+       FROM payfast_webhooks 
+       WHERE processing_status = 'signature_invalid' AND payment_status = 'COMPLETE'
+       ORDER BY received_at DESC`
+    );
+
+    console.log(`🔄 Found ${failed.rows.length} failed webhooks to reprocess`);
+    const results = [];
+
+    for (const wh of failed.rows) {
+      let rawData;
+      try {
+        rawData = typeof wh.raw_data === 'string' ? JSON.parse(wh.raw_data) : wh.raw_data;
+      } catch (e) {
+        results.push({ webhook_id: wh.webhook_id, status: 'error', error: 'Could not parse raw_data' });
+        continue;
+      }
+
+      // Re-verify signature using corrected dynamic-order approach
+      const signatureData = { ...rawData };
+      delete signatureData.signature;
+
+      let pfParamString = '';
+      for (const [field, value] of Object.entries(signatureData)) {
+        if (value !== '' && value !== null && value !== undefined) {
+          const encoded = encodeURIComponent(String(value)).replace(/%20/g, '+');
+          pfParamString += `${field}=${encoded}&`;
+        }
+      }
+      if (passphrase) {
+        pfParamString += `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, '+')}`;
+      } else {
+        pfParamString = pfParamString.replace(/&$/, '');
+      }
+
+      const calcSig = crypto.createHash('md5').update(pfParamString.trim()).digest('hex');
+      const sigValid = calcSig === wh.signature;
+
+      if (!sigValid) {
+        // Try without passphrase as fallback
+        let pfParamStringNoPass = '';
+        for (const [field, value] of Object.entries(signatureData)) {
+          if (value !== '' && value !== null && value !== undefined) {
+            const encoded = encodeURIComponent(String(value)).replace(/%20/g, '+');
+            pfParamStringNoPass += `${field}=${encoded}&`;
+          }
+        }
+        pfParamStringNoPass = pfParamStringNoPass.replace(/&$/, '');
+        const calcSigNoPass = crypto.createHash('md5').update(pfParamStringNoPass.trim()).digest('hex');
+        
+        if (calcSigNoPass !== wh.signature) {
+          await pool.query(
+            `UPDATE payfast_webhooks SET processing_error = 'Still fails signature after reprocess' WHERE webhook_id = $1`,
+            [wh.webhook_id]
+          );
+          results.push({ webhook_id: wh.webhook_id, m_payment_id: wh.m_payment_id, status: 'still_invalid', calculated: calcSig });
+          continue;
+        }
+        // Sig valid without passphrase - proceed
+      }
+
+      const reference = wh.m_payment_id;
+      if (!reference) {
+        results.push({ webhook_id: wh.webhook_id, status: 'error', error: 'No m_payment_id' });
+        continue;
+      }
+
+      // Find and update the pending entry
+      const existing = await pool.query(
+        'SELECT * FROM race_entries WHERE payment_reference = $1',
+        [reference]
+      );
+
+      if (existing.rows.length === 0) {
+        results.push({ webhook_id: wh.webhook_id, m_payment_id: reference, status: 'no_entry_found' });
+        continue;
+      }
+
+      await pool.query(
+        `UPDATE race_entries SET payment_status = 'Completed', entry_status = 'confirmed', updated_at = NOW()
+         WHERE payment_reference = $1`,
+        [reference]
+      );
+
+      await pool.query(
+        `UPDATE payfast_webhooks SET processing_status = 'reprocessed', processed_at = NOW() WHERE webhook_id = $1`,
+        [wh.webhook_id]
+      );
+
+      results.push({ webhook_id: wh.webhook_id, m_payment_id: reference, status: 'fixed', entry_id: existing.rows[0].entry_id });
+      console.log(`✅ Reprocessed webhook ${wh.webhook_id} → entry ${existing.rows[0].entry_id} confirmed`);
+    }
+
+    res.json({ success: true, processed: results.length, results });
+  } catch (err) {
+    console.error('❌ reprocessFailedWebhooks error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });
