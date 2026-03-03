@@ -5378,9 +5378,10 @@ app.post('/api/paymentNotify', async (req, res) => {
     
     // ✅ CORRECT APPROACH: iterate over ALL fields in the ORDER PayFast sent them
     // (mirrors the PayFast PHP SDK which uses foreach($_POST) not a fixed field list)
-    // This handles unknown fields (itn_guid, etc.) and preserves exact field order
+    // IMPORTANT: include empty-string fields too — PayFast PHP SDK does urlencode($val)
+    // for ALL fields with no empty-string exclusion, so custom_int1=&custom_str1=& etc must be included
     for (const [field, value] of Object.entries(signatureData)) {
-      if (value !== '' && value !== null && value !== undefined) {
+      if (value !== null && value !== undefined) {
         const encoded = encodeURIComponent(String(value)).replace(/%20/g, '+');
         pfParamString += `${field}=${encoded}&`;
       }
