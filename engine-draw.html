@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Engine Draw</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -604,11 +605,19 @@ async function startCam(context) {
     _scanStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
     });
+    // Apply continuous autofocus if supported
+    try {
+      const track = _scanStream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (caps.focusMode && caps.focusMode.includes('continuous')) {
+        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+      }
+    } catch(_) {}
     const vid = document.getElementById('camVideo');
     vid.srcObject = _scanStream;
     document.getElementById('camOverlay').classList.add('active');
-    // Wait for video metadata then explicitly play — critical for iOS Safari
-    vid.onloadedmetadata = () => { vid.play(); _startDecodeLoop(); };
+    await vid.play(); // explicit play — required on iOS Safari
+    _startDecodeLoop();
   } catch(e) {
     alert('Camera not available: ' + e.message);
   }
@@ -619,29 +628,43 @@ function _startDecodeLoop() {
   const vid = document.getElementById('camVideo');
   const c   = document.getElementById('scanCanvas');
   const ctx = c.getContext('2d', { willReadFrequently: true });
-  let lastZxTime = 0;
+  let lastSoftwareTime = 0;
 
   function tick() {
     if (!_scanning) return;
-    if (vid.readyState >= 2 && vid.videoWidth > 0) {
-      // Path 1: native BarcodeDetector (fastest, hardware-accelerated)
+    if (vid.readyState >= vid.HAVE_ENOUGH_DATA && vid.videoWidth > 0) {
+
+      // Path 1: native BarcodeDetector — Chrome/Android, hardware-accelerated, QR + 1D
       if (_nativeDet) {
         _nativeDet.detect(vid)
           .then(r => { if (r.length && _scanning) { stopCam(); handleBarcode(r[0].rawValue); } })
           .catch(() => {});
-        // Queue next frame immediately (non-blocking)
         if (_scanning) _scanRafId = requestAnimationFrame(tick);
         return;
       }
-      // Path 2: ZXing software decoder (throttled to ~80 ms)
+
+      // Path 2: software decoders — iOS Safari, Firefox (throttled to ~100 ms)
       const now = Date.now();
-      if (now - lastZxTime > 80 && _zxReader) {
-        lastZxTime = now;
+      if (now - lastSoftwareTime > 100) {
+        lastSoftwareTime = now;
         c.width = vid.videoWidth; c.height = vid.videoHeight;
         ctx.drawImage(vid, 0, 0);
-        _zxReader.decodeFromCanvas(c)
-          .then(r => { if (r && _scanning) { stopCam(); handleBarcode(r.getText()); } })
-          .catch(() => {});
+
+        // jsQR — fast synchronous QR decoder, works great on iOS
+        if (window.jsQR) {
+          const imgData = ctx.getImageData(0, 0, c.width, c.height);
+          const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+          if (qr && _scanning) { stopCam(); handleBarcode(qr.data); return; }
+        }
+
+        // ZXing — handles 1D barcodes (engine seals) + QR fallback
+        // NOTE: decodeFromCanvas is SYNCHRONOUS — must use try/catch, NOT .then()
+        if (_zxReader) {
+          try {
+            const r = _zxReader.decodeFromCanvas(c);
+            if (r && _scanning) { stopCam(); handleBarcode(r.getText()); return; }
+          } catch(_) {} // NotFoundException thrown when nothing found — expected
+        }
       }
     }
     if (_scanning) _scanRafId = requestAnimationFrame(tick);
@@ -654,7 +677,6 @@ function stopCam() {
   if (_scanRafId) { cancelAnimationFrame(_scanRafId); _scanRafId = null; }
   if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
   const vid = document.getElementById('camVideo');
-  vid.onloadedmetadata = null;
   vid.srcObject = null;
   document.getElementById('camOverlay').classList.remove('active');
   const sealBtn = document.getElementById('sealCamBtn');
