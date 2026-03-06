@@ -514,10 +514,192 @@
             margin-bottom:8px;
             display:block;
         }
+
+        /* ── Role picker ── */
+        .role-grid {
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:10px;
+            margin-bottom:0;
+        }
+        .role-btn {
+            padding:16px 10px;
+            border:2px solid transparent;
+            background:#131313;
+            color:var(--muted);
+            font-size:13px;
+            font-weight:700;
+            letter-spacing:0.06em;
+            text-transform:uppercase;
+            cursor:pointer;
+            text-align:center;
+            transition:all 0.15s;
+            line-height:1.4;
+        }
+        .role-btn:hover { border-color:rgba(255,255,255,0.2); color:#fff; }
+        .role-btn.selected { border-color:#f97316; color:#f97316; background:rgba(249,115,22,0.08); }
+
+        /* ── Driver lookup card ── */
+        .driver-lookup-card {
+            margin-top:10px;
+            background:#111;
+            border:1px solid rgba(249,115,22,0.3);
+            padding:12px 14px;
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+        .driver-lookup-num {
+            font-size:28px;
+            font-weight:900;
+            color:#f97316;
+            line-height:1;
+            min-width:44px;
+            text-align:center;
+        }
+        .driver-lookup-info { flex:1; }
+        .driver-lookup-name { font-size:15px; font-weight:700; color:#fff; }
+        .driver-lookup-class { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+
+        /* ── Numpad Modal ── */
+        #numpad-overlay {
+            display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,0.75);
+            z-index:2000;
+            align-items:flex-end;
+            justify-content:center;
+        }
+        #numpad-overlay.active { display:flex; }
+        #numpad-box {
+            background:#111;
+            border:1px solid rgba(255,255,255,0.12);
+            border-bottom:none;
+            width:100%;
+            max-width:420px;
+            padding:18px 18px 28px;
+            border-radius:16px 16px 0 0;
+            box-shadow:0 -20px 60px rgba(0,0,0,0.6);
+        }
+        #numpad-display-row {
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin-bottom:16px;
+        }
+        #numpad-label {
+            font-size:10px;
+            font-weight:700;
+            letter-spacing:0.12em;
+            text-transform:uppercase;
+            color:var(--muted);
+            margin-bottom:10px;
+        }
+        #numpad-value {
+            flex:1;
+            font-size:40px;
+            font-weight:900;
+            letter-spacing:0.05em;
+            color:#fff;
+            text-align:center;
+            min-height:52px;
+            line-height:1;
+        }
+        #numpad-value.placeholder { color:#374151; }
+        .numpad-grid {
+            display:grid;
+            grid-template-columns:repeat(3, 1fr);
+            gap:10px;
+        }
+        .np-btn {
+            background:#1c1c1c;
+            border:1px solid rgba(255,255,255,0.08);
+            color:#fff;
+            font-size:24px;
+            font-weight:700;
+            padding:18px 0;
+            cursor:pointer;
+            border-radius:10px;
+            transition:background 0.1s;
+            -webkit-tap-highlight-color:transparent;
+        }
+        .np-btn:active, .np-btn:hover { background:#2a2a2a; }
+        .np-btn.np-action { font-size:16px; font-weight:900; letter-spacing:0.05em; }
+        .np-btn.np-ok { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; border-color:#f97316; }
+        .np-btn.np-ok:hover { background:linear-gradient(135deg,#fb923c,#f97316); }
+        .np-btn.np-del { background:#1a1a1a; color:#f87171; border-color:rgba(239,68,68,0.2); font-size:20px; }
+        .np-btn.np-close { background:transparent; border-color:rgba(255,255,255,0.08); color:var(--muted); font-size:14px; }
+        /* ── Parts Modal ───────────────────────────────────── */
+        #parts-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:3000; display:none; align-items:flex-end; justify-content:center; }
+        #parts-overlay.active { display:flex; }
+        #parts-box { background:#111; border-radius:18px 18px 0 0; width:100%; max-width:480px; max-height:88vh; overflow-y:auto; padding-bottom:env(safe-area-inset-bottom,16px); scrollbar-width:none; }
+        #parts-box::-webkit-scrollbar { display:none; }
+        .parts-header { display:flex; align-items:center; gap:12px; padding:16px 18px 12px; border-bottom:1px solid #1c1c1c; position:sticky; top:0; background:#111; z-index:2; }
+        .parts-title { font-size:16px; font-weight:900; color:#f97316; letter-spacing:0.05em; flex:1; }
+        .parts-serial { font-size:13px; font-weight:700; color:#fff; letter-spacing:1px; margin-top:2px; }
+        .parts-meta { font-size:10px; color:#555; letter-spacing:0.06em; text-transform:uppercase; }
+        .parts-close-btn { background:#222; border:none; color:#888; font-size:17px; width:34px; height:34px; border-radius:50%; cursor:pointer; flex-shrink:0; }
+        .part-row { display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid #181818; transition:background 0.4s; }
+        .part-label { font-size:10px; font-weight:800; color:#f97316; text-transform:uppercase; letter-spacing:0.07em; width:66px; flex-shrink:0; }
+        .part-value { flex:1; font-size:14px; color:#e0e0e0; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .part-value.empty { color:#3a3a3a; font-style:italic; font-weight:400; }
+        .part-edit-btn { background:#1e1e1e; border:1px solid #2a2a2a; color:#777; font-size:11px; font-weight:700; padding:5px 11px; border-radius:6px; cursor:pointer; flex-shrink:0; letter-spacing:0.04em; }
+        .part-edit-btn:hover { border-color:#f97316; color:#f97316; }
+        .part-input-row { display:none; padding:0 18px 12px; gap:8px; align-items:center; }
+        .part-input-row.open { display:flex; }
+        .part-input-row input { flex:1; background:#181818; border:1.5px solid #f97316; color:#fff; font-size:15px; font-weight:700; padding:10px 13px; border-radius:8px; text-transform:uppercase; outline:none; min-width:0; }
+        .part-save-btn { background:linear-gradient(135deg,#f97316,#ea580c); border:none; color:#fff; font-size:14px; font-weight:800; padding:10px 15px; border-radius:8px; cursor:pointer; flex-shrink:0; }
+        .part-save-btn:disabled { opacity:0.5; }
+        .part-cancel-btn { background:#222; border:none; color:#666; font-size:14px; padding:10px 12px; border-radius:8px; cursor:pointer; flex-shrink:0; }
+        .parts-hist-section { padding:14px 18px 8px; }
+        .parts-hist-title { font-size:10px; font-weight:800; color:#444; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px; }
+        .parts-hist-item { font-size:11px; color:#555; line-height:1.6; padding:5px 0; border-bottom:1px solid #181818; }
+        .parts-hist-item .hist-time { color:#f97316; font-weight:700; margin-right:6px; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
 </head>
 <body>
+
+<!-- Numpad Modal -->
+<div id="numpad-overlay" onclick="numpadOverlayClick(event)">
+    <div id="numpad-box">
+        <div id="numpad-label">Driver Race Number</div>
+        <div id="numpad-display-row">
+            <div id="numpad-value" class="placeholder">#—</div>
+        </div>
+        <div class="numpad-grid">
+            <button class="np-btn" onclick="numpadKey('1')">1</button>
+            <button class="np-btn" onclick="numpadKey('2')">2</button>
+            <button class="np-btn" onclick="numpadKey('3')">3</button>
+            <button class="np-btn" onclick="numpadKey('4')">4</button>
+            <button class="np-btn" onclick="numpadKey('5')">5</button>
+            <button class="np-btn" onclick="numpadKey('6')">6</button>
+            <button class="np-btn" onclick="numpadKey('7')">7</button>
+            <button class="np-btn" onclick="numpadKey('8')">8</button>
+            <button class="np-btn" onclick="numpadKey('9')">9</button>
+            <button class="np-btn np-action np-close" onclick="closeNumpad()">Cancel</button>
+            <button class="np-btn" onclick="numpadKey('0')">0</button>
+            <button class="np-btn np-action np-del" onclick="numpadDel()">⌫</button>
+        </div>
+        <button class="np-btn np-action np-ok" style="width:100%;margin-top:10px;" onclick="numpadConfirm()">Search →</button>
+    </div>
+</div>
+
+<!-- Parts Modal -->
+<div id="parts-overlay" onclick="partsOverlayClick(event)">
+    <div id="parts-box">
+        <div class="parts-header">
+            <div style="flex:1;">
+                <div class="parts-title">🔩 Engine Parts</div>
+                <div class="parts-serial" id="partsSerial">—</div>
+                <div class="parts-meta" id="partsMeta">—</div>
+            </div>
+            <button class="parts-close-btn" onclick="closeParts()">✕</button>
+        </div>
+        <div id="parts-content"><div style="padding:32px;text-align:center;color:#444;font-size:13px;">Loading…</div></div>
+    </div>
+</div>
 
 <!-- Camera Overlay -->
 <div id="cameraOverlay" class="camera-overlay">
@@ -587,16 +769,57 @@
             <div class="card-title">Log Engine Contact</div>
             <div id="logMsg"></div>
 
+            <!-- Race number lookup -->
             <div class="input-group">
-                <label>Person's Name *</label>
-                <input type="text" id="fPersonName" placeholder="Driver / mechanic / owner name">
+                <label>Driver Race Number</label>
+                <div class="input-with-scan">
+                    <input type="text" id="fRaceNum" placeholder="Tap to enter race number"
+                           readonly
+                           style="font-size:22px;font-weight:900;letter-spacing:0.05em;cursor:pointer;"
+                           onclick="openNumpad()">
+                    <button class="scan-btn" onclick="lookupDriver()" type="button" style="font-size:16px;">🔍</button>
+                </div>
+                <div id="driverCard" class="driver-lookup-card hidden">
+                    <div class="driver-lookup-num" id="driverCardNum">—</div>
+                    <div class="driver-lookup-info">
+                        <div class="driver-lookup-name" id="driverCardName">—</div>
+                        <div class="driver-lookup-class" id="driverCardClass">—</div>
+                    </div>
+                </div>
+                <div id="driverCardError" style="margin-top:8px;font-size:12px;color:#f87171;display:none;"></div>
+            </div>
+
+            <!-- Role picker (multi-select) -->
+            <div style="margin-bottom:16px;">
+                <span class="inline-label">Who are you speaking to? * <span style="color:#475569;font-weight:400;font-size:10px;">(tap all that apply)</span></span>
+                <div class="role-grid">
+                    <button class="role-btn" id="rBtnDriver"   onclick="selectRole('Driver')"  >🪖 Driver</button>
+                    <button class="role-btn" id="rBtnMechanic" onclick="selectRole('Mechanic')">🔧 Mechanic</button>
+                    <button class="role-btn" id="rBtnGuardian" onclick="selectRole('Guardian')">👨‍👧 Guardian</button>
+                    <button class="role-btn" id="rBtnTeammate" onclick="selectRole('Teammate')">🤝 Teammate</button>
+                </div>
+            </div>
+
+            <!-- Optional name -->
+            <div class="input-group">
+                <label>Name <span style="color:var(--muted);font-weight:400;font-size:10px;">(optional)</span></label>
+                <input type="text" id="fPersonName" placeholder="Leave blank to use driver name">
             </div>
 
             <div class="input-group">
                 <label>Engine Serial</label>
                 <div class="input-with-scan">
-                    <input type="text" id="fEngineSerial" placeholder="Scan or type serial" style="text-transform:uppercase;">
+                    <input type="text" id="fEngineSerial" placeholder="Scan or type serial" style="text-transform:uppercase;" oninput="onEngineSerialInput()">
                     <button class="scan-btn" onclick="openCamera('fEngineSerial')" type="button">📷</button>
+                    <button class="scan-btn" id="partsOpenBtn" onclick="openPartsForSerial()" type="button" title="View &amp; Edit Engine Parts" style="display:none;background:#1a1a1a;border-color:rgba(249,115,22,0.35);color:#f97316;font-size:15px;">🔩</button>
+                </div>
+                <div id="engineSuggest" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(249,115,22,0.07);border:1px solid rgba(249,115,22,0.3);align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:11px;color:#f97316;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">Assigned Engine:</span>
+                    <span id="engineSuggestSerial" style="font-size:14px;font-weight:900;color:#fff;letter-spacing:1px;"></span>
+                    <div style="margin-left:auto;display:flex;gap:6px;">
+                        <button type="button" onclick="useSuggestedEngine()" style="padding:5px 12px;background:#f97316;border:none;color:#fff;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;border-radius:4px;">Use This</button>
+                        <button type="button" onclick="openPartsModal(document.getElementById('engineSuggestSerial').textContent)" style="padding:5px 11px;background:#1e1e1e;border:1px solid rgba(249,115,22,0.4);color:#f97316;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;" title="View &amp; Edit Parts">🔩 Parts</button>
+                    </div>
                 </div>
             </div>
 
@@ -724,13 +947,16 @@
 
 <script>
 // ── State ───────────────────────────────────────────────────────────────────
-let selectedOutcome = null;
-let followUpEnabled = false;
-let cameraStream    = null;
+let selectedOutcome  = null;
+let selectedRoles    = new Set();  // multi-select
+let lookedUpDriver   = null;   // { raceNumber, name, karting_class }
+let followUpEnabled  = false;
+let cameraStream     = null;
 let currentTargetInput = null;
-let scanningActive  = false;
-let flashEnabled    = false;
-let searchDebounce  = null;
+let scanningActive   = false;
+let flashEnabled     = false;
+let searchDebounce   = null;
+let lookupDebounce   = null;
 
 // Shared decoder instances — created once, reused
 let _nativeDet = null;
@@ -768,11 +994,152 @@ window.addEventListener('load', () => {
         `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 });
 
+// ── Numpad ───────────────────────────────────────────────────────────────────
+let numpadBuffer = '';
+function openNumpad() {
+    numpadBuffer = document.getElementById('fRaceNum').value || '';
+    renderNumpad();
+    document.getElementById('numpad-overlay').classList.add('active');
+}
+function closeNumpad() {
+    document.getElementById('numpad-overlay').classList.remove('active');
+}
+function numpadOverlayClick(e) {
+    if (e.target === document.getElementById('numpad-overlay')) closeNumpad();
+}
+function renderNumpad() {
+    const el = document.getElementById('numpad-value');
+    if (numpadBuffer) {
+        el.textContent = '#' + numpadBuffer;
+        el.classList.remove('placeholder');
+    } else {
+        el.textContent = '#—';
+        el.classList.add('placeholder');
+    }
+}
+function numpadKey(k) {
+    if (numpadBuffer.length >= 4) return;
+    numpadBuffer += k;
+    renderNumpad();
+}
+function numpadDel() {
+    numpadBuffer = numpadBuffer.slice(0, -1);
+    renderNumpad();
+}
+function numpadConfirm() {
+    if (!numpadBuffer) return;
+    document.getElementById('fRaceNum').value = numpadBuffer;
+    closeNumpad();
+    lookupDriver();
+}
+// Also allow physical keyboard to type into numpad when it's open
+document.addEventListener('keydown', e => {
+    if (!document.getElementById('numpad-overlay').classList.contains('active')) return;
+    if (e.key >= '0' && e.key <= '9') numpadKey(e.key);
+    else if (e.key === 'Backspace') numpadDel();
+    else if (e.key === 'Enter') numpadConfirm();
+    else if (e.key === 'Escape') closeNumpad();
+});
+
+// ── Role picker (multi-select) ────────────────────────────────────────────────
+function selectRole(role) {
+    if (selectedRoles.has(role)) {
+        selectedRoles.delete(role);
+    } else {
+        selectedRoles.add(role);
+        // if Driver selected and we have a lookup, pre-fill name
+        if (role === 'Driver' && lookedUpDriver) {
+            const existing = document.getElementById('fPersonName').value.trim();
+            if (!existing) document.getElementById('fPersonName').value =
+                (lookedUpDriver.first_name || '') + ' ' + (lookedUpDriver.last_name || '');
+        }
+    }
+    ['Driver','Mechanic','Guardian','Teammate'].forEach(r => {
+        document.getElementById('rBtn' + r).classList.toggle('selected', selectedRoles.has(r));
+    });
+}
+
+function useSuggestedEngine() {
+    const serial = document.getElementById('engineSuggestSerial').textContent;
+    if (serial) {
+        document.getElementById('fEngineSerial').value = serial.toUpperCase();
+        document.getElementById('engineSuggest').style.display = 'none';
+        onEngineSerialInput(); // show the 🔩 parts button
+    }
+}
+
+// ── Driver lookup ─────────────────────────────────────────────────────────
+function debounceLookup() {
+    clearTimeout(lookupDebounce);
+    lookupDebounce = setTimeout(lookupDriver, 600);
+}
+
+async function lookupDriver() {
+    const num = document.getElementById('fRaceNum').value.trim();
+    const card   = document.getElementById('driverCard');
+    const err    = document.getElementById('driverCardError');
+    const sug    = document.getElementById('engineSuggest');
+    if (!num) {
+        card.classList.add('hidden');
+        err.style.display = 'none';
+        sug.style.display = 'none';
+        lookedUpDriver = null;
+        return;
+    }
+    try {
+        const r = await fetch('/api/lookupDriverByNumber?raceNumber=' + encodeURIComponent(num));
+        const d = await r.json();
+        if (d.success && d.driver) {
+            lookedUpDriver = d.driver;
+            document.getElementById('driverCardNum').textContent   = '#' + d.driver.race_number;
+            document.getElementById('driverCardName').textContent  = (d.driver.first_name || '') + ' ' + (d.driver.last_name || '');
+            document.getElementById('driverCardClass').textContent = d.driver.race_class || 'Unknown class';
+            card.classList.remove('hidden');
+            err.style.display = 'none';
+            // auto-fill name if 'Driver' role is already selected
+            if (selectedRoles.has('Driver')) {
+                const existing = document.getElementById('fPersonName').value.trim();
+                if (!existing) document.getElementById('fPersonName').value = d.driver.first_name + ' ' + d.driver.last_name;
+            }
+            // Engine suggestion
+            const eng = d.driver.engine_serial;
+            if (eng) {
+                document.getElementById('engineSuggestSerial').textContent = eng.toUpperCase();
+                sug.style.display = 'flex';
+            } else {
+                sug.style.display = 'none';
+            }
+        } else {
+            lookedUpDriver = null;
+            card.classList.add('hidden');
+            sug.style.display = 'none';
+            err.textContent = 'No confirmed entry found for race number ' + num;
+            err.style.display = 'block';
+        }
+    } catch(e) {
+        lookedUpDriver = null;
+        card.classList.add('hidden');
+        sug.style.display = 'none';
+        err.textContent = 'Lookup failed: ' + e.message;
+        err.style.display = 'block';
+    }
+}
+
 function initLogForm() {
     selectedOutcome = null;
+    selectedRoles   = new Set();
+    lookedUpDriver  = null;
     followUpEnabled = false;
+    document.getElementById('fRaceNum').value = '';
     document.getElementById('fPersonName').value = '';
+    document.getElementById('driverCard').classList.add('hidden');
+    document.getElementById('driverCardError').style.display = 'none';
+    document.getElementById('engineSuggest').style.display = 'none';
+    ['Driver','Mechanic','Guardian','Teammate'].forEach(r => {
+        document.getElementById('rBtn' + r).classList.remove('selected');
+    });
     document.getElementById('fEngineSerial').value = '';
+    document.getElementById('partsOpenBtn').style.display = 'none';
     document.getElementById('fDescription').value = '';
     document.getElementById('fNotes').value = '';
     document.getElementById('fFollowUpNotes').value = '';
@@ -836,9 +1203,22 @@ function toggleFollowUp() {
 
 // ── Submit log ─────────────────────────────────────────────────────────────
 async function submitLog() {
-    const personName = document.getElementById('fPersonName').value.trim();
-    if (!personName) { showLogMsg('Please enter the person\'s name.', 'error'); return; }
-    if (!selectedOutcome) { showLogMsg('Please select an outcome / finding.', 'error'); return; }
+    if (selectedRoles.size === 0) { showLogMsg('Please select who you are speaking to.', 'error'); return; }
+    if (!selectedOutcome)         { showLogMsg('Please select an outcome / finding.', 'error'); return; }
+
+    // Build person_name: joined roles + optional name + driver tag
+    const typedName  = document.getElementById('fPersonName').value.trim();
+    const rolesStr   = [...selectedRoles].join(' + ');
+    let personName   = rolesStr;
+    if (typedName) {
+        personName += ' — ' + typedName;
+    } else if (selectedRoles.has('Driver') && lookedUpDriver) {
+        personName += ' — ' + (lookedUpDriver.first_name || '') + ' ' + (lookedUpDriver.last_name || '');
+    }
+    if (lookedUpDriver) {
+        personName += ' (#' + lookedUpDriver.race_number + ')';
+    }
+    personName = personName.trim();
 
     const payload = {
         engine_serial:   document.getElementById('fEngineSerial').value.trim() || null,
@@ -1152,6 +1532,163 @@ function manualEntry() {
         if (input) input.focus();
     }
 }
+
+// ── Engine Parts Modal ──────────────────────────────────────────────────────
+let partsSerial      = null;
+let partsEditingFld  = null;
+
+function onEngineSerialInput() {
+    const v = document.getElementById('fEngineSerial').value.trim();
+    document.getElementById('partsOpenBtn').style.display = v ? '' : 'none';
+}
+
+function openPartsForSerial() {
+    const serial = document.getElementById('fEngineSerial').value.trim();
+    if (serial) openPartsModal(serial);
+}
+
+async function openPartsModal(serial) {
+    if (!serial) return;
+    partsSerial = serial.toUpperCase().trim();
+    partsEditingFld = null;
+    document.getElementById('partsSerial').textContent = partsSerial;
+    document.getElementById('partsMeta').textContent = 'Loading…';
+    document.getElementById('parts-content').innerHTML = '<div style="padding:32px;text-align:center;color:#444;font-size:13px;">Loading…</div>';
+    document.getElementById('parts-overlay').classList.add('active');
+    await loadPartData();
+}
+
+function closeParts() {
+    document.getElementById('parts-overlay').classList.remove('active');
+}
+
+function partsOverlayClick(e) {
+    if (e.target === document.getElementById('parts-overlay')) closeParts();
+}
+
+async function loadPartData() {
+    try {
+        const r  = await fetch(`/api/dir/engineParts/${encodeURIComponent(partsSerial)}`);
+        const d  = await r.json();
+        if (!d.success) {
+            document.getElementById('parts-content').innerHTML =
+                `<div style="padding:32px;text-align:center;color:#555;font-size:13px;">⚠️ ${d.error || 'Engine not found in pool'}</div>`;
+            document.getElementById('partsMeta').textContent = 'Not in pool';
+            return;
+        }
+        const eng = d.engine;
+        document.getElementById('partsMeta').textContent = `Draw #${eng.draw_number} · ${eng.class || '—'}`;
+
+        const PARTS = [
+            { field:'seal_number',    label:'Seal',    val: eng.seal_number    },
+            { field:'carb_number',    label:'Carb',    val: eng.carb_number    },
+            { field:'airbox_number',  label:'Airbox',  val: eng.airbox_number  },
+            { field:'exhaust_number', label:'Exhaust', val: eng.exhaust_number },
+            { field:'notes',          label:'Notes',   val: eng.notes          },
+        ];
+
+        let html = '';
+        for (const p of PARTS) {
+            const empty = !p.val || !p.val.trim();
+            const safe  = (p.val||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            html += `
+            <div class="part-row" id="pr-${p.field}">
+                <div class="part-label">${p.label}</div>
+                <div class="part-value${empty?' empty':''}" id="pv-${p.field}">${empty ? 'Not set' : p.val}</div>
+                <button class="part-edit-btn" onclick="startEdit('${p.field}','${safe}')">Edit</button>
+            </div>
+            <div class="part-input-row" id="pe-${p.field}">
+                <input type="text" id="pi-${p.field}" value="${safe}"
+                    placeholder="${p.label} number" autocomplete="off"
+                    onkeydown="if(event.key==='Enter')saveEdit('${p.field}');else if(event.key==='Escape')cancelEdit('${p.field}')">
+                <button class="part-save-btn" id="ps-${p.field}" onclick="saveEdit('${p.field}')">✔</button>
+                <button class="part-cancel-btn" onclick="cancelEdit('${p.field}')">✕</button>
+            </div>`;
+        }
+        html += `<div class="parts-hist-section" id="parts-history">
+            <div class="parts-hist-title">Recent Part Changes</div>
+            <div style="color:#444;font-size:11px;">Loading history…</div>
+        </div>`;
+        document.getElementById('parts-content').innerHTML = html;
+        loadPartHistory();
+    } catch(err) {
+        document.getElementById('parts-content').innerHTML =
+            '<div style="padding:32px;text-align:center;color:#555;">Error loading engine data</div>';
+    }
+}
+
+async function loadPartHistory() {
+    try {
+        const r = await fetch(`/api/dir/engine/${encodeURIComponent(partsSerial)}`);
+        const d = await r.json();
+        const el = document.getElementById('parts-history');
+        if (!el) return;
+        const changes = (d.logs || []).filter(l => l.contact_type === 'Part Change').slice(0, 10);
+        if (!changes.length) {
+            el.innerHTML = '<div class="parts-hist-title">Recent Part Changes</div><div style="color:#3a3a3a;font-size:11px;">No part changes recorded yet</div>';
+            return;
+        }
+        let html = '<div class="parts-hist-title">Recent Part Changes</div>';
+        for (const c of changes) {
+            const dt = new Date(c.contact_date);
+            const when = dt.toLocaleDateString('en-ZA',{day:'2-digit',month:'short'}) + ' ' +
+                         dt.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+            html += `<div class="parts-hist-item"><span class="hist-time">${when}</span>${c.description || '—'}</div>`;
+        }
+        el.innerHTML = html;
+    } catch(_) {}
+}
+
+function startEdit(field, currentVal) {
+    if (partsEditingFld && partsEditingFld !== field) cancelEdit(partsEditingFld);
+    partsEditingFld = field;
+    document.getElementById(`pe-${field}`).classList.add('open');
+    const inp = document.getElementById(`pi-${field}`);
+    inp.value = currentVal === 'Not set' ? '' : currentVal;
+    setTimeout(() => inp.focus(), 50);
+}
+
+function cancelEdit(field) {
+    document.getElementById(`pe-${field}`).classList.remove('open');
+    if (partsEditingFld === field) partsEditingFld = null;
+}
+
+async function saveEdit(field) {
+    const inp = document.getElementById(`pi-${field}`);
+    const btn = document.getElementById(`ps-${field}`);
+    const newVal = inp.value.trim();
+    btn.textContent = '…';
+    btn.disabled = true;
+    try {
+        const r = await fetch('/api/dir/enginePart', {
+            method: 'PATCH',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ serial: partsSerial, field, newValue: newVal, changedBy: 'Part Updated' })
+        });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Save failed');
+
+        // Update display value
+        const valEl = document.getElementById(`pv-${field}`);
+        valEl.textContent = newVal || 'Not set';
+        valEl.classList.toggle('empty', !newVal);
+        cancelEdit(field);
+
+        // Flash row green-orange
+        const row = document.getElementById(`pr-${field}`);
+        row.style.background = 'rgba(249,115,22,0.18)';
+        setTimeout(() => row.style.background = '', 900);
+
+        // Refresh history
+        loadPartHistory();
+    } catch(err) {
+        alert('❌ ' + err.message);
+    } finally {
+        btn.textContent = '✔';
+        btn.disabled = false;
+    }
+}
+// ────────────────────────────────────────────────────────────────────────────
 </script>
 </body>
 </html>

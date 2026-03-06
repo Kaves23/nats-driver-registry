@@ -352,6 +352,30 @@
     }
     #empty-state .big { font-size: 48px; }
 
+    /* ── DIR Admin toggle ── */
+    #dir-toggle-bar {
+      text-align: right;
+      padding: 4px 12px 0;
+    }
+    #dir-toggle-btn {
+      background: transparent;
+      border: 1px solid rgba(249,115,22,0.18);
+      color: rgba(249,115,22,0.35);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #dir-toggle-btn:hover { border-color: rgba(249,115,22,0.5); color: rgba(249,115,22,0.6); }
+    #dir-toggle-btn.active { border-color: #f97316; color: #f97316; background: rgba(249,115,22,0.07); }
+    /* DIR cards — hidden unless feed has dir-visible class */
+    #feed .dir-card { display: none !important; }
+    #feed.dir-visible .dir-card { display: grid !important; }
+    .t-dir-contact { border-left: 2px solid rgba(249,115,22,0.4) !important; }
+
     /* ── SCAN FLASH OVERLAY (full screen) ── */
     #scan-flash {
       position: fixed;
@@ -422,6 +446,10 @@
   </div>
 </div>
 
+<div id="dir-toggle-bar">
+  <button id="dir-toggle-btn" onclick="toggleDirAdmin()" title="Show/hide DIR engine inspection contacts">📋 DIR ADMIN</button>
+</div>
+
 <!-- Feed -->
 <div id="feed-wrapper">
   <div id="feed">
@@ -437,6 +465,8 @@
 // Config per scan type
 // ─────────────────────────────────────────────────
 const TYPE_CONFIG = {
+  dir_contact:        { icon: '📋', label: 'DIR LOG',      cssClass: 't-dir-contact',        flashColor: 'rgba(249,115,22,0.06)' },
+  part_change:        { icon: '🔩', label: 'PART CHANGE',  cssClass: 't-dir-contact',        flashColor: 'rgba(249,115,22,0.08)' },
   engine_assign:      { icon: '🔧', label: 'ENGINE OUT',    cssClass: 't-engine_assign',      flashColor: 'rgba(245,158,11,0.12)' },
   engine_return:      { icon: '🏠', label: 'ENGINE IN',     cssClass: 't-engine_return',      flashColor: 'rgba(148,163,184,0.08)' },
   tyres_register:     { icon: '🛞',  label: 'TYRES REG',    cssClass: 't-tyres_register',     flashColor: 'rgba(6,182,212,0.12)' },
@@ -515,6 +545,51 @@ document.addEventListener('click', () => { if(!audioUnlocked){ getAudio(); audio
 // State
 // ─────────────────────────────────────────────────
 let seenIds = new Set();
+let showDirAdmin = false;
+let dirHistoryLoaded = false;
+
+function toggleDirAdmin() {
+  showDirAdmin = !showDirAdmin;
+  localStorage.setItem('dir_admin_on', showDirAdmin ? '1' : '0');
+  document.getElementById('dir-toggle-btn').classList.toggle('active', showDirAdmin);
+  document.getElementById('feed').classList.toggle('dir-visible', showDirAdmin);
+  if (showDirAdmin && !dirHistoryLoaded) loadDirHistory();
+}
+
+async function loadDirHistory() {
+  dirHistoryLoaded = true;
+  try {
+    const res = await fetch('/api/dir/logs?limit=100');
+    const d   = await res.json();
+    if (!d.success || !d.logs) return;
+    // logs come DESC; reverse so oldest is inserted first (addEvent prepends)
+    [...d.logs].reverse().forEach(row => {
+      const isPart = row.contact_type === 'Part Change';
+      let fieldName = '', oldVal = '', newVal = '';
+      if (isPart && row.description) {
+        const m = row.description.match(/^(.+?) changed: "(.*)" \u2192 "(.*)"/)
+        if (m) { fieldName = m[1]; oldVal = m[2] === '\u2014' ? '' : m[2]; newVal = m[3] === '\u2014' ? '' : m[3]; }
+      }
+      addEvent({
+        log_id:            'dir_' + row.contact_id,
+        scan_type:         isPart ? 'part_change' : 'dir_contact',
+        driver_name:       row.person_name || '',
+        equipment_serial:  row.engine_serial || '',
+        dir_outcome:       row.outcome || '',
+        dir_contact_type:  row.contact_type || '',
+        dir_follow_up:     row.follow_up || false,
+        notes:             row.dir_notes || row.description || '',
+        dir_field_name:    fieldName,
+        dir_old_value:     oldVal,
+        dir_new_value:     newVal,
+        scan_timestamp:    row.contact_date,
+        scanned_by:        'DIR Portal',
+      }, false);
+    });
+  } catch(e) {
+    console.warn('Could not load DIR history:', e);
+  }
+}
 const counters = { engine_assign:0, tyres_register:0, transponder_assign:0, fuel_collect:0, ticket_lookup:0, driver_check:0, engine_verify:0, tyre_verify:0, LOAN_ASSIGN:0, LOAN_RETURN:0, errors:0 };
 
 // ─────────────────────────────────────────────────
@@ -553,6 +628,73 @@ function timeAgo(ts) {
 // Render a card
 // ─────────────────────────────────────────────────
 function buildCard(evt, isNew = false) {
+  // DIR contact — custom layout
+  if (evt.scan_type === 'dir_contact' || evt.scan_type === 'part_change') {
+    const isPart = evt.scan_type === 'part_change';
+    const OUTCOME_COLORS = { engine_fault:'#ef4444', user_error:'#f59e0b', mechanic_error:'#3b82f6', inconclusive:'#8b5cf6', no_fault:'#22c55e', Noted:'#94a3b8' };
+    const OUTCOME_LABELS = { engine_fault:'🔴 Engine Fault', user_error:'🟡 User Error', mechanic_error:'🔵 Mechanic Error', inconclusive:'🟣 Inconclusive', no_fault:'✅ No Fault', Noted:'⚪ Noted' };
+    const oColor = OUTCOME_COLORS[evt.dir_outcome] || '#94a3b8';
+    const oLabel = OUTCOME_LABELS[evt.dir_outcome] || evt.dir_outcome || '—';
+    const dirSerial = evt.equipment_serial ? evt.equipment_serial.toUpperCase() : null;
+    const card = document.createElement('div');
+    card.className = 'card t-dir-contact dir-card';
+    card.setAttribute('data-id', evt.log_id || '');
+    if (isPart) {
+      if (dirSerial) card.classList.add('card--eng');
+      card.style.setProperty('--serial-color', '#f97316');
+      card.innerHTML = `
+        <div class="badge-col">
+          <div class="icon">🔩</div>
+          <div class="type-badge" style="color:#f97316;">PART CHG</div>
+        </div>
+        <div class="main-col">
+          <div style="margin-top:2px;">
+            <span style="font-size:12px;font-weight:800;color:#f97316;letter-spacing:.3px;">${evt.dir_field_name || 'Part'}</span>
+            <span style="font-size:11px;color:#475569;margin-left:4px;">changed</span>
+          </div>
+          <div style="margin-top:4px;font-size:12px;color:#666;">
+            <span style="color:#ef4444;font-weight:700;">${evt.dir_old_value || '—'}</span>
+            <span style="color:#475569;margin:0 6px;">→</span>
+            <span style="color:#22c55e;font-weight:700;">${evt.dir_new_value || '—'}</span>
+          </div>
+        </div>
+        ${dirSerial ? `
+        <div class="serial-col">
+          <div class="serial-val">${dirSerial}</div>
+          <div class="serial-lbl">Engine</div>
+        </div>` : ''}
+        <div class="meta-col">
+          <div class="time">${formatTime(evt.scan_timestamp)}</div>
+          <div class="ago" style="color:#f97316;">DIR Portal</div>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="badge-col">
+          <div class="icon">📋</div>
+          <div class="type-badge" style="color:#f97316;">DIR LOG</div>
+        </div>
+        <div class="main-col">
+          <div class="driver-row">
+            <span class="driver-name" style="font-size:13px;">${(evt.driver_name||'—').toUpperCase()}</span>
+          </div>
+          <div style="margin-top:4px;">
+            <span style="font-size:10px;font-weight:900;letter-spacing:.5px;color:${oColor};border:1px solid ${oColor}44;padding:2px 6px;">${oLabel}</span>
+            ${evt.dir_contact_type ? `<span style="font-size:10px;color:#475569;margin-left:6px;">${evt.dir_contact_type}</span>` : ''}
+          </div>
+          ${evt.notes ? `<div class="notes-row" style="margin-top:4px;">${evt.notes}</div>` : ''}
+          ${dirSerial ? `<div class="notes-row">SN: ${dirSerial}</div>` : ''}
+        </div>
+        <div class="meta-col">
+          <div class="time">${formatTime(evt.scan_timestamp)}</div>
+          <div class="ago" style="color:#f97316;">DIR Portal</div>
+          ${evt.dir_follow_up ? `<div style="font-size:9px;color:#f97316;letter-spacing:.5px;margin-top:3px;">⚑ FOLLOW-UP</div>` : ''}
+        </div>
+      `;
+    }
+    return card;
+  }
+
   const isError = evt.action_result === 'error';
   let cfg;
   if (isError) {
@@ -754,7 +896,16 @@ setInterval(async () => {
 // ─────────────────────────────────────────────────
 // Boot
 // ─────────────────────────────────────────────────
-loadHistory().then(connectSSE);
+loadHistory().then(() => {
+  // Restore DIR toggle state across refreshes
+  if (localStorage.getItem('dir_admin_on') === '1') {
+    showDirAdmin = true;
+    document.getElementById('dir-toggle-btn').classList.add('active');
+    document.getElementById('feed').classList.add('dir-visible');
+    loadDirHistory();
+  }
+  connectSSE();
+});
 </script>
 </body>
 </html>

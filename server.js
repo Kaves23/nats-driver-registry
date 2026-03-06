@@ -267,6 +267,7 @@ const ADMIN_ONLY_PATHS = [
   '/api/getAuditLog',
   '/api/exportAuditCSV',
   '/api/exportRaceEntriesCSV',
+  '/api/exportFinancialReportCSV',
   '/api/exportDriversCSV',
   '/api/push/stats',
   '/api/push/subscribers',
@@ -4207,34 +4208,63 @@ app.get('/api/initiateRacePayment', async (req, res) => {
     const cancelUrl = process.env.PAYFAST_CANCEL_URL || 'https://www.rokthenats.co.za/payment-cancel.html';
     const notifyUrl = process.env.PAYFAST_NOTIFY_URL || 'https://www.rokthenats.co.za/api/paymentNotify';
 
-    // Generate unique reference that includes event and driver info
-    const reference = `RACE-${eventId}-${driverId}-${Date.now()}`;
+    // ✅ DEDUP: Check for an existing pending entry for this driver+event within last 10 minutes
+    // Prevents duplicate entries/emails when user taps Pay button multiple times
+    let reference, race_entry_id, ticketEngineRef, ticketTyresRef, ticketTransponderRef, ticketFuelRef;
+    let hasEngine = false, hasTyres = false, hasTransponder = false, hasFuel = false;
+    let isReusedEntry = false;
 
-    // ✅ FIX #1: Create pending race entry BEFORE redirecting to PayFast
-    // This allows us to reconcile payments if notification fails
-    const race_entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    
-    // Parse selected items to determine what tickets to generate
-    const itemsLower = selectedItems.map(i => (i || '').toLowerCase());
-    const hasEngine = itemsLower.some(i => i.includes('engine') || i.includes('rental'));
-    const hasTyres = itemsLower.some(i => i.includes('tyre'));
-    const hasTransponder = itemsLower.some(i => i.includes('transponder'));
-    const hasFuel = itemsLower.some(i => i.includes('fuel'));
-    
-    // Generate unique ticket references for ALL selected rental items upfront
-    const ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driverId, eventId) : null;
-    const ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driverId, eventId) : null;
-    const ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
-    const ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driverId, eventId) : null;
-    
-    console.log(`🎫 Creating pending entry with items:`);
-    console.log(`   - selectedItems array:`, selectedItems);
-    console.log(`   - hasEngine: ${hasEngine}, ticketEngineRef: ${ticketEngineRef}`);
-    console.log(`   - hasTyres: ${hasTyres}, ticketTyresRef: ${ticketTyresRef}`);
-    console.log(`   - hasTransponder: ${hasTransponder}, ticketTransponderRef: ${ticketTransponderRef}`);
-    console.log(`   - hasFuel: ${hasFuel}, ticketFuelRef: ${ticketFuelRef}`);
-    
+    const recentPendingResult = await pool.query(
+      `SELECT entry_id, payment_reference, ticket_engine_ref, ticket_tyres_ref, ticket_transponder_ref, ticket_fuel_ref
+       FROM race_entries
+       WHERE driver_id = $1
+         AND event_id = $2
+         AND payment_status = 'Pending'
+         AND entry_status = 'pending_payment'
+         AND created_at > NOW() - INTERVAL '10 minutes'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [driverId, eventId]
+    );
+
+    if (recentPendingResult.rows.length > 0) {
+      // Reuse the existing pending entry — no duplicate DB row, no duplicate email
+      const existing = recentPendingResult.rows[0];
+      reference          = existing.payment_reference;
+      race_entry_id      = existing.entry_id;
+      ticketEngineRef    = existing.ticket_engine_ref;
+      ticketTyresRef     = existing.ticket_tyres_ref;
+      ticketTransponderRef = existing.ticket_transponder_ref;
+      ticketFuelRef      = existing.ticket_fuel_ref;
+      isReusedEntry      = true;
+      console.log(`♻️ Reusing existing pending entry ${race_entry_id} (reference: ${reference}) — duplicate initiation suppressed`);
+    } else {
+      // Fresh entry — generate new reference and ticket refs
+      reference     = `RACE-${eventId}-${driverId}-${Date.now()}`;
+      race_entry_id = `race_entry_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+      // Parse selected items to determine what tickets to generate
+      const itemsLower = selectedItems.map(i => (i || '').toLowerCase());
+      hasEngine      = itemsLower.some(i => i.includes('engine') || i.includes('rental'));
+      hasTyres       = itemsLower.some(i => i.includes('tyre'));
+      hasTransponder = itemsLower.some(i => i.includes('transponder'));
+      hasFuel        = itemsLower.some(i => i.includes('fuel'));
+
+      ticketEngineRef      = hasEngine      ? generateUniqueTicketRef('engine', driverId, eventId)      : null;
+      ticketTyresRef       = hasTyres       ? generateUniqueTicketRef('tyres', driverId, eventId)       : null;
+      ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driverId, eventId) : null;
+      ticketFuelRef        = hasFuel        ? generateUniqueTicketRef('fuel', driverId, eventId)        : null;
+
+      console.log(`🎫 Creating pending entry with items:`);
+      console.log(`   - selectedItems array:`, selectedItems);
+      console.log(`   - hasEngine: ${hasEngine}, ticketEngineRef: ${ticketEngineRef}`);
+      console.log(`   - hasTyres: ${hasTyres}, ticketTyresRef: ${ticketTyresRef}`);
+      console.log(`   - hasTransponder: ${hasTransponder}, ticketTransponderRef: ${ticketTransponderRef}`);
+      console.log(`   - hasFuel: ${hasFuel}, ticketFuelRef: ${ticketFuelRef}`);
+    }
+
     try {
+      if (!isReusedEntry) {
       await pool.query(
         `INSERT INTO race_entries (
           entry_id, event_id, driver_id, payment_reference, 
@@ -4464,6 +4494,7 @@ app.get('/api/initiateRacePayment', async (req, res) => {
         console.error('⚠️ IMMEDIATE email sending failed (non-critical):', emailErr.message);
         // Don't fail the payment initiation if email fails
       }
+      } // end if (!isReusedEntry)
       
     } catch (dbErr) {
       console.error('⚠️ Could not create pending entry (non-fatal):', dbErr.message);
@@ -8815,6 +8846,168 @@ app.post('/api/exportRaceEntriesCSV', async (req, res) => {
   }
 });
 
+// =============================================
+// Financial Report CSV — admin race takings summary
+// =============================================
+app.post('/api/exportFinancialReportCSV', async (req, res) => {
+  try {
+    const { race_event } = req.body;
+    if (!race_event) return res.status(400).json({ success: false, error: { message: 'race_event is required' } });
+
+    // Get all active entries with driver info
+    const entriesResult = await pool.query(
+      `SELECT
+         r.entry_id,
+         r.race_class,
+         r.entry_items,
+         r.amount_paid,
+         r.payment_status,
+         r.entry_status,
+         r.engine,
+         r.ticket_engine_ref,
+         r.ticket_tyres_ref,
+         r.ticket_transponder_ref,
+         r.ticket_fuel_ref,
+         d.first_name,
+         d.last_name,
+         d.race_number,
+         d.championship,
+         c.email AS driver_email
+       FROM race_entries r
+       LEFT JOIN drivers d ON r.driver_id = d.driver_id
+       LEFT JOIN contacts c ON r.driver_id = c.driver_id
+       WHERE r.event_id = $1
+         AND (r.entry_status IS NULL OR r.entry_status != 'cancelled')
+         AND r.race_class IS NOT NULL
+       ORDER BY r.race_class, d.last_name`,
+      [race_event]
+    );
+
+    // Get event name
+    const eventResult = await pool.query(`SELECT event_name FROM events WHERE event_id = $1`, [race_event]);
+    const eventName = eventResult.rows[0]?.event_name || race_event;
+
+    // Get class pricing configs for this event
+    const pricingResult = await pool.query(
+      `SELECT class_name, config_json FROM event_class_pricing WHERE event_id = $1`,
+      [race_event]
+    );
+    const pricingMap = {};
+    pricingResult.rows.forEach(row => { pricingMap[row.class_name] = row.config_json; });
+
+    const escCSV = v => {
+      if (v === null || v === undefined) return '';
+      const s = String(v);
+      return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const fmt = n => parseFloat(n || 0).toFixed(2);
+
+    const headers = [
+      'Name', 'Race #', 'Class', 'Payment Status',
+      'Entry Fee (R)', 'Engine Rental (R)', 'Tyre Set (R)', 'Wet Tyres (R)',
+      'Transponder (R)', 'Fuel (R)', 'Calculated Total (R)',
+      'Amount Paid (R)', 'Difference (R)', 'Notes'
+    ];
+
+    // Running totals
+    let grandCalc = 0, grandPaid = 0;
+    const colTotals = { entry: 0, engine: 0, tyres: 0, wet: 0, trans: 0, fuel: 0 };
+
+    const rows = entriesResult.rows.map(entry => {
+      const items = (() => {
+        try {
+          const raw = entry.entry_items;
+          if (!raw) return [];
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          return Array.isArray(parsed) ? parsed.map(i => (typeof i === 'string' ? i : (i.name || '')).toLowerCase()) : [];
+        } catch { return []; }
+      })();
+
+      const cfg = pricingMap[entry.race_class] || pricingMap[(entry.race_class || '').toUpperCase()] || null;
+
+      // Determine if items were selected
+      const hasEngine = (entry.engine === 1 || entry.engine === '1') || items.some(i => i.includes('engine'));
+      const hasTyres  = items.some(i => i.includes('tyre') && !i.includes('wet'));
+      const hasWet    = items.some(i => i.includes('wet'));
+      const hasTrans  = items.some(i => i.includes('transponder'));
+      const hasFuel   = items.some(i => i.includes('fuel'));
+
+      // Prices from config, 0 if no config or not applicable
+      const pEntry  = cfg ? parseFloat(cfg.natP1 || cfg.regP1 || 0) : 0;
+      const pEngine = cfg && hasEngine  ? parseFloat(cfg.engP1 || 0) : 0;
+      const pTyres  = cfg && hasTyres   ? parseFloat(cfg.tyrP1 || 0) : 0;
+      const pWet    = cfg && hasWet     ? parseFloat(cfg.wetPrice || 0) : 0;
+      const pTrans  = cfg && hasTrans   ? parseFloat(cfg.transP1 || 0) : 0;
+      const pFuel   = cfg && hasFuel    ? parseFloat(cfg.fuelP1 || 0) : 0;
+
+      const calcTotal = pEntry + pEngine + pTyres + pWet + pTrans + pFuel;
+      const amtPaid   = parseFloat(entry.amount_paid || 0);
+      const diff      = amtPaid - calcTotal;
+
+      colTotals.entry  += pEntry;
+      colTotals.engine += pEngine;
+      colTotals.tyres  += pTyres;
+      colTotals.wet    += pWet;
+      colTotals.trans  += pTrans;
+      colTotals.fuel   += pFuel;
+      grandCalc += calcTotal;
+      grandPaid += amtPaid;
+
+      const notes = [];
+      if (!cfg) notes.push('No pricing config for this class');
+      if (amtPaid === 0 && entry.payment_status === 'Completed') notes.push('FREE ENTRY');
+      if (diff < -0.5) notes.push(`SHORT R${Math.abs(diff).toFixed(2)}`);
+      if (diff > 0.5)  notes.push(`OVER R${diff.toFixed(2)}`);
+
+      const name = `${entry.first_name || ''} ${entry.last_name || ''}`.trim() || entry.driver_email || 'Unknown';
+
+      return [
+        escCSV(name),
+        escCSV(entry.race_number || '?'),
+        escCSV(entry.race_class),
+        escCSV(entry.payment_status || 'Unknown'),
+        fmt(pEntry),
+        fmt(hasEngine ? pEngine : 0),
+        fmt(hasTyres  ? pTyres  : 0),
+        fmt(hasWet    ? pWet    : 0),
+        fmt(hasTrans  ? pTrans  : 0),
+        fmt(hasFuel   ? pFuel   : 0),
+        fmt(calcTotal),
+        fmt(amtPaid),
+        fmt(diff),
+        escCSV(notes.join('; '))
+      ].join(',');
+    });
+
+    // Totals row
+    const totalsRow = [
+      'TOTALS', '', '', '',
+      fmt(colTotals.entry),
+      fmt(colTotals.engine),
+      fmt(colTotals.tyres),
+      fmt(colTotals.wet),
+      fmt(colTotals.trans),
+      fmt(colTotals.fuel),
+      fmt(grandCalc),
+      fmt(grandPaid),
+      fmt(grandPaid - grandCalc),
+      ''
+    ].join(',');
+
+    const eventHeaderRow = `# Financial Report: ${eventName},Generated: ${new Date().toLocaleString('en-ZA')},Entries: ${rows.length}`;
+    const csv = [eventHeaderRow, headers.join(','), ...rows, '', totalsRow].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="financial-report-${race_event}-${new Date().toISOString().slice(0,10)}.csv"`);
+    console.log(`✅ Financial report exported: ${rows.length} entries, event=${race_event}`);
+    res.send(csv);
+  } catch (err) {
+    console.error('❌ exportFinancialReportCSV error:', err.message);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
 // Export Drivers as CSV (Admin)
 app.post('/api/admin/exportDriversCSV', async (req, res) => {
   try {
@@ -9821,6 +10014,29 @@ app.post('/api/getAuditLog', async (req, res) => {
           esl.action_result,
           esl.race_class
         FROM equipment_scan_log esl
+
+        UNION ALL
+
+        SELECT
+          'dir'              AS source,
+          dec.contact_date   AS event_time,
+          CASE dec.contact_type
+            WHEN 'Part Change' THEN 'dir_part_changed'
+            ELSE 'dir_contact'
+          END                AS action,
+          NULL::text         AS driver_id,
+          COALESCE(dec.person_name, '')  AS driver_first_name,
+          ''                 AS driver_last_name,
+          ''                 AS driver_email,
+          COALESCE(dec.contact_type, '') AS detail,
+          ''                 AS old_value,
+          COALESCE(dec.description, dec.dir_notes, '') AS new_value,
+          ''                 AS ip_address,
+          dec.engine_serial  AS equipment_serial,
+          'DIR Portal'       AS scanned_by,
+          COALESCE(dec.outcome, '')      AS action_result,
+          ''                 AS race_class
+        FROM dir_engine_contacts dec
       ) combined
       ${whereClause}
       ORDER BY combined.event_time DESC
@@ -11238,7 +11454,30 @@ app.post('/api/dir/log', async (req, res) => {
       follow_up_notes || null
     ]);
 
-    res.json({ success: true, contact: result.rows[0] });
+    const row0 = result.rows[0];
+    // Broadcast to live monitor
+    const dirEvt = JSON.stringify({
+      log_id:           'dir_' + row0.contact_id,
+      scan_timestamp:   row0.contact_date || new Date(),
+      scan_type:        'dir_contact',
+      driver_name:      person_name,
+      race_class:       null,
+      equipment_serial: engine_serial ? engine_serial.toUpperCase() : null,
+      action_result:    'success',
+      notes:            dir_notes || description || null,
+      barcode_scanned:  null,
+      event_id:         null,
+      event_name:       null,
+      scanned_by:       'DIR Portal',
+      dir_outcome:      outcome,
+      dir_contact_type: contact_type || 'Inspection',
+      dir_follow_up:    follow_up === true || follow_up === 'true',
+    });
+    for (const client of monitorClients) {
+      try { client.write(`data: ${dirEvt}\n\n`); } catch(_) { monitorClients.delete(client); }
+    }
+
+    res.json({ success: true, contact: row0 });
   } catch (err) {
     console.error('Error creating DIR contact log:', err);
     res.status(500).json({ success: false, error: err.message });
@@ -11310,6 +11549,110 @@ app.delete('/api/dir/log/:id', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Error deleting DIR log:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/dir/engineParts/:serial — full parts record for engine by serial
+app.get('/api/dir/engineParts/:serial', async (req, res) => {
+  try {
+    const serial = req.params.serial.toUpperCase().trim();
+    const result = await pool.query(
+      `SELECT engine_id, draw_number, engine_serial, seal_number, carb_number,
+              airbox_number, exhaust_number, class, notes, active, updated_at
+       FROM pool_engines WHERE LOWER(engine_serial)=LOWER($1) LIMIT 1`,
+      [serial]
+    );
+    if (!result.rows.length) return res.json({ success: false, error: 'Engine not found in pool' });
+    res.json({ success: true, engine: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PATCH /api/dir/enginePart — update a single part field, log change, broadcast to monitor
+app.patch('/api/dir/enginePart', async (req, res) => {
+  try {
+    const { serial, field, newValue, changedBy } = req.body;
+    const ALLOWED = ['seal_number','carb_number','airbox_number','exhaust_number','notes'];
+    if (!serial) return res.json({ success: false, error: 'serial required' });
+    if (!ALLOWED.includes(field)) return res.json({ success: false, error: 'Invalid field: ' + field });
+
+    const LABELS = { seal_number:'Seal', carb_number:'Carb', airbox_number:'Airbox', exhaust_number:'Exhaust', notes:'Notes' };
+    const label = LABELS[field];
+
+    // Fetch current row
+    const eng = await pool.query(
+      `SELECT engine_id, draw_number, engine_serial, ${field} AS cur_val, class
+       FROM pool_engines WHERE LOWER(engine_serial)=LOWER($1) LIMIT 1`,
+      [serial]
+    );
+    if (!eng.rows.length) return res.json({ success: false, error: 'Engine not found' });
+    const row = eng.rows[0];
+    const oldValue = (row.cur_val || '').trim();
+    const cleanNew = (newValue || '').trim();
+
+    // Update the field
+    await pool.query(
+      `UPDATE pool_engines SET ${field}=$1, updated_at=NOW() WHERE engine_id=$2`,
+      [cleanNew, row.engine_id]
+    );
+
+    // Insert dir_engine_contacts record as part-change history
+    const description = `${label} changed: "${oldValue || '—'}" → "${cleanNew || '—'}"`;
+    const logResult = await pool.query(
+      `INSERT INTO dir_engine_contacts
+         (engine_serial, contact_type, outcome, description, person_name, contact_date)
+       VALUES ($1,'Part Change','Noted',$2,$3,NOW()) RETURNING *`,
+      [serial.toUpperCase(), description, changedBy || 'DIR Portal']
+    );
+    const logRow = logResult.rows[0];
+
+    // Broadcast to monitor
+    const evt = JSON.stringify({
+      log_id:           'dir_' + logRow.contact_id,
+      scan_type:        'part_change',
+      driver_name:      changedBy || 'DIR Portal',
+      equipment_serial: serial.toUpperCase(),
+      dir_outcome:      'Noted',
+      dir_contact_type: 'Part Change',
+      dir_field_name:   label,
+      dir_old_value:    oldValue,
+      dir_new_value:    cleanNew,
+      notes:            description,
+      scanned_by:       'DIR Portal',
+      scan_timestamp:   new Date().toISOString()
+    });
+    for (const client of monitorClients) {
+      try { client.write(`data: ${evt}\n\n`); } catch (_) { monitorClients.delete(client); }
+    }
+
+    // Audit log for ALL part changes
+    await pool.query(
+      `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at)
+       VALUES ($1,$2,$3,$4,$5,NOW())`,
+      [
+        `dir_part_changed`,
+        field,
+        oldValue || '(none)',
+        cleanNew || '(none)',
+        `Serial: ${row.engine_serial} | Draw #${row.draw_number} | ${label}`
+      ]
+    ).catch(() => {});
+
+    // Also keep legacy seal-history entry so existing seal history lookups still work
+    if (field === 'seal_number') {
+      await pool.query(
+        `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at)
+         VALUES ($1,$2,$3,$4,$5,NOW())`,
+        ['pool_engine_seal_changed', 'seal_number', oldValue || '(none)', cleanNew || '(none)',
+         `Draw #${row.draw_number} | Serial: ${row.engine_serial}`]
+      ).catch(() => {});
+    }
+
+    res.json({ success: true, log: logRow, oldValue });
+  } catch (err) {
+    console.error('Error updating engine part:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

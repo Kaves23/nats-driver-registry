@@ -42,11 +42,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .go-btn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--blue);color:#000;font-family:inherit;font-size:18px;font-weight:900;letter-spacing:2px;cursor:pointer}
 .go-btn:active{opacity:.8}
 .err-msg{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
-.cam-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.cam-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .cam-overlay.active{display:flex}
 #camVideo{width:100%;max-width:480px;border-radius:12px;object-fit:cover}
 .cam-close{padding:12px 32px;border-radius:10px;border:2px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
-.cam-hint{font-size:11px;letter-spacing:1px;color:var(--dim)}
+.cam-hint{font-size:14px;letter-spacing:2px;color:var(--text);font-weight:700;text-align:center}
+.cam-hint-sub{font-size:11px;letter-spacing:1px;color:var(--blue);text-align:center;padding:4px 16px;border:1px solid var(--blue);border-radius:20px;margin-bottom:4px}
+/* ── NUMBER PAD OVERLAY ───────────────────── */
+.num-pad-overlay{display:none;position:fixed;inset:0;background:rgba(2,5,8,.97);z-index:150;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.num-pad-overlay.active{display:flex}
+.npo-display{font-size:72px;font-weight:900;letter-spacing:8px;color:var(--blue);min-width:200px;text-align:center;min-height:90px;border-bottom:3px solid var(--blue);padding-bottom:8px}
+.npo-display.has-value{color:var(--text)}
+.npo-btn{height:80px!important;width:80px!important;font-size:28px!important}
+.npo-go{border-color:var(--green)!important;color:var(--green)!important;font-size:16px!important;letter-spacing:2px!important}
+.npo-go:active{background:var(--green)!important;color:#000!important}
+.npo-label{font-size:10px;letter-spacing:3px;color:var(--dim);text-align:center}
+/* ── NUM DISPLAY BUTTON on scan screen ─── */
+.num-display{flex:1;min-width:0;background:var(--card);border:2px solid var(--line);border-radius:10px;color:var(--dim);font-family:inherit;font-size:44px;font-weight:900;text-align:center;padding:10px;cursor:pointer;transition:border-color .15s;letter-spacing:4px;display:flex;align-items:center;justify-content:center;min-height:72px}
+.num-display.has-value{color:var(--text);border-color:var(--blue)}
+.num-display:active{border-color:var(--blue);background:#041828}
 
 /* ── DRAW SCREEN ─────────────────────────── */
 #s-draw{gap:10px;overflow:hidden}
@@ -227,14 +241,37 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
   <div class="scan-form">
     <div class="section-label">ENTER RACE NUMBER OR SCAN TICKET</div>
     <div class="input-row">
-      <input type="number" id="raceNumInput" class="big-input" placeholder="##" maxlength="4"
-             oninput="lookupErr('')" onkeydown="if(event.key==='Enter')doLookup()">
-      <button class="cam-btn" onclick="startCam()" title="Scan barcode">📷</button>
+      <!-- Tapping this opens the big number pad overlay -->
+      <div class="num-display" id="numDisplay" onclick="openNumPad()" title="Tap to enter race number">##</div>
+      <button class="cam-btn" onclick="startCam('driver')" title="Scan ticket QR code">📷</button>
     </div>
+    <!-- hidden input keeps backward compat with doLookup() -->
+    <input type="hidden" id="raceNumInput">
     <div class="warn-banner" id="warnBanner"></div>
     <div class="err-msg" id="lookupErr"></div>
     <button class="go-btn" onclick="doLookup()">LOOKUP DRIVER →</button>
   </div>
+</div>
+
+<!-- ── NUMBER PAD OVERLAY ─────────────────── -->
+<div class="num-pad-overlay" id="numPadOverlay">
+  <div class="npo-label">RACE NUMBER</div>
+  <div class="npo-display" id="npoDisplay">##</div>
+  <div class="pin-pad" style="grid-template-columns:repeat(3,80px);gap:12px">
+    <button class="pin-btn npo-btn" onclick="numKey('1')">1</button>
+    <button class="pin-btn npo-btn" onclick="numKey('2')">2</button>
+    <button class="pin-btn npo-btn" onclick="numKey('3')">3</button>
+    <button class="pin-btn npo-btn" onclick="numKey('4')">4</button>
+    <button class="pin-btn npo-btn" onclick="numKey('5')">5</button>
+    <button class="pin-btn npo-btn" onclick="numKey('6')">6</button>
+    <button class="pin-btn npo-btn" onclick="numKey('7')">7</button>
+    <button class="pin-btn npo-btn" onclick="numKey('8')">8</button>
+    <button class="pin-btn npo-btn" onclick="numKey('9')">9</button>
+    <button class="pin-btn npo-btn" onclick="numKey('⌫')" style="font-size:20px">⌫</button>
+    <button class="pin-btn npo-btn" onclick="numKey('0')">0</button>
+    <button class="pin-btn npo-btn npo-go" onclick="numGo()">GO →</button>
+  </div>
+  <button class="cam-close" style="margin-top:8px" onclick="closeNumPad()">✕ CANCEL</button>
 </div>
 
 <!-- ── ENTRY PICKER SCREEN ─────────────────── -->
@@ -247,7 +284,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 
 <!-- ── CAMERA OVERLAY ─────────────────────── -->
 <div class="cam-overlay" id="camOverlay">
-  <div class="cam-hint">AIM AT TICKET BARCODE</div>
+  <div class="cam-hint" id="camHintMain">SCANNING…</div>
+  <div class="cam-hint-sub" id="camHintSub">🔲 Looking for QR code</div>
   <video id="camVideo" autoplay muted playsinline></video>
   <button class="cam-close" onclick="stopCam()">✕ CANCEL</button>
 </div>
@@ -283,14 +321,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
     </div>
     <button class="back-btn" onclick="showScreen('s-draw')">← BACK</button>
   </div>
-  <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:16px;">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:14px;">
+    <!-- Step badge -->
     <div style="text-align:center;">
-      <div style="font-size:10px;letter-spacing:3px;color:var(--dim)">STEP 2 OF 2</div>
-      <div style="font-size:18px;font-weight:900;margin-top:6px;">SCAN ENGINE TO CONFIRM</div>
-      <div style="font-size:11px;color:var(--dim);margin-top:4px;">Scan the seal barcode <em>or</em> the engine serial</div>
+      <div style="font-size:10px;letter-spacing:3px;color:var(--dim);margin-bottom:4px">STEP 2 OF 2</div>
+      <div style="font-size:20px;font-weight:900;">SCAN ENGINE SEAL</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 14px;border:1px solid var(--amber);border-radius:20px;">
+        <span style="font-size:14px">▬▬▬</span>
+        <span style="font-size:11px;letter-spacing:1px;color:var(--amber)">BARCODE — metal seal on engine</span>
+      </div>
     </div>
-    <button onclick="startCam('seal-confirm')" style="align-self:center;width:110px;height:110px;border-radius:50%;border:3px solid var(--blue);background:var(--card);color:var(--blue);font-size:44px;cursor:pointer;">📷</button>
-    <input id="sealManualInput" type="text" class="big-input" placeholder="or type seal / serial" style="font-size:18px;text-transform:uppercase;" onkeydown="if(event.key==='Enter')submitSealInput()">
+    <!-- Big scan button -->
+    <button onclick="startCam('seal-confirm')" id="sealCamBtn"
+      style="align-self:center;width:130px;height:130px;border-radius:50%;border:3px solid var(--blue);background:var(--card);color:var(--blue);font-size:52px;cursor:pointer;transition:background .15s,transform .1s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+      📷
+      <span style="font-size:10px;letter-spacing:1px;color:var(--dim)">SCAN SEAL</span>
+    </button>
+    <!-- Scanned result display (hidden until scan) -->
+    <div id="sealScanResult" style="display:none;text-align:center;padding:10px 14px;border-radius:10px;border:2px solid var(--line);background:var(--card);">
+      <div style="font-size:10px;letter-spacing:2px;color:var(--dim);margin-bottom:4px">SCANNED</div>
+      <div id="sealScanValue" style="font-size:22px;font-weight:900;letter-spacing:2px;color:var(--blue)">—</div>
+    </div>
+    <!-- Manual fallback -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+      <span style="font-size:10px;letter-spacing:1px;color:var(--dim)">OR TYPE MANUALLY</span>
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+    </div>
+    <input id="sealManualInput" type="text" class="big-input" placeholder="seal / serial" style="font-size:20px;text-transform:uppercase;" onkeydown="if(event.key==='Enter')submitSealInput()">
     <button class="go-btn" onclick="submitSealInput()">VERIFY →</button>
     <div id="sealErr" style="text-align:center;font-size:13px;min-height:18px;letter-spacing:.5px;"></div>
     <button onclick="showConfirm()" style="font-size:11px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;letter-spacing:1px;padding:4px;">SKIP SCAN — CONFIRM ANYWAY</button>
@@ -478,11 +536,64 @@ async function preloadEngines() {
 }
 
 // ─────────────────────────────────────────────────
+// BIG NUMBER KEYPAD
+// ─────────────────────────────────────────────────
+let _numPadVal = '';
+function setNumDisplay(val) {
+  document.getElementById('raceNumInput').value = val;
+  const el = document.getElementById('numDisplay');
+  el.textContent = val || '##';
+  el.classList.toggle('has-value', !!val);
+}
+function openNumPad() {
+  _numPadVal = document.getElementById('raceNumInput').value || '';
+  renderNpo();
+  document.getElementById('numPadOverlay').classList.add('active');
+}
+function closeNumPad() {
+  document.getElementById('numPadOverlay').classList.remove('active');
+}
+function renderNpo() {
+  const el = document.getElementById('npoDisplay');
+  el.textContent = _numPadVal || '##';
+  el.classList.toggle('has-value', !!_numPadVal);
+}
+function numKey(k) {
+  if (k === '\u232b') { _numPadVal = _numPadVal.slice(0, -1); }
+  else if (_numPadVal.length < 4) { _numPadVal += k; }
+  renderNpo();
+}
+function numGo() {
+  if (!_numPadVal) return;
+  setNumDisplay(_numPadVal);
+  closeNumPad();
+  lookupErr('');
+  doLookup();
+}
+
+// ─────────────────────────────────────────────────
 // CAMERA / BARCODE
 // ─────────────────────────────────────────────────
-let _camContext = 'driver'; // 'driver' | 'seal'
+let _camContext = 'driver'; // 'driver' | 'seal-confirm' | 'peri-scan'
+
+const CAM_HINTS = {
+  driver:         { main: 'SCAN TICKET',        sub: '\ud83d\udd32 QR code \u2014 or ticket barcode' },
+  'seal-confirm': { main: 'SCAN ENGINE SEAL',   sub: '\u25ac\u25ac\u25ac Barcode \u2014 metal seal on engine' },
+  'peri-scan':    { main: 'SCAN COMPONENT',     sub: '\u25ac\u25ac\u25ac Linear barcode on part' },
+};
+
 async function startCam(context) {
   _camContext = context || 'driver';
+  const hints = CAM_HINTS[_camContext] || CAM_HINTS.driver;
+  document.getElementById('camHintMain').textContent = hints.main;
+  document.getElementById('camHintSub').textContent  = hints.sub;
+  // Highlight seal button while scanning
+  const sealBtn = document.getElementById('sealCamBtn');
+  if (sealBtn && _camContext === 'seal-confirm') {
+    sealBtn.style.borderColor = 'var(--amber)';
+    sealBtn.style.color = 'var(--amber)';
+    sealBtn.style.transform = 'scale(0.93)';
+  }
   try {
     _scanStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
@@ -517,29 +628,81 @@ function stopCam() {
   if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
   document.getElementById('camVideo').srcObject = null;
   document.getElementById('camOverlay').classList.remove('active');
+  const sealBtn = document.getElementById('sealCamBtn');
+  if (sealBtn) { sealBtn.style.borderColor = ''; sealBtn.style.color = ''; sealBtn.style.transform = ''; }
 }
 function handleBarcode(raw) {
-  // peri-scan context: scanning a component barcode on the return screen
+  const upper = raw.toUpperCase().trim();
+
+  // peri-scan: component barcode on return screen
   if (_camContext === 'peri-scan') {
     _camContext = 'driver';
-    onPeriScanned(raw.toUpperCase().trim());
+    onPeriScanned(upper);
     return;
   }
 
-  // seal-confirm context: came from camera on seal-verify screen
+  // seal-confirm: metal seal barcode on engine
   if (_camContext === 'seal-confirm') {
     _camContext = 'driver';
-    verifySealOrSerial(raw.toUpperCase().trim());
+    // Show scanned value in result box
+    const resEl = document.getElementById('sealScanResult');
+    const valEl = document.getElementById('sealScanValue');
+    if (resEl && valEl) { valEl.textContent = upper; resEl.style.display = 'block'; }
+    verifySealOrSerial(upper);
     return;
   }
 
-  // Default: treat scan as race number for driver lookup
-  const numMatch = raw.match(/\d+/);
+  // Driver ticket scan — handle multiple formats:
+  // 1. QR with full entry ID: "race_entry_abc123"
+  // 2. ENG/alphanumeric ticket barcode: "ENG6033"
+  // 3. Plain race number: "47" or "#47"
+  _camContext = 'driver';
+  if (/^race_entry_/i.test(upper)) {
+    setNumDisplay(upper); doLookupByTicket(upper); return;
+  }
+  if (/^(ENG|ROK|KZ|CAD)[A-Z0-9]+$/i.test(upper) || /^[A-Z]{2,4}\d{3,}$/i.test(upper)) {
+    setNumDisplay(upper); doLookupByTicket(upper); return;
+  }
+  const cleaned = upper.replace(/^#/, '');
+  const numMatch = /^\d{1,4}$/.test(cleaned) ? [cleaned] : raw.match(/\d+/);
   if (numMatch) {
-    document.getElementById('raceNumInput').value = numMatch[0];
+    setNumDisplay(numMatch[0]);
     doLookup();
   } else {
-    lookupErr('Could not read barcode');
+    lookupErr('Could not read barcode — try again');
+  }
+}
+
+// Lookup driver by ticket barcode (ENG####, entry ID, etc)
+async function doLookupByTicket(barcode) {
+  lookupErr('');
+  const goBtn = document.querySelector('#s-scan .go-btn');
+  goBtn.disabled = true; goBtn.textContent = 'LOOKING UP…';
+  try {
+    const r = await fetch(`/api/equipment/lookupTicket?barcode=${encodeURIComponent(barcode)}`);
+    const d = await r.json();
+    if (d.success && (d.driver || d.entry)) {
+      const entry = d.driver || d.entry;
+      setNumDisplay(String(entry.race_number || barcode));
+      document.getElementById('raceNumInput').value = entry.race_number || barcode;
+      await preloadEngines();
+      currentDriver = buildDriver(entry);
+      openDraw();
+    } else {
+      // Fall back: extract digits and try race number
+      const numMatch = barcode.match(/\d+/);
+      if (numMatch) {
+        setNumDisplay(numMatch[0]);
+        document.getElementById('raceNumInput').value = numMatch[0];
+        await doLookup();
+      } else {
+        lookupErr(d.error || 'Ticket not found');
+      }
+    }
+  } catch(e) {
+    lookupErr('Server error — try again');
+  } finally {
+    goBtn.disabled = false; goBtn.textContent = 'LOOKUP DRIVER →';
   }
 }
 
@@ -554,6 +717,14 @@ function showSealScreen() {
   document.getElementById('sealEngineSerial').textContent = e.engine_serial
     ? 'Engine: ' + e.engine_serial : '(No serial recorded)';
   document.getElementById('sealManualInput').value = '';
+  // Reset scan result box
+  const resEl = document.getElementById('sealScanResult');
+  const valEl = document.getElementById('sealScanValue');
+  if (resEl) resEl.style.display = 'none';
+  if (valEl) valEl.textContent = '\u2014';
+  // Reset cam button
+  const sealBtn = document.getElementById('sealCamBtn');
+  if (sealBtn) { sealBtn.style.borderColor = ''; sealBtn.style.color = ''; sealBtn.style.transform = ''; }
   const errEl = document.getElementById('sealErr');
   errEl.textContent = '';
   errEl.style.color = '';
@@ -574,6 +745,12 @@ function submitSealInput() {
 function verifySealOrSerial(input) {
   const upper = input.toUpperCase().trim();
   const errEl  = document.getElementById('sealErr');
+  const sealBtn = document.getElementById('sealCamBtn');
+
+  // Show scanned value in result box (also set from handleBarcode, but set here for manual input too)
+  const resEl = document.getElementById('sealScanResult');
+  const valEl = document.getElementById('sealScanValue');
+  if (resEl && valEl) { valEl.textContent = upper; resEl.style.display = 'block'; }
 
   // Search ALL engines (not just this class) for seal_number OR engine_serial match
   const match = allEngines.find(e =>
@@ -584,17 +761,24 @@ function verifySealOrSerial(input) {
   if (!match) {
     errEl.style.color = 'var(--red)';
     errEl.textContent = `❌ Not found: ${input} — try again`;
+    if (valEl) valEl.style.color = 'var(--red)';
+    if (sealBtn) { sealBtn.style.borderColor = 'var(--red)'; sealBtn.style.color = 'var(--red)'; }
     return;
   }
 
   if (match.engine_id === selectedEngine.engine_id) {
     errEl.style.color = 'var(--green)';
     errEl.textContent = '✅ Engine verified!';
-    setTimeout(showConfirm, 600);
+    if (valEl) valEl.style.color = 'var(--green)';
+    if (resEl) resEl.style.borderColor = 'var(--green)';
+    if (sealBtn) { sealBtn.style.borderColor = 'var(--green)'; sealBtn.style.color = 'var(--green)'; }
+    setTimeout(showConfirm, 700);
   } else {
     // Scanned the wrong physical engine
     errEl.style.color = 'var(--amber)';
     errEl.textContent = `⚠️ That's Draw #${match.draw_number} (${match.class}) — wrong engine!`;
+    if (valEl) valEl.style.color = 'var(--amber)';
+    if (sealBtn) { sealBtn.style.borderColor = 'var(--amber)'; sealBtn.style.color = 'var(--amber)'; }
   }
 }
 
@@ -655,7 +839,7 @@ function lookupErr(msg) {
 }
 async function doLookup() {
   const num = (document.getElementById('raceNumInput').value || '').trim();
-  if (!num) { lookupErr('Enter a race number'); return; }
+  if (!num) { lookupErr('Enter a race number'); openNumPad(); return; }
   lookupErr('');
   document.querySelector('#s-scan .go-btn').disabled = true;
   document.querySelector('#s-scan .go-btn').textContent = 'LOOKING UP…';
@@ -873,6 +1057,8 @@ function showDone(engine, driver) {
 function nextDriver() {
   selectedEngine = null;
   currentDriver  = null;
+  setNumDisplay('');
+  _numPadVal = '';
   document.getElementById('raceNumInput').value = '';
   document.getElementById('lookupErr').textContent = '';
   document.getElementById('warnBanner').textContent = '';
@@ -883,6 +1069,8 @@ function nextDriver() {
 
 function goScan() {
   selectedEngine = null;
+  setNumDisplay('');
+  _numPadVal = '';
   document.getElementById('raceNumInput').value = '';
   document.getElementById('lookupErr').textContent = '';
   showScreen('s-scan');
