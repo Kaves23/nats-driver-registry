@@ -287,6 +287,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
   <div class="cam-hint" id="camHintMain">SCANNING…</div>
   <div class="cam-hint-sub" id="camHintSub">🔲 Looking for QR code</div>
   <video id="camVideo" autoplay muted playsinline></video>
+  <canvas id="scanCanvas" style="display:none"></canvas>
   <button class="cam-close" onclick="stopCam()">✕ CANCEL</button>
 </div>
 
@@ -461,21 +462,26 @@ let allEngines     = [];   // all pool engines from API (incl. assigned_driver_n
 let classEngines   = [];   // engines for current driver's class
 let selectedEngine = null; // the pool engine record the driver picked
 
-// ZXing
-let _nativeDet = null;
-let _zxReader  = null;
+// ZXing / BarcodeDetector
+let _nativeDet  = null;
+let _zxReader   = null;
 let _scanStream = null;
-let _zxInterval = null;
+let _scanRafId  = null;
+let _scanning   = false;
 
-function initZX() {
-  try {
-    _nativeDet = new BarcodeDetector({
-      formats: ['qr_code','code_128','code_39','code_93','ean_13','ean_8','itf','data_matrix','aztec','pdf_417']
-    });
-  } catch(_) { _nativeDet = null; }
-  try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
-}
-initZX();
+(function initDecoders() {
+  if (window.BarcodeDetector) {
+    try {
+      _nativeDet = new BarcodeDetector({
+        formats: ['qr_code','code_128','code_39','code_93','ean_13','ean_8',
+                  'itf','data_matrix','aztec','pdf_417','upc_a','upc_e']
+      });
+    } catch(_) { _nativeDet = null; }
+  }
+  if (window.ZXing) {
+    try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
+  }
+})();
 
 // ─────────────────────────────────────────────────
 // SCREENS
@@ -601,32 +607,55 @@ async function startCam(context) {
     const vid = document.getElementById('camVideo');
     vid.srcObject = _scanStream;
     document.getElementById('camOverlay').classList.add('active');
-    _zxInterval = setInterval(async () => {
-      if (!vid.videoWidth) return;
-      if (_nativeDet) {
-        try {
-          const codes = await _nativeDet.detect(vid);
-          if (codes.length) { stopCam(); handleBarcode(codes[0].rawValue); return; }
-        } catch(_) {}
-      }
-      if (_zxReader) {
-        try {
-          const c = document.createElement('canvas');
-          c.width = vid.videoWidth; c.height = vid.videoHeight;
-          c.getContext('2d').drawImage(vid, 0, 0);
-          const res = await _zxReader.decodeFromCanvas(c);
-          if (res) { stopCam(); handleBarcode(res.getText()); }
-        } catch(_) {}
-      }
-    }, 80);
+    // Wait for video metadata then explicitly play — critical for iOS Safari
+    vid.onloadedmetadata = () => { vid.play(); _startDecodeLoop(); };
   } catch(e) {
     alert('Camera not available: ' + e.message);
   }
 }
+
+function _startDecodeLoop() {
+  _scanning = true;
+  const vid = document.getElementById('camVideo');
+  const c   = document.getElementById('scanCanvas');
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  let lastZxTime = 0;
+
+  function tick() {
+    if (!_scanning) return;
+    if (vid.readyState >= 2 && vid.videoWidth > 0) {
+      // Path 1: native BarcodeDetector (fastest, hardware-accelerated)
+      if (_nativeDet) {
+        _nativeDet.detect(vid)
+          .then(r => { if (r.length && _scanning) { stopCam(); handleBarcode(r[0].rawValue); } })
+          .catch(() => {});
+        // Queue next frame immediately (non-blocking)
+        if (_scanning) _scanRafId = requestAnimationFrame(tick);
+        return;
+      }
+      // Path 2: ZXing software decoder (throttled to ~80 ms)
+      const now = Date.now();
+      if (now - lastZxTime > 80 && _zxReader) {
+        lastZxTime = now;
+        c.width = vid.videoWidth; c.height = vid.videoHeight;
+        ctx.drawImage(vid, 0, 0);
+        _zxReader.decodeFromCanvas(c)
+          .then(r => { if (r && _scanning) { stopCam(); handleBarcode(r.getText()); } })
+          .catch(() => {});
+      }
+    }
+    if (_scanning) _scanRafId = requestAnimationFrame(tick);
+  }
+  _scanRafId = requestAnimationFrame(tick);
+}
+
 function stopCam() {
-  clearInterval(_zxInterval); _zxInterval = null;
+  _scanning = false;
+  if (_scanRafId) { cancelAnimationFrame(_scanRafId); _scanRafId = null; }
   if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
-  document.getElementById('camVideo').srcObject = null;
+  const vid = document.getElementById('camVideo');
+  vid.onloadedmetadata = null;
+  vid.srcObject = null;
   document.getElementById('camOverlay').classList.remove('active');
   const sealBtn = document.getElementById('sealCamBtn');
   if (sealBtn) { sealBtn.style.borderColor = ''; sealBtn.style.color = ''; sealBtn.style.transform = ''; }
