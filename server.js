@@ -8034,6 +8034,27 @@ app.post('/api/getDriverRaceEntries', async (req, res) => {
   }
 });
 
+// GET alias for race-entries (used by push-notification class loader)
+app.get('/api/race-entries', async (req, res) => {
+  try {
+    const eventId = req.query.event_id;
+    if (!eventId) return res.json({ entries: [] });
+    const result = await pool.query(
+      `SELECT r.entry_id, r.race_class AS class, r.entry_status,
+              d.first_name, d.last_name, d.race_number
+         FROM race_entries r
+         LEFT JOIN drivers d ON r.driver_id = d.driver_id
+         WHERE r.event_id = $1
+         ORDER BY r.race_class, d.race_number`,
+      [eventId]
+    );
+    res.json({ success: true, entries: result.rows });
+  } catch (err) {
+    console.error('GET /api/race-entries error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Get Race Entries
 app.post('/api/getRaceEntries', async (req, res) => {
   try {

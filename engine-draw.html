@@ -679,7 +679,7 @@ async function doLookupByTicket(barcode) {
   const goBtn = document.querySelector('#s-scan .go-btn');
   goBtn.disabled = true; goBtn.textContent = 'LOOKING UP…';
   try {
-    const r = await fetch(`/api/equipment/lookupTicket?barcode=${encodeURIComponent(barcode)}`);
+    const r = await fetch(`/api/lookupTicket?barcode=${encodeURIComponent(barcode)}`);
     const d = await r.json();
     if (d.success && (d.driver || d.entry)) {
       const entry = d.driver || d.entry;
