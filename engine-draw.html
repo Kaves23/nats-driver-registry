@@ -465,8 +465,7 @@ let selectedEngine = null; // the pool engine record the driver picked
 
 // ZXing / BarcodeDetector
 let _nativeDet  = null;
-let _zxReader   = null;   // multi-format (QR + everything)
-let _zxReader1D = null;   // 1D-only with Code 128 hints — faster & more reliable for seals
+let _zxReader   = null;
 let _scanStream = null;
 let _scanRafId  = null;
 let _scanning   = false;
@@ -481,30 +480,7 @@ let _scanning   = false;
     } catch(_) { _nativeDet = null; }
   }
   if (window.ZXing) {
-    try {
-      _zxReader = new ZXing.BrowserMultiFormatReader();
-    } catch(_) {}
-    // Build a 1D-focused reader with explicit Code 128 hints — separate try/catch
-    // so a failed hints init never leaves _zxReader1D as null
-    if (_zxReader) {
-      try {
-        if (ZXing.DecodeHintType && ZXing.BarcodeFormat) {
-          const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-            ZXing.BarcodeFormat.CODE_128,
-            ZXing.BarcodeFormat.CODE_39,
-            ZXing.BarcodeFormat.CODE_93,
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.ITF,
-            ZXing.BarcodeFormat.UPC_A,
-            ZXing.BarcodeFormat.UPC_E,
-          ]]]);
-          _zxReader1D = new ZXing.BrowserMultiFormatReader(hints);
-        }
-      } catch(_) {}
-      // Always guarantee a 1D reader — fall back to the multi-format reader if hints init failed
-      if (!_zxReader1D) _zxReader1D = _zxReader;
-    }
+    try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
   }
 })();
 
@@ -656,56 +632,63 @@ function _startDecodeLoop() {
   const c   = document.getElementById('scanCanvas');
   const ctx = c.getContext('2d', { willReadFrequently: true });
   let lastSoftwareTime = 0;
-  // Seal/linear barcode scans get faster polling and bypass BarcodeDetector
-  // (BarcodeDetector is unreliable for Code 128 linear barcodes on many phones)
   const isSealScan = () => _camContext === 'seal-confirm' || _camContext === 'peri-scan';
 
   function tick() {
     if (!_scanning) return;
     if (vid.readyState >= 2 && vid.videoWidth > 0) {
 
-      // Path 1: native BarcodeDetector — Chrome/Android, hardware-accelerated
-      // SKIP for linear barcodes (seal/peri) — BarcodeDetector misses Code 128 on many Android phones
+      // BarcodeDetector: use for QR (driver context) only
+      // For seal/peri context we run ZXing software decode INSTEAD
+      // because BarcodeDetector on Android often misses Code 128 in practice
       if (_nativeDet && !isSealScan()) {
         _nativeDet.detect(vid)
           .then(r => { if (r.length && _scanning) { stopCam(); handleBarcode(r[0].rawValue); } })
           .catch(() => {});
+        // Also run ZXing concurrently as a safety net
+        if (_zxReader) {
+          const now = Date.now();
+          if (now - lastSoftwareTime > 150) {
+            lastSoftwareTime = now;
+            c.width = vid.videoWidth; c.height = vid.videoHeight;
+            ctx.drawImage(vid, 0, 0);
+            try {
+              const r = _zxReader.decodeFromCanvas(c);
+              if (r && _scanning) { stopCam(); handleBarcode(r.getText()); return; }
+            } catch(_) {}
+          }
+        }
         if (_scanning) _scanRafId = requestAnimationFrame(tick);
         return;
       }
 
-      // Path 2: software decoders — always used for seal/peri context, fallback for QR on iOS
-      // Throttle: 50 ms for 1D barcode contexts (more attempts), 100 ms for QR
-      const throttle = isSealScan() ? 50 : 100;
+      // Seal/peri context OR no BarcodeDetector: software decode every 50ms
       const now = Date.now();
-      if (now - lastSoftwareTime > throttle) {
+      if (now - lastSoftwareTime > 50) {
         lastSoftwareTime = now;
         c.width = vid.videoWidth; c.height = vid.videoHeight;
         ctx.drawImage(vid, 0, 0);
 
-        // For 1D barcode contexts, use the ZXing 1D reader FIRST (Code 128 optimised)
-        // _zxReader1D is always non-null (falls back to _zxReader) so this always runs
-        const sealReader = _zxReader1D || _zxReader;
-        if (isSealScan() && sealReader) {
+        // ZXing handles Code 128, Code 39, QR, everything
+        if (_zxReader) {
           try {
-            const r = sealReader.decodeFromCanvas(c);
+            const r = _zxReader.decodeFromCanvas(c);
             if (r && _scanning) { stopCam(); handleBarcode(r.getText()); return; }
-          } catch(_) {} // NotFoundException expected when no barcode in frame
+          } catch(_) {}
         }
 
-        // jsQR — fast synchronous QR decoder (QR context only)
-        if (!isSealScan() && window.jsQR) {
+        // jsQR as additional QR fallback
+        if (window.jsQR) {
           const imgData = ctx.getImageData(0, 0, c.width, c.height);
           const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
           if (qr && _scanning) { stopCam(); handleBarcode(qr.data); return; }
         }
 
-        // ZXing multi-format fallback (QR context, or seal context if no 1D reader)
-        if (!isSealScan() && _zxReader) {
-          try {
-            const r = _zxReader.decodeFromCanvas(c);
-            if (r && _scanning) { stopCam(); handleBarcode(r.getText()); return; }
-          } catch(_) {}
+        // BarcodeDetector as extra parallel attempt for seal context too
+        if (_nativeDet && isSealScan()) {
+          _nativeDet.detect(vid)
+            .then(r => { if (r.length && _scanning) { stopCam(); handleBarcode(r[0].rawValue); } })
+            .catch(() => {});
         }
       }
     }
