@@ -14,7 +14,7 @@
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden}
 
-.screen{display:none;flex-direction:column;height:100%;padding:16px;gap:12px}
+.screen{display:none;flex-direction:column;height:100%;padding:16px;gap:12px;box-sizing:border-box}
 .screen.active{display:flex}
 
 /* ── PIN ─────────────────────────────────── */
@@ -139,7 +139,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .pick-entry .pe-class{font-size:22px;font-weight:900;color:var(--blue)}
 .pick-entry .pe-event{font-size:11px;color:var(--dim);margin-top:3px;letter-spacing:.5px}
 .pick-entry .pe-engine{font-size:11px;color:var(--amber);margin-top:2px}
-.pick-back{padding:10px 24px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:inherit;font-size:13px;cursor:pointer}
+.pick-back{padding:10px 24px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:inherit;font-size:13px;cursor:pointer;flex-shrink:0}
 
 /* ── RETURN BUTTON ─────────────────────────── */
 .return-btn{padding:8px 14px;border-radius:8px;border:2px solid var(--amber);background:transparent;color:var(--amber);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;display:none}
