@@ -12082,8 +12082,8 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
     // Build page-break-separated ticket HTML — each ticket centred on its page
     const PAGE_BREAK = `<div style="page-break-after:always;"></div>`;
     const wrapTicket = (html) => `
-      <div style="display:flex;justify-content:center;align-items:center;min-height:260mm;padding:10mm 0;">
-        <div style="width:100%;max-width:300px;">${html}</div>
+      <div style="width:100%;text-align:center;padding:20px 0;box-sizing:border-box;">
+        <div style="display:inline-block;width:300px;max-width:300px;text-align:left;overflow:hidden;">${html}</div>
       </div>`;
 
     const ticketParts = [];
