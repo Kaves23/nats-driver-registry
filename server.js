@@ -12079,13 +12079,18 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       try { const p = JSON.parse(field); return Array.isArray(p) ? p : [field]; } catch { return [field]; }
     };
 
-    // Build page-break-separated ticket HTML
-    const PAGE_BREAK = '<div style="page-break-after:always;"></div>';
+    // Build page-break-separated ticket HTML — each ticket centred on its page
+    const PAGE_BREAK = `<div style="page-break-after:always;"></div>`;
+    const wrapTicket = (html) => `
+      <div style="display:flex;justify-content:center;align-items:center;min-height:260mm;padding:10mm 0;">
+        <div style="width:100%;max-width:300px;">${html}</div>
+      </div>`;
+
     const ticketParts = [];
 
     // Race entry ticket (reference = payment_reference)
     const raceRef = entry.payment_reference || String(entry.entry_id);
-    ticketParts.push(generateRaceTicketHTML({
+    ticketParts.push(wrapTicket(generateRaceTicketHTML({
       reference: raceRef,
       eventName: entry.event_name || 'Race Event',
       eventDate: entry.event_date,
@@ -12094,7 +12099,7 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       driverName,
       raceNumber,
       teamCode: entry.team_code || ''
-    }));
+    })));
 
     // Engine rental tickets
     if (hasEngine && entry.ticket_engine_ref) {
@@ -12103,11 +12108,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
         ? ['FRIDAY – PRACTICE DAY', 'SATURDAY', 'SUNDAY']
         : refs.length === 2 ? ['SATURDAY', 'SUNDAY'] : [''];
       refs.forEach((ref, i) => {
-        ticketParts.push(generateEngineRentalTicketHTML({
+        ticketParts.push(wrapTicket(generateEngineRentalTicketHTML({
           reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
           eventLocation: entry.location, raceClass: entry.race_class, driverName,
           raceNumber, dayLabel: dayLabels[i] || ''
-        }));
+        })));
       });
     }
 
@@ -12116,11 +12121,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       const refs = parseRefs(entry.ticket_tyres_ref);
       const dayLabels = refs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
       refs.forEach((ref, i) => {
-        ticketParts.push(generateTyreRentalTicketHTML({
+        ticketParts.push(wrapTicket(generateTyreRentalTicketHTML({
           reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
           eventLocation: entry.location, raceClass: entry.race_class, driverName,
           raceNumber, dayLabel: dayLabels[i] || ''
-        }));
+        })));
       });
     }
 
@@ -12129,11 +12134,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       const refs = parseRefs(entry.ticket_transponder_ref);
       const dayLabels = refs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
       refs.forEach((ref, i) => {
-        ticketParts.push(generateTransponderRentalTicketHTML({
+        ticketParts.push(wrapTicket(generateTransponderRentalTicketHTML({
           reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
           eventLocation: entry.location, raceClass: entry.race_class, driverName,
           raceNumber, dayLabel: dayLabels[i] || ''
-        }));
+        })));
       });
     }
 
@@ -12141,11 +12146,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
     if (hasFuel && entry.ticket_fuel_ref) {
       const refs = parseRefs(entry.ticket_fuel_ref);
       const dayLabel = refs.length >= 3 ? 'FRIDAY · SATURDAY · SUNDAY' : '';
-      ticketParts.push(generateFuelTicketHTML({
+      ticketParts.push(wrapTicket(generateFuelTicketHTML({
         reference: refs[0], eventName: entry.event_name, eventDate: entry.event_date,
         eventLocation: entry.location, raceClass: entry.race_class, driverName,
         raceNumber, dayLabel
-      }));
+      })));
     }
 
     const combinedHTML = ticketParts.join(PAGE_BREAK);
