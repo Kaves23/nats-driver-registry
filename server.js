@@ -11943,11 +11943,6 @@ app.get('/api/equipmentByItem', async (req, res) => {
   }
 });
 
-// Handle 404 for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ success: false, error: 'API endpoint not found' });
-});
-
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`✅ NATS Driver Registry server running on port ${PORT}`);
@@ -12166,6 +12161,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
     console.error('❌ entryTicketsHTML error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// Handle 404 for API routes — must be after ALL route registrations
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ success: false, error: 'API endpoint not found' });
 });
 
 // Graceful shutdown handling
