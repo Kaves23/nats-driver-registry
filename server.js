@@ -11721,7 +11721,7 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
 
     const result = await pool.query(`
       SELECT re.entry_id, re.driver_id, re.race_class,
-             re.engine_serial,
+             CASE WHEN re.engine_returned = true THEN NULL ELSE re.engine_serial END AS engine_serial,
              re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
              re.ticket_engine_ref, re.ticket_tyres_ref, re.ticket_transponder_ref, re.ticket_fuel_ref,
              re.entry_items,
@@ -11750,13 +11750,16 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
       let rr = row.tyre_rear_right  || null;
 
       if (!engineSerial) {
+        // Check scan log — but only if the most recent engine scan is an assign (not a return)
         const el = await pool.query(`
-          SELECT equipment_serial FROM equipment_scan_log
-          WHERE driver_id = $1 AND scan_type IN ('engine_assign','LOAN_ASSIGN')
+          SELECT equipment_serial, scan_type FROM equipment_scan_log
+          WHERE driver_id = $1 AND scan_type IN ('engine_assign','LOAN_ASSIGN','engine_return')
             AND action_result = 'success' AND equipment_serial IS NOT NULL
           ORDER BY scan_timestamp DESC LIMIT 1
         `, [row.driver_id]);
-        if (el.rows.length) engineSerial = el.rows[0].equipment_serial;
+        if (el.rows.length && el.rows[0].scan_type !== 'engine_return') {
+          engineSerial = el.rows[0].equipment_serial;
+        }
       }
 
       if (!fl || !fr || !rl || !rr) {
@@ -12079,18 +12082,13 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       try { const p = JSON.parse(field); return Array.isArray(p) ? p : [field]; } catch { return [field]; }
     };
 
-    // Build page-break-separated ticket HTML — each ticket centred on its page
-    const PAGE_BREAK = `<div style="page-break-after:always;"></div>`;
-    const wrapTicket = (html) => `
-      <div style="width:100%;text-align:center;padding:20px 0;box-sizing:border-box;">
-        <div style="display:inline-block;width:300px;max-width:300px;text-align:left;overflow:hidden;">${html}</div>
-      </div>`;
-
+    // Build page-break-separated ticket HTML
+    const PAGE_BREAK = '<div style="page-break-after:always;"></div>';
     const ticketParts = [];
 
     // Race entry ticket (reference = payment_reference)
     const raceRef = entry.payment_reference || String(entry.entry_id);
-    ticketParts.push(wrapTicket(generateRaceTicketHTML({
+    ticketParts.push(generateRaceTicketHTML({
       reference: raceRef,
       eventName: entry.event_name || 'Race Event',
       eventDate: entry.event_date,
@@ -12099,7 +12097,7 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       driverName,
       raceNumber,
       teamCode: entry.team_code || ''
-    })));
+    }));
 
     // Engine rental tickets
     if (hasEngine && entry.ticket_engine_ref) {
@@ -12108,11 +12106,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
         ? ['FRIDAY – PRACTICE DAY', 'SATURDAY', 'SUNDAY']
         : refs.length === 2 ? ['SATURDAY', 'SUNDAY'] : [''];
       refs.forEach((ref, i) => {
-        ticketParts.push(wrapTicket(generateEngineRentalTicketHTML({
+        ticketParts.push(generateEngineRentalTicketHTML({
           reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
           eventLocation: entry.location, raceClass: entry.race_class, driverName,
           raceNumber, dayLabel: dayLabels[i] || ''
-        })));
+        }));
       });
     }
 
@@ -12121,11 +12119,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       const refs = parseRefs(entry.ticket_tyres_ref);
       const dayLabels = refs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
       refs.forEach((ref, i) => {
-        ticketParts.push(wrapTicket(generateTyreRentalTicketHTML({
+        ticketParts.push(generateTyreRentalTicketHTML({
           reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
           eventLocation: entry.location, raceClass: entry.race_class, driverName,
           raceNumber, dayLabel: dayLabels[i] || ''
-        })));
+        }));
       });
     }
 
@@ -12134,11 +12132,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
       const refs = parseRefs(entry.ticket_transponder_ref);
       const dayLabels = refs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
       refs.forEach((ref, i) => {
-        ticketParts.push(wrapTicket(generateTransponderRentalTicketHTML({
+        ticketParts.push(generateTransponderRentalTicketHTML({
           reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
           eventLocation: entry.location, raceClass: entry.race_class, driverName,
           raceNumber, dayLabel: dayLabels[i] || ''
-        })));
+        }));
       });
     }
 
@@ -12146,11 +12144,11 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
     if (hasFuel && entry.ticket_fuel_ref) {
       const refs = parseRefs(entry.ticket_fuel_ref);
       const dayLabel = refs.length >= 3 ? 'FRIDAY · SATURDAY · SUNDAY' : '';
-      ticketParts.push(wrapTicket(generateFuelTicketHTML({
+      ticketParts.push(generateFuelTicketHTML({
         reference: refs[0], eventName: entry.event_name, eventDate: entry.event_date,
         eventLocation: entry.location, raceClass: entry.race_class, driverName,
         raceNumber, dayLabel
-      })));
+      }));
     }
 
     const combinedHTML = ticketParts.join(PAGE_BREAK);

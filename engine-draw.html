@@ -638,33 +638,19 @@ function _startDecodeLoop() {
     if (!_scanning) return;
     if (vid.readyState >= 2 && vid.videoWidth > 0) {
 
-      // BarcodeDetector: use for QR (driver context) only
-      // For seal/peri context we run ZXing software decode INSTEAD
-      // because BarcodeDetector on Android often misses Code 128 in practice
-      if (_nativeDet && !isSealScan()) {
+      // BarcodeDetector fires every frame for ALL contexts
+      // (it includes code_128 in its format list so works for both QR and barcode)
+      if (_nativeDet) {
         _nativeDet.detect(vid)
           .then(r => { if (r.length && _scanning) { stopCam(); handleBarcode(r[0].rawValue); } })
           .catch(() => {});
-        // Also run ZXing concurrently as a safety net
-        if (_zxReader) {
-          const now = Date.now();
-          if (now - lastSoftwareTime > 150) {
-            lastSoftwareTime = now;
-            c.width = vid.videoWidth; c.height = vid.videoHeight;
-            ctx.drawImage(vid, 0, 0);
-            try {
-              const r = _zxReader.decodeFromCanvas(c);
-              if (r && _scanning) { stopCam(); handleBarcode(r.getText()); return; }
-            } catch(_) {}
-          }
-        }
-        if (_scanning) _scanRafId = requestAnimationFrame(tick);
-        return;
       }
 
-      // Seal/peri context OR no BarcodeDetector: software decode every 50ms
+      // ZXing + jsQR software decode at throttled interval
+      // Tighter interval for seal (50ms) vs driver QR (150ms)
       const now = Date.now();
-      if (now - lastSoftwareTime > 50) {
+      const interval = isSealScan() ? 50 : 150;
+      if (now - lastSoftwareTime > interval) {
         lastSoftwareTime = now;
         c.width = vid.videoWidth; c.height = vid.videoHeight;
         ctx.drawImage(vid, 0, 0);
@@ -682,13 +668,6 @@ function _startDecodeLoop() {
           const imgData = ctx.getImageData(0, 0, c.width, c.height);
           const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
           if (qr && _scanning) { stopCam(); handleBarcode(qr.data); return; }
-        }
-
-        // BarcodeDetector as extra parallel attempt for seal context too
-        if (_nativeDet && isSealScan()) {
-          _nativeDet.detect(vid)
-            .then(r => { if (r.length && _scanning) { stopCam(); handleBarcode(r[0].rawValue); } })
-            .catch(() => {});
         }
       }
     }
