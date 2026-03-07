@@ -7866,19 +7866,23 @@ the paddock quickly and consistently.
               const docNameLower = (doc.display_name + ' ' + doc.document_type).toLowerCase();
               let assigned = false;
               
-              console.log('📄 Processing doc:', doc.display_name, 'Type:', doc.document_type, 'Search string:', docNameLower);
+              // If server already gave us a category (admin-uploaded from filesystem), use it directly
+              if (doc.category && grouped.hasOwnProperty(doc.category)) {
+                grouped[doc.category].push(doc);
+                assigned = true;
+              }
               
-              for (const cat of classCategories) {
-                if (cat.keywords.some(kw => docNameLower.includes(kw))) {
-                  grouped[cat.id].push(doc);
-                  assigned = true;
-                  console.log('✅ Assigned to category:', cat.id, cat.name);
-                  break;
+              if (!assigned) {
+                for (const cat of classCategories) {
+                  if (cat.keywords.some(kw => docNameLower.includes(kw))) {
+                    grouped[cat.id].push(doc);
+                    assigned = true;
+                    break;
+                  }
                 }
               }
               if (!assigned) {
                 grouped['general'].push(doc);
-                console.log('📌 Not matched, assigned to general');
               }
             });
             

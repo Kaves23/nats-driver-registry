@@ -10572,8 +10572,47 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
     const { eventId } = req.params;
     const fs = require('fs');
     const path = require('path');
-    
-    // Read the JSON config file
+
+    // ── 1. Scan filesystem first (admin-uploaded files) ──────────────────────
+    const fsDocFolderMap = {
+      'official':  { category: 'official',  label: 'OFFICIAL' },
+      'general':   { category: 'general',   label: 'General' },
+      'cadet':     { category: 'cadet',     label: 'Cadet / Mini ROK U10' },
+      'mini-rok':  { category: 'mini',      label: 'Mini ROK' },
+      'ok-j':      { category: 'okj',       label: 'OK-J' },
+      'ok-n':      { category: 'okn',       label: 'OK-N' }
+    };
+    const baseDir = path.join(__dirname, 'uploads', 'event-docs', eventId);
+    const fsDocs = [];
+    if (fs.existsSync(baseDir)) {
+      for (const [folderDir, meta] of Object.entries(fsDocFolderMap)) {
+        const dir = path.join(baseDir, folderDir);
+        if (!fs.existsSync(dir)) continue;
+        fs.readdirSync(dir).forEach(file => {
+          if (file.startsWith('.') || file === 'README.txt') return;
+          const ext = path.extname(file).toLowerCase();
+          let icon = '📄';
+          if (ext === '.pdf') icon = '📕';
+          else if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) icon = '🖼️';
+          else if (['.doc', '.docx'].includes(ext)) icon = '📝';
+          else if (['.xls', '.xlsx'].includes(ext)) icon = '📊';
+          const fileUrl = `/uploads/event-docs/${eventId}/${folderDir}/${encodeURIComponent(file)}`;
+          fsDocs.push({
+            display_name: path.basename(file, ext).replace(/[-_]/g, ' '),
+            document_type: meta.label,
+            file_path: fileUrl,
+            preview_url: fileUrl,
+            category: meta.category,
+            icon
+          });
+        });
+      }
+    }
+    if (fsDocs.length > 0) {
+      return res.json({ success: true, documents: fsDocs, count: fsDocs.length, source: 'filesystem' });
+    }
+
+    // ── 2. Fallback: JSON config file ─────────────────────────────────────────
     const configPath = path.join(__dirname, 'data', 'event-documents.json');
     
     if (!fs.existsSync(configPath)) {
@@ -10591,7 +10630,6 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
     const documents = eventDocs.documents
       .filter(doc => doc.url && doc.url !== 'https://drive.google.com/file/d/YOUR_FILE_ID/view?usp=sharing')
       .map(doc => {
-        // Determine icon based on document type
         let icon = '📄';
         const typeLower = (doc.type || '').toLowerCase();
         if (typeLower.includes('regulation') || typeLower.includes('sr')) icon = '📕';
@@ -10602,26 +10640,21 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
         else if (typeLower.includes('notice')) icon = '⚠️';
         else if (typeLower.includes('map')) icon = '🗺️';
         
-        // Convert Google Drive view link to direct download/preview link
         let url = doc.url;
         if (url.includes('drive.google.com/file/d/')) {
-          // Extract file ID and create preview URL
           const match = url.match(/\/d\/([^\/]+)/);
-          if (match) {
-            url = `https://drive.google.com/file/d/${match[1]}/preview`;
-          }
+          if (match) url = `https://drive.google.com/file/d/${match[1]}/preview`;
         }
         
         return {
           display_name: doc.name,
           document_type: doc.type || 'Document',
-          file_path: doc.url, // Keep original for download
-          preview_url: url,   // For embedded preview
+          file_path: doc.url,
+          preview_url: url,
           icon: icon
         };
       })
       .sort((a, b) => {
-        // Sort by type priority
         const priority = { 'Supplementary Regulations': 1, 'Entry List': 2, 'Timetable': 3, 'Results': 4, 'Bulletin': 5, 'Notice': 6 };
         const aPri = priority[a.document_type] || 99;
         const bPri = priority[b.document_type] || 99;
@@ -11919,6 +11952,92 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`✅ NATS Driver Registry server running on port ${PORT}`);
   console.log('🛡️ Global error handlers installed');
+});
+
+// ─── Admin Event Document Management ──────────────────────────────────────────
+const ADMIN_DOC_FOLDERS = {
+  'official':         'official',
+  'general':          'general',
+  'cadet':            'cadet',
+  'mini-rok':         'mini-rok',
+  'ok-j':             'ok-j',
+  'ok-n':             'ok-n'
+};
+
+// List docs for an event (admin)
+app.get('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const baseDir = path.join(__dirname, 'uploads', 'event-docs', eventId);
+    const result = [];
+    if (fs.existsSync(baseDir)) {
+      for (const [folderKey, folderDir] of Object.entries(ADMIN_DOC_FOLDERS)) {
+        const dir = path.join(baseDir, folderDir);
+        if (fs.existsSync(dir)) {
+          fs.readdirSync(dir).forEach(file => {
+            if (file.startsWith('.')) return;
+            const stat = fs.statSync(path.join(dir, file));
+            result.push({
+              folder: folderKey,
+              filename: file,
+              size: stat.size,
+              url: `/uploads/event-docs/${eventId}/${folderDir}/${encodeURIComponent(file)}`
+            });
+          });
+        }
+      }
+    }
+    res.json({ success: true, docs: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Upload a doc for an event (admin)
+app.post('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { folder, filename, fileContent } = req.body;
+    if (!folder || !filename || !fileContent) {
+      return res.status(400).json({ success: false, error: 'folder, filename and fileContent required' });
+    }
+    const folderDir = ADMIN_DOC_FOLDERS[folder];
+    if (!folderDir) {
+      return res.status(400).json({ success: false, error: 'Invalid folder' });
+    }
+    // Sanitise filename
+    const safeName = path.basename(filename).replace(/[^a-zA-Z0-9._\- ()]/g, '_');
+    const dir = path.join(__dirname, 'uploads', 'event-docs', eventId, folderDir);
+    fs.mkdirSync(dir, { recursive: true });
+    const buffer = Buffer.from(fileContent, 'base64');
+    fs.writeFileSync(path.join(dir, safeName), buffer);
+    console.log(`📄 Admin uploaded ${safeName} → event-docs/${eventId}/${folderDir}/`);
+    res.json({ success: true, filename: safeName, url: `/uploads/event-docs/${eventId}/${folderDir}/${encodeURIComponent(safeName)}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Delete a doc for an event (admin)
+app.delete('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { folder, filename } = req.body;
+    if (!folder || !filename) {
+      return res.status(400).json({ success: false, error: 'folder and filename required' });
+    }
+    const folderDir = ADMIN_DOC_FOLDERS[folder];
+    if (!folderDir) return res.status(400).json({ success: false, error: 'Invalid folder' });
+    const safeName = path.basename(filename);
+    const filePath = path.join(__dirname, 'uploads', 'event-docs', eventId, folderDir, safeName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`🗑️ Admin deleted ${safeName} from event-docs/${eventId}/${folderDir}/`);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Graceful shutdown handling

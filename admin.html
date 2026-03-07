@@ -4108,7 +4108,8 @@
             <td>
               <button class="action-btn" onclick="editEvent('${event.event_id}')" style="margin-right: 5px;">Edit</button>
               <button class="action-btn" onclick="openEventPricingModal('${event.event_id}')" style="background:#a855f7;margin-right:5px;">⚙ Pricing</button>
-              <button class="action-btn" onclick="viewRegistrations('${event.event_id}')" style="background: #3b82f6;">Registrations</button>
+              <button class="action-btn" onclick="viewRegistrations('${event.event_id}')" style="background: #3b82f6;margin-right:5px;">Registrations</button>
+              <button class="action-btn" onclick="openEventDocsModal('${event.event_id}', '${event.event_name.replace(/'/g,'\\\'')}')" style="background:#f59e0b;color:#1a1a1a;">📁 Docs</button>
             </td>
           </tr>
         `;
@@ -7453,6 +7454,157 @@
       <div id="sigModalNotes" style="font-size:11px;color:#94a3b8;word-break:break-word;"></div>
     </div>
   </div>
+
+  <!-- Event Docs Modal -->
+  <div class="modal" id="eventDocsModal" style="display:none;">
+    <div class="modal-content" style="max-width:620px;max-height:90vh;overflow-y:auto;">
+      <h2>📁 Event Documents — <span id="docsModalEventName" style="color:#f59e0b;"></span></h2>
+
+      <!-- Upload Section -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px;margin-bottom:20px;">
+        <h3 style="margin:0 0 14px;font-size:15px;color:#1e293b;">Upload New Document</h3>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Class / Folder</label>
+          <select id="docsUploadFolder" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;">
+            <option value="">— Select folder —</option>
+            <option value="official">🔴 OFFICIAL</option>
+            <option value="general">🟢 GENERAL</option>
+            <option value="cadet">🔵 CADET MINI ROK U10</option>
+            <option value="mini-rok">🟡 MINI ROK</option>
+            <option value="ok-j">🟠 OK-J</option>
+            <option value="ok-n">🟣 OK-N</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>File (PDF, image, Word — max 20 MB)</label>
+          <input type="file" id="docsUploadFile" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+            style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;">
+        </div>
+
+        <button onclick="adminUploadDoc()" style="background:#f59e0b;color:#1a1a1a;border:none;padding:10px 22px;border-radius:6px;font-weight:700;cursor:pointer;font-size:14px;">
+          📤 Upload
+        </button>
+        <span id="docsUploadStatus" style="margin-left:12px;font-size:13px;"></span>
+      </div>
+
+      <!-- Existing Docs -->
+      <div>
+        <h3 style="margin:0 0 12px;font-size:15px;color:#1e293b;">Uploaded Documents</h3>
+        <div id="docsExistingList" style="font-size:13px;color:#64748b;">Loading…</div>
+      </div>
+
+      <div class="modal-buttons" style="margin-top:20px;">
+        <button class="cancel-btn" onclick="closeEventDocsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Event Docs Modal ──────────────────────────────────────────────────────
+    let _docsEventId = null;
+
+    const DOCS_FOLDER_LABELS = {
+      'official':  { label: 'OFFICIAL',            color: '#ef4444', text: '#fff' },
+      'general':   { label: 'GENERAL',             color: '#22c55e', text: '#fff' },
+      'cadet':     { label: 'CADET MINI ROK U10',  color: '#3b82f6', text: '#fff' },
+      'mini-rok':  { label: 'MINI ROK',            color: '#eab308', text: '#1a1a1a' },
+      'ok-j':      { label: 'OK-J',                color: '#f97316', text: '#fff' },
+      'ok-n':      { label: 'OK-N',                color: '#a855f7', text: '#fff' }
+    };
+
+    async function openEventDocsModal(eventId, eventName) {
+      _docsEventId = eventId;
+      document.getElementById('docsModalEventName').textContent = eventName;
+      document.getElementById('docsUploadFolder').value = '';
+      document.getElementById('docsUploadFile').value = '';
+      document.getElementById('docsUploadStatus').textContent = '';
+      document.getElementById('eventDocsModal').style.display = 'flex';
+      await loadExistingDocs();
+    }
+
+    function closeEventDocsModal() {
+      document.getElementById('eventDocsModal').style.display = 'none';
+      _docsEventId = null;
+    }
+
+    async function loadExistingDocs() {
+      const el = document.getElementById('docsExistingList');
+      el.textContent = 'Loading…';
+      try {
+        const r = await fetch(`/api/admin/events/${_docsEventId}/docs`, {
+          headers: { 'x-admin-token': adminToken }
+        });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.error || 'Failed');
+        const docs = data.docs || [];
+        if (docs.length === 0) { el.textContent = 'No documents uploaded yet.'; return; }
+
+        const rows = docs.map(d => {
+          const meta = DOCS_FOLDER_LABELS[d.folder] || { label: d.folder, color: '#64748b', text: '#fff' };
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+            <span style="background:${meta.color};color:${meta.text};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap;">${meta.label}</span>
+            <a href="${d.url}" target="_blank" style="flex:1;color:#2563eb;text-decoration:none;word-break:break-all;">${d.filename}</a>
+            <span style="color:#94a3b8;font-size:11px;white-space:nowrap;">${(d.size/1024).toFixed(0)} KB</span>
+            <button onclick="adminDeleteDoc('${d.folder}','${d.filename.replace(/'/g,'\\\'')}')"
+              style="background:#ef4444;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;">✕</button>
+          </div>`;
+        }).join('');
+        el.innerHTML = rows;
+      } catch(e) {
+        el.textContent = 'Error loading docs: ' + e.message;
+      }
+    }
+
+    async function adminUploadDoc() {
+      const statusEl = document.getElementById('docsUploadStatus');
+      const folder = document.getElementById('docsUploadFolder').value;
+      const fileInput = document.getElementById('docsUploadFile');
+      const file = fileInput.files[0];
+      if (!folder) { statusEl.textContent = '⚠ Select a folder first.'; statusEl.style.color = '#f59e0b'; return; }
+      if (!file)   { statusEl.textContent = '⚠ Select a file first.'; statusEl.style.color = '#f59e0b'; return; }
+      if (file.size > 20 * 1024 * 1024) { statusEl.textContent = '⚠ File exceeds 20 MB.'; statusEl.style.color = '#ef4444'; return; }
+
+      statusEl.textContent = '⏳ Uploading…'; statusEl.style.color = '#64748b';
+      try {
+        const b64 = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = e => resolve(e.target.result.split(',')[1]);
+          fr.onerror = reject;
+          fr.readAsDataURL(file);
+        });
+        const r = await fetch(`/api/admin/events/${_docsEventId}/docs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+          body: JSON.stringify({ folder, filename: file.name, fileContent: b64 })
+        });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.error || 'Upload failed');
+        statusEl.textContent = '✅ Uploaded!'; statusEl.style.color = '#22c55e';
+        document.getElementById('docsUploadFile').value = '';
+        await loadExistingDocs();
+      } catch(e) {
+        statusEl.textContent = '❌ ' + e.message; statusEl.style.color = '#ef4444';
+      }
+    }
+
+    async function adminDeleteDoc(folder, filename) {
+      if (!confirm(`Delete "${filename}"?`)) return;
+      try {
+        const r = await fetch(`/api/admin/events/${_docsEventId}/docs`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+          body: JSON.stringify({ folder, filename })
+        });
+        const data = await r.json();
+        if (!data.success) throw new Error(data.error || 'Delete failed');
+        await loadExistingDocs();
+      } catch(e) {
+        alert('Error deleting: ' + e.message);
+      }
+    }
+  </script>
 
 </body>
 </html>
