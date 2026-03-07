@@ -45,7 +45,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .err-msg{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
 .cam-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .cam-overlay.active{display:flex}
-#camVideo{width:100%;max-width:480px;border-radius:12px;object-fit:cover}
+#camVideoWrap{position:relative;width:100%;max-width:480px}
+#camVideo{width:100%;border-radius:12px;object-fit:cover;display:block}
+.scan-line{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:2px;background:#ef4444;box-shadow:0 0 6px #ef4444,0 0 14px rgba(239,68,68,.7);pointer-events:none;z-index:2}
 .cam-close{padding:12px 32px;border-radius:10px;border:2px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
 .cam-hint{font-size:14px;letter-spacing:2px;color:var(--text);font-weight:700;text-align:center}
 .cam-hint-sub{font-size:11px;letter-spacing:1px;color:var(--blue);text-align:center;padding:4px 16px;border:1px solid var(--blue);border-radius:20px;margin-bottom:4px}
@@ -287,7 +289,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 <div class="cam-overlay" id="camOverlay">
   <div class="cam-hint" id="camHintMain">SCANNING…</div>
   <div class="cam-hint-sub" id="camHintSub">🔲 Looking for QR code</div>
-  <video id="camVideo" autoplay muted playsinline></video>
+  <div id="camVideoWrap">
+    <video id="camVideo" autoplay muted playsinline></video>
+    <div class="scan-line"></div>
+  </div>
   <canvas id="scanCanvas" style="display:none"></canvas>
   <button class="cam-close" onclick="stopCam()">✕ CANCEL</button>
 </div>
@@ -611,17 +616,23 @@ async function startCam(context) {
       const caps = track.getCapabilities ? track.getCapabilities() : {};
       const adv = [];
       if (caps.focusMode && caps.focusMode.includes('continuous')) adv.push({ focusMode: 'continuous' });
-      if (caps.torch) adv.push({ torch: isSealScan() });
       if (adv.length) track.applyConstraints({ advanced: adv }).catch(() => {});
     } catch(_) {}
     const vid = document.getElementById('camVideo');
     vid.srcObject = _scanStream;
     document.getElementById('camOverlay').classList.add('active');
-    // onloadedmetadata fires once video dimensions are known — safe to play on iOS
-    vid.onloadedmetadata = () => {
-      vid.play().catch(() => {}); // .catch so autoplay policy rejections don't throw
+    let _loopStarted = false;
+    function _tryStart() {
+      if (_loopStarted || vid.videoWidth === 0) return;
+      _loopStarted = true;
+      vid.play().catch(() => {});
       _startDecodeLoop();
-    };
+    }
+    vid.onloadedmetadata = _tryStart;
+    vid.addEventListener('loadeddata', _tryStart);
+    vid.addEventListener('canplay',    _tryStart);
+    setTimeout(() => { if (!_loopStarted && vid.readyState >= 2) _tryStart(); }, 800);
+    vid.play().catch(() => {});
   } catch(e) {
     alert('Camera not available: ' + e.message);
   }
@@ -647,14 +658,15 @@ function _startDecodeLoop() {
           .catch(() => {});
       }
 
-      // ZXing + jsQR software decode at throttled interval
-      // Tighter interval for seal (50ms) vs driver QR (150ms)
+      // ZXing + jsQR software decode — 50ms for all contexts, cropped to aim-line strip
       const now = Date.now();
-      const interval = isSealScan() ? 50 : 150;
-      if (now - lastSoftwareTime > interval) {
+      if (now - lastSoftwareTime > 50) {
         lastSoftwareTime = now;
-        c.width = vid.videoWidth; c.height = vid.videoHeight;
-        ctx.drawImage(vid, 0, 0);
+        const bandH = Math.max(1, Math.round(vid.videoHeight * 0.18));
+        const sy    = Math.round(vid.videoHeight * 0.41);
+        c.width  = vid.videoWidth;
+        c.height = bandH;
+        ctx.drawImage(vid, 0, sy, vid.videoWidth, bandH, 0, 0, vid.videoWidth, bandH);
 
         // ZXing handles Code 128, Code 39, QR, everything
         if (_zxReader) {
