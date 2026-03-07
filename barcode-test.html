@@ -18,7 +18,19 @@
   }
   button.stop { background: #ef4444; color: #fff; }
   button:disabled { background: #444; color: #888; }
-  video { width: 100%; max-width: 480px; display: block; border: 2px solid #333; border-radius: 6px; }
+  #vidWrap { position: relative; display: block; width: 100%; max-width: 480px; }
+  video { width: 100%; display: block; border: 2px solid #333; border-radius: 6px; }
+  .scan-band {
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%; transform: translateY(-50%);
+    height: 18%;
+    background: rgba(239,68,68,0.13);
+    border-top: 2px solid rgba(239,68,68,0.85);
+    border-bottom: 2px solid rgba(239,68,68,0.85);
+    box-shadow: 0 0 16px rgba(239,68,68,0.55), inset 0 0 24px rgba(239,68,68,0.1);
+    pointer-events: none;
+  }
   canvas { display: none; }
   #status { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
   #result {
@@ -56,7 +68,10 @@
   <button id="startBtn" onclick="startScan()">▶ START CAMERA</button>
   <button id="stopBtn" onclick="stopScan()" class="stop" disabled>■ STOP</button>
   <div id="status">Not started</div>
-  <video id="vid" autoplay playsinline muted style="cursor:crosshair;"></video>
+  <div id="vidWrap">
+    <video id="vid" autoplay playsinline muted style="cursor:crosshair;"></video>
+    <div class="scan-band" id="scanBand"></div>
+  </div>
   <div style="font-size:11px;color:#475569;margin-top:4px;">👆 Tap video to trigger focus</div>
   <canvas id="cnv"></canvas>
 </div>
@@ -190,12 +205,6 @@ async function startScan() {
       } else {
         log('Autofocus: continuous not available in caps', 'log-inf');
       }
-      if (caps.torch) {
-        constraints.advanced.push({ torch: true });
-        log('Torch: enabled', 'log-ok');
-      } else {
-        log('Torch: not available', 'log-inf');
-      }
       if (constraints.advanced.length) await track.applyConstraints(constraints);
     } catch(e) { log('Camera constraints failed: ' + e.message, 'log-err'); }
 
@@ -269,9 +278,12 @@ function startLoop() {
       const now = Date.now();
       if (now - lastZxTime > 50) {
         lastZxTime = now;
+        // Crop to red band region (middle 18% of frame height)
+        const bandH = Math.max(1, Math.round(vid.videoHeight * 0.18));
+        const sy    = Math.round(vid.videoHeight * 0.41);
         c.width  = vid.videoWidth;
-        c.height = vid.videoHeight;
-        ctx.drawImage(vid, 0, 0);
+        c.height = bandH;
+        ctx.drawImage(vid, 0, sy, vid.videoWidth, bandH, 0, 0, vid.videoWidth, bandH);
 
         // ZXing
         if (zxReader) {
