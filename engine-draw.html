@@ -834,6 +834,10 @@ async function doLookupByTicket(barcode) {
     const d = await r.json();
     if (d.success && (d.driver || d.entry)) {
       const entry = d.driver || d.entry;
+      // engine_serial lives in d.ticket on this API — merge it into entry
+      if (!entry.engine_serial && d.ticket && d.ticket.engine_serial) {
+        entry.engine_serial = d.ticket.engine_serial;
+      }
       setNumDisplay(String(entry.race_number || barcode));
       document.getElementById('raceNumInput').value = entry.race_number || barcode;
       await preloadEngines();
