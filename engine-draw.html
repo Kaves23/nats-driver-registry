@@ -48,11 +48,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 #camVideoWrap{position:relative;width:100%;max-width:480px}
 #camVideo{width:100%;border-radius:12px;object-fit:cover;display:block}
 .scan-line{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:2px;background:#ef4444;box-shadow:0 0 6px #ef4444,0 0 14px rgba(239,68,68,.7);pointer-events:none;z-index:2}
-#camDbgLog{position:fixed;bottom:70px;left:0;right:0;max-height:160px;overflow-y:auto;background:rgba(0,0,0,.82);padding:6px 10px;font-family:monospace;font-size:11px;color:#94a3b8;z-index:110;pointer-events:none}
+#camDbgLog{position:fixed;bottom:90px;left:0;right:0;max-height:120px;overflow-y:auto;background:rgba(0,0,0,.82);padding:6px 10px;font-family:monospace;font-size:11px;color:#94a3b8;z-index:110;pointer-events:none}
 #camDbgLog .dk{color:#22c55e;font-weight:700}
 #camDbgLog .de{color:#ef4444}
 #camDbgLog .di{color:#64748b}
-.cam-close{padding:12px 32px;border-radius:10px;border:2px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.cam-close{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:14px 48px;border-radius:10px;border:2px solid var(--red);background:rgba(0,0,0,.85);color:var(--red);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;z-index:120;white-space:nowrap}
 .cam-hint{font-size:14px;letter-spacing:2px;color:var(--text);font-weight:700;text-align:center}
 .cam-hint-sub{font-size:11px;letter-spacing:1px;color:var(--blue);text-align:center;padding:4px 16px;border:1px solid var(--blue);border-radius:20px;margin-bottom:4px}
 /* ── NUMBER PAD OVERLAY ───────────────────── */
@@ -130,7 +130,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .next-btn:active{opacity:.8}
 
 /* ── ENTRY PICKER ───────────────────────────── */
-#s-pick{justify-content:center;align-items:center;gap:14px}
+#s-pick{justify-content:flex-start;align-items:center;gap:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:24px}
 .pick-name{font-size:20px;font-weight:900;text-align:center}
 .pick-sub{font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center}
 .pick-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px}
