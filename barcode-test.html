@@ -20,16 +20,15 @@
   button:disabled { background: #444; color: #888; }
   #vidWrap { position: relative; display: block; width: 100%; max-width: 480px; }
   video { width: 100%; display: block; border: 2px solid #333; border-radius: 6px; }
-  .scan-band {
+  .scan-line {
     position: absolute;
     left: 0; right: 0;
     top: 50%; transform: translateY(-50%);
-    height: 18%;
-    background: rgba(239,68,68,0.13);
-    border-top: 2px solid rgba(239,68,68,0.85);
-    border-bottom: 2px solid rgba(239,68,68,0.85);
-    box-shadow: 0 0 16px rgba(239,68,68,0.55), inset 0 0 24px rgba(239,68,68,0.1);
+    height: 2px;
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef4444, 0 0 14px rgba(239,68,68,0.7);
     pointer-events: none;
+    z-index: 2;
   }
   canvas { display: none; }
   #status { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
@@ -70,7 +69,7 @@
   <div id="status">Not started</div>
   <div id="vidWrap">
     <video id="vid" autoplay playsinline muted style="cursor:crosshair;"></video>
-    <div class="scan-band" id="scanBand"></div>
+    <div class="scan-line" id="scanLine"></div>
   </div>
   <div style="font-size:11px;color:#475569;margin-top:4px;">👆 Tap video to trigger focus</div>
   <canvas id="cnv"></canvas>
@@ -195,7 +194,7 @@ async function startScan() {
     const settings = track.getSettings ? track.getSettings() : {};
     log(`Camera: ${settings.width}×${settings.height} ${settings.facingMode || ''}`, 'log-ok');
 
-    // Try continuous autofocus + torch
+    // Try continuous autofocus
     try {
       const caps = track.getCapabilities ? track.getCapabilities() : {};
       const constraints = { advanced: [] };
