@@ -482,12 +482,13 @@ let _scanning   = false;
 
 (function initDecoders() {
   if (window.BarcodeDetector) {
-    try {
-      _nativeDet = new BarcodeDetector({
-        formats: ['qr_code','code_128','code_39','code_93','ean_13','ean_8',
-                  'itf','data_matrix','aztec','pdf_417','upc_a','upc_e']
-      });
-    } catch(_) { _nativeDet = null; }
+    // Always use getSupportedFormats() first — passing unsupported formats throws
+    BarcodeDetector.getSupportedFormats().then(fmts => {
+      try {
+        _nativeDet = new BarcodeDetector({ formats: fmts });
+        console.log('BarcodeDetector ready, formats: ' + fmts.join(', '));
+      } catch(e) { _nativeDet = null; console.error('BD ctor failed:', e); }
+    }).catch(e => { _nativeDet = null; console.error('BD getSupportedFormats failed:', e); });
   }
   if (window.ZXing) {
     try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
