@@ -12040,6 +12040,134 @@ app.delete('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
   }
 });
 
+// Admin: Get all ticket HTML for a single race entry (for PDF download)
+app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) => {
+  try {
+    const { entryId } = req.params;
+
+    const result = await pool.query(
+      `SELECT
+        re.*,
+        d.first_name, d.last_name, d.race_number AS driver_race_number,
+        c.email AS driver_email,
+        e.event_name, e.event_date, e.location
+       FROM race_entries re
+       LEFT JOIN drivers d ON re.driver_id = d.driver_id
+       LEFT JOIN contacts c ON re.driver_id = c.driver_id
+       LEFT JOIN events e ON re.event_id = e.event_id
+       WHERE re.entry_id = $1`,
+      [entryId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Entry not found' });
+    }
+
+    const entry = result.rows[0];
+    const driverName = `${entry.first_name || ''} ${entry.last_name || ''}`.trim();
+    const raceNumber = entry.driver_race_number || entry.race_number || '';
+
+    // Parse entry_items
+    let entryItems = [];
+    if (entry.entry_items) {
+      try { entryItems = JSON.parse(entry.entry_items); } catch { entryItems = [entry.entry_items]; }
+    }
+    const itemIncludes = (term) => entryItems.some(i => String(i).toLowerCase().includes(term));
+    const hasEngine = itemIncludes('engine') || entry.engine == 1;
+    const hasTyres = itemIncludes('tyre');
+    const hasTransponder = itemIncludes('transponder');
+    const hasFuel = itemIncludes('fuel');
+
+    // Helper to parse multi-ref fields (may be JSON array or plain string)
+    const parseRefs = (field) => {
+      if (!field) return [];
+      try { const p = JSON.parse(field); return Array.isArray(p) ? p : [field]; } catch { return [field]; }
+    };
+
+    // Build page-break-separated ticket HTML
+    const PAGE_BREAK = '<div style="page-break-after:always;"></div>';
+    const ticketParts = [];
+
+    // Race entry ticket (reference = payment_reference)
+    const raceRef = entry.payment_reference || String(entry.entry_id);
+    ticketParts.push(generateRaceTicketHTML({
+      reference: raceRef,
+      eventName: entry.event_name || 'Race Event',
+      eventDate: entry.event_date,
+      eventLocation: entry.location || '',
+      raceClass: entry.race_class || '',
+      driverName,
+      raceNumber,
+      teamCode: entry.team_code || ''
+    }));
+
+    // Engine rental tickets
+    if (hasEngine && entry.ticket_engine_ref) {
+      const refs = parseRefs(entry.ticket_engine_ref);
+      const dayLabels = refs.length >= 3
+        ? ['FRIDAY – PRACTICE DAY', 'SATURDAY', 'SUNDAY']
+        : refs.length === 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      refs.forEach((ref, i) => {
+        ticketParts.push(generateEngineRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          raceNumber, dayLabel: dayLabels[i] || ''
+        }));
+      });
+    }
+
+    // Tyre rental tickets
+    if (hasTyres && entry.ticket_tyres_ref) {
+      const refs = parseRefs(entry.ticket_tyres_ref);
+      const dayLabels = refs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      refs.forEach((ref, i) => {
+        ticketParts.push(generateTyreRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          raceNumber, dayLabel: dayLabels[i] || ''
+        }));
+      });
+    }
+
+    // Transponder rental tickets
+    if (hasTransponder && entry.ticket_transponder_ref) {
+      const refs = parseRefs(entry.ticket_transponder_ref);
+      const dayLabels = refs.length >= 2 ? ['SATURDAY', 'SUNDAY'] : [''];
+      refs.forEach((ref, i) => {
+        ticketParts.push(generateTransponderRentalTicketHTML({
+          reference: ref, eventName: entry.event_name, eventDate: entry.event_date,
+          eventLocation: entry.location, raceClass: entry.race_class, driverName,
+          raceNumber, dayLabel: dayLabels[i] || ''
+        }));
+      });
+    }
+
+    // Fuel ticket
+    if (hasFuel && entry.ticket_fuel_ref) {
+      const refs = parseRefs(entry.ticket_fuel_ref);
+      const dayLabel = refs.length >= 3 ? 'FRIDAY · SATURDAY · SUNDAY' : '';
+      ticketParts.push(generateFuelTicketHTML({
+        reference: refs[0], eventName: entry.event_name, eventDate: entry.event_date,
+        eventLocation: entry.location, raceClass: entry.race_class, driverName,
+        raceNumber, dayLabel
+      }));
+    }
+
+    const combinedHTML = ticketParts.join(PAGE_BREAK);
+
+    res.json({
+      success: true,
+      html: combinedHTML,
+      driverName,
+      raceNumber,
+      ticketCount: ticketParts.length
+    });
+  } catch (err) {
+    console.error('❌ entryTicketsHTML error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received, shutting down gracefully...');
