@@ -207,8 +207,8 @@ async function startScan() {
       if (constraints.advanced.length) await track.applyConstraints(constraints);
     } catch(e) { log('Camera constraints failed: ' + e.message, 'log-err'); }
 
-    // Tap video to trigger manual focus
-    document.getElementById('vid').onclick = () => {
+    // Tap OR touch to trigger manual focus (touchstart avoids 300ms iOS delay)
+    function triggerFocus() {
       try {
         const track = stream && stream.getVideoTracks()[0];
         if (track) {
@@ -220,17 +220,31 @@ async function startScan() {
           }
         }
       } catch(_) {}
-    };
+    }
+    document.getElementById('vid').onclick     = triggerFocus;
+    document.getElementById('vid').ontouchstart = (e) => { e.preventDefault(); triggerFocus(); };
 
     const vid = document.getElementById('vid');
     vid.srcObject = stream;
     _scanStart = Date.now();
-    vid.onloadedmetadata = () => {
+
+    // iOS Safari sometimes misses onloadedmetadata — cover with multiple events
+    let loopStarted = false;
+    function tryStartLoop() {
+      if (loopStarted || vid.videoWidth === 0) return;
+      loopStarted = true;
       vid.play().catch(e => log('play() error: ' + e.message, 'log-err'));
-      document.getElementById('status').textContent = 'Scanning…  (tap video to focus)';
-      log('Video playing, starting decode loop…', 'log-ok');
+      const mode = nativeDet ? 'BarcodeDetector + ZXing' : 'ZXing only (no BarcodeDetector — iOS?)';
+      document.getElementById('status').textContent = 'Scanning…  (tap to focus)';
+      log('Video ready, decoder: ' + mode, nativeDet ? 'log-ok' : 'log-inf');
       startLoop();
-    };
+    }
+    vid.onloadedmetadata = tryStartLoop;
+    vid.addEventListener('loadeddata',  tryStartLoop);
+    vid.addEventListener('canplay',     tryStartLoop);
+    // Fallback poll in case all events already fired before assignment
+    setTimeout(() => { if (!loopStarted && vid.readyState >= 2) tryStartLoop(); }, 800);
+    vid.play().catch(() => {});
   } catch(e) {
     document.getElementById('status').textContent = 'Camera error: ' + e.message;
     log('Camera error: ' + e.message, 'log-err');
@@ -273,9 +287,10 @@ function startLoop() {
           });
       }
 
-      // ── 2. ZXing + jsQR (every 50ms = ~20fps software scan) ───
+      // ── 2. ZXing + jsQR — runs faster on iOS where BarcodeDetector is unavailable ──
+      const ZX_INTERVAL = nativeDet ? 50 : 25;
       const now = Date.now();
-      if (now - lastZxTime > 50) {
+      if (now - lastZxTime > ZX_INTERVAL) {
         lastZxTime = now;
         // Crop to red band region (middle 18% of frame height)
         const bandH = Math.max(1, Math.round(vid.videoHeight * 0.18));
