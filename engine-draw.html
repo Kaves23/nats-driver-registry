@@ -616,8 +616,11 @@ async function startCam(context) {
     const vid = document.getElementById('camVideo');
     vid.srcObject = _scanStream;
     document.getElementById('camOverlay').classList.add('active');
-    await vid.play(); // explicit play — required on iOS Safari
-    _startDecodeLoop();
+    // onloadedmetadata fires once video dimensions are known — safe to play on iOS
+    vid.onloadedmetadata = () => {
+      vid.play().catch(() => {}); // .catch so autoplay policy rejections don't throw
+      _startDecodeLoop();
+    };
   } catch(e) {
     alert('Camera not available: ' + e.message);
   }
@@ -677,6 +680,7 @@ function stopCam() {
   if (_scanRafId) { cancelAnimationFrame(_scanRafId); _scanRafId = null; }
   if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
   const vid = document.getElementById('camVideo');
+  vid.onloadedmetadata = null;
   vid.srcObject = null;
   document.getElementById('camOverlay').classList.remove('active');
   const sealBtn = document.getElementById('sealCamBtn');
