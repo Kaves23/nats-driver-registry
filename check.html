@@ -6,6 +6,8 @@
 <title>Paddock Check</title>
 <!-- ZXing: multi-format barcode decoder (QR + Code128/39/EAN/DataMatrix/Aztec/PDF417) -->
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+<!-- jsQR: reliable QR decoder for iOS/WebKit (synchronous, no Promise) -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--bg:#04080f;--card:#0a1628;--line:#0f2040;--text:#e2e8f0;--dim:#475569;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#38bdf8}
@@ -655,16 +657,23 @@ function startDecode(){
         if(scanning)rafId=requestAnimationFrame(tick);
         return;
       }
-      // ── Path 2: ZXing software decoder (throttled — handles 1D + 2D barcodes)
+      // ── Path 2: jsQR — fast synchronous QR, works on iOS/WebKit (no BarcodeDetector)
+      // ── Path 3: ZXing — handles 1D barcodes (Code128 etc) synchronously, must use try/catch
       const now=Date.now();
-      if(now-lastZxTime>80){
+      if(now-lastZxTime>100){
         lastZxTime=now;
         c.width=v.videoWidth;c.height=v.videoHeight;
         ctx.drawImage(v,0,0);
+        if(window.jsQR){
+          const imgData=ctx.getImageData(0,0,c.width,c.height);
+          const qr=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'dontInvert'});
+          if(qr&&scanning){onScan(qr.data);return;}
+        }
         if(_zxReader){
-          _zxReader.decodeFromCanvas(c)
-            .then(r=>{if(r&&scanning)onScan(r.getText())})
-            .catch(()=>{});
+          try{
+            const r=_zxReader.decodeFromCanvas(c);
+            if(r&&scanning){onScan(r.getText());return;}
+          }catch(_){} // NotFoundException thrown when nothing found — expected, must NOT propagate
         }
       }
     }
