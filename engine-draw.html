@@ -483,23 +483,28 @@ let _scanning   = false;
   if (window.ZXing) {
     try {
       _zxReader = new ZXing.BrowserMultiFormatReader();
-      // Build a 1D-focused reader with explicit Code 128 hints for engine seal scanning
-      if (ZXing.DecodeHintType && ZXing.BarcodeFormat) {
-        const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-          ZXing.BarcodeFormat.CODE_128,
-          ZXing.BarcodeFormat.CODE_39,
-          ZXing.BarcodeFormat.CODE_93,
-          ZXing.BarcodeFormat.EAN_13,
-          ZXing.BarcodeFormat.EAN_8,
-          ZXing.BarcodeFormat.ITF,
-          ZXing.BarcodeFormat.UPC_A,
-          ZXing.BarcodeFormat.UPC_E,
-        ]]]);
-        _zxReader1D = new ZXing.BrowserMultiFormatReader(hints);
-      } else {
-        _zxReader1D = _zxReader; // fallback: same reader
-      }
     } catch(_) {}
+    // Build a 1D-focused reader with explicit Code 128 hints — separate try/catch
+    // so a failed hints init never leaves _zxReader1D as null
+    if (_zxReader) {
+      try {
+        if (ZXing.DecodeHintType && ZXing.BarcodeFormat) {
+          const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.CODE_39,
+            ZXing.BarcodeFormat.CODE_93,
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.ITF,
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+          ]]]);
+          _zxReader1D = new ZXing.BrowserMultiFormatReader(hints);
+        }
+      } catch(_) {}
+      // Always guarantee a 1D reader — fall back to the multi-format reader if hints init failed
+      if (!_zxReader1D) _zxReader1D = _zxReader;
+    }
   }
 })();
 
@@ -679,9 +684,11 @@ function _startDecodeLoop() {
         ctx.drawImage(vid, 0, 0);
 
         // For 1D barcode contexts, use the ZXing 1D reader FIRST (Code 128 optimised)
-        if (isSealScan() && _zxReader1D) {
+        // _zxReader1D is always non-null (falls back to _zxReader) so this always runs
+        const sealReader = _zxReader1D || _zxReader;
+        if (isSealScan() && sealReader) {
           try {
-            const r = _zxReader1D.decodeFromCanvas(c);
+            const r = sealReader.decodeFromCanvas(c);
             if (r && _scanning) { stopCam(); handleBarcode(r.getText()); return; }
           } catch(_) {} // NotFoundException expected when no barcode in frame
         }
