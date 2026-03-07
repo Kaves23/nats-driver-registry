@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=0.9,maximum-scale=3.0,viewport-fit=cover">
 <title>Engine Draw</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -12,7 +12,7 @@
   --bg:#04080f;--card:#0a1628;--line:#0f2040;--text:#e2e8f0;--dim:#475569;
   --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#38bdf8;--purple:#a78bfa;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden;overscroll-behavior:none}
 
 .screen{display:none;flex-direction:column;height:100%;padding:16px;gap:12px;box-sizing:border-box}
 .screen.active{display:flex}
@@ -83,7 +83,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .draw-title{font-size:11px;letter-spacing:2px;color:var(--dim)}
 .rand-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--purple);background:transparent;color:var(--purple);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .rand-btn:active{background:var(--purple);color:#fff}
-.draw-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.draw-scroll{flex:1;min-height:0;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:contain}
 .draw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-bottom:8px}
 @media(min-width:480px){.draw-grid{grid-template-columns:repeat(5,1fr)}}
 .draw-card{border-radius:12px;border:2px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;cursor:pointer;transition:transform .1s,border-color .15s,background .15s;min-height:80px;position:relative}
@@ -130,10 +130,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .next-btn:active{opacity:.8}
 
 /* ── ENTRY PICKER ───────────────────────────── */
-#s-pick{justify-content:flex-start;align-items:center;gap:14px;overflow:hidden;padding-bottom:0}
+#s-pick{justify-content:flex-start;align-items:center;gap:14px;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:contain;padding-bottom:32px}
 .pick-name{font-size:20px;font-weight:900;text-align:center;flex-shrink:0}
 .pick-sub{font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center;flex-shrink:0}
-.pick-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px;flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:24px}
+.pick-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px}
 .pick-entry{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:border-color .15s,background .15s}
 .pick-entry:active{background:#041828;border-color:var(--blue)}
 .pick-entry .pe-class{font-size:22px;font-weight:900;color:var(--blue)}
@@ -153,7 +153,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .ret-engine-info{flex:1;min-width:0}
 .ret-engine-serial{font-size:14px;font-weight:900;letter-spacing:1px;color:var(--blue)}
 .ret-engine-class{font-size:10px;letter-spacing:2px;color:var(--dim);margin-top:2px}
-.ret-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px}
+.ret-body{flex:1;min-height:0;overflow-y:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior-y:contain;display:flex;flex-direction:column;gap:10px}
 .ret-section{font-size:10px;letter-spacing:2px;color:var(--dim);padding:4px 0 2px}
 .peri-row{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:10px 12px;transition:border-color .2s}
 .peri-row.peri-ok{border-color:var(--green)}
@@ -192,6 +192,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .warn-banner{width:100%;max-width:340px;background:#130900;border:2px solid var(--amber);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--amber);letter-spacing:.5px;line-height:1.5;display:none;text-align:center}
 .warn-banner.show{display:block}
 
+/* ── SMALL SCREEN COMPACT ─────────────────── */
+@media(max-height:700px){
+  .screen{padding:10px;padding-top:62px;gap:8px}
+  #s-pin{gap:14px}
+  .pin-btn{height:60px;font-size:20px}
+  .pin-pad{grid-template-columns:repeat(3,62px);gap:8px}
+  .draw-card{min-height:66px;padding:7px 4px}
+  .draw-num{font-size:22px}
+  .confirm-draw .num{font-size:52px}
+  .done-icon{font-size:52px}
+  .done-engine{font-size:22px}
+}
+@media(max-width:360px){
+  .screen{padding:10px;padding-top:62px}
+  .draw-grid{grid-template-columns:repeat(3,1fr)}
+}
 /* ── TOP LOGO BAR ───────────────────────────── */
 .top-logo-bar{
   position:fixed;top:0;left:0;right:0;z-index:200;
