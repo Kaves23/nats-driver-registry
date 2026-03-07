@@ -48,6 +48,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 #camVideoWrap{position:relative;width:100%;max-width:480px}
 #camVideo{width:100%;border-radius:12px;object-fit:cover;display:block}
 .scan-line{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:2px;background:#ef4444;box-shadow:0 0 6px #ef4444,0 0 14px rgba(239,68,68,.7);pointer-events:none;z-index:2}
+#camDbgLog{position:fixed;bottom:70px;left:0;right:0;max-height:160px;overflow-y:auto;background:rgba(0,0,0,.82);padding:6px 10px;font-family:monospace;font-size:11px;color:#94a3b8;z-index:110;pointer-events:none}
+#camDbgLog .dk{color:#22c55e;font-weight:700}
+#camDbgLog .de{color:#ef4444}
+#camDbgLog .di{color:#64748b}
 .cam-close{padding:12px 32px;border-radius:10px;border:2px solid var(--red);background:transparent;color:var(--red);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
 .cam-hint{font-size:14px;letter-spacing:2px;color:var(--text);font-weight:700;text-align:center}
 .cam-hint-sub{font-size:11px;letter-spacing:1px;color:var(--blue);text-align:center;padding:4px 16px;border:1px solid var(--blue);border-radius:20px;margin-bottom:4px}
@@ -294,6 +298,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
     <div class="scan-line"></div>
   </div>
   <canvas id="scanCanvas" style="display:none"></canvas>
+  <div id="camDbgLog"></div>
   <button class="cam-close" onclick="stopCam()">✕ CANCEL</button>
 </div>
 
@@ -596,6 +601,8 @@ const CAM_HINTS = {
 
 async function startCam(context) {
   _camContext = context || 'driver';
+  const dbgEl = document.getElementById('camDbgLog');
+  if (dbgEl) dbgEl.innerHTML = '';
   const hints = CAM_HINTS[_camContext] || CAM_HINTS.driver;
   document.getElementById('camHintMain').textContent = hints.main;
   document.getElementById('camHintSub').textContent  = hints.sub;
@@ -638,24 +645,46 @@ async function startCam(context) {
   }
 }
 
+function _camDbg(msg, cls) {
+  const el = document.getElementById('camDbgLog');
+  if (!el) return;
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  const ts = new Date().toTimeString().slice(3,8);
+  d.textContent = ts + ' ' + msg;
+  el.insertBefore(d, el.firstChild);
+  // keep last 20 lines
+  while (el.children.length > 20) el.removeChild(el.lastChild);
+}
+
 function _startDecodeLoop() {
   _scanning = true;
   const vid = document.getElementById('camVideo');
   const c   = document.getElementById('scanCanvas');
   const ctx = c.getContext('2d', { willReadFrequently: true });
   let lastSoftwareTime = 0;
+  let _frameCount = 0;
+  let _lastHb = 0;
   const isSealScan = () => _camContext === 'seal-confirm' || _camContext === 'peri-scan';
+  _camDbg(`Loop start | BD:${_nativeDet?'✅':'❌'} ZX:${_zxReader?'✅':'❌'} jsQR:${window.jsQR?'✅':'❌'}`);
+  _camDbg(`Video: ${vid.videoWidth}×${vid.videoHeight} readyState:${vid.readyState}`, 'di');
 
   function tick() {
     if (!_scanning) return;
+    _frameCount++;
     if (vid.readyState >= 2 && vid.videoWidth > 0) {
 
       // BarcodeDetector fires every frame for ALL contexts
       // (it includes code_128 in its format list so works for both QR and barcode)
       if (_nativeDet) {
         _nativeDet.detect(vid)
-          .then(r => { if (r.length && _scanning) { stopCam(); handleBarcode(r[0].rawValue); } })
-          .catch(() => {});
+          .then(r => {
+            if (r.length && _scanning) {
+              _camDbg(`BD HIT: ${r[0].rawValue} (${r[0].format})`, 'dk');
+              stopCam(); handleBarcode(r[0].rawValue);
+            }
+          })
+          .catch(e => { _camDbg('BD err: ' + e.message, 'de'); });
       }
 
       // ZXing + jsQR software decode — 50ms for all contexts, cropped to aim-line strip
@@ -672,7 +701,7 @@ function _startDecodeLoop() {
         if (_zxReader) {
           try {
             const r = _zxReader.decodeFromCanvas(c);
-            if (r && _scanning) { stopCam(); handleBarcode(r.getText()); return; }
+            if (r && _scanning) { _camDbg('ZX HIT: ' + r.getText(), 'dk'); stopCam(); handleBarcode(r.getText()); return; }
           } catch(_) {}
         }
 
@@ -680,9 +709,17 @@ function _startDecodeLoop() {
         if (window.jsQR) {
           const imgData = ctx.getImageData(0, 0, c.width, c.height);
           const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
-          if (qr && _scanning) { stopCam(); handleBarcode(qr.data); return; }
+          if (qr && _scanning) { _camDbg('jsQR HIT: ' + qr.data, 'dk'); stopCam(); handleBarcode(qr.data); return; }
+        }
+
+        // Heartbeat every 3s
+        if (now - _lastHb > 3000) {
+          _lastHb = now;
+          _camDbg(`frame #${_frameCount} | ${vid.videoWidth}×${vid.videoHeight} | ctx:${_camContext}`, 'di');
         }
       }
+    } else {
+      if (_frameCount % 30 === 0) _camDbg(`waiting readyState:${vid.readyState} w:${vid.videoWidth}`, 'di');
     }
     if (_scanning) _scanRafId = requestAnimationFrame(tick);
   }
