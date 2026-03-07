@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Engine Draw</title>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -83,7 +83,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .draw-title{font-size:11px;letter-spacing:2px;color:var(--dim)}
 .rand-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--purple);background:transparent;color:var(--purple);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .rand-btn:active{background:var(--purple);color:#fff}
-.draw-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.draw-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .draw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-bottom:8px}
 @media(min-width:480px){.draw-grid{grid-template-columns:repeat(5,1fr)}}
 .draw-card{border-radius:12px;border:2px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 6px;cursor:pointer;transition:transform .1s,border-color .15s,background .15s;min-height:80px;position:relative}
@@ -153,7 +153,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .ret-engine-info{flex:1;min-width:0}
 .ret-engine-serial{font-size:14px;font-weight:900;letter-spacing:1px;color:var(--blue)}
 .ret-engine-class{font-size:10px;letter-spacing:2px;color:var(--dim);margin-top:2px}
-.ret-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px}
+.ret-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px}
 .ret-section{font-size:10px;letter-spacing:2px;color:var(--dim);padding:4px 0 2px}
 .peri-row{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:10px 12px;transition:border-color .2s}
 .peri-row.peri-ok{border-color:var(--green)}
