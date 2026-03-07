@@ -3469,46 +3469,53 @@
     // Show actions dropdown menu
     async function downloadEntryTicketsPDF(entryId, driverName) {
       try {
-        showToast('Generating tickets PDF…', 'info');
+        showToast('Loading tickets…', 'info');
         const response = await fetch(`/api/admin/entryTicketsHTML/${entryId}`, {
           headers: { 'x-admin-token': adminToken }
         });
         const data = await response.json();
         if (!data.success) throw new Error(data.error || 'Failed to load ticket HTML');
 
-        const safeName = (driverName || 'driver').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
-        const safeNum  = String(data.raceNumber || '').replace(/[^a-zA-Z0-9]/g, '');
-        const filename = `tickets_${safeNum ? safeNum + '_' : ''}${safeName}.pdf`;
+        // Open a print-ready page in a new tab — bypasses html2canvas completely
+        const win = window.open('', '_blank');
+        if (!win) {
+          showToast('Pop-up blocked — please allow pop-ups for this page.', 'error');
+          return;
+        }
 
-        // Must be in the DOM for html2canvas to render it
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = [
-          'position:fixed',
-          'left:-9999px',
-          'top:0',
-          'width:794px',
-          'background:#fff',
-          'color:#111',
-          'font-family:system-ui,sans-serif',
-          'z-index:-1'
-        ].join(';');
-        wrapper.innerHTML = data.html;
-        document.body.appendChild(wrapper);
+        const pageHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tickets – ${(driverName || 'Driver').replace(/</g,'&lt;')} #${data.raceNumber || ''}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background: #fff; font-family: system-ui, Arial, sans-serif; }
+    @page { size: A4 portrait; margin: 12mm; }
+    @media print {
+      .page-break { page-break-after: always; break-after: page; height: 0; }
+      .no-print { display: none; }
+    }
+    .no-print {
+      position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+      background: #6366f1; color: #fff; border: none; border-radius: 8px;
+      padding: 12px 24px; font-size: 15px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  ${data.html.replace(/<div style="page-break-after:always;"><\/div>/g, '<div class="page-break" style="page-break-after:always;height:0;"></div>')}
+  <button class="no-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</body>
+</html>`;
 
-        const opt = {
-          margin:      [10, 10, 10, 10],
-          filename,
-          image:       { type: 'jpeg', quality: 0.97 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
-          jsPDF:       { orientation: 'portrait', unit: 'mm', format: 'a4' }
-        };
-
-        showToast(`Saving ${data.ticketCount} ticket(s) as PDF…`, 'info');
-        await html2pdf().set(opt).from(wrapper).save();
-        document.body.removeChild(wrapper);
+        win.document.write(pageHTML);
+        win.document.close();
+        showToast(`${data.ticketCount} ticket(s) opened — use Print → Save as PDF`, 'success');
       } catch (err) {
         console.error('downloadEntryTicketsPDF error:', err);
-        showToast('Error generating PDF: ' + err.message, 'error');
+        showToast('Error generating tickets: ' + err.message, 'error');
       }
     }
 

@@ -960,16 +960,37 @@ let lookupDebounce   = null;
 
 // Shared decoder instances — created once, reused
 let _nativeDet = null;
-let _zxReader  = null;
+let _zxReader  = null;   // multi-format
+let _zxReader1D = null;  // 1D-only with Code 128 hints
 (function initDecoders() {
     if (window.BarcodeDetector) {
-        _nativeDet = new BarcodeDetector({ formats: [
-            'qr_code', 'code_128', 'code_39', 'code_93',
-            'ean_13', 'ean_8', 'itf', 'data_matrix', 'aztec', 'pdf_417'
-        ]});
+        try {
+            _nativeDet = new BarcodeDetector({ formats: [
+                'qr_code', 'code_128', 'code_39', 'code_93',
+                'ean_13', 'ean_8', 'itf', 'data_matrix', 'aztec', 'pdf_417'
+            ]});
+        } catch(_) {}
     }
     if (window.ZXing) {
-        try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
+        try {
+            _zxReader = new ZXing.BrowserMultiFormatReader();
+            // 1D-focused reader for engine serial / Code 128 scanning
+            if (ZXing.DecodeHintType && ZXing.BarcodeFormat) {
+                const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+                    ZXing.BarcodeFormat.CODE_128,
+                    ZXing.BarcodeFormat.CODE_39,
+                    ZXing.BarcodeFormat.CODE_93,
+                    ZXing.BarcodeFormat.EAN_13,
+                    ZXing.BarcodeFormat.EAN_8,
+                    ZXing.BarcodeFormat.ITF,
+                    ZXing.BarcodeFormat.UPC_A,
+                    ZXing.BarcodeFormat.UPC_E,
+                ]]]);
+                _zxReader1D = new ZXing.BrowserMultiFormatReader(hints);
+            } else {
+                _zxReader1D = _zxReader;
+            }
+        } catch(_) {}
     }
 })();
 
@@ -1414,7 +1435,13 @@ async function openLiveScanner() {
     div.appendChild(video);
     video.srcObject = stream;
     await video.play();
-    if (_nativeDet) {
+    // Determine if this is a 1D barcode input (engine serial) — skip BarcodeDetector for these,
+    // it frequently misses Code 128 on Android. Use ZXing 1D reader instead.
+    const is1D = currentTargetInput === 'fEngineSerial' || currentTargetInput === 'searchSerial';
+    const reader = is1D ? (_zxReader1D || _zxReader) : (_zxReader);
+
+    // Always run ZXing for 1D fields; use BarcodeDetector only for QR fields
+    if (_nativeDet && !is1D) {
         async function detect() {
             if (!scanningActive) return;
             try {
@@ -1424,20 +1451,23 @@ async function openLiveScanner() {
             if (scanningActive) requestAnimationFrame(detect);
         }
         requestAnimationFrame(detect);
-    } else if (_zxReader) {
+    } else if (reader) {
         const zxCanvas = document.createElement('canvas');
         const zxCtx = zxCanvas.getContext('2d', { willReadFrequently: true });
         let lastZxTime = 0;
+        // 1D barcodes need faster polling (50ms) and synchronous try/catch decode
+        const throttle = is1D ? 50 : 80;
         function liveZXing() {
             if (!scanningActive) return;
             const now = Date.now();
-            if (now - lastZxTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
+            if (now - lastZxTime > throttle && video.readyState >= video.HAVE_ENOUGH_DATA) {
                 lastZxTime = now;
                 zxCanvas.width = video.videoWidth; zxCanvas.height = video.videoHeight;
                 zxCtx.drawImage(video, 0, 0);
-                _zxReader.decodeFromCanvas(zxCanvas)
-                    .then(r => { if (r && scanningActive) { onQRFound(r.getText()); return; } })
-                    .catch(() => {});
+                try {
+                    const r = reader.decodeFromCanvas(zxCanvas);
+                    if (r && scanningActive) { onQRFound(r.getText()); return; }
+                } catch(_) {} // NotFoundException expected when no barcode in frame
             }
             if (scanningActive) requestAnimationFrame(liveZXing);
         }
@@ -1477,16 +1507,21 @@ function decodeQRFromImage(img, url, inputId) {
 }
 
 function decodeWithJsQR(img, inputId) {
-    if (!_zxReader) { alert('Barcode decoder not loaded — try refreshing.'); return; }
+    const rdr = (inputId === 'fEngineSerial' || inputId === 'searchSerial')
+        ? (_zxReader1D || _zxReader) : _zxReader;
+    if (!rdr) { alert('Barcode decoder not loaded — try refreshing.'); return; }
     const MAX = 1600;
     let w = img.naturalWidth, h = img.naturalHeight;
     if (w > MAX || h > MAX) { const s = MAX / Math.max(w,h); w = Math.round(w*s); h = Math.round(h*s); }
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    _zxReader.decodeFromCanvas(canvas)
-        .then(r => { onQRFound(r.getText()); })
-        .catch(() => { alert('No barcode found. Try getting closer or enter manually.'); });
+    // decodeFromCanvas is SYNCHRONOUS — use try/catch, not .then()
+    try {
+        const r = rdr.decodeFromCanvas(canvas);
+        if (r) { onQRFound(r.getText()); }
+        else { alert('No barcode found. Try getting closer or enter manually.'); }
+    } catch(_) { alert('No barcode found. Try getting closer or enter manually.'); }
 }
 
 function onQRFound(value) {
