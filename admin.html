@@ -3476,25 +3476,36 @@
         const data = await response.json();
         if (!data.success) throw new Error(data.error || 'Failed to load ticket HTML');
 
-        // Wrap tickets in a white A4-friendly container
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'background:#fff;color:#111;font-family:system-ui,sans-serif;';
-        wrapper.innerHTML = data.html;
-
         const safeName = (driverName || 'driver').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
         const safeNum  = String(data.raceNumber || '').replace(/[^a-zA-Z0-9]/g, '');
         const filename = `tickets_${safeNum ? safeNum + '_' : ''}${safeName}.pdf`;
 
+        // Must be in the DOM for html2canvas to render it
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = [
+          'position:fixed',
+          'left:-9999px',
+          'top:0',
+          'width:794px',
+          'background:#fff',
+          'color:#111',
+          'font-family:system-ui,sans-serif',
+          'z-index:-1'
+        ].join(';');
+        wrapper.innerHTML = data.html;
+        document.body.appendChild(wrapper);
+
         const opt = {
-          margin:    [8, 8, 8, 8],
+          margin:      [10, 10, 10, 10],
           filename,
-          image:     { type: 'jpeg', quality: 0.97 },
+          image:       { type: 'jpeg', quality: 0.97 },
           html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 794 },
-          jsPDF:     { orientation: 'portrait', unit: 'mm', format: 'a4' }
+          jsPDF:       { orientation: 'portrait', unit: 'mm', format: 'a4' }
         };
 
         showToast(`Saving ${data.ticketCount} ticket(s) as PDF…`, 'info');
-        html2pdf().set(opt).from(wrapper).save();
+        await html2pdf().set(opt).from(wrapper).save();
+        document.body.removeChild(wrapper);
       } catch (err) {
         console.error('downloadEntryTicketsPDF error:', err);
         showToast('Error generating PDF: ' + err.message, 'error');
