@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Barcode Scanner Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0a; color: #e0e0e0; font-family: monospace; padding: 12px; }
+  h1 { font-size: 18px; color: #38bdf8; margin-bottom: 10px; }
+  .card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  button {
+    background: #38bdf8; color: #000; border: none;
+    padding: 12px 20px; border-radius: 8px; font-size: 16px;
+    font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 8px;
+  }
+  button.stop { background: #ef4444; color: #fff; }
+  button:disabled { background: #444; color: #888; }
+  video { width: 100%; max-width: 480px; display: block; border: 2px solid #333; border-radius: 6px; }
+  canvas { display: none; }
+  #status { font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+  #result {
+    font-size: 20px; font-weight: 900; color: #22c55e;
+    word-break: break-all; min-height: 28px; margin-bottom: 8px;
+  }
+  #source { font-size: 12px; color: #f59e0b; margin-bottom: 8px; }
+  #log {
+    font-size: 11px; color: #64748b;
+    max-height: 220px; overflow-y: auto;
+    border: 1px solid #222; border-radius: 4px; padding: 8px;
+    background: #0d0d0d;
+  }
+  .log-ok  { color: #22c55e; }
+  .log-err { color: #ef4444; }
+  .log-inf { color: #64748b; }
+  .log-hit { color: #f59e0b; font-weight: 700; }
+  .caps { font-size: 11px; color: #94a3b8; margin-top: 6px; word-break: break-all; }
+  #clearBtn { background: #222; color: #888; font-size: 12px; padding: 6px; margin-top: 4px; }
+  .section-label { font-size: 11px; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<h1>📷 Barcode Scanner Test</h1>
+
+<!-- Library status -->
+<div class="card">
+  <div class="section-label">Library Status (on load)</div>
+  <div id="libStatus">Checking…</div>
+</div>
+
+<!-- Controls -->
+<div class="card">
+  <button id="startBtn" onclick="startScan()">▶ START CAMERA</button>
+  <button id="stopBtn" onclick="stopScan()" class="stop" disabled>■ STOP</button>
+  <div id="status">Not started</div>
+  <video id="vid" autoplay playsinline muted></video>
+  <canvas id="cnv"></canvas>
+</div>
+
+<!-- Result -->
+<div class="card">
+  <div class="section-label">Scan Result</div>
+  <div id="result">—</div>
+  <div id="source"></div>
+</div>
+
+<!-- Debug Log -->
+<div class="card">
+  <div class="section-label">Debug Log (newest first)</div>
+  <button id="clearBtn" onclick="clearLog()">Clear log</button>
+  <div id="log"></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let stream   = null;
+let rafId    = null;
+let scanning = false;
+let frameCount = 0;
+let lastLogTime = 0;
+
+// ── Library references ─────────────────────────────────────────────
+let nativeDet = null;
+let zxReader  = null;
+
+// ── Log ────────────────────────────────────────────────────────────
+function log(msg, cls = 'log-inf') {
+  const el = document.getElementById('log');
+  const d = new Date();
+  const ts = d.toTimeString().slice(0,8) + '.' + String(d.getMilliseconds()).padStart(3,'0');
+  const row = document.createElement('div');
+  row.className = cls;
+  row.textContent = `[${ts}] ${msg}`;
+  el.insertBefore(row, el.firstChild);
+}
+function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+// ── Init: check libraries ──────────────────────────────────────────
+function checkLibs() {
+  const lines = [];
+
+  // BarcodeDetector
+  if (window.BarcodeDetector) {
+    BarcodeDetector.getSupportedFormats().then(fmts => {
+      const has128 = fmts.includes('code_128');
+      const fmtStr = fmts.join(', ');
+      document.getElementById('libStatus').innerHTML +=
+        `<div class="${has128 ? 'log-ok' : 'log-err'}">` +
+        `BarcodeDetector: ✅ (code_128: ${has128 ? '✅' : '❌'})</div>` +
+        `<div class="caps">Formats: ${fmtStr}</div>`;
+      try {
+        nativeDet = new BarcodeDetector({ formats: fmts });
+        log('BarcodeDetector ready, formats: ' + fmts.join(', '), 'log-ok');
+      } catch(e) {
+        log('BarcodeDetector ctor threw: ' + e.message, 'log-err');
+      }
+    }).catch(e => {
+      document.getElementById('libStatus').innerHTML +=
+        `<div class="log-err">BarcodeDetector: getSupportedFormats() error: ${e.message}</div>`;
+    });
+  } else {
+    document.getElementById('libStatus').innerHTML +=
+      `<div class="log-err">BarcodeDetector: ❌ not available in this browser</div>`;
+    log('BarcodeDetector not available', 'log-err');
+  }
+
+  // ZXing
+  if (window.ZXing) {
+    try {
+      zxReader = new ZXing.BrowserMultiFormatReader();
+      document.getElementById('libStatus').innerHTML +=
+        `<div class="log-ok">ZXing @0.19.3: ✅</div>`;
+      log('ZXing BrowserMultiFormatReader ready', 'log-ok');
+    } catch(e) {
+      document.getElementById('libStatus').innerHTML +=
+        `<div class="log-err">ZXing: ❌ ctor error: ${e.message}</div>`;
+      log('ZXing ctor throw: ' + e.message, 'log-err');
+    }
+  } else {
+    document.getElementById('libStatus').innerHTML +=
+      `<div class="log-err">ZXing: ❌ not loaded</div>`;
+    log('ZXing not loaded', 'log-err');
+  }
+
+  // jsQR
+  if (window.jsQR) {
+    document.getElementById('libStatus').innerHTML +=
+      `<div class="log-ok">jsQR: ✅ (QR only)</div>`;
+    log('jsQR available', 'log-ok');
+  } else {
+    document.getElementById('libStatus').innerHTML +=
+      `<div class="log-err">jsQR: ❌ not loaded</div>`;
+  }
+
+  // UA
+  document.getElementById('libStatus').innerHTML +=
+    `<div class="caps">UA: ${navigator.userAgent}</div>`;
+}
+
+// ── Camera start ───────────────────────────────────────────────────
+async function startScan() {
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled  = false;
+  document.getElementById('status').textContent = 'Requesting camera…';
+  document.getElementById('result').textContent = '—';
+  document.getElementById('source').textContent = '';
+  log('Requesting camera (environment, 1920×1080)…');
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+
+    // Log actual track settings
+    const track = stream.getVideoTracks()[0];
+    const settings = track.getSettings ? track.getSettings() : {};
+    log(`Camera: ${settings.width}×${settings.height} ${settings.facingMode || ''}`, 'log-ok');
+
+    // Try continuous autofocus
+    try {
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (caps.focusMode && caps.focusMode.includes('continuous')) {
+        await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        log('Autofocus: continuous applied', 'log-ok');
+      } else {
+        log('Autofocus: continuous not available in caps', 'log-inf');
+      }
+    } catch(e) { log('Autofocus apply failed: ' + e.message, 'log-err'); }
+
+    const vid = document.getElementById('vid');
+    vid.srcObject = stream;
+    vid.onloadedmetadata = () => {
+      vid.play().catch(e => log('play() error: ' + e.message, 'log-err'));
+      document.getElementById('status').textContent = 'Scanning…';
+      log('Video playing, starting decode loop…', 'log-ok');
+      startLoop();
+    };
+  } catch(e) {
+    document.getElementById('status').textContent = 'Camera error: ' + e.message;
+    log('Camera error: ' + e.message, 'log-err');
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled  = true;
+  }
+}
+
+// ── Decode loop ────────────────────────────────────────────────────
+let lastZxTime = 0;
+
+function startLoop() {
+  scanning = true;
+  frameCount = 0;
+  const vid = document.getElementById('vid');
+  const c   = document.getElementById('cnv');
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+
+  function tick() {
+    if (!scanning) return;
+    frameCount++;
+
+    if (vid.readyState >= 2 && vid.videoWidth > 0) {
+
+      // ── 1. BarcodeDetector (every frame, fires async) ──────────
+      if (nativeDet) {
+        nativeDet.detect(vid)
+          .then(results => {
+            if (results.length && scanning) {
+              onHit(results[0].rawValue, `BarcodeDetector (${results[0].format})`);
+            }
+          })
+          .catch(e => {
+            // Only log occasionally to avoid spam
+            if (Date.now() - lastLogTime > 5000) {
+              lastLogTime = Date.now();
+              log('BarcodeDetector.detect() error: ' + e.message, 'log-err');
+            }
+          });
+      }
+
+      // ── 2. ZXing + jsQR (every 50ms = ~20fps software scan) ───
+      const now = Date.now();
+      if (now - lastZxTime > 50) {
+        lastZxTime = now;
+        c.width  = vid.videoWidth;
+        c.height = vid.videoHeight;
+        ctx.drawImage(vid, 0, 0);
+
+        // ZXing
+        if (zxReader) {
+          try {
+            const r = zxReader.decodeFromCanvas(c);
+            if (r && scanning) { onHit(r.getText(), 'ZXing (' + r.getBarcodeFormat() + ')'); return; }
+          } catch(_) {}
+        }
+
+        // jsQR
+        if (window.jsQR) {
+          const imgData = ctx.getImageData(0, 0, c.width, c.height);
+          const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
+          if (qr && scanning) { onHit(qr.data, 'jsQR'); return; }
+        }
+
+        // Heartbeat log every 5 seconds
+        if (now - lastLogTime > 5000) {
+          lastLogTime = now;
+          log(`Scanning… frame #${frameCount} | BD:${nativeDet?'✅':'❌'} ZX:${zxReader?'✅':'❌'} jsQR:${window.jsQR?'✅':'❌'}`, 'log-inf');
+        }
+      }
+    }
+
+    rafId = requestAnimationFrame(tick);
+  }
+
+  rafId = requestAnimationFrame(tick);
+}
+
+// ── Hit ────────────────────────────────────────────────────────────
+function onHit(value, source) {
+  stopScan();
+  document.getElementById('result').textContent = value;
+  document.getElementById('source').textContent = '↑ detected by: ' + source;
+  document.getElementById('status').textContent = '✅ Scan complete — tap START to scan again';
+  log(`HIT: "${value}" via ${source}`, 'log-hit');
+}
+
+// ── Stop ───────────────────────────────────────────────────────────
+function stopScan() {
+  scanning = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  const vid = document.getElementById('vid');
+  vid.onloadedmetadata = null;
+  vid.srcObject = null;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled  = true;
+  if (document.getElementById('status').textContent === 'Scanning…') {
+    document.getElementById('status').textContent = 'Stopped';
+  }
+}
+
+// ── Run on load ────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('libStatus').innerHTML = '';
+  checkLibs();
+});
+</script>
+</body>
+</html>
