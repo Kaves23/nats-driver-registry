@@ -603,15 +603,16 @@ async function startCam(context) {
   }
   try {
     _scanStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     // Apply continuous autofocus if supported
     try {
       const track = _scanStream.getVideoTracks()[0];
       const caps = track.getCapabilities ? track.getCapabilities() : {};
-      if (caps.focusMode && caps.focusMode.includes('continuous')) {
-        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
-      }
+      const adv = [];
+      if (caps.focusMode && caps.focusMode.includes('continuous')) adv.push({ focusMode: 'continuous' });
+      if (caps.torch) adv.push({ torch: isSealScan() });
+      if (adv.length) track.applyConstraints({ advanced: adv }).catch(() => {});
     } catch(_) {}
     const vid = document.getElementById('camVideo');
     vid.srcObject = _scanStream;

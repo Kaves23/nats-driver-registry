@@ -56,7 +56,8 @@
   <button id="startBtn" onclick="startScan()">▶ START CAMERA</button>
   <button id="stopBtn" onclick="stopScan()" class="stop" disabled>■ STOP</button>
   <div id="status">Not started</div>
-  <video id="vid" autoplay playsinline muted></video>
+  <video id="vid" autoplay playsinline muted style="cursor:crosshair;"></video>
+  <div style="font-size:11px;color:#475569;margin-top:4px;">👆 Tap video to trigger focus</div>
   <canvas id="cnv"></canvas>
 </div>
 
@@ -171,7 +172,7 @@ async function startScan() {
 
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
 
     // Log actual track settings
@@ -179,22 +180,46 @@ async function startScan() {
     const settings = track.getSettings ? track.getSettings() : {};
     log(`Camera: ${settings.width}×${settings.height} ${settings.facingMode || ''}`, 'log-ok');
 
-    // Try continuous autofocus
+    // Try continuous autofocus + torch
     try {
       const caps = track.getCapabilities ? track.getCapabilities() : {};
+      const constraints = { advanced: [] };
       if (caps.focusMode && caps.focusMode.includes('continuous')) {
-        await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        constraints.advanced.push({ focusMode: 'continuous' });
         log('Autofocus: continuous applied', 'log-ok');
       } else {
         log('Autofocus: continuous not available in caps', 'log-inf');
       }
-    } catch(e) { log('Autofocus apply failed: ' + e.message, 'log-err'); }
+      if (caps.torch) {
+        constraints.advanced.push({ torch: true });
+        log('Torch: enabled', 'log-ok');
+      } else {
+        log('Torch: not available', 'log-inf');
+      }
+      if (constraints.advanced.length) await track.applyConstraints(constraints);
+    } catch(e) { log('Camera constraints failed: ' + e.message, 'log-err'); }
+
+    // Tap video to trigger manual focus
+    document.getElementById('vid').onclick = () => {
+      try {
+        const track = stream && stream.getVideoTracks()[0];
+        if (track) {
+          const caps = track.getCapabilities ? track.getCapabilities() : {};
+          if (caps.focusMode && caps.focusMode.includes('single-shot')) {
+            track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] })
+              .then(() => log('Tap focus triggered', 'log-ok'))
+              .catch(() => {});
+          }
+        }
+      } catch(_) {}
+    };
 
     const vid = document.getElementById('vid');
     vid.srcObject = stream;
+    _scanStart = Date.now();
     vid.onloadedmetadata = () => {
       vid.play().catch(e => log('play() error: ' + e.message, 'log-err'));
-      document.getElementById('status').textContent = 'Scanning…';
+      document.getElementById('status').textContent = 'Scanning…  (tap video to focus)';
       log('Video playing, starting decode loop…', 'log-ok');
       startLoop();
     };
@@ -208,6 +233,7 @@ async function startScan() {
 
 // ── Decode loop ────────────────────────────────────────────────────
 let lastZxTime = 0;
+let _scanStart = 0;
 
 function startLoop() {
   scanning = true;
@@ -278,11 +304,12 @@ function startLoop() {
 
 // ── Hit ────────────────────────────────────────────────────────────
 function onHit(value, source) {
+  const elapsed = _scanStart ? ((Date.now() - _scanStart) / 1000).toFixed(2) : '?';
   stopScan();
   document.getElementById('result').textContent = value;
-  document.getElementById('source').textContent = '↑ detected by: ' + source;
+  document.getElementById('source').textContent = `↑ detected by: ${source}  (${elapsed}s after camera start)`;
   document.getElementById('status').textContent = '✅ Scan complete — tap START to scan again';
-  log(`HIT: "${value}" via ${source}`, 'log-hit');
+  log(`HIT: "${value}" via ${source} in ${elapsed}s`, 'log-hit');
 }
 
 // ── Stop ───────────────────────────────────────────────────────────
