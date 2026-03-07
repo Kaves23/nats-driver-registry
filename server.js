@@ -12055,7 +12055,7 @@ app.get('/api/admin/entryTicketsHTML/:entryId', requireAdmin, async (req, res) =
        LEFT JOIN drivers d ON re.driver_id = d.driver_id
        LEFT JOIN contacts c ON re.driver_id = c.driver_id
        LEFT JOIN events e ON re.event_id = e.event_id
-       WHERE re.entry_id = $1`,
+       WHERE re.race_entry_id = $1`,
       [entryId]
     );
 
