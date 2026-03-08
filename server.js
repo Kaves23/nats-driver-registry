@@ -526,6 +526,7 @@ const initRaceEntriesTable = async () => {
       ADD COLUMN IF NOT EXISTS tyre_rear_left VARCHAR(100),
       ADD COLUMN IF NOT EXISTS tyre_rear_right VARCHAR(100),
       ADD COLUMN IF NOT EXISTS tyres_registered_at TIMESTAMP,
+      ADD COLUMN IF NOT EXISTS tyre_sets JSONB DEFAULT '[]',
       ADD COLUMN IF NOT EXISTS fuel_collected BOOLEAN DEFAULT false,
       ADD COLUMN IF NOT EXISTS fuel_collected_at TIMESTAMP
     `);
@@ -666,7 +667,33 @@ async function initEquipmentScanLog() {
         END IF;
       END $$
     `).catch(() => {});
+    // Migration: soft-delete support
+    await pool.query(`ALTER TABLE pool_engines ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP`).catch(() => {});
     console.log('✅ Pool engines table initialized');
+
+    // ── Entry engine draws ─────────────────────────────────────────────────
+    // One row per actual draw/return cycle per competitor entry.
+    // Supports multiple draws per entry (e.g. fault replacement within same event).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS entry_engine_draws (
+        draw_id       SERIAL PRIMARY KEY,
+        entry_id      VARCHAR(100) NOT NULL,
+        engine_serial VARCHAR(100) NOT NULL,
+        draw_number   VARCHAR(50),
+        assigned_at   TIMESTAMP DEFAULT NOW(),
+        returned      BOOLEAN DEFAULT false,
+        returned_at   TIMESTAMP,
+        engine_issue  TEXT,
+        replaced_by   VARCHAR(100),
+        notes         TEXT
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_eed_entry_id ON entry_engine_draws(entry_id)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_eed_serial   ON entry_engine_draws(UPPER(engine_serial))`).catch(() => {});
+    // Add day_label column if it doesn't exist yet (migration for existing tables)
+    await pool.query(`ALTER TABLE entry_engine_draws ADD COLUMN IF NOT EXISTS day_label VARCHAR(50)`).catch(() => {});
+    console.log('✅ Entry engine draws table initialized');
+
   } catch (err) {
     console.error('Equipment scan log init error:', err.message);
   }
@@ -10776,6 +10803,55 @@ app.get('/api/poolEngines', async (req, res) => {
   }
 });
 
+// GET: ALL pool engines ever (incl. soft-deleted) for admin history view
+app.get('/api/allPoolEngines', async (req, res) => {
+  try {
+    const poolRes = await pool.query(`
+      SELECT pe.engine_id, pe.draw_number, pe.engine_serial, pe.seal_number,
+             pe.carb_number, pe.airbox_number, pe.exhaust_number,
+             pe.class, pe.notes, pe.active, pe.created_at, pe.deleted_at,
+             d.first_name || ' ' || d.last_name AS assigned_driver_name,
+             d.race_number                        AS assigned_race_number,
+             re.engine_assigned_at, re.entry_id  AS active_entry_id,
+             re.engine_returned
+      FROM pool_engines pe
+      LEFT JOIN race_entries re
+             ON UPPER(re.engine_serial) = UPPER(pe.engine_serial)
+            AND re.engine_returned IS NOT TRUE
+            AND re.engine_serial IS NOT NULL
+            AND pe.engine_serial IS NOT NULL
+            AND pe.engine_serial <> ''
+      LEFT JOIN drivers d ON re.driver_id = d.driver_id
+      ORDER BY pe.deleted_at IS NOT NULL, pe.class,
+               NULLIF(regexp_replace(pe.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
+               pe.draw_number
+    `);
+
+    const orphanRes = await pool.query(`
+      SELECT DISTINCT s.serial, s.last_used, s.src
+      FROM (
+        SELECT UPPER(engine_serial) AS serial,
+               MAX(engine_assigned_at)::TEXT AS last_used, 'race_entry' AS src
+        FROM race_entries
+        WHERE engine_serial IS NOT NULL AND engine_serial <> ''
+        GROUP BY UPPER(engine_serial)
+        UNION
+        SELECT UPPER(equipment_serial), MAX(scan_timestamp)::TEXT, 'scan_log'
+        FROM equipment_scan_log
+        WHERE equipment_serial IS NOT NULL AND equipment_serial <> ''
+        GROUP BY UPPER(equipment_serial)
+      ) s
+      WHERE s.serial NOT IN (
+        SELECT UPPER(engine_serial) FROM pool_engines WHERE engine_serial <> ''
+      )
+    `);
+
+    res.json({ success: true, engines: poolRes.rows, orphans: orphanRes.rows });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
 // POST: add a pool engine
 app.post('/api/poolEngines', async (req, res) => {
   try {
@@ -10809,8 +10885,11 @@ app.put('/api/poolEngines/:id', async (req, res) => {
   try {
     const { draw_number, engine_serial, seal_number, carb_number, airbox_number, exhaust_number, class: cls, notes, active } = req.body;
 
-    // Fetch current row so we can detect seal changes for audit log
-    const prev = await pool.query('SELECT seal_number, draw_number, engine_serial FROM pool_engines WHERE engine_id=$1', [req.params.id]);
+    // Fetch ALL current fields so we can detect any change
+    const prev = await pool.query(
+      'SELECT draw_number, engine_serial, seal_number, carb_number, airbox_number, exhaust_number, class, notes FROM pool_engines WHERE engine_id=$1',
+      [req.params.id]
+    );
     const prevRow = prev.rows[0];
 
     const result = await pool.query(
@@ -10822,22 +10901,67 @@ app.put('/api/poolEngines/:id', async (req, res) => {
     );
     if (!result.rows.length) return res.json({ success: false, error: 'Engine not found' });
 
-    // Audit log: record seal number changes
+    // Audit log + scan log: record ALL field changes transparently
     if (prevRow) {
-      const oldSeal = (prevRow.seal_number || '').trim();
-      const newSeal = (seal_number || '').trim();
-      if (oldSeal !== newSeal) {
-        await pool.query(
-          `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at)
-           VALUES ($1,$2,$3,$4,$5,NOW())`,
-          [
-            'pool_engine_seal_changed',
-            'seal_number',
-            oldSeal || '(none)',
-            newSeal || '(none)',
-            `Draw #${prevRow.draw_number} | Serial: ${prevRow.engine_serial || 'N/A'}`
-          ]
-        );
+      const fieldDefs = [
+        { key: 'draw_number',    label: 'Draw #'       },
+        { key: 'engine_serial',  label: 'Engine Serial' },
+        { key: 'seal_number',    label: 'Seal'         },
+        { key: 'carb_number',    label: 'Carb'         },
+        { key: 'airbox_number',  label: 'Airbox'       },
+        { key: 'exhaust_number', label: 'Exhaust'      },
+        { key: 'class',          label: 'Class'        },
+        { key: 'notes',          label: 'Notes'        },
+      ];
+      const newVals = {
+        draw_number:    String(draw_number  ||'').trim(),
+        engine_serial:  String(engine_serial||'').trim(),
+        seal_number:    String(seal_number  ||'').trim(),
+        carb_number:    String(carb_number  ||'').trim(),
+        airbox_number:  String(airbox_number||'').trim(),
+        exhaust_number: String(exhaust_number||'').trim(),
+        class:          String(cls          ||'').trim(),
+        notes:          String(notes        ||'').trim(),
+      };
+      const changes = [];
+      for (const f of fieldDefs) {
+        const oldVal = String(prevRow[f.key] || '').trim();
+        const newVal = newVals[f.key];
+        if (oldVal !== newVal) {
+          changes.push({ label: f.label, oldVal, newVal });
+          try {
+            await pool.query(
+              `INSERT INTO audit_log (action, field_name, old_value, new_value, driver_email, created_at)
+               VALUES ($1,$2,$3,$4,$5,NOW())`,
+              [
+                `pool_engine_${f.key}_changed`,
+                f.key,
+                oldVal || '(none)',
+                newVal || '(none)',
+                `Draw #${prevRow.draw_number} | Serial: ${prevRow.engine_serial || 'N/A'}`
+              ]
+            );
+          } catch (_) {}
+        }
+      }
+
+      // Write a single scan_log row per affected serial so the history panel shows the edit
+      if (changes.length > 0) {
+        const changeText = changes.map(c => `${c.label}: "${c.oldVal||'–'}" → "${c.newVal||'–'}"`).join(' | ');
+        // Log against both old and new serial (in case serial itself changed)
+        const serials = [...new Set(
+          [prevRow.engine_serial, newVals.engine_serial].filter(Boolean).map(s => s.toUpperCase())
+        )];
+        for (const serial of serials) {
+          try {
+            await pool.query(
+              `INSERT INTO equipment_scan_log
+                 (scan_type, equipment_serial, scanned_by, notes, action_result, scan_timestamp)
+               VALUES ('admin_edit', $1, 'Admin', $2, 'success', NOW())`,
+              [serial, changeText]
+            );
+          } catch (_) {}
+        }
       }
     }
 
@@ -10868,7 +10992,8 @@ app.delete('/api/poolEngines/:id', async (req, res) => {
         );
       } catch (_) {}
     }
-    await pool.query('DELETE FROM pool_engines WHERE engine_id = $1', [req.params.id]);
+    // Soft-delete — keep the row so history remains queryable forever
+    await pool.query('UPDATE pool_engines SET deleted_at=NOW(), active=false WHERE engine_id=$1', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false, error: err.message });

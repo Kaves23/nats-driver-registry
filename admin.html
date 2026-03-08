@@ -1045,17 +1045,35 @@
       
       <!-- By Equipment View -->
       <div id="equipmentByItem" style="display: none;">
-        <div class="filters-bar">
-          <select id="equipItemEventFilter" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
-            <option value="">Select Event...</option>
-          </select>
-          <button class="search-btn" onclick="loadEquipmentByItem()" style="padding: 10px 20px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            📊 Load
+
+        <!-- Engine Pool Section (no event filter — pool is global) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h3 style="margin:0;font-size:15px;color:#1e293b;">🔧 Engine Pool — Full Register</h3>
+            <p style="margin:3px 0 0 0;font-size:12px;color:#64748b;">All engines ever added (including removed). Click any row to view history.</p>
+          </div>
+          <button onclick="loadAllPoolEngines()" style="padding:9px 18px;background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;">
+            🔄 Load / Refresh
           </button>
         </div>
-        
-        <div id="equipmentByItemTable" style="margin-top: 15px; overflow-x: auto;">
-          <p style="color: #94a3b8; text-align: center; padding: 40px;">Select an event to view equipment assignments</p>
+        <div id="poolEnginesGrid" style="margin-bottom:30px;">
+          <p style="color:#94a3b8;text-align:center;padding:40px;">Click "Load / Refresh" to view all pool engines and their history</p>
+        </div>
+
+        <!-- Transponders section (still event-based) -->
+        <div style="border-top:2px solid #e2e8f0;padding-top:20px;">
+          <h3 style="margin:0 0 10px 0;font-size:15px;color:#1e293b;">📡 Transponders Currently Out</h3>
+          <div class="filters-bar">
+            <select id="equipItemEventFilter" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+              <option value="">Select Event...</option>
+            </select>
+            <button class="search-btn" onclick="loadEquipmentByItem()" style="padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+              📊 Load
+            </button>
+          </div>
+          <div id="equipmentByItemTable" style="margin-top: 15px; overflow-x: auto;">
+            <p style="color: #94a3b8; text-align: center; padding: 20px;">Select an event to view transponder assignments</p>
+          </div>
         </div>
       </div>
       
@@ -3882,13 +3900,9 @@
         return;
       }
       const classBadge = c => {
-        const map = {
-          'Cadet':'#e74c3c','Mini ROK':'#f1c40f','Mini ROK U10':'#f39c12',
-          'OK Junior':'#27ae60','OK National':'#3498db','KZ2':'#9b59b6','Senior ROK':'#2980b9'
-        };
-        const bg = map[c] || '#64748b';
-        const fg = ['Mini ROK'].includes(c) ? '#2c3e50' : 'white';
-        return c ? `<span style="background:${bg};color:${fg};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">${c}</span>` : '—';
+        if(!c) return '—';
+        const p = CLASS_COLORS[c] || { bg:'#64748b', text:'#fff' };
+        return `<span style="background:${p.bg};color:${p.text};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">${c}</span>`;
       };
       const sealBtn = s => s ? `<button onclick="showSealHistory('${s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'  )" title="Seal history" style="padding:4px 8px;background:#7c3aed;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">&#x1F512;</button>` : '';
       let html = '';
@@ -3900,8 +3914,11 @@
           lastClass = rowClass;
           html += `<tr style="background:#f1f5f9;"><td colspan="10" style="font-weight:700;font-size:11px;letter-spacing:1px;color:#1e293b;padding:6px 10px;border-bottom:2px solid #cbd5e1;">${rowClass.toUpperCase()}</td></tr>`;
         }
+        const isAssigned = !!e.assigned_driver_name;
+        const rowBg = isAssigned ? 'rgba(59,130,246,0.06)' : 'rgba(22,163,74,0.05)';
+        const rowShadow = isAssigned ? 'inset -4px 0 0 #3b82f6' : 'inset -4px 0 0 #16a34a';
         html += `
-        <tr>
+        <tr style="background:${rowBg};box-shadow:${rowShadow};">
           <td style="font-weight:800;font-size:20px;color:#1e293b;white-space:nowrap;">${e.draw_number}</td>
           <td style="font-family:monospace;font-weight:600;white-space:nowrap;">${e.engine_serial||'—'}</td>
           <td style="white-space:nowrap;">${e.assigned_driver_name
@@ -6626,6 +6643,10 @@
       } else if (view === 'item') {
         itemView.style.display = 'block';
         itemBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+        // Auto-load pool engines when switching to this tab
+        if (document.getElementById('poolEnginesGrid').children[0]?.tagName === 'P') {
+          loadAllPoolEngines();
+        }
       } else if (view === 'database') {
         databaseView.style.display = 'block';
         databaseBtn.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
@@ -6664,6 +6685,9 @@
       }
       
       let html = `
+        <div style="font-size:11px;color:#64748b;margin-bottom:8px;padding:6px 10px;background:#f0f9ff;border-radius:6px;border:1px solid #bae6fd;">
+          💡 Click any row to view full equipment history &amp; scan timeline for that driver
+        </div>
         <table style="width: 100%; background: white; border-radius: 8px; overflow: hidden; font-size: 12px;">
           <thead>
             <tr style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white;">
@@ -6684,9 +6708,13 @@
       
       entries.forEach((entry, index) => {
         const bgColor = index % 2 === 0 ? '#f8fafc' : 'white';
+        const driverLabel = (entry.driver_name||'Driver') + (entry.race_number ? ' #'+entry.race_number : '');
+        const safeName = driverLabel.replace(/'/g,'\\\'');
         
         html += `
-          <tr style="background: ${bgColor}; border-bottom: 1px solid #e2e8f0;">
+          <tr style="background: ${bgColor}; border-bottom: 1px solid #e2e8f0; cursor:pointer;"
+              onclick="openDriverHistory('${entry.entry_id}','${safeName}')"
+              onmouseenter="this.style.background='#e0f2fe'" onmouseleave="this.style.background='${bgColor}'">
             <td style="padding: 8px; font-weight: 600; color: #1e293b;">${entry.driver_name}</td>
             <td style="padding: 8px; color: #475569;">${entry.race_class}</td>
             <td style="padding: 8px; text-align: center;">
@@ -6727,110 +6755,156 @@
 
     async function loadEquipmentByItem() {
       const eventId = document.getElementById('equipItemEventFilter').value;
-      
-      if (!eventId) {
-        showToast('Please select an event', 'error');
-        return;
-      }
-
+      if (!eventId) { showToast('Please select an event', 'error'); return; }
       try {
         const response = await fetch(`/api/equipmentByItem?event_id=${encodeURIComponent(eventId)}`);
         const data = await response.json();
-        
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to load equipment');
-        }
-        
+        if (!data.success) throw new Error(data.error || 'Failed to load equipment');
         displayEquipmentByItem(data.equipment);
       } catch (err) {
-        console.error('Error loading equipment:', err);
         showToast('Error: ' + err.message, 'error');
       }
     }
 
     function displayEquipmentByItem(equipment) {
       const tableDiv = document.getElementById('equipmentByItemTable');
-      
-      if (!equipment || (equipment.engines.length === 0 && equipment.transponders.length === 0)) {
-        tableDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 40px;">No equipment currently assigned</p>';
+      if (!equipment || !equipment.transponders || equipment.transponders.length === 0) {
+        tableDiv.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:20px;">No transponders currently out for this event</p>';
         return;
       }
-      
-      let html = '';
-      
-      // Engines Table
-      if (equipment.engines && equipment.engines.length > 0) {
-        html += `
-          <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 10px 0; color: #059669; font-size: 16px;">🔧 Engines Currently Out</h3>
-            <table style="width: 100%; font-size: 12px;">
-              <thead>
-                <tr style="background: #f0fdf4; color: #065f46; border-bottom: 2px solid #bbf7d0;">
-                  <th style="padding: 8px; text-align: left; font-weight: 600;">Engine Serial</th>
-                  <th style="padding: 8px; text-align: left; font-weight: 600;">Assigned To</th>
-                  <th style="padding: 8px; text-align: center; font-weight: 600;">Class</th>
-                  <th style="padding: 8px; text-align: center; font-weight: 600;">Assigned Date/Time</th>
-                </tr>
-              </thead>
-              <tbody>
-        `;
-        
-        equipment.engines.forEach((engine, index) => {
-          const bgColor = index % 2 === 0 ? '#fafafa' : 'white';
-          html += `
-            <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px; font-family: monospace; font-weight: bold; color: #065f46;">${engine.engine_serial}</td>
-              <td style="padding: 8px; color: #1e293b; font-weight: 600;">${engine.driver_name} #${engine.race_number || '?'}</td>
-              <td style="padding: 8px; text-align: center; color: #475569;">${engine.race_class}</td>
-              <td style="padding: 8px; text-align: center; color: #64748b; font-size: 11px;">${new Date(engine.engine_assigned_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}</td>
-            </tr>
-          `;
-        });
-        
-        html += `
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-      
-      // Transponders Table
-      if (equipment.transponders && equipment.transponders.length > 0) {
-        html += `
-          <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 10px 0; color: #3b82f6; font-size: 16px;">📡 Transponders Currently Out</h3>
-            <table style="width: 100%; font-size: 12px;">
-              <thead>
-                <tr style="background: #eff6ff; color: #1e40af; border-bottom: 2px solid #bfdbfe;">
-                  <th style="padding: 8px; text-align: left; font-weight: 600;">TX Serial</th>
-                  <th style="padding: 8px; text-align: left; font-weight: 600;">Assigned To</th>
-                  <th style="padding: 8px; text-align: center; font-weight: 600;">Class</th>
-                  <th style="padding: 8px; text-align: center; font-weight: 600;">Assigned Date/Time</th>
-                </tr>
-              </thead>
-              <tbody>
-        `;
-        
-        equipment.transponders.forEach((tx, index) => {
-          const bgColor = index % 2 === 0 ? '#fafafa' : 'white';
-          html += `
-            <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 8px; font-family: monospace; font-weight: bold; color: #1e40af;">${tx.transponder_serial}</td>
-              <td style="padding: 8px; color: #1e293b; font-weight: 600;">${tx.driver_name} #${tx.race_number || '?'}</td>
-              <td style="padding: 8px; text-align: center; color: #475569;">${tx.race_class}</td>
-              <td style="padding: 8px; text-align: center; color: #64748b; font-size: 11px;">${new Date(tx.transponder_assigned_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}</td>
-            </tr>
-          `;
-        });
-        
-        html += `
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-      
+      let html = `<table style="width:100%;font-size:12px;background:white;border-radius:8px;overflow:hidden;">
+        <thead><tr style="background:#eff6ff;color:#1e40af;border-bottom:2px solid #bfdbfe;">
+          <th style="padding:8px;text-align:left;font-weight:600;">TX Serial</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">Assigned To</th>
+          <th style="padding:8px;text-align:center;font-weight:600;">Class</th>
+          <th style="padding:8px;text-align:center;font-weight:600;">Assigned</th>
+        </tr></thead><tbody>`;
+      equipment.transponders.forEach((tx, i) => {
+        const bg = i % 2 === 0 ? '#fafafa' : 'white';
+        const serial = (tx.transponder_serial||'').replace(/'/g,"\\'");
+        html += `<tr style="background:${bg};border-bottom:1px solid #e5e7eb;cursor:pointer;"
+            onclick="openEquipmentHistory('${serial}','📡 TX ${serial}')"
+            onmouseenter="this.style.background='#dbeafe'" onmouseleave="this.style.background='${bg}'">
+          <td style="padding:8px;font-family:monospace;font-weight:bold;color:#1e40af;">${tx.transponder_serial}</td>
+          <td style="padding:8px;font-weight:600;color:#1e293b;">${tx.driver_name} #${tx.race_number||'?'}</td>
+          <td style="padding:8px;text-align:center;color:#475569;">${tx.race_class}</td>
+          <td style="padding:8px;text-align:center;color:#64748b;font-size:11px;">${new Date(tx.transponder_assigned_at).toLocaleString('en-ZA',{dateStyle:'short',timeStyle:'short'})}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
       tableDiv.innerHTML = html;
+    }
+
+    async function loadAllPoolEngines() {
+      const grid = document.getElementById('poolEnginesGrid');
+      grid.innerHTML = '<p style="color:#64748b;text-align:center;padding:30px;">Loading…</p>';
+      try {
+        const data = await fetch('/api/allPoolEngines').then(r => r.json());
+        if (!data.success) throw new Error(data.error || 'Failed');
+        displayAllPoolEngines(data.engines, data.orphans || []);
+      } catch (err) {
+        grid.innerHTML = `<p style="color:#ef4444;padding:20px;">Error: ${err.message}</p>`;
+      }
+    }
+
+    function displayAllPoolEngines(engines, orphans) {
+      const grid = document.getElementById('poolEnginesGrid');
+      if (!engines.length && !orphans.length) {
+        grid.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:40px;">No pool engines found. Add engines via the engine-management page.</p>';
+        return;
+      }
+
+      // Group by class
+      const byClass = {};
+      engines.forEach(e => {
+        const cls = e.class || 'Unclassified';
+        if (!byClass[cls]) byClass[cls] = [];
+        byClass[cls].push(e);
+      });
+
+      let html = `<div style="font-size:11px;color:#64748b;margin-bottom:12px;padding:6px 10px;background:#f0fdf4;border-radius:6px;border:1px solid #bbf7d0;">
+        💡 Click any engine row to view its full assignment &amp; inspection history. Greyed rows have been removed from the active pool but history is preserved.
+      </div>`;
+
+      Object.keys(byClass).sort().forEach(cls => {
+        const clsEngines = byClass[cls];
+        const activeCount = clsEngines.filter(e => !e.deleted_at).length;
+        const assignedCount = clsEngines.filter(e => !e.deleted_at && e.assigned_driver_name && !e.engine_returned).length;
+
+        html += `<div style="background:white;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid #e2e8f0;">
+          <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:800;color:white;font-size:13px;letter-spacing:.5px;">${cls}</span>
+            <span style="font-size:11px;color:#94a3b8;">${activeCount} active · ${assignedCount} out</span>
+          </div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <thead><tr style="background:#f8fafc;color:#475569;border-bottom:1px solid #e2e8f0;">
+              <th style="padding:7px 10px;text-align:left;font-weight:600;white-space:nowrap;">Draw #</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;">Serial</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;">Seal</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;">Status</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;">Notes</th>
+            </tr></thead>
+            <tbody>`;
+
+        clsEngines.forEach((e, i) => {
+          const isDeleted = !!e.deleted_at;
+          const isAssigned = !isDeleted && e.assigned_driver_name && e.engine_returned !== true;
+          const bg = isDeleted ? '#fafafa' : (i % 2 === 0 ? '#ffffff' : '#f8fafc');
+          const opacity = isDeleted ? 'opacity:0.55;' : '';
+          const serial = (e.engine_serial||'').replace(/'/g,"\\'");
+          const label = `🔧 ${e.class||''} Draw #${e.draw_number} — ${e.engine_serial||'no serial'}`;
+
+          let statusBadge;
+          if (isDeleted) {
+            statusBadge = `<span style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:700;">REMOVED</span>`;
+          } else if (isAssigned) {
+            statusBadge = `<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:700;">OUT — ${e.assigned_driver_name} #${e.assigned_race_number||'?'}</span>`;
+          } else {
+            statusBadge = `<span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;padding:2px 7px;border-radius:12px;font-size:10px;font-weight:700;">AVAILABLE</span>`;
+          }
+
+          html += `<tr style="background:${bg};${opacity}border-bottom:1px solid #f1f5f9;cursor:pointer;"
+              onclick="openEquipmentHistory('${serial}','${label.replace(/'/g,"\\'")}')"
+              onmouseenter="this.style.background='#e0f2fe'" onmouseleave="this.style.background='${bg}'">
+            <td style="padding:7px 10px;font-weight:700;color:#1e293b;">#${e.draw_number}</td>
+            <td style="padding:7px 10px;font-family:monospace;font-weight:700;color:${isDeleted?'#94a3b8':'#065f46'};${isDeleted?'text-decoration:line-through;':''}">${e.engine_serial||'—'}</td>
+            <td style="padding:7px 10px;font-family:monospace;font-size:11px;color:#475569;">${e.seal_number||'—'}</td>
+            <td style="padding:7px 10px;">${statusBadge}</td>
+            <td style="padding:7px 10px;font-size:11px;color:#94a3b8;">${e.notes||''}</td>
+          </tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+      });
+
+      // Orphans section (serials seen in history but never formally in pool)
+      if (orphans.length > 0) {
+        html += `<div style="background:white;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid #fde68a;">
+          <div style="background:#fef3c7;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:700;color:#92400e;font-size:13px;">⚠️ Historical Serials (Not in active pool)</span>
+            <span style="font-size:11px;color:#b45309;">${orphans.length} serial${orphans.length>1?'s':''} — click to view history</span>
+          </div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <thead><tr style="background:#fffbeb;color:#92400e;border-bottom:1px solid #fde68a;">
+              <th style="padding:7px 10px;text-align:left;font-weight:600;">Serial</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;">First Seen</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;">Source</th>
+            </tr></thead><tbody>`;
+        orphans.forEach((o, i) => {
+          const bg = i % 2 === 0 ? '#fffbeb' : 'white';
+          const s = (o.serial||'').replace(/'/g,"\\'");
+          html += `<tr style="background:${bg};border-bottom:1px solid #fef3c7;cursor:pointer;"
+              onclick="openEquipmentHistory('${s}','🔧 ${s}')"
+              onmouseenter="this.style.background='#fef9c3'" onmouseleave="this.style.background='${bg}'">
+            <td style="padding:7px 10px;font-family:monospace;font-weight:700;color:#92400e;">${o.serial}</td>
+            <td style="padding:7px 10px;color:#64748b;font-size:11px;">${o.last_used ? new Date(o.last_used).toLocaleString('en-ZA',{dateStyle:'short',timeStyle:'short'}) : '—'}</td>
+            <td style="padding:7px 10px;color:#94a3b8;font-size:11px;">${o.src}</td>
+          </tr>`;
+        });
+        html += `</tbody></table></div>`;
+      }
+
+      grid.innerHTML = html;
     }
 
     async function loadEquipmentTracking() {
@@ -7652,6 +7726,486 @@
         alert('Error deleting: ' + e.message);
       }
     }
+  </script>
+
+  <!-- ═══ EQUIPMENT HISTORY TIMELINE PANEL ═══ -->
+  <div id="hist-panel" onclick="if(event.target===this)closeHistPanel()"
+       style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.45);">
+    <div id="hist-drawer" style="position:absolute;right:0;top:0;bottom:0;width:min(500px,100vw);
+         background:#f8fafc;display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(0,0,0,.25);
+         transition:transform .25s;">
+
+      <!-- Header -->
+      <div style="padding:16px 20px;background:linear-gradient(135deg,#0f172a,#1e3a5f);
+                  display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;">
+        <div>
+          <div id="hist-title" style="font-weight:800;font-size:17px;color:#fff;letter-spacing:.3px"></div>
+          <div id="hist-sub"   style="font-size:12px;color:#94a3b8;margin-top:3px"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div id="hist-status" style="display:none;"></div>
+          <button onclick="closeHistPanel()" style="background:rgba(255,255,255,.12);border:none;color:#fff;
+                  width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;
+                  display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+      </div>
+
+      <!-- Current state chips -->
+      <div id="hist-chips" style="padding:10px 14px;background:#fff;border-bottom:2px solid #e2e8f0;
+                                   display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0;min-height:44px;align-items:center;"></div>
+
+      <!-- Timeline -->
+      <div id="hist-timeline" style="flex:1;overflow-y:auto;padding:14px 14px;background:#f1f5f9;"></div>
+
+      <!-- Loading overlay -->
+      <div id="hist-loading" style="position:absolute;inset:80px 0 0 0;display:flex;align-items:center;
+           justify-content:center;background:#f8fafc;font-size:14px;color:#64748b;">
+        Loading…
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ─── HISTORY PANEL ─────────────────────────────────────────────────────────
+  const HIST_TYPE_META = {
+    ticket_lookup:      { icon:'🎫', color:'#6b7280', label:'Ticket Scanned' },
+    engine_assign:      { icon:'🔧', color:'#059669', label:'Engine Assigned' },
+    engine_return:      { icon:'↩️', color:'#1e293b', label:'Engine Returned' },
+    engine_verify:      { icon:'✅', color:'#10b981', label:'Engine Verified' },
+    engine_issue:       { icon:'⚠️', color:'#ef4444', label:'Engine Issue' },
+    engine_replacement: { icon:'🔄', color:'#f97316', label:'Engine Replaced' },
+    transponder_assign: { icon:'📡', color:'#3b82f6', label:'Transponder Assigned' },
+    tyres_register:     { icon:'🛞', color:'#a855f7', label:'Tyres Registered' },
+    tyre_verify:        { icon:'🛞', color:'#14b8a6', label:'Tyre Check' },
+    fuel_collect:       { icon:'⛽', color:'#eab308', label:'Fuel Collected' },
+    // Admin edits
+    admin_edit:         { icon:'✏️', color:'#7c3aed', label:'Admin Edit' },
+    // DIR / Derick portal
+    part_change:        { icon:'🔩', color:'#f97316', label:'Part Changed' },
+    dir_inspection:     { icon:'🔍', color:'#6366f1', label:'DIR Inspection' },
+    dir_engine_fault:   { icon:'🔴', color:'#ef4444', label:'Engine Fault Found' },
+    dir_no_fault:       { icon:'🟢', color:'#22c55e', label:'No Fault' },
+    dir_user_error:     { icon:'🟡', color:'#f59e0b', label:'User Error' },
+    dir_mechanic_error: { icon:'🔵', color:'#3b82f6', label:'Mechanic Error' },
+    dir_inconclusive:   { icon:'🟣', color:'#8b5cf6', label:'Inconclusive' },
+    default:            { icon:'📋', color:'#64748b', label:'Event' }
+  };
+
+  function closeHistPanel(){
+    document.getElementById('hist-panel').style.display='none';
+  }
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeHistPanel(); });
+
+  function _histFmt(iso){
+    if(!iso) return '—';
+    return new Date(iso).toLocaleString('en-ZA',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+  }
+  function _histDate(iso){
+    if(!iso) return '';
+    const d=new Date(iso);
+    return d.toISOString().slice(0,10); // YYYY-MM-DD
+  }
+  function _dayLabel(iso){
+    if(!iso) return '';
+    const d=new Date(iso);
+    const day=d.getDay(); // 0=Sun,1=Mon,5=Fri,6=Sat
+    const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const rounds={5:'Practice Day',6:'Round 1',0:'Round 2'};
+    const dayName=days[day];
+    const round=rounds[day];
+    return round ? `${dayName} — ${round}` : dayName;
+  }
+  function _dayColor(iso){
+    if(!iso) return '#64748b';
+    const day=new Date(iso).getDay();
+    if(day===5) return '#6366f1'; // Friday/Practice — indigo
+    if(day===6) return '#0ea5e9'; // Saturday/R1 — blue
+    if(day===0) return '#059669'; // Sunday/R2 — green
+    return '#64748b';
+  }
+  // Event name colour — Summer NATS = yellow, others fall back to day colour
+  function _eventColor(name, iso){
+    if(name && /summer.?nats/i.test(name)) return { bg:'#f59e0b', text:'#1a1a1a' };
+    const dc = _dayColor(iso);
+    return { bg:dc, text:'#fff' };
+  }
+  // Class colour map — used everywhere (pool table, chips, timeline)
+  const CLASS_COLORS = {
+    'Cadet':        { bg:'#dc2626', text:'#fff'  },
+    'Mini ROK':     { bg:'#f59e0b', text:'#1a1a1a' },
+    'Mini ROK U10': { bg:'#f97316', text:'#fff'  },
+    'OK Junior':    { bg:'#16a34a', text:'#fff'  },
+    'OK National':  { bg:'#0ea5e9', text:'#fff'  },
+    'KZ2':          { bg:'#7c3aed', text:'#fff'  },
+    'Senior ROK':   { bg:'#1e40af', text:'#fff'  },
+  };
+  function _classBadge(c){
+    if(!c) return '';
+    const p = CLASS_COLORS[c] || { bg:'#64748b', text:'#fff' };
+    return `<span style="background:${p.bg};color:${p.text};font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;">${c}</span>`;
+  }
+  function _poolParts(p){
+    if(!p) return '';
+    const parts=[];
+    if(p.seal_number)    parts.push(`SEAL ${p.seal_number}`);
+    if(p.carb_number)    parts.push(`CARB ${p.carb_number}`);
+    if(p.airbox_number)  parts.push(`AIRBOX ${p.airbox_number}`);
+    if(p.exhaust_number) parts.push(`EXHAUST ${p.exhaust_number}`);
+    return parts.join(' · ');
+  }
+  function _chip(label,value,color){
+    if(!value) return '';
+    return `<span style="background:${color}18;border:1px solid ${color}55;color:${color};font-size:11px;
+            font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.3px;">${label}: ${value}</span>`;
+  }
+  // Part colours — consistent everywhere in the history panel
+  const PART_COLORS = {
+    seal:    { bg:'#475569', text:'#fff', label:'SEAL'    },
+    carb:    { bg:'#ea7316', text:'#fff', label:'CARB'    },
+    airbox:  { bg:'#6366f1', text:'#fff', label:'AIRBOX'  },
+    exhaust: { bg:'#dc2626', text:'#fff', label:'EXHAUST' },
+  };
+  function _partBadge(key, value){
+    if(!value) return '';
+    const p = PART_COLORS[key];
+    if(!p) return `<span style="font-family:monospace;">${value}</span>`;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;background:${p.bg};color:${p.text};
+            font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;letter-spacing:.5px;font-family:monospace;"
+            ><span style="font-size:9px;opacity:.8;">${p.label}</span> ${value}</span>`;
+  }
+  function _colorizeDetail(text){
+    const pSt=s=>s===':ok'?'<span style="font-size:9px;opacity:.9;margin-left:2px;">✓ok</span>':s===':fault'?'<span style="font-size:9px;opacity:.9;margin-left:2px;">✗fault</span>':'';
+    return text
+      .replace(/\bSEAL(:(?:ok|fault))?\b/gi,(m,s)=>`<span style="background:${PART_COLORS.seal.bg};color:${PART_COLORS.seal.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">SEAL${pSt(s)}</span>`)
+      .replace(/\bCARB(:(?:ok|fault))?\b/gi,(m,s)=>`<span style="background:${PART_COLORS.carb.bg};color:${PART_COLORS.carb.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">CARB${pSt(s)}</span>`)
+      .replace(/\bAIRBOX(:(?:ok|fault))?\b/gi,(m,s)=>`<span style="background:${PART_COLORS.airbox.bg};color:${PART_COLORS.airbox.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">AIRBOX${pSt(s)}</span>`)
+      .replace(/\bEXHAUST(:(?:ok|fault))?\b/gi,(m,s)=>`<span style="background:${PART_COLORS.exhaust.bg};color:${PART_COLORS.exhaust.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">EXHAUST${pSt(s)}</span>`)
+      .replace(/\bSeal\b/g,`<span style="background:${PART_COLORS.seal.bg};color:${PART_COLORS.seal.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">SEAL</span>`)
+      .replace(/\bCarb\b/g,`<span style="background:${PART_COLORS.carb.bg};color:${PART_COLORS.carb.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">CARB</span>`)
+      .replace(/\bAirbox\b/g,`<span style="background:${PART_COLORS.airbox.bg};color:${PART_COLORS.airbox.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">AIRBOX</span>`)
+      .replace(/\bExhaust\b/g,`<span style="background:${PART_COLORS.exhaust.bg};color:${PART_COLORS.exhaust.text};font-size:10px;font-weight:800;padding:1px 7px;border-radius:4px;">EXHAUST</span>`);
+  }
+
+  function _renderTimeline(events){
+    if(!events.length) return '<div style="color:#94a3b8;text-align:center;padding:40px;font-size:13px;">No events recorded yet</div>';
+    let html='<div style="display:flex;flex-direction:column;gap:0;">';
+    let lastDate='';
+    events.forEach((ev,i)=>{
+      const m=HIST_TYPE_META[ev.type]||HIST_TYPE_META.default;
+      const thisDate=_histDate(ev.ts);
+
+      // ── Day group banner ───────────────────────────────────────────────
+      if(thisDate && thisDate!==lastDate){
+        lastDate=thisDate;
+        const dc=_dayColor(ev.ts);
+        const dl=_dayLabel(ev.ts);
+        const fd=new Date(ev.ts).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+        const evtBadge=(()=>{
+          if(!ev.event_name) return '';
+          const ec=_eventColor(ev.event_name,ev.ts);
+          return `<span style="background:${ec.bg};color:${ec.text};font-size:10px;font-weight:800;padding:2px 10px;border-radius:8px;letter-spacing:.3px;box-shadow:0 1px 3px #0004;">${ev.event_name}</span>`;
+        })();
+        html+=`
+        <div style="display:flex;align-items:center;gap:8px;margin:${i===0?'0':'10px'} 0 8px;padding:0 2px;">
+          <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,${dc}88);border-radius:2px;"></div>
+          <div style="background:${dc};color:#fff;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;
+                      letter-spacing:.5px;white-space:nowrap;box-shadow:0 2px 6px ${dc}55;display:flex;align-items:center;gap:6px;">
+            ${dl}${evtBadge}
+          </div>
+          <div style="color:${dc};font-size:10px;font-weight:600;white-space:nowrap;opacity:.8;">${fd}</div>
+          <div style="flex:1;height:2px;background:linear-gradient(90deg,${dc}88,transparent);border-radius:2px;"></div>
+        </div>`;
+      }
+
+      // ── Event card ────────────────────────────────────────────────────
+      const time=new Date(ev.ts).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const evtNameBadge=(()=>{
+        if(!ev.event_name) return '';
+        const ec=_eventColor(ev.event_name,ev.ts);
+        return `<span style="font-size:10px;font-weight:800;color:${ec.text};background:${ec.bg};padding:2px 8px;border-radius:6px;letter-spacing:.3px;">${ev.event_name}</span>`;
+      })();
+      const detailHtml = ev.detail ? _colorizeDetail(ev.detail) : '';
+
+      html+=`
+      <div style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ${m.color};
+                  border-radius:10px;margin-bottom:8px;overflow:hidden;
+                  box-shadow:0 1px 4px rgba(0,0,0,.06);">
+        <!-- Card header -->
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px 8px;
+                    background:${m.color}0d;border-bottom:1px solid ${m.color}22;">
+          <span style="font-size:18px;line-height:1;flex-shrink:0;">${m.icon}</span>
+          <span style="font-weight:800;font-size:13px;color:${m.color};flex:1;min-width:0;
+                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ev.label||m.label}</span>
+          ${evtNameBadge}
+          <span style="font-size:11px;font-weight:700;color:#fff;background:${m.color};
+                       padding:3px 9px;border-radius:6px;white-space:nowrap;flex-shrink:0;">${time}</span>
+        </div>
+        <!-- Card body -->
+        ${detailHtml||ev.by?`
+        <div style="padding:9px 13px;display:flex;flex-direction:column;gap:6px;">
+          ${detailHtml?`<div style="font-size:12px;color:#334155;line-height:1.75;">${detailHtml}</div>`:''}
+          ${ev.by?`<div style="display:flex;align-items:center;gap:6px;padding-top:${detailHtml?'4':'0'}px;
+                               border-top:${detailHtml?'1px solid #f1f5f9':'none'};margin-top:${detailHtml?'2':'0'}px;">
+            <span style="font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:.3px;">OPERATOR</span>
+            <span style="background:#0f172a;color:#e2e8f0;font-size:10px;font-weight:700;
+                         padding:2px 9px;border-radius:6px;letter-spacing:.3px;">${ev.by}</span>
+          </div>`:''}
+        </div>`:''}
+      </div>`;
+    });
+    html+='</div>';
+    return html;
+  }
+
+  async function openDriverHistory(entryId, driverLabel){
+    document.getElementById('hist-panel').style.display='block';
+    document.getElementById('hist-title').textContent=driverLabel||'Driver History';
+    document.getElementById('hist-sub').textContent='Entry ID: '+entryId;
+    document.getElementById('hist-chips').innerHTML='';
+    document.getElementById('hist-timeline').innerHTML='';
+    document.getElementById('hist-loading').style.display='flex';
+    document.getElementById('hist-status').style.display='none';
+    try{
+      const r=await fetch('/api/driverHistory?entry_id='+encodeURIComponent(entryId));
+      const d=await r.json();
+      if(!d.success) throw new Error(d.error||'Load failed');
+      const en=d.entry, logs=d.logs;
+      const poolParts = _poolParts(d.pool);
+      const draws = Array.isArray(d.draws) ? d.draws : [];
+
+      // Chips — reflect multi-draw where applicable
+      const activeEngine = draws.length
+        ? draws.slice().reverse().find(dr => !dr.returned) || draws[draws.length-1]
+        : null;
+      const displaySerial  = activeEngine ? activeEngine.engine_serial : en.engine_serial;
+      const isReturned     = activeEngine ? activeEngine.returned      : en.engine_returned;
+      const drawChipLabel  = draws.length > 1 ? `${draws.length} Draws` : (d.pool?.draw_number ? d.pool.draw_number : null);
+      const chips=[
+        _classBadge(en.race_class),
+        drawChipLabel ? _chip('Draw #', drawChipLabel, '#1e3a5f') : '',
+        _chip('Engine', displaySerial, isReturned?'#94a3b8':'#059669'),
+        isReturned?_chip('Returned','Yes','#f59e0b'):'',
+        _chip('TX',en.transponder_serial,'#3b82f6'),
+        (en.tyre_sets&&en.tyre_sets.length?_chip('Tyre Sets',en.tyre_sets.length+' set'+(en.tyre_sets.length>1?'s':''),'#a855f7'):''),
+        en.fuel_collected?_chip('Fuel','Collected','#eab308'):'',
+      ].filter(Boolean);
+      document.getElementById('hist-chips').innerHTML=chips.join('')||'<span style="font-size:12px;color:#94a3b8;">No equipment assigned yet</span>';
+
+      // Build timeline events
+      const events=[];
+
+      const evtName = en.event_name || '';
+
+      // Engine draw events — use multi-draw table if populated, else fall back to race_entry columns
+      if(draws.length > 0){
+        draws.forEach((dr, idx)=>{
+          const drBadge = dr.draw_number
+            ? `<span style="display:inline-block;background:#1e3a5f;color:#fff;font-size:11px;font-weight:900;padding:2px 10px;border-radius:20px;letter-spacing:.5px;">DRAW #${dr.draw_number}</span> `
+            : '';
+          const drParts = dr.seal_number
+            ? _colorizeDetail(`SEAL ${dr.seal_number} · CARB ${dr.carb_number||'–'} · AIRBOX ${dr.airbox_number||'–'} · EXHAUST ${dr.exhaust_number||'–'}`)
+            : poolParts;
+          const drawLabel = draws.length > 1
+            ? `Engine Draw ${idx+1} of ${draws.length}`
+            : 'Engine Assigned';
+          events.push({ts:dr.assigned_at, type:'engine_assign', event_name:evtName, label:drawLabel,
+            detail:`${drBadge}Serial: <strong>${dr.engine_serial}</strong>${drParts?'<br>'+drParts:''}${en.ticket_engine_ref&&idx===0?` · Ticket ${en.ticket_engine_ref}`:''}${dr.draw_notes?'<br><em style="color:#94a3b8;font-size:11px;">'+dr.draw_notes+'</em>':''}`});
+          if(dr.returned && dr.returned_at){
+            const retType = dr.engine_issue ? 'engine_issue' : (dr.replaced_by ? 'engine_replacement' : 'engine_return');
+            const retLabel = dr.replaced_by
+              ? `Returned — Replaced by <strong>${dr.replaced_by}</strong>`
+              : (dr.engine_issue ? `Issue Reported` : 'Engine Returned');
+            events.push({ts:dr.returned_at, type:retType, event_name:evtName, label:retLabel,
+              detail:`${drBadge}Serial: <strong>${dr.engine_serial}</strong>${dr.engine_issue?`<br><span style="color:#ef4444;">Issue: ${dr.engine_issue}</span>`:''}${drParts?'<br>'+drParts:''}`});
+          }
+        });
+      } else {
+        // Backward compat: old single draw from race_entries columns
+        const drawBadge = d.pool?.draw_number ? `<span style="display:inline-block;background:#1e3a5f;color:#fff;font-size:11px;font-weight:900;padding:2px 10px;border-radius:20px;letter-spacing:.5px;">DRAW #${d.pool.draw_number}</span> ` : '';
+        if(en.engine_assigned_at) events.push({ts:en.engine_assigned_at, type:'engine_assign', event_name:evtName,
+          label:'Engine Assigned',
+          detail:`${drawBadge}Serial: <strong>${en.engine_serial}</strong>${poolParts?'<br>'+poolParts:''}${en.ticket_engine_ref?` · Ticket ${en.ticket_engine_ref}`:''}`});
+        if(en.engine_returned&&en.engine_returned_at) events.push({ts:en.engine_returned_at, type:'engine_return', event_name:evtName,
+          label:'Engine Returned', detail:`${drawBadge}Serial: <strong>${en.engine_serial}</strong>${poolParts?'<br>'+poolParts:''}${en.engine_issue?`<br>Issue: ${en.engine_issue}`:''}` });
+      }
+
+      if(en.transponder_assigned_at) events.push({ts:en.transponder_assigned_at, type:'transponder_assign', event_name:evtName,
+        label:'Transponder Assigned',
+        detail:`Serial: <strong>${en.transponder_serial}</strong>${en.ticket_transponder_ref?` · Ticket ${en.ticket_transponder_ref}`:''}`});
+      if(en.fuel_collected&&en.fuel_collected_at) events.push({ts:en.fuel_collected_at, type:'fuel_collect', event_name:evtName,
+        label:'Fuel Collected', detail:en.ticket_fuel_ref?`Ticket ${en.ticket_fuel_ref}`:''});
+
+      // Tyre sets from JSONB (add one synthetic event per set)
+      const tyreSets=Array.isArray(en.tyre_sets)?en.tyre_sets:[];
+      tyreSets.forEach((s,i)=>{
+        const ts=s.registered_at||en.tyres_registered_at;
+        events.push({ts, type:'tyres_register', event_name:evtName,
+          label:`Tyres Registered — Set #${i+1}`,
+          detail:`FL:${s.fl} · FR:${s.fr}<br>RL:${s.rl} · RR:${s.rr}`});
+      });
+      // Fallback: old single-set columns with no tyre_sets
+      if(tyreSets.length===0&&en.tyre_front_left&&en.tyres_registered_at){
+        events.push({ts:en.tyres_registered_at, type:'tyres_register', event_name:evtName,
+          label:'Tyres Registered',
+          detail:`FL:${en.tyre_front_left} · FR:${en.tyre_front_right}<br>RL:${en.tyre_rear_left} · RR:${en.tyre_rear_right}`});
+      }
+
+      // Scan log events
+      logs.forEach(l=>{
+        let detail='';
+        if(l.equipment_serial) detail+=`Serial: <strong>${l.equipment_serial}</strong>`;
+        if(l.notes) detail+=(detail?'<br>':'')+l.notes;
+        if(l.action_result&&l.scan_type==='tyre_verify'){
+          const ok=l.action_result==='success';
+          detail=(ok?'<span style="color:#10b981">✓ Match</span>':'<span style="color:#ef4444">✗ Mismatch</span>')+(detail?'<br>'+detail:'');
+        }
+        if(l.scan_type==='engine_verify'&&l.action_result){
+          const ok=l.action_result==='success';
+          detail=(ok?'<span style="color:#10b981">✓ Correct engine</span>':'<span style="color:#ef4444">✗ Wrong engine</span>')+(detail?'<br>'+detail:'');
+        }
+        const m=HIST_TYPE_META[l.scan_type]||HIST_TYPE_META.default;
+        let label=m.label;
+        if(l.scan_type==='tyre_verify') label=l.action_result==='success'?'Tyre Check — Pass':'Tyre Check — Fail';
+        events.push({ts:l.scan_timestamp, type:l.scan_type, label, detail, by:l.scanned_by, event_name:evtName});
+      });
+
+      events.sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+      document.getElementById('hist-loading').style.display='none';
+      document.getElementById('hist-timeline').innerHTML=_renderTimeline(events);
+    }catch(e){
+      document.getElementById('hist-loading').style.display='none';
+      document.getElementById('hist-timeline').innerHTML=`<div style="color:#ef4444;padding:20px;font-size:13px;">Error: ${e.message}</div>`;
+    }
+  }
+
+  async function openEquipmentHistory(serial, label){
+    document.getElementById('hist-panel').style.display='block';
+    document.getElementById('hist-title').textContent=label||serial;
+    document.getElementById('hist-sub').textContent='Equipment serial: '+serial;
+    document.getElementById('hist-chips').innerHTML='';
+    document.getElementById('hist-timeline').innerHTML='';
+    document.getElementById('hist-loading').style.display='flex';
+    document.getElementById('hist-status').style.display='none';
+    try{
+      const r=await fetch('/api/equipmentHistory?serial='+encodeURIComponent(serial));
+      const d=await r.json();
+      if(!d.success) throw new Error(d.error||'Load failed');
+      const {logs, assignments, draws, pool: poolEng, dir} = d;
+
+      // ── Chips ─────────────────────────────────────────────────────────────
+      const chipParts = [];
+      if(poolEng){
+        // Draw number badge (sky blue) + class badge (class colour)
+        chipParts.push(`<span style="background:#0ea5e9;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;">Draw #${poolEng.draw_number}</span>`);
+        if(poolEng.class){ const cp=CLASS_COLORS[poolEng.class]||{bg:'#64748b',text:'#fff'}; chipParts.push(`<span style="background:${cp.bg};color:${cp.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;">${poolEng.class}</span>`); }
+        if(poolEng.seal_number)    chipParts.push(`<span style="background:${PART_COLORS.seal.bg};color:${PART_COLORS.seal.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">🔏 SEAL ${poolEng.seal_number}</span>`);
+        if(poolEng.carb_number)    chipParts.push(`<span style="background:${PART_COLORS.carb.bg};color:${PART_COLORS.carb.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">⚙️ CARB ${poolEng.carb_number}</span>`);
+        if(poolEng.airbox_number)  chipParts.push(`<span style="background:${PART_COLORS.airbox.bg};color:${PART_COLORS.airbox.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">💨 AIRBOX ${poolEng.airbox_number}</span>`);
+        if(poolEng.exhaust_number) chipParts.push(`<span style="background:${PART_COLORS.exhaust.bg};color:${PART_COLORS.exhaust.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">🔊 EXHAUST ${poolEng.exhaust_number}</span>`);
+        if(poolEng.deleted_at)     chipParts.push(`<span style="background:#475569;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;">⚫ REMOVED</span>`);
+      }
+      // Assigned drivers
+      const driverChips = assignments.map(a=>`<span style="background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;">${a.first_name} ${a.last_name} #${a.race_number||'?'} · ${a.race_class||'?'}</span>`);
+      const allChips = [...chipParts, ...driverChips];
+      document.getElementById('hist-chips').innerHTML = allChips.join(' ') || '<span style="font-size:12px;color:#94a3b8;">No data found</span>';
+
+      // ── Availability status badge in panel header ──────────────────────────
+      const activeAssign = assignments.find(a => !a.engine_returned);
+      const statusEl = document.getElementById('hist-status');
+      if(poolEng && poolEng.engine_serial){
+        statusEl.style.display='block';
+        if(activeAssign){
+          statusEl.innerHTML=`<span style="background:#3b82f6;color:#fff;font-size:11px;font-weight:800;padding:5px 13px;border-radius:10px;letter-spacing:.4px;">OUT — #${activeAssign.race_number||'?'} ${activeAssign.first_name||''} ${activeAssign.last_name||''}</span>`;
+        } else {
+          statusEl.innerHTML='<span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:5px 13px;border-radius:10px;letter-spacing:.4px;">✓ AVAILABLE</span>';
+        }
+      } else {
+        statusEl.style.display='none';
+      }
+
+      // ── Timeline events ────────────────────────────────────────────────────
+      const events=[];
+
+      // Prefer multi-draw table data; fall back to legacy race_entries assignment rows
+      const drawsList = draws && draws.length > 0 ? draws : null;
+      const assignSource = drawsList || assignments;
+
+      assignSource.forEach(a=>{
+        const evtName    = a.event_name||'';
+        const aSerial    = drawsList ? a.engine_serial : (a.engine_serial||'');
+        const assignTime = drawsList ? a.assigned_at   : a.engine_assigned_at;
+        const retFlag    = drawsList ? a.returned       : a.engine_returned;
+        const retTime    = drawsList ? a.returned_at    : a.engine_returned_at;
+        const issue      = a.engine_issue||'';
+        const driverTag  = `${a.first_name} ${a.last_name} #${a.race_number||'?'}`;
+        // Prefer per-draw parts if available, else fall back to pool chip
+        const pp = (drawsList && a.seal_number)
+          ? _colorizeDetail(`SEAL ${a.seal_number} · CARB ${a.carb_number||'–'} · AIRBOX ${a.airbox_number||'–'} · EXHAUST ${a.exhaust_number||'–'}`)
+          : _poolParts(poolEng);
+        const drawLabel = drawsList
+          ? (a.draw_number ? `<span style="display:inline-block;background:#1e3a5f;color:#fff;font-size:11px;font-weight:900;padding:2px 10px;border-radius:20px;letter-spacing:.5px;">DRAW #${a.draw_number}</span> ` : '')
+          : (poolEng?.draw_number ? `<span style="display:inline-block;background:#1e3a5f;color:#fff;font-size:11px;font-weight:900;padding:2px 10px;border-radius:20px;letter-spacing:.5px;">DRAW #${poolEng.draw_number}</span> ` : '');
+
+        if(assignTime) events.push({ts:assignTime, type:'engine_assign', event_name:evtName,
+          label:`Assigned to ${driverTag}`,
+          detail:`${drawLabel}Class: ${a.race_class||'?'}${pp?'<br>'+pp:''}${evtName?' · <strong>'+evtName+'</strong>':''}` });
+
+        if(retFlag && retTime){
+          const retType = (drawsList && a.replaced_by) ? 'engine_replacement' : (issue ? 'engine_issue' : 'engine_return');
+          const retLabel = (drawsList && a.replaced_by)
+            ? `Returned — Replaced by <strong>${a.replaced_by}</strong>`
+            : (issue ? 'Issue Reported' : `Returned by ${driverTag}`);
+          events.push({ts:retTime, type:retType, event_name:evtName, label:retLabel,
+            detail:`${drawLabel}`+(issue?`<span style="color:#ef4444;">Issue: ${issue}</span>`+(pp?'<br>':''):'')+(pp||'')});
+        }
+      });
+
+      // Scan-log events (tyres already excluded by backend)
+      logs.forEach(l=>{
+        let detail=l.driver_name?`Driver: <strong>${l.driver_name}</strong>`:'';
+        if(l.notes) detail+=(detail?'<br>':'')+l.notes;
+        // admin_edit uses notes as its display — skip generic pass/fail badge for it
+        if(l.action_result && l.scan_type !== 'admin_edit'){
+          const ok=l.action_result==='success';
+          detail=(ok?'<span style="color:#10b981">✓ Pass</span>':'<span style="color:#ef4444">✗ Fail</span>')+(detail?'<br>'+detail:'');
+        }
+        const m=HIST_TYPE_META[l.scan_type]||HIST_TYPE_META.default;
+        // Find event_name from matching assignment if log has event_id
+        const matchAssign = l.event_id ? assignments.find(a=>a.event_id===l.event_id) : null;
+        const evtName = matchAssign ? (matchAssign.event_name||'') : '';
+        events.push({ts:l.scan_timestamp, type:l.scan_type, label:m.label, detail, by:l.scanned_by, event_name:evtName});
+      });
+
+      // DIR / Derick portal interactions + part changes
+      (dir||[]).forEach(c=>{
+        // Map outcome → HIST_TYPE_META key
+        let typeKey = 'dir_inspection';
+        const outcome = (c.outcome||'').toLowerCase();
+        if(c.contact_type==='Part Change') typeKey='part_change';
+        else if(outcome.includes('engine_fault')||outcome.includes('engine fault')) typeKey='dir_engine_fault';
+        else if(outcome.includes('no_fault')||outcome==='no fault') typeKey='dir_no_fault';
+        else if(outcome.includes('user_error')||outcome.includes('user error')) typeKey='dir_user_error';
+        else if(outcome.includes('mechanic_error')||outcome.includes('mechanic error')) typeKey='dir_mechanic_error';
+        else if(outcome.includes('inconclusive')) typeKey='dir_inconclusive';
+
+        // Build detail — part labels are colorized by _renderTimeline, just assemble the text
+        let detail = c.description||'';
+        if(c.fault_category) detail=(detail?detail+'<br>':'')+'<span style="color:#94a3b8;font-size:11px;">Category: '+c.fault_category+'</span>';
+        if(c.dir_notes) detail=(detail?detail+'<br>':'')+'<em style="color:#94a3b8;font-size:11px;">'+c.dir_notes+'</em>';
+        if(c.follow_up) detail=(detail?detail+'<br>':'')+'<span style="color:#f59e0b;font-weight:700;font-size:11px;">⚠ Follow-up required</span>';
+
+        const m = HIST_TYPE_META[typeKey]||HIST_TYPE_META.default;
+        events.push({ts:c.contact_date, type:typeKey, label:m.label, detail, by:c.person_name});
+      });
+
+      events.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+      document.getElementById('hist-loading').style.display='none';
+      document.getElementById('hist-timeline').innerHTML=_renderTimeline(events);
+    }catch(e){
+      document.getElementById('hist-loading').style.display='none';
+      document.getElementById('hist-timeline').innerHTML=`<div style="color:#ef4444;padding:20px;font-size:13px;">Error: ${e.message}</div>`;
+    }
+  }
   </script>
 
 </body>

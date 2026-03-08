@@ -223,6 +223,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .screen{padding-top:70px}
 #s-pin{padding-top:54px}
 
+/* ── DAY PICKER OVERLAY ───────────────────── */
+.day-picker-overlay{display:none;position:fixed;inset:0;background:rgba(2,5,8,.97);z-index:170;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px}
+.day-picker-overlay.active{display:flex}
+.day-picker-title{font-size:10px;letter-spacing:4px;color:var(--dim);text-align:center}
+.day-picker-event{font-size:14px;font-weight:900;color:var(--text);text-align:center;max-width:320px;letter-spacing:1px;padding:6px 12px;border:1px solid var(--line);border-radius:8px}
+.day-btn{width:100%;max-width:300px;padding:22px;border-radius:14px;border:2px solid;background:transparent;font-family:inherit;font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.day-btn:active{opacity:.7}
+.day-btn-practice{border-color:#a78bfa;color:#a78bfa}
+.day-btn-practice:active{background:#a78bfa;color:#000}
+.day-btn-r1{border-color:var(--blue);color:var(--blue)}
+.day-btn-r1:active{background:var(--blue);color:#000}
+.day-btn-r2{border-color:var(--green);color:var(--green)}
+.day-btn-r2:active{background:var(--green);color:#000}
+.day-btn-single{border-color:var(--dim);color:var(--dim)}
+.day-btn-single:active{background:var(--dim);color:#000}
+.day-picker-hint{font-size:10px;letter-spacing:1px;color:var(--dim);text-align:center;margin-top:4px}
+
 </style>
 </head>
 <body>
@@ -333,6 +350,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
   <canvas id="scanCanvas" style="display:none"></canvas>
   <div id="camDbgLog"></div>
   <button class="cam-close" onclick="stopCam()">✕ CANCEL</button>
+</div>
+
+<!-- ── DAY PICKER OVERLAY ─────────────────── -->
+<div class="day-picker-overlay" id="dayPickerOverlay">
+  <div class="day-picker-title">SELECT RACE DAY</div>
+  <div class="day-picker-event" id="dayPickerEventName">— EVENT —</div>
+  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE DAY')">🔧 PRACTICE DAY</button>
+  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 1')">🏁 ROUND 1</button>
+  <button class="day-btn day-btn-r2" onclick="selectDay('ROUND 2')">🏆 ROUND 2</button>
+  <button class="day-btn day-btn-single" onclick="selectDay('RACE DAY')" style="margin-top:6px">📅 SINGLE DAY EVENT</button>
+  <div class="day-picker-hint">Tap a day to continue</div>
 </div>
 
 <!-- ── DRAW SCREEN ───────────────────────── -->
@@ -602,7 +630,7 @@ async function submitPin() {
     if (d.success && d.scanner_id) {
       _snd('ok');
       currentScanner = { name: d.scanner_name, id: d.scanner_id };
-      document.getElementById('stationBadge').textContent = `🎯 ${currentScanner.name || 'DRAW STATION'}`;
+      updateStationBadge();
       await loadEventSelect();
       showScreen('s-scan');
       await preloadEngines();
@@ -672,8 +700,27 @@ function onEventChange() {
   const sel = document.getElementById('eventSelect');
   const val = sel.value;
   const text = val ? sel.options[sel.selectedIndex].textContent.replace(/^🏁 /, '') : null;
-  currentEvent = val ? { event_id: val, event_name: text } : null;
-  if (val) preloadEngines();
+  currentEvent = val ? { event_id: val, event_name: text, day_label: null } : null;
+  if (val) {
+    document.getElementById('dayPickerEventName').textContent = text;
+    document.getElementById('dayPickerOverlay').classList.add('active');
+    preloadEngines();
+  }
+}
+
+function selectDay(label) {
+  _snd('ok');
+  document.getElementById('dayPickerOverlay').classList.remove('active');
+  if (currentEvent) {
+    currentEvent.day_label = label;
+    updateStationBadge();
+  }
+}
+
+function updateStationBadge() {
+  const name = currentScanner?.name || 'DRAW STATION';
+  const day = currentEvent?.day_label ? ' · ' + currentEvent.day_label : '';
+  document.getElementById('stationBadge').textContent = `🎯 ${name}${day}`;
 }
 
 // ─────────────────────────────────────────────────
@@ -1248,10 +1295,12 @@ async function confirmDraw() {
 
   try {
     const body = {
-      engineSerial: e.engine_serial,
-      driverId:     d.driver_id,
-      entryId:      d.entry_id,
-      ticketBarcode: null
+      engineSerial:  e.engine_serial,
+      driverId:      d.driver_id,
+      entryId:       d.entry_id,
+      ticketBarcode: null,
+      drawNumber:    e.draw_number || null,
+      dayLabel:      currentEvent?.day_label || null
     };
     const r = await fetch('/api/assignEngine', {
       method: 'POST',

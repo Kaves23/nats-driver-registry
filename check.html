@@ -420,7 +420,7 @@ function showPicker(entries){
     card.className='pick-card';
     const equip=[];
     if(e.engine_serial)equip.push('🔧 '+e.engine_serial);
-    if(e.registered_tyres)equip.push('🛞 Tyres ✓');
+    if(e.registered_tyres)equip.push('🛞 Tyres ×'+(e.all_tyre_serials?.length||4)/4);
     const dateStr=e.event_date?new Date(e.event_date).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}):'';
     card.innerHTML=`
       <div class="pick-class">${e.race_class||'?'}</div>
@@ -434,9 +434,12 @@ function showPicker(entries){
 }
 function pickEntry(entry){
   driver={driver_id:entry.driver_id,entry_id:entry.entry_id,first_name:entry.first_name,last_name:entry.last_name,race_number:entry.race_number,race_class:entry.race_class,engine_serial:entry.engine_serial};
-  tyres=entry.tyres||null;
+  // Build flat list of ALL registered tyre serials (all sets)
+  let allSerials=entry.all_tyre_serials||[];
+  if(allSerials.length===0&&entry.tyres){allSerials=['front_left','front_right','rear_left','rear_right'].map(k=>(entry.tyres[k]||'').toUpperCase()).filter(Boolean)}
+  tyres=allSerials.length>0?allSerials:null;
   // Broadcast check event to live monitor
-  fetch('/api/logDriverCheck',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:driver.driver_id,entry_id:driver.entry_id,driver_name:driver.first_name+' '+driver.last_name+' #'+driver.race_number,race_class:driver.race_class,engine_serial:driver.engine_serial||null,registered_tyres:!!(tyres&&tyres.front_left),scanned_by:currentScanner?.name||'Check Station'})}).catch(e=>console.error('[monitor] driver_check failed:',e));
+  fetch('/api/logDriverCheck',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driver_id:driver.driver_id,entry_id:driver.entry_id,driver_name:driver.first_name+' '+driver.last_name+' #'+driver.race_number,race_class:driver.race_class,engine_serial:driver.engine_serial||null,registered_tyres:!!(tyres&&tyres.length>0),scanned_by:currentScanner?.name||'Check Station'})}).catch(e=>console.error('[monitor] driver_check failed:',e));
   openCheckScreen();
 }
 function openCheckScreen(){
@@ -515,7 +518,8 @@ function resetTyres(){
   tyreState={front_left:'idle',front_right:'idle',rear_right:'idle',rear_left:'idle'};
   activeTyre=null;
   CW.forEach(k=>setTyreState(k,'idle'));
-  document.getElementById('scan-hint').textContent=tyres?'Tap a tyre to begin scan':'No tyres registered';
+  const n=tyres?Math.round(tyres.length/4):0;
+  document.getElementById('scan-hint').textContent=tyres?(n>1?`${n} sets registered (${tyres.length} tyres) — tap a tyre`:'Tap a tyre to begin scan'):'No tyres registered';
 }
 function setTyreState(key,state){
   const short=KEY_MAP[key];
@@ -541,9 +545,8 @@ function onTyreScanned(serial, tyreKey){
   const key=tyreKey||activeTyre;
   if(!key||!tyres)return;
   const s=serial.toUpperCase().trim();
-  // Check against ALL registered serials (any position) + check the specific assigned position
-  const allSerials=[tyres.front_left,tyres.front_right,tyres.rear_left,tyres.rear_right].map(v=>(v||'').toUpperCase().trim()).filter(Boolean);
-  const match=allSerials.some(v=>v===s||v.includes(s)||s.includes(v));
+  // tyres is now a flat array of all registered serials across all sets
+  const match=tyres.some(v=>v===s||v.includes(s)||s.includes(v));
   const pos=LABEL_MAP[key]; // FL / FR / RL / RR
   if(match){
     setTyreState(key,'ok');

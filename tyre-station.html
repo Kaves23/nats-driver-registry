@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Tyre Station</title>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#04080f;--card:#0a1628;--line:#0f2040;--text:#e2e8f0;--dim:#475569;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#38bdf8;--cyan:#06b6d4}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden}
+
+/* ── logo bar ── */
+.top-logo-bar{display:flex;align-items:center;justify-content:space-between;padding:0 12px;height:48px;background:var(--card);border-bottom:1px solid var(--line);flex-shrink:0}
+.top-logo-bar img{height:32px;width:auto}
+.event-select{display:none;background:var(--card);border:1px solid var(--cyan);border-radius:8px;color:var(--text);font-family:inherit;font-size:11px;padding:5px 8px;max-width:180px}
+.event-select option{background:#04080f}
+
+/* ── screens ── */
+.screen{display:none;flex-direction:column;height:calc(100% - 48px);padding:16px;gap:12px;overflow-y:auto}
+.screen.active{display:flex}
+#s-pin{height:100%;align-items:center;justify-content:center;gap:20px;overflow:hidden}
+
+/* ── PIN ── */
+.pin-brand{text-align:center}
+.pin-brand .sup{font-size:10px;letter-spacing:3px;color:var(--dim)}
+.pin-brand .big{font-size:26px;font-weight:900;letter-spacing:4px;color:var(--cyan)}
+.pin-dots{display:flex;gap:14px;margin:4px 0}
+.pin-dot{width:18px;height:18px;border-radius:50%;background:var(--line);border:2px solid var(--dim);transition:background .15s}
+.pin-dot.filled{background:var(--cyan);border-color:var(--cyan)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
+.pin-btn{height:72px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--text);font-family:inherit;font-size:24px;font-weight:700;cursor:pointer;transition:background .1s,transform .1s}
+.pin-btn:active{background:var(--cyan);transform:scale(.93)}
+.pin-err{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
+
+/* ── scan / lookup screen ── */
+.station-badge{text-align:center;font-size:14px;font-weight:900;letter-spacing:3px;color:var(--cyan);padding:6px 0}
+.section-label{font-size:9px;letter-spacing:2px;color:var(--dim);text-align:center;margin-bottom:4px}
+.ticket-row{display:flex;gap:8px;align-items:stretch}
+.ticket-input{flex:1;background:var(--card);border:2px solid var(--line);border-radius:10px;color:var(--text);font-family:inherit;font-size:16px;font-weight:900;padding:12px;outline:none;text-align:center;letter-spacing:2px}
+.ticket-input:focus{border-color:var(--cyan)}
+.cam-btn{flex-shrink:0;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:12px 16px;color:var(--cyan);font-size:22px;cursor:pointer}
+.cam-btn:active{background:var(--cyan);color:#fff}
+.go-btn{width:100%;padding:16px;border-radius:12px;border:none;background:var(--cyan);color:#fff;font-family:inherit;font-size:17px;font-weight:900;letter-spacing:2px;cursor:pointer}
+.go-btn:active{opacity:.8}
+.divider{display:flex;align-items:center;gap:8px}
+.divider span{font-size:10px;letter-spacing:2px;color:var(--dim);white-space:nowrap}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
+.num-row{display:flex;gap:8px}
+.num-input{flex:1;background:var(--card);border:2px solid var(--line);border-radius:10px;color:var(--text);font-family:inherit;font-size:32px;font-weight:900;text-align:center;padding:12px;outline:none}
+.num-input:focus{border-color:var(--cyan)}
+.lookup-err{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
+
+/* ── tyre screen ── */
+.driver-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-radius:10px;border:1px solid var(--line);flex-shrink:0}
+.driver-num{font-size:36px;font-weight:900;color:var(--cyan);line-height:1;min-width:56px;text-align:center}
+.driver-info{flex:1;min-width:0}
+.driver-name{font-size:16px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.driver-class{font-size:11px;letter-spacing:2px;color:var(--dim);margin-top:2px}
+.back-btn{background:none;border:1px solid var(--line);border-radius:8px;color:var(--dim);font-size:12px;font-family:inherit;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.back-btn:active{color:var(--text)}
+
+/* tyre input list */
+.tyre-list{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.tyre-row{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:8px 10px;transition:border-color .2s}
+.tyre-row.scanned{border-color:var(--green)}
+.tyre-row.active{border-color:var(--cyan)}
+.tyre-pos{font-size:11px;font-weight:900;letter-spacing:2px;color:var(--dim);min-width:28px}
+.tyre-pos.scanned{color:var(--green)}
+.tyre-pos.active{color:var(--cyan)}
+.tyre-serial-val{flex:1;font-size:13px;font-weight:900;letter-spacing:1px;color:var(--text);word-break:break-all}
+.tyre-serial-val.empty{color:var(--dim);font-weight:400}
+.tyre-check{font-size:16px;min-width:22px;text-align:center}
+.tyre-scan-btn{background:var(--card);border:2px solid var(--line);border-radius:8px;color:var(--cyan);font-size:16px;padding:4px 8px;cursor:pointer;flex-shrink:0}
+.tyre-scan-btn:active{background:var(--cyan);color:#fff}
+
+.hint{text-align:center;font-size:11px;letter-spacing:1px;color:var(--dim);min-height:16px}
+.reg-btn{width:100%;padding:16px;border-radius:12px;border:none;background:#0a2010;color:var(--green);font-family:inherit;font-size:17px;font-weight:900;letter-spacing:2px;cursor:pointer;border:2px solid var(--green);transition:background .2s,opacity .2s;flex-shrink:0}
+.reg-btn:disabled{border-color:var(--line);color:var(--dim);cursor:not-allowed;opacity:.5}
+.reg-btn:not(:disabled):active{background:#062010}
+
+/* ── done screen ── */
+#s-done{align-items:center;justify-content:center;gap:20px;text-align:center}
+.done-icon{font-size:72px;line-height:1}
+.done-label{font-size:22px;font-weight:900;letter-spacing:4px;color:var(--green)}
+.done-sub{font-size:12px;letter-spacing:1px;color:var(--dim)}
+.done-serials{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;width:100%;max-width:300px}
+.done-serials div{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--line)}
+.done-serials div:last-child{border-bottom:none}
+.done-serials .pos-lbl{color:var(--dim);letter-spacing:1px}
+.done-serials .pos-val{color:var(--green);font-weight:900}
+.next-btn{width:100%;max-width:300px;padding:16px;border-radius:12px;border:none;background:var(--cyan);color:#fff;font-family:inherit;font-size:16px;font-weight:900;letter-spacing:2px;cursor:pointer}
+.next-btn:active{opacity:.8}
+
+/* ── existing sets ── */
+#existing-sets{display:none;background:#0a1929;border:1px solid var(--cyan);border-radius:8px;padding:8px 12px;font-size:11px;flex-shrink:0}
+#existing-sets-title{color:var(--cyan);letter-spacing:1px;margin-bottom:6px;font-weight:900}
+.prev-set{margin-bottom:4px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06);color:var(--dim)}
+.prev-set:last-child{border-bottom:none;margin-bottom:0}
+.prev-set .set-lbl{color:var(--cyan);min-width:55px;display:inline-block}
+.prev-set .set-serials{color:var(--text);font-size:10px}
+
+/* ── camera overlay ── */
+#cam-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column}
+#cam-overlay.show{display:flex}
+#cam-video{width:100%;flex:1;object-fit:cover}
+#cam-canvas{display:none}
+#cam-target{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#cam-target .box{width:260px;height:260px;position:relative}
+#cam-target .c{position:absolute;width:28px;height:28px;border-color:#00e5ff;border-style:solid}
+#cam-target .c.tl{top:0;left:0;border-width:4px 0 0 4px}
+#cam-target .c.tr{top:0;right:0;border-width:4px 4px 0 0}
+#cam-target .c.bl{bottom:0;left:0;border-width:0 0 4px 4px}
+#cam-target .c.br{bottom:0;right:0;border-width:0 4px 4px 0}
+.scan-line{position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(to right,transparent,#00e5ff,transparent);animation:scan 1.8s ease-in-out infinite}
+@keyframes scan{0%{top:4px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:calc(100% - 6px);opacity:0}}
+#cam-label{position:absolute;bottom:80px;left:0;right:0;text-align:center;font-family:'Courier New',monospace;font-size:14px;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 8px #000}
+#cam-close{position:absolute;top:20px;right:20px;background:rgba(0,0,0,.6);border:1px solid #334155;border-radius:8px;color:#fff;font-family:'Courier New',monospace;font-size:14px;padding:8px 16px;cursor:pointer}
+#cam-manual{position:absolute;bottom:20px;left:16px;right:16px;display:flex;gap:8px}
+#cam-manual input{flex:1;background:rgba(0,0,0,.7);border:2px solid #334155;border-radius:8px;color:#fff;font-family:'Courier New',monospace;font-size:18px;font-weight:900;padding:10px;text-align:center}
+#cam-manual button{background:#1e3a5f;border:2px solid #334155;border-radius:8px;color:#fff;font-family:'Courier New',monospace;font-size:14px;padding:10px 14px;cursor:pointer;white-space:nowrap}
+
+/* ── flash ── */
+#flash{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:200;transition:opacity .05s}
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<!-- ── logo bar (always visible after PIN) ── -->
+<div class="top-logo-bar" id="logo-bar" style="display:none">
+  <img src="/images/rok-logo.png" alt="ROK">
+  <select id="eventSelect" class="event-select" onchange="onEventChange()">
+    <option value="">— EVENT —</option>
+  </select>
+</div>
+
+<!-- ═══ PIN SCREEN ═══ -->
+<div class="screen active" id="s-pin">
+  <div class="pin-brand">
+    <div class="sup">ROK CUP SA</div>
+    <div class="big">🛞 TYRES</div>
+  </div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-err" id="pin-err"></div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinKey('1')">1</button>
+    <button class="pin-btn" onclick="pinKey('2')">2</button>
+    <button class="pin-btn" onclick="pinKey('3')">3</button>
+    <button class="pin-btn" onclick="pinKey('4')">4</button>
+    <button class="pin-btn" onclick="pinKey('5')">5</button>
+    <button class="pin-btn" onclick="pinKey('6')">6</button>
+    <button class="pin-btn" onclick="pinKey('7')">7</button>
+    <button class="pin-btn" onclick="pinKey('8')">8</button>
+    <button class="pin-btn" onclick="pinKey('9')">9</button>
+    <button class="pin-btn" onclick="pinKey('del')" style="font-size:18px">⌫</button>
+    <button class="pin-btn" onclick="pinKey('0')">0</button>
+    <button class="pin-btn" onclick="pinKey('ok')" style="color:var(--cyan)">✓</button>
+  </div>
+</div>
+
+<!-- ═══ SCAN / LOOKUP SCREEN ═══ -->
+<div class="screen" id="s-scan">
+  <div class="station-badge" id="stationBadge">🛞 TYRE STATION</div>
+
+  <div class="section-label">SCAN TYRE TICKET BARCODE</div>
+  <div class="ticket-row">
+    <input class="ticket-input" id="ticketInput" type="text" placeholder="TYR—" autocomplete="off" autocapitalize="characters">
+    <button class="cam-btn" onclick="openCam('ticket','SCAN TYRE TICKET')">📷</button>
+  </div>
+  <button class="go-btn" onclick="lookupByTicket()">FIND BY TICKET →</button>
+
+  <div class="divider"><span>OR USE RACE NUMBER</span></div>
+
+  <div class="section-label">ENTER RACE NUMBER</div>
+  <div class="num-row">
+    <input class="num-input" id="numInput" type="number" inputmode="numeric" placeholder="##" maxlength="3">
+    <button class="cam-btn" onclick="openCam('bib','SCAN BIB NUMBER')">📷</button>
+  </div>
+  <button class="go-btn" style="background:#1e3a5f;border:2px solid var(--cyan);color:var(--cyan)" onclick="lookupByNumber()">FIND BY NUMBER →</button>
+
+  <div class="lookup-err" id="lookup-err"></div>
+</div>
+
+<!-- ═══ TYRE REGISTRATION SCREEN ═══ -->
+<div class="screen" id="s-tyre">
+  <div class="driver-bar">
+    <div class="driver-num" id="t-num">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="t-name">—</div>
+      <div class="driver-class" id="t-class">—</div>
+    </div>
+    <button class="back-btn" onclick="goHome()">↩</button>
+  </div>
+
+  <!-- Existing tyre sets list -->
+  <div id="existing-sets">
+    <div id="existing-sets-title">EXISTING TYRE SETS</div>
+    <div id="existing-sets-body"></div>
+  </div>
+
+  <!-- 4 tyre input rows -->
+  <div class="tyre-list">
+    <div class="tyre-row" id="row-fl">
+      <span class="tyre-pos" id="pos-fl">FL</span>
+      <span class="tyre-serial-val empty" id="val-fl">— tap to scan —</span>
+      <span class="tyre-check" id="chk-fl"></span>
+      <button class="tyre-scan-btn" onclick="startTyreScan('fl')">📷</button>
+    </div>
+    <div class="tyre-row" id="row-fr">
+      <span class="tyre-pos" id="pos-fr">FR</span>
+      <span class="tyre-serial-val empty" id="val-fr">— tap to scan —</span>
+      <span class="tyre-check" id="chk-fr"></span>
+      <button class="tyre-scan-btn" onclick="startTyreScan('fr')">📷</button>
+    </div>
+    <div class="tyre-row" id="row-rl">
+      <span class="tyre-pos" id="pos-rl">RL</span>
+      <span class="tyre-serial-val empty" id="val-rl">— tap to scan —</span>
+      <span class="tyre-check" id="chk-rl"></span>
+      <button class="tyre-scan-btn" onclick="startTyreScan('rl')">📷</button>
+    </div>
+    <div class="tyre-row" id="row-rr">
+      <span class="tyre-pos" id="pos-rr">RR</span>
+      <span class="tyre-serial-val empty" id="val-rr">— tap to scan —</span>
+      <span class="tyre-check" id="chk-rr"></span>
+      <button class="tyre-scan-btn" onclick="startTyreScan('rr')">📷</button>
+    </div>
+  </div>
+
+  <div class="hint" id="tyre-hint">Tap 📷 next to each tyre position to scan its barcode</div>
+
+  <button class="reg-btn" id="regBtn" onclick="attemptRegister()" disabled>ADD SET #1</button>
+</div>
+
+<!-- ═══ DONE SCREEN ═══ -->
+<div class="screen" id="s-done">
+  <div class="done-icon">🛞</div>
+  <div class="done-label" id="done-label">REGISTERED</div>
+  <div class="done-sub" id="done-sub">Tyres saved</div>
+  <div class="done-serials" id="done-serials"></div>
+  <button class="next-btn" onclick="goHome()">NEXT DRIVER →</button>
+</div>
+
+
+
+<!-- ═══ CAMERA OVERLAY ═══ -->
+<div id="cam-overlay">
+  <video id="cam-video" autoplay playsinline muted></video>
+  <canvas id="cam-canvas"></canvas>
+  <div id="cam-target">
+    <div class="box">
+      <div class="c tl"></div><div class="c tr"></div>
+      <div class="c bl"></div><div class="c br"></div>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+  <div id="cam-label">SCANNING…</div>
+  <button id="cam-close" onclick="closeCamera()">CANCEL</button>
+  <div id="cam-manual">
+    <input id="cam-manual-input" type="text" placeholder="Type manually" autocomplete="off" autocapitalize="characters">
+    <button onclick="manualSubmit()">OK</button>
+  </div>
+</div>
+
+<script>
+// ── audio ──────────────────────────────────────────────────────────────────
+let _ctx;
+function ac(){return _ctx||(_ctx=new(window.AudioContext||window.webkitAudioContext)())}
+function beep(f,d,t='sine',v=0.45,delay=0){try{const x=ac(),o=x.createOscillator(),g=x.createGain();o.connect(g);g.connect(x.destination);o.type=t;o.frequency.value=f;g.gain.setValueAtTime(0,x.currentTime+delay);g.gain.linearRampToValueAtTime(v,x.currentTime+delay+.01);g.gain.exponentialRampToValueAtTime(.001,x.currentTime+delay+d);o.start(x.currentTime+delay);o.stop(x.currentTime+delay+d+.05)}catch(_){}}
+function beepOk(){beep(523,.08);beep(659,.08,undefined,.45,.1);beep(880,.18,undefined,.45,.2)}
+function beepFail(){beep(220,.18,'sawtooth',.4);beep(180,.25,'sawtooth',.3,.2)}
+function beepTick(){beep(880,.06,undefined,.2)}
+function beepPin(){beep(660,.06,undefined,.2)}
+
+// ── flash ──────────────────────────────────────────────────────────────────
+function flash(color,dur=120){const f=document.getElementById('flash');f.style.background=color;f.style.opacity='1';setTimeout(()=>f.style.opacity='0',dur)}
+
+// ── screens ────────────────────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el)el.classList.add('active');
+}
+
+// ── PIN ───────────────────────────────────────────────────────────────────
+let pinVal='', currentScanner=null;
+function pinKey(k){
+  if(k==='del'){pinVal=pinVal.slice(0,-1)}
+  else if(k==='ok'){checkPin()}
+  else if(pinVal.length<4){pinVal+=k;beepPin()}
+  updatePinDots();
+  if(pinVal.length===4)setTimeout(checkPin,80);
+}
+function updatePinDots(){
+  for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<pinVal.length);
+}
+async function checkPin(){
+  if(pinVal.length<4)return;
+  const entered=pinVal;
+  try{
+    const r=await fetch('/api/verifyScanner',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:entered})});
+    const d=await r.json();
+    if(d.success){
+      currentScanner={name:d.scanner_name,id:d.scanner_id};
+      document.getElementById('stationBadge').textContent='🛞 '+currentScanner.name.toUpperCase();
+      flash('rgba(6,182,212,.2)',200);
+      document.getElementById('logo-bar').style.display='flex';
+      const sel=document.getElementById('eventSelect');
+      sel.style.display='block';
+      await loadEventSelect();
+      showScreen('s-scan');
+    } else {
+      document.getElementById('pin-err').textContent='WRONG CODE';
+      flash('rgba(239,68,68,.25)',250);beepFail();
+      pinVal='';updatePinDots();
+      setTimeout(()=>document.getElementById('pin-err').textContent='',1500);
+    }
+  }catch(e){
+    document.getElementById('pin-err').textContent='ERROR — TRY AGAIN';
+    flash('rgba(239,68,68,.25)',250);
+    pinVal='';updatePinDots();
+    setTimeout(()=>document.getElementById('pin-err').textContent='',2000);
+  }
+}
+
+// ── event select ──────────────────────────────────────────────────────────
+let currentEvent=null;
+async function loadEventSelect(){
+  try{
+    const r=await fetch('/api/getDrawEvents');
+    const d=await r.json();
+    if(!d.success||!d.events||!d.events.length)return;
+    const sel=document.getElementById('eventSelect');
+    sel.innerHTML='<option value="">— EVENT —</option>';
+    const today=new Date().toDateString();
+    let todayIdx=-1;
+    d.events.forEach((ev,i)=>{
+      const eDate=new Date(ev.event_date).toDateString();
+      const isToday=eDate===today;
+      const opt=document.createElement('option');
+      opt.value=ev.event_id;
+      opt.textContent=(isToday?'🏁 ':'')+ev.event_name;
+      sel.appendChild(opt);
+      if(isToday)todayIdx=i+1;
+    });
+    if(todayIdx>0){sel.selectedIndex=todayIdx}
+    else if(d.events.length===1){sel.selectedIndex=1}
+    onEventChange();
+  }catch(e){console.warn('loadEventSelect:',e)}
+}
+function onEventChange(){
+  const sel=document.getElementById('eventSelect');
+  const opt=sel.options[sel.selectedIndex];
+  currentEvent=sel.value?{event_id:sel.value,event_name:opt.textContent.replace(/^🏁\s*/,'')}:null;
+}
+
+// ── lookup helpers ─────────────────────────────────────────────────────────
+let driver=null; // current driver context
+async function lookupByTicket(){
+  const barcode=(document.getElementById('ticketInput').value||'').trim().toUpperCase();
+  if(!barcode){setErr('Enter or scan a ticket barcode');return}
+  setErr('…');
+  try{
+    const r=await fetch(`/api/lookupTicket?barcode=${encodeURIComponent(barcode)}`);
+    const d=await r.json();
+    if(!d.success){setErr(d.error||'Ticket not found');beepFail();return}
+    // lookupTicket returns driver + entry info
+    openTyreScreen({...d.driver, ticket_barcode: barcode});
+  }catch(e){setErr('Network error');beepFail()}
+}
+async function lookupByNumber(){
+  const num=(document.getElementById('numInput').value||'').trim();
+  if(!num){setErr('Enter a race number');return}
+  setErr('…');
+  try{
+    const eid=currentEvent?`&event_id=${encodeURIComponent(currentEvent.event_id)}`:'';
+    const r=await fetch(`/api/lookupDriverByNumber?raceNumber=${encodeURIComponent(num)}${eid}`);
+    const d=await r.json();
+    if(!d.success){setErr(d.error||'Driver not found');beepFail();return}
+    const entries=d.entries||[];
+    if(entries.length===0){setErr('No entry found');beepFail();return}
+    if(entries.length===1){openTyreScreen({...entries[0], ticket_barcode:entries[0].ticket_tyres_ref||null});return}
+    // Multiple entries — pick the one for current event if selected, else show first
+    const match=currentEvent?entries.find(e=>e.event_id===currentEvent.event_id):null;
+    openTyreScreen({...(match||entries[0]), ticket_barcode:(match||entries[0]).ticket_tyres_ref||null});
+  }catch(e){setErr('Network error');beepFail()}
+}
+function setErr(msg){document.getElementById('lookup-err').textContent=msg;if(msg!=='…')setTimeout(()=>{if(document.getElementById('lookup-err').textContent===msg)document.getElementById('lookup-err').textContent=''},3000)}
+
+// ── tyre screen ────────────────────────────────────────────────────────────
+const POSITIONS=['fl','fr','rl','rr'];
+const POS_NAMES={fl:'FRONT LEFT',fr:'FRONT RIGHT',rl:'REAR LEFT',rr:'REAR RIGHT'};
+const POS_KEYS={fl:'front_left',fr:'front_right',rl:'rear_left',rr:'rear_right'};
+let tyreSerials={fl:'',fr:'',rl:'',rr:''};
+let activeTyrePos=null;
+let existingSets=[];  // tyre_sets array from server
+let currentSetNumber=1;
+
+function openTyreScreen(entry){
+  driver=entry;
+  existingSets=Array.isArray(entry.tyre_sets)?entry.tyre_sets:[];
+  currentSetNumber=existingSets.length+1;
+  tyreSerials={fl:'',fr:'',rl:'',rr:''};
+  activeTyrePos=null;
+  // Driver bar
+  document.getElementById('t-num').textContent='#'+(driver.race_number||'?');
+  document.getElementById('t-name').textContent=((driver.first_name||'')+' '+(driver.last_name||'')).toUpperCase().trim();
+  document.getElementById('t-class').textContent=(driver.race_class||'').toUpperCase();
+  // Existing sets panel
+  const setsEl=document.getElementById('existing-sets');
+  const bodyEl=document.getElementById('existing-sets-body');
+  if(existingSets.length>0){
+    document.getElementById('existing-sets-title').textContent=
+      `EXISTING TYRE SETS (${existingSets.length})`;
+    bodyEl.innerHTML=existingSets.map((s,i)=>{
+      const parts=[`FL:${s.fl||'?'}`,`FR:${s.fr||'?'}`,`RL:${s.rl||'?'}`,`RR:${s.rr||'?'}`].join('  ');
+      return `<div class="prev-set"><span class="set-lbl">SET #${i+1}</span><span class="set-serials">${parts}</span></div>`;
+    }).join('');
+    setsEl.style.display='block';
+  } else {
+    setsEl.style.display='none';
+    bodyEl.innerHTML='';
+  }
+  // Reset rows
+  POSITIONS.forEach(p=>setRow(p,''));
+  updateRegBtn();
+  document.getElementById('tyre-hint').textContent='Tap 📷 next to each tyre position to scan its barcode';
+  showScreen('s-tyre');
+  flash('rgba(6,182,212,.15)',200);
+  beepTick();
+}
+
+function setRow(pos,serial){
+  tyreSerials[pos]=serial;
+  const row=document.getElementById('row-'+pos);
+  const posEl=document.getElementById('pos-'+pos);
+  const valEl=document.getElementById('val-'+pos);
+  const chkEl=document.getElementById('chk-'+pos);
+  if(serial){
+    row.className='tyre-row scanned';
+    posEl.className='tyre-pos scanned';
+    valEl.className='tyre-serial-val';
+    valEl.textContent=serial;
+    valEl.ondblclick=()=>clearTyre(pos);
+    chkEl.textContent='✓';
+  } else {
+    row.className='tyre-row';
+    posEl.className='tyre-pos';
+    valEl.className='tyre-serial-val empty';
+    valEl.textContent='— tap to scan —';
+    valEl.ondblclick=null;
+    chkEl.textContent='';
+  }
+}
+
+function clearTyre(pos){
+  setRow(pos,'');
+  document.getElementById('tyre-hint').textContent=POS_NAMES[pos]+' cleared — scan again';
+  updateRegBtn();
+}
+
+function updateRegBtn(){
+  const all=POSITIONS.every(p=>tyreSerials[p]);
+  const btn=document.getElementById('regBtn');
+  btn.disabled=!all;
+  btn.textContent=all?`ADD SET #${currentSetNumber}`:`ADD SET #${currentSetNumber}`;
+  if(all){
+    document.getElementById('tyre-hint').textContent=`All 4 tyres scanned — tap ADD SET #${currentSetNumber} to save`;
+  }
+}
+
+function startTyreScan(pos){
+  activeTyrePos=pos;
+  document.getElementById('row-'+pos).className='tyre-row active';
+  document.getElementById('pos-'+pos).className='tyre-pos active';
+  openCam('tyre','SCAN TYRE — '+POS_NAMES[pos]);
+}
+
+// ── register ──────────────────────────────────────────────────────────────
+function attemptRegister(){
+  if(!POSITIONS.every(p=>tyreSerials[p]))return;
+  confirmRegister();
+}
+
+async function confirmRegister(){
+  const btn=document.getElementById('regBtn');
+  btn.disabled=true;
+  btn.textContent='SAVING…';
+  try{
+    const r=await fetch('/api/assignTyres',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        ticketBarcode: driver.ticket_barcode||null,
+        tyres:{
+          front_left:  tyreSerials.fl,
+          front_right: tyreSerials.fr,
+          rear_left:   tyreSerials.rl,
+          rear_right:  tyreSerials.rr
+        },
+        driverId:  driver.driver_id,
+        entryId:   driver.entry_id,
+        scannedBy: currentScanner?.name||'Tyre Station'
+      })
+    });
+    const d=await r.json();
+    if(d.success){
+      beepOk();flash('rgba(34,197,94,.4)',500);
+      showDone(d.setNumber||currentSetNumber, d.totalSets||currentSetNumber);
+    } else {
+      btn.disabled=false;btn.textContent=`ADD SET #${currentSetNumber}`;
+      document.getElementById('tyre-hint').textContent='❌ '+(d.error||'Save failed — try again');
+      beepFail();flash('rgba(239,68,68,.3)',400);
+    }
+  }catch(e){
+    btn.disabled=false;btn.textContent=`ADD SET #${currentSetNumber}`;
+    document.getElementById('tyre-hint').textContent='❌ Network error';
+    beepFail();
+  }
+}
+
+function showDone(setNumber,totalSets){
+  document.getElementById('done-label').textContent=totalSets>1?`SET #${setNumber} OF ${totalSets} REGISTERED`:'TYRES REGISTERED';
+  document.getElementById('done-sub').textContent=
+    ((driver.first_name||'')+' '+(driver.last_name||'')+' · #'+(driver.race_number||'')+(driver.race_class?' · '+driver.race_class:'')).toUpperCase();
+  document.getElementById('done-serials').innerHTML=
+    `<div><span class="pos-lbl">FL</span><span class="pos-val">${tyreSerials.fl}</span></div>`+
+    `<div><span class="pos-lbl">FR</span><span class="pos-val">${tyreSerials.fr}</span></div>`+
+    `<div><span class="pos-lbl">RL</span><span class="pos-val">${tyreSerials.rl}</span></div>`+
+    `<div><span class="pos-lbl">RR</span><span class="pos-val">${tyreSerials.rr}</span></div>`;
+  showScreen('s-done');
+}
+
+// ── home / reset ──────────────────────────────────────────────────────────
+function goHome(){
+  driver=null;tyreSerials={fl:'',fr:'',rl:'',rr:''};existingSets=[];currentSetNumber=1;activeTyrePos=null;
+  document.getElementById('ticketInput').value='';
+  document.getElementById('numInput').value='';
+  document.getElementById('lookup-err').textContent='';
+  const btn=document.getElementById('regBtn');
+  btn.disabled=true;
+  btn.textContent='ADD SET #1';
+  document.getElementById('existing-sets').style.display='none';
+  showScreen('s-scan');
+}
+
+// ── camera ────────────────────────────────────────────────────────────────
+let camStream=null, scanMode=null, scanning=false, rafId=null;
+function openCam(mode,label){
+  scanMode=mode;scanning=true;
+  document.getElementById('cam-label').textContent=label||'SCANNING…';
+  document.getElementById('cam-manual-input').value='';
+  document.getElementById('cam-overlay').classList.add('show');
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    const c={video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}};
+    navigator.mediaDevices.getUserMedia(c).then(stream=>{
+      camStream=stream;
+      try{
+        const track=stream.getVideoTracks()[0];
+        const caps=track.getCapabilities&&track.getCapabilities();
+        if(caps&&caps.focusMode&&caps.focusMode.includes('continuous'))
+          track.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+      }catch(_){}
+      const v=document.getElementById('cam-video');
+      v.srcObject=stream;
+      v.onloadedmetadata=()=>{v.play();startDecode()};
+    }).catch(()=>{});
+  }
+}
+function closeCamera(){
+  scanning=false;if(rafId){cancelAnimationFrame(rafId);rafId=null}
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
+  const v=document.getElementById('cam-video');v.srcObject=null;
+  document.getElementById('cam-overlay').classList.remove('show');
+  // Reset active tyre row
+  if(activeTyrePos&&!tyreSerials[activeTyrePos]){
+    if(document.getElementById('row-'+activeTyrePos)){
+      document.getElementById('row-'+activeTyrePos).className='tyre-row';
+      document.getElementById('pos-'+activeTyrePos).className='tyre-pos';
+    }
+  }
+}
+let _nativeDet=null, _zxReader=null;
+(function initDecoders(){
+  if(window.BarcodeDetector){try{_nativeDet=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','itf','data_matrix','aztec','pdf_417','upc_a','upc_e']})}catch(_){}}
+  if(window.ZXing){try{_zxReader=new ZXing.BrowserMultiFormatReader()}catch(_){}}
+})();
+function startDecode(){
+  const v=document.getElementById('cam-video');
+  const c=document.getElementById('cam-canvas');
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  let lastTime=0;
+  function tick(){
+    if(!scanning)return;
+    if(v.readyState>=2&&v.videoWidth>0){
+      if(_nativeDet){_nativeDet.detect(v).then(r=>{if(r.length&&scanning)onScan(r[0].rawValue)}).catch(()=>{});if(scanning)rafId=requestAnimationFrame(tick);return}
+      const now=Date.now();
+      if(now-lastTime>100){
+        lastTime=now;c.width=v.videoWidth;c.height=v.videoHeight;ctx.drawImage(v,0,0);
+        if(window.jsQR){const img=ctx.getImageData(0,0,c.width,c.height);const q=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});if(q&&scanning){onScan(q.data);return}}
+        if(_zxReader){try{const result=_zxReader.decodeFromCanvas(c);if(result&&scanning){onScan(result.getText());return}}catch(_){}}
+      }
+    }
+    if(scanning)rafId=requestAnimationFrame(tick);
+  }
+  rafId=requestAnimationFrame(tick);
+}
+function onScan(value){
+  if(!scanning)return;
+  scanning=false;
+  const v=value.trim();
+  const mode=scanMode;
+  const savedPos=activeTyrePos;
+  closeCamera();
+  if(mode==='tyre'&&savedPos){
+    setRow(savedPos, v.toUpperCase());
+    beepTick();flash('rgba(6,182,212,.2)',150);
+    updateRegBtn();
+    // Auto-advance to next unscanned tyre
+    const order=['fl','fr','rl','rr'];
+    const idx=order.indexOf(savedPos);
+    for(let i=1;i<=4;i++){
+      const next=order[(idx+i)%4];
+      if(!tyreSerials[next]){
+        setTimeout(()=>startTyreScan(next),600);
+        break;
+      }
+    }
+  } else if(mode==='ticket'){
+    document.getElementById('ticketInput').value=v;
+    lookupByTicket();
+  } else if(mode==='bib'){
+    document.getElementById('numInput').value=v.replace(/\D/g,'');
+    lookupByNumber();
+  }
+}
+function manualSubmit(){const v=document.getElementById('cam-manual-input').value.trim();if(v)onScan(v)}
+document.getElementById('cam-manual-input').addEventListener('keydown',e=>{if(e.key==='Enter')manualSubmit()});
+document.getElementById('ticketInput').addEventListener('keydown',e=>{if(e.key==='Enter')lookupByTicket()});
+document.getElementById('numInput').addEventListener('keydown',e=>{if(e.key==='Enter')lookupByNumber()});
+document.addEventListener('touchstart',()=>ac(),{once:true});
+</script>
+</body>
+</html>
