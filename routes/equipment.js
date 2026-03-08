@@ -591,6 +591,24 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     }
   });
 
+  // Public events list for draw station dropdown (no admin auth required)
+  router.get('/api/getDrawEvents', async (req, res) => {
+    try {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 14); // last 14 days + future
+      const result = await pool.query(`
+        SELECT event_id, event_name, event_date, location
+        FROM events
+        WHERE event_date >= $1
+        ORDER BY event_date ASC
+      `, [cutoff.toISOString().slice(0, 10)]);
+      res.json({ success: true, events: result.rows });
+    } catch (err) {
+      console.error('getDrawEvents error:', err.message);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // Lookup driver by race number — returns all confirmed entries with equipment
   router.get('/api/lookupDriverByNumber', async (req, res) => {
     try {
@@ -613,7 +631,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         LEFT JOIN events e ON re.event_id = e.event_id
         WHERE d.race_number = $1
           ${event_id ? 'AND re.event_id = $2' : ''}
-          AND LOWER(re.payment_status) IN ('completed','confirmed','paid')
+          AND LOWER(re.payment_status) IN ('completed','confirmed','paid','pending')
           AND re.entry_status NOT IN ('cancelled','canceled')
         ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
       `, params);
