@@ -598,7 +598,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       const result = await pool.query(`
         SELECT re.entry_id, re.driver_id, re.race_class,
-               re.engine_serial, re.transponder_serial,
+               re.engine_serial, re.engine_returned, re.transponder_serial,
                re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
                re.ticket_engine_ref, re.ticket_tyres_ref, re.ticket_transponder_ref, re.ticket_fuel_ref,
                re.entry_items, re.event_id,
@@ -620,14 +620,15 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       // Build entries array, falling back to scan log if DB columns are null
       const entries = [];
       for (const row of result.rows) {
-        let engineSerial = row.engine_serial || null;
+        // Only treat as currently assigned if NOT returned
+        let engineSerial = (row.engine_serial && row.engine_returned !== true) ? row.engine_serial : null;
         let transponderSerial = row.transponder_serial || null;
         let fl = row.tyre_front_left  || null;
         let fr = row.tyre_front_right || null;
         let rl = row.tyre_rear_left   || null;
         let rr = row.tyre_rear_right  || null;
 
-        if (!engineSerial) {
+        if (!engineSerial && row.engine_returned !== true) {
           const el = await pool.query(`
             SELECT equipment_serial FROM equipment_scan_log
             WHERE driver_id = $1 AND scan_type IN ('engine_assign','LOAN_ASSIGN')
