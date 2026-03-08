@@ -830,6 +830,10 @@ const initDirEngineContactsTable = async () => {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_dir_engine_serial ON dir_engine_contacts(engine_serial)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_dir_outcome ON dir_engine_contacts(outcome)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_dir_date ON dir_engine_contacts(contact_date)`);
+    // Migrations: part swap tracking columns
+    await pool.query(`ALTER TABLE dir_engine_contacts ADD COLUMN IF NOT EXISTS part_type   VARCHAR(50)`).catch(()=>{});
+    await pool.query(`ALTER TABLE dir_engine_contacts ADD COLUMN IF NOT EXISTS part_number VARCHAR(100)`).catch(()=>{});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_dir_part_number ON dir_engine_contacts(UPPER(part_number))`).catch(()=>{});
     console.log('✅ DIR engine contacts table initialized');
   } catch (err) {
     console.error('DIR engine contacts table init error:', err.message);

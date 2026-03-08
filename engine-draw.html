@@ -26,9 +26,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .pin-dot{width:18px;height:18px;border-radius:50%;background:var(--line);border:2px solid var(--dim);transition:background .15s}
 .pin-dot.filled{background:var(--blue);border-color:var(--blue)}
 .pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
-.pin-btn{height:72px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--text);font-family:inherit;font-size:24px;font-weight:700;cursor:pointer;transition:background .1s,transform .1s}
+.pin-btn{height:72px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--text);font-family:inherit;font-size:24px;font-weight:700;cursor:pointer;transition:background .1s,transform .1s;touch-action:manipulation}
 .pin-btn:active{background:var(--blue);transform:scale(.93)}
 .pin-err{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
+button{touch-action:manipulation}
 
 /* ── SCAN DRIVER ─────────────────────────── */
 #s-scan{justify-content:center;align-items:stretch;gap:18px}
@@ -421,7 +422,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
       <span style="font-size:10px;letter-spacing:1px;color:var(--dim)">OR TYPE MANUALLY</span>
       <div style="flex:1;height:1px;background:var(--line)"></div>
     </div>
-    <input id="sealManualInput" type="text" class="big-input" placeholder="seal / serial" style="font-size:20px;text-transform:uppercase;" onkeydown="if(event.key==='Enter')submitSealInput()">
+    <input id="sealManualInput" type="text" class="big-input" placeholder="seal / serial" autocapitalize="characters" autocomplete="off" style="font-size:20px;" onkeydown="if(event.key==='Enter')submitSealInput()">
     <button class="go-btn" onclick="submitSealInput()">VERIFY →</button>
     <div id="sealErr" style="text-align:center;font-size:13px;min-height:18px;letter-spacing:.5px;"></div>
     <button onclick="showConfirm()" style="font-size:11px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;letter-spacing:1px;padding:4px;">SKIP SCAN — CONFIRM ANYWAY</button>

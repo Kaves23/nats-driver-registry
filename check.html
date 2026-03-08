@@ -26,8 +26,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .pin-dot{width:18px;height:18px;border-radius:50%;background:var(--line);border:2px solid var(--dim);transition:background .15s}
 .pin-dot.filled{background:var(--blue);border-color:var(--blue)}
 .pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
-.pin-btn{height:72px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--text);font-family:inherit;font-size:24px;font-weight:700;cursor:pointer;transition:background .1s,transform .1s}
+.pin-btn{height:72px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--text);font-family:inherit;font-size:24px;font-weight:700;cursor:pointer;transition:background .1s,transform .1s;touch-action:manipulation}
 .pin-btn:active{background:var(--blue);transform:scale(.93)}
+button{touch-action:manipulation}
 .pin-btn.wide{grid-column:span 1}
 .pin-err{color:var(--red);font-size:12px;letter-spacing:1px;min-height:16px;text-align:center}
 
@@ -95,9 +96,9 @@ svg#kart{width:100%;max-width:300px;height:auto;overflow:visible}
 #cam-target .c.br{bottom:0;right:0;border-width:0 4px 4px 0}
 .scan-line{position:absolute;left:4px;right:4px;height:2px;background:linear-gradient(to right,transparent,#00e5ff,transparent);animation:scan 1.8s ease-in-out infinite}
 @keyframes scan{0%{top:4px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:calc(100% - 6px);opacity:0}}
-#cam-label{position:absolute;bottom:80px;left:0;right:0;text-align:center;font-family:'Courier New',monospace;font-size:14px;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 8px #000}
+#cam-label{position:absolute;bottom:195px;left:0;right:0;text-align:center;font-family:'Courier New',monospace;font-size:14px;font-weight:900;letter-spacing:2px;color:#fff;text-shadow:0 0 8px #000}
 #cam-close{position:absolute;top:20px;right:20px;background:rgba(0,0,0,.6);border:1px solid #334155;border-radius:8px;color:#fff;font-family:'Courier New',monospace;font-size:14px;padding:8px 16px;cursor:pointer}
-#cam-manual{position:absolute;bottom:20px;left:16px;right:16px;display:flex;gap:8px}
+#cam-manual{position:absolute;bottom:130px;left:16px;right:16px;display:flex;gap:8px}
 #cam-manual input{flex:1;background:rgba(0,0,0,.7);border:2px solid #334155;border-radius:8px;color:#fff;font-family:'Courier New',monospace;font-size:18px;font-weight:900;padding:10px;text-align:center}
 #cam-manual button{background:#1e3a5f;border:2px solid #334155;border-radius:8px;color:#fff;font-family:'Courier New',monospace;font-size:14px;padding:10px 14px;cursor:pointer;white-space:nowrap}
 
@@ -611,7 +612,13 @@ function openCamera(mode,label){
         }catch(_){}
         const v=document.getElementById('cam-video');
         v.srcObject=stream;
-        v.onloadedmetadata=()=>{v.play();startDecode()};
+        let _loopStarted=false;
+        function _tryStart(){if(_loopStarted||v.videoWidth===0)return;_loopStarted=true;v.play().catch(()=>{});startDecode();}
+        v.onloadedmetadata=_tryStart;
+        v.addEventListener('loadeddata',_tryStart);
+        v.addEventListener('canplay',_tryStart);
+        setTimeout(()=>{if(!_loopStarted&&v.readyState>=2)_tryStart();},800);
+        v.play().catch(()=>{});
       })
       .catch(()=>{}); // fails gracefully — user can type manually
   }
@@ -628,19 +635,12 @@ function closeCamera(){
 // Decoder instances — created once per session, not per frame
 let _nativeDet=null, _zxReader=null;
 (function initDecoders(){
-  // Native BarcodeDetector (Chrome 83+, Android Chrome, Samsung Browser)
   if(window.BarcodeDetector){
-    // getSupportedFormats is async — create with all commonly-available formats
-    _nativeDet=new BarcodeDetector({formats:[
-      'qr_code','code_128','code_39','code_93','ean_13','ean_8',
-      'itf','data_matrix','aztec','pdf_417','upc_a','upc_e'
-    ]});
+    BarcodeDetector.getSupportedFormats().then(fmts=>{
+      try{_nativeDet=new BarcodeDetector({formats:fmts});}catch(e){console.warn('BD ctor failed:',e);}
+    }).catch(()=>{});
   }
-  // ZXing multi-format reader (QR + all 1D) — fallback for Safari/Firefox and any format
-  // BrowserMultiFormatReader is available in the ZXing UMD build as window.ZXing
-  if(window.ZXing){
-    try{_zxReader=new ZXing.BrowserMultiFormatReader();}catch(_){}
-  }
+  if(window.ZXing){try{_zxReader=new ZXing.BrowserMultiFormatReader();}catch(_){}}
 })();
 
 function startDecode(){
@@ -663,10 +663,12 @@ function startDecode(){
       // ── Path 2: jsQR — fast synchronous QR, works on iOS/WebKit (no BarcodeDetector)
       // ── Path 3: ZXing — handles 1D barcodes (Code128 etc) synchronously, must use try/catch
       const now=Date.now();
-      if(now-lastZxTime>100){
+      if(now-lastZxTime>50){
         lastZxTime=now;
-        c.width=v.videoWidth;c.height=v.videoHeight;
-        ctx.drawImage(v,0,0);
+        const bandH=Math.max(1,Math.round(v.videoHeight*0.18));
+        const sy=Math.round(v.videoHeight*0.41);
+        c.width=v.videoWidth;c.height=bandH;
+        ctx.drawImage(v,0,sy,v.videoWidth,bandH,0,0,v.videoWidth,bandH);
         if(window.jsQR){
           const imgData=ctx.getImageData(0,0,c.width,c.height);
           const qr=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'dontInvert'});
@@ -676,7 +678,7 @@ function startDecode(){
           try{
             const r=_zxReader.decodeFromCanvas(c);
             if(r&&scanning){onScan(r.getText());return;}
-          }catch(_){} // NotFoundException thrown when nothing found — expected, must NOT propagate
+          }catch(_){}
         }
       }
     }

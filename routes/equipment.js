@@ -817,6 +817,93 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     }
   });
 
+  // ── Look up permanent history for ANY part serial (carb, seal, airbox, exhaust)
+  // Usage: /api/partHistory?serial=CARB001
+  // Returns: which engine it is attached to (current or historical via DIR contacts),
+  // and that engine's full draw + assignment history.
+  router.get('/api/partHistory', async (req, res) => {
+    try {
+      const { serial } = req.query;
+      if (!serial) return res.json({ success: false, error: 'serial required' });
+      const s = serial.trim().toUpperCase();
+
+      // 1. Find current engine that has this part number in any column
+      const currentRes = await pool.query(`
+        SELECT engine_serial, draw_number, seal_number, carb_number,
+               airbox_number, exhaust_number, class, active, deleted_at,
+               CASE
+                 WHEN UPPER(seal_number)    = $1 THEN 'seal'
+                 WHEN UPPER(carb_number)    = $1 THEN 'carb'
+                 WHEN UPPER(airbox_number)  = $1 THEN 'airbox'
+                 WHEN UPPER(exhaust_number) = $1 THEN 'exhaust'
+               END AS part_type
+        FROM pool_engines
+        WHERE UPPER(seal_number)    = $1
+           OR UPPER(carb_number)    = $1
+           OR UPPER(airbox_number)  = $1
+           OR UPPER(exhaust_number) = $1
+      `, [s]);
+
+      // 2. Find any DIR contact records where this part was recorded (part swaps / inspections)
+      const dirPartRes = await pool.query(`
+        SELECT dec.contact_id, dec.engine_serial, dec.contact_date, dec.contact_type,
+               dec.outcome, dec.fault_category, dec.description, dec.dir_notes,
+               dec.person_name, dec.part_type, dec.part_number
+        FROM dir_engine_contacts dec
+        WHERE UPPER(dec.part_number) = $1
+        ORDER BY dec.contact_date ASC
+      `, [s]);
+
+      // 3. Find any direct scan log entries for this serial (e.g. if it was individually barcode-scanned)
+      const scanRes = await pool.query(`
+        SELECT log_id, scan_timestamp, scan_type, barcode_scanned,
+               entry_id, driver_name, equipment_serial, scanned_by, action_result, notes, event_id, race_class
+        FROM equipment_scan_log
+        WHERE UPPER(barcode_scanned) = $1 OR UPPER(equipment_serial) = $1
+        ORDER BY scan_timestamp ASC
+      `, [s]);
+
+      // Collect all engine serials associated with this part (current + historical)
+      const engineSerials = [
+        ...new Set([
+          ...currentRes.rows.map(r => r.engine_serial?.toUpperCase()).filter(Boolean),
+          ...dirPartRes.rows.map(r => r.engine_serial?.toUpperCase()).filter(Boolean),
+        ])
+      ];
+
+      // 4. For each engine serial found, fetch its full draw history
+      let draws = [];
+      if (engineSerials.length) {
+        const drawsRes = await pool.query(`
+          SELECT eed.draw_id, eed.entry_id, eed.engine_serial, eed.draw_number, eed.day_label,
+                 eed.assigned_at, eed.returned, eed.returned_at, eed.engine_issue, eed.replaced_by,
+                 d.first_name, d.last_name, d.race_number,
+                 re.race_class, re.event_id,
+                 e.event_name, e.event_date
+          FROM entry_engine_draws eed
+          JOIN race_entries re ON eed.entry_id = re.entry_id
+          JOIN drivers d ON re.driver_id = d.driver_id
+          LEFT JOIN events e ON re.event_id = e.event_id
+          WHERE UPPER(eed.engine_serial) = ANY($1::text[])
+          ORDER BY eed.assigned_at ASC
+        `, [engineSerials]);
+        draws = drawsRes.rows;
+      }
+
+      res.json({
+        success: true,
+        serial: s,
+        current_engines: currentRes.rows,    // engine records that currently carry this part
+        dir_contacts:    dirPartRes.rows,     // historical DIR contacts mentioning this part
+        scan_log:        scanRes.rows,        // any direct barcode scans of this serial
+        engine_draws:    draws,               // full draw/return history for associated engines
+      });
+    } catch (err) {
+      console.error('partHistory error:', err);
+      res.json({ success: false, error: err.message });
+    }
+  });
+
   // Get engine history
   router.get('/api/engineHistory', async (req, res) => {
     try {
