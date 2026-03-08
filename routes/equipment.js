@@ -50,7 +50,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       // Find entry with this ticket (supports both single ref and JSON array stored refs)
       const result = await pool.query(`
-        SELECT re.entry_id, re.driver_id, re.race_class, re.engine_serial,
+        SELECT re.entry_id, re.driver_id, re.race_class, re.engine_serial, re.event_id,
                d.first_name, d.last_name, d.race_number, d.transponder_number
         FROM race_entries re
         JOIN drivers d ON re.driver_id = d.driver_id
@@ -87,7 +87,8 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
           last_name: entry.last_name,
           race_class: entry.race_class,
           race_number: entry.race_number,
-          transponder_number: entry.transponder_number
+          transponder_number: entry.transponder_number,
+          event_id: entry.event_id || null
         },
         ticket: {
           barcode: barcodeUpper,
