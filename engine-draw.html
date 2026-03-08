@@ -436,6 +436,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
     <div class="done-engine" id="doneSerial">—</div>
     <div class="done-detail" id="doneSeal"></div>
   </div>
+  <div class="warn-banner" id="doneWarn"></div>
   <button class="next-btn" onclick="nextDriver()">NEXT DRIVER →</button>
 </div>
 
@@ -580,10 +581,10 @@ async function submitPin() {
       body: JSON.stringify({ pin: pinVal })
     });
     const d = await r.json();
-    if (d.success && (d.scanner || d.scanner_id)) {
+    if (d.success && d.scanner_id) {
       _snd('ok');
-      currentScanner = d.scanner || { name: d.scanner_name, id: d.scanner_id };
-      document.getElementById('stationBadge').textContent = `🎯 ${currentScanner.name || currentScanner.scanner_name || 'DRAW STATION'}`;
+      currentScanner = { name: d.scanner_name, id: d.scanner_id };
+      document.getElementById('stationBadge').textContent = `🎯 ${currentScanner.name || 'DRAW STATION'}`;
       showScreen('s-scan');
       await preloadEngines();
     } else {
@@ -1024,16 +1025,15 @@ async function doLookup() {
     const entries = d.entries || [];
     if (!entries.length) { _snd('err'); lookupErr('No entry data returned'); return; }
 
-    // If driver has entries in multiple classes, let operator pick
-    const uniqueClasses = [...new Set(entries.map(e => e.race_class))];
-    if (uniqueClasses.length > 1) {
+    // If driver has more than one entry, always let operator pick which one
+    if (entries.length > 1) {
       _snd('ok');
       await preloadEngines();
       showEntryPicker(entries);
       return;
     }
 
-    // Single class — use first entry
+    // Single entry — use it
     const entry = entries[0];
     currentDriver = buildDriver(entry);
 
@@ -1168,9 +1168,8 @@ async function confirmDraw() {
   const d = currentDriver;
 
   if (!e.engine_serial) {
-    // Still confirm even without serial — just record by draw number in notes
-    // (assignEngine needs a serial; skip API call, just record locally)
-    showDone(e, d);
+    document.getElementById('cfErr').textContent =
+      '⚠️ Engine Draw #' + e.draw_number + ' has no serial number configured — an admin must add the serial in Engine Management before it can be drawn.';
     return;
   }
 
@@ -1200,7 +1199,7 @@ async function confirmDraw() {
         eng.assigned_driver_name  = d.first_name + ' ' + d.last_name;
         eng.assigned_race_number  = d.race_number;
       }
-      showDone(e, d);
+      showDone(e, d, resp.warning || null);
     } else {
       document.getElementById('cfErr').textContent = resp.error || 'Assignment failed';
       document.getElementById('cfConfirmBtn').disabled = false;
@@ -1216,7 +1215,7 @@ async function confirmDraw() {
 // ─────────────────────────────────────────────────
 // DONE SCREEN
 // ─────────────────────────────────────────────────
-function showDone(engine, driver) {
+function showDone(engine, driver, warning) {
   _snd('confirm');
   document.getElementById('doneDriver').textContent = `#${driver.race_number} ${driver.first_name} ${driver.last_name}`;
   document.getElementById('doneClass').textContent  = driver.race_class || '';
@@ -1225,6 +1224,9 @@ function showDone(engine, driver) {
   if (engine.seal_number)    sealParts.push('SEAL ' + engine.seal_number);
   if (engine.carb_number)    sealParts.push('CARB ' + engine.carb_number);
   document.getElementById('doneSeal').textContent = sealParts.join('  ·  ');
+  const warnEl = document.getElementById('doneWarn');
+  if (warning) { warnEl.textContent = warning; warnEl.classList.add('show'); }
+  else { warnEl.textContent = ''; warnEl.classList.remove('show'); }
   showScreen('s-done');
 }
 
@@ -1241,6 +1243,8 @@ function nextDriver() {
   document.getElementById('lookupErr').textContent = '';
   document.getElementById('warnBanner').textContent = '';
   document.getElementById('warnBanner').classList.remove('show');
+  document.getElementById('doneWarn').textContent = '';
+  document.getElementById('doneWarn').classList.remove('show');
   document.getElementById('cfConfirmBtn').textContent = '✅ CONFIRM DRAW';
   showScreen('s-scan');
 }

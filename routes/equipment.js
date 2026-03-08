@@ -607,7 +607,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         JOIN drivers d ON re.driver_id = d.driver_id
         LEFT JOIN events e ON re.event_id = e.event_id
         WHERE d.race_number = $1
-          AND re.payment_status IN ('Completed','completed','Confirmed','confirmed','paid')
+          AND LOWER(re.payment_status) IN ('completed','confirmed','paid')
           AND re.entry_status NOT IN ('cancelled','canceled')
         ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
       `, [raceNumber]);
@@ -827,7 +827,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         JOIN drivers d ON re.driver_id = d.driver_id
         WHERE re.event_id = $1
           AND re.engine_serial IS NOT NULL
-          AND re.engine_returned = false
+          AND re.engine_returned IS NOT TRUE
         ORDER BY re.engine_assigned_at DESC
       `, [event_id]);
 
