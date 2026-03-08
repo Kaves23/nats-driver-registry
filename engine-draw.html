@@ -219,6 +219,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 .top-logo-bar img{height:32px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(56,189,248,.35))}
 .screen{padding-top:70px}
 #s-pin{padding-top:54px}
+/* ── EVENT PICKER ─────────────────────────── */
+#s-event{justify-content:flex-start;gap:14px;overflow:hidden}
+.event-picker-title{font-size:10px;letter-spacing:3px;color:var(--dim);text-align:center;margin-top:4px}
+.event-picker-sub{font-size:19px;font-weight:900;text-align:center;letter-spacing:2px}
+.event-picker-err{color:var(--red);font-size:12px;letter-spacing:1px;text-align:center;min-height:16px}
+.event-list{flex:1;min-height:0;overflow-y:scroll;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-bottom:8px}
+.event-card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;transition:transform .1s,border-color .15s}
+.event-card:active{transform:scale(.97)}
+.event-card.is-today{border-color:var(--green)}
+.event-card.is-upcoming{border-color:var(--blue)}
+.event-card.is-past{border-color:var(--line);opacity:.75}
+.event-card-name{font-size:18px;font-weight:900;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-card-date{font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:.5px}
+.event-card-loc{font-size:11px;color:var(--blue);margin-top:2px;letter-spacing:.5px}
+.event-card-badge{display:inline-block;margin-top:6px;padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:1px}
+.event-card.is-today .event-card-badge{background:#052e16;color:var(--green);border:1px solid var(--green)}
+.event-card.is-upcoming .event-card-badge{background:#0c1a2e;color:var(--blue);border:1px solid var(--blue)}
+.event-card.is-past .event-card-badge{background:#1a1008;color:var(--amber);border:1px solid var(--amber)}
+.event-scan-bar{display:flex;align-items:center;justify-content:space-between;padding:2px 0;flex-shrink:0}
+.event-name-badge{font-size:10px;letter-spacing:1px;color:var(--green);text-align:center;margin-bottom:2px;min-height:14px}
+.change-event-btn{background:none;border:1px solid var(--line);border-radius:6px;color:var(--dim);font-size:10px;font-family:inherit;padding:4px 8px;cursor:pointer;letter-spacing:1px}
+.change-event-btn:active{border-color:var(--blue);color:var(--blue)}
 </style>
 </head>
 <body>
@@ -258,9 +280,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
   <div class="pin-err" id="pinErr"></div>
 </div>
 
+<!-- ── EVENT PICKER SCREEN ──────────────────── -->
+<div id="s-event" class="screen">
+  <div class="event-picker-title">DRAW STATION</div>
+  <div class="event-picker-sub">SELECT EVENT</div>
+  <div class="event-picker-err" id="eventPickerErr"></div>
+  <div class="event-list" id="eventList">
+    <div style="text-align:center;color:var(--dim);padding:40px 0;font-size:12px;letter-spacing:1px">LOADING EVENTS…</div>
+  </div>
+</div>
+
 <!-- ── SCAN DRIVER SCREEN ─────────────────── -->
 <div id="s-scan" class="screen">
-  <div class="station-badge" id="stationBadge">🎯 DRAW STATION</div>
+  <div class="event-scan-bar">
+    <div class="station-badge" id="stationBadge">🎯 DRAW STATION</div>
+    <button class="change-event-btn" onclick="loadEventPicker()">⇄ EVENT</button>
+  </div>
+  <div class="event-name-badge" id="eventNameBadge"></div>
   <div class="scan-form">
     <div class="section-label">ENTER RACE NUMBER OR SCAN TICKET</div>
     <div class="input-row">
@@ -353,17 +389,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
     <!-- Step badge -->
     <div style="text-align:center;">
       <div style="font-size:10px;letter-spacing:3px;color:var(--dim);margin-bottom:4px">STEP 2 OF 2</div>
-      <div style="font-size:20px;font-weight:900;">SCAN ENGINE SEAL</div>
+      <div style="font-size:20px;font-weight:900;">SCAN SEAL OR ENGINE #</div>
       <div style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 14px;border:1px solid var(--amber);border-radius:20px;">
         <span style="font-size:14px">▬▬▬</span>
-        <span style="font-size:11px;letter-spacing:1px;color:var(--amber)">BARCODE — metal seal on engine</span>
+        <span style="font-size:11px;letter-spacing:1px;color:var(--amber)">Seal barcode OR engine serial number</span>
       </div>
     </div>
     <!-- Big scan button -->
     <button onclick="startCam('seal-confirm')" id="sealCamBtn"
       style="align-self:center;width:130px;height:130px;border-radius:50%;border:3px solid var(--blue);background:var(--card);color:var(--blue);font-size:52px;cursor:pointer;transition:background .15s,transform .1s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
       📷
-      <span style="font-size:10px;letter-spacing:1px;color:var(--dim)">SCAN SEAL</span>
+      <span style="font-size:10px;letter-spacing:1px;color:var(--dim)">SCAN</span>
     </button>
     <!-- Scanned result display (hidden until scan) -->
     <div id="sealScanResult" style="display:none;text-align:center;padding:10px 14px;border-radius:10px;border:2px solid var(--line);background:var(--card);">
@@ -485,10 +521,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Courie
 // STATE
 // ─────────────────────────────────────────────────
 let currentScanner = null; // set after PIN
+let currentEvent   = null; // { event_id, event_name } — selected at draw station startup
 let currentDriver  = null; // { driver_id, entry_id, first_name, last_name, race_number, race_class, engine_serial, event_id }
 let allEngines     = [];   // all pool engines from API (incl. assigned_driver_name)
 let classEngines   = [];   // engines for current driver's class
 let selectedEngine = null; // the pool engine record the driver picked
+let _eventsList    = [];   // populated in loadEventPicker
 
 // ZXing / BarcodeDetector
 let _nativeDet  = null;
@@ -585,8 +623,7 @@ async function submitPin() {
       _snd('ok');
       currentScanner = { name: d.scanner_name, id: d.scanner_id };
       document.getElementById('stationBadge').textContent = `🎯 ${currentScanner.name || 'DRAW STATION'}`;
-      showScreen('s-scan');
-      await preloadEngines();
+      await loadEventPicker();
     } else {
       _snd('err');
       document.getElementById('pinErr').textContent = 'INCORRECT PIN — TRY AGAIN';
@@ -608,6 +645,68 @@ async function preloadEngines() {
     const d = await r.json();
     if (d.success) allEngines = d.engines || [];
   } catch(_) { allEngines = []; }
+}
+
+// ─────────────────────────────────────────────────
+// EVENT PICKER
+// ─────────────────────────────────────────────────
+async function loadEventPicker() {
+  document.getElementById('eventPickerErr').textContent = '';
+  document.getElementById('eventList').innerHTML =
+    '<div style="text-align:center;color:var(--dim);padding:40px 0;font-size:12px;letter-spacing:1px">LOADING…</div>';
+  showScreen('s-event');
+  try {
+    const r = await fetch('/api/getAllEvents');
+    const data = await r.json();
+    if (!data.success || !data.events || !data.events.length) {
+      document.getElementById('eventPickerErr').textContent = 'No events found';
+      document.getElementById('eventList').innerHTML = '';
+      return;
+    }
+    // Show events from last 14 days + all future
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 14);
+    _eventsList = data.events
+      .filter(e => !e.event_date || new Date(e.event_date) >= cutoff)
+      .sort((a, b) => (new Date(b.event_date||0)) - (new Date(a.event_date||0)));
+    if (!_eventsList.length) {
+      document.getElementById('eventPickerErr').textContent = 'No recent or upcoming events found';
+      document.getElementById('eventList').innerHTML = '';
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('eventList').innerHTML = _eventsList.map((ev, i) => {
+      const dStr = ev.event_date ? String(ev.event_date).slice(0, 10) : null;
+      const isToday = dStr === today;
+      const isPast  = dStr && dStr < today;
+      const cls     = isToday ? 'is-today' : isPast ? 'is-past' : 'is-upcoming';
+      const badge   = isToday ? '🏁 TODAY' : isPast ? 'RECENT' : 'UPCOMING';
+      const dateLabel = dStr
+        ? new Date(dStr + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '—';
+      const loc   = ev.location ? `📍 ${ev.location}` : '';
+      const count = ev.registration_count > 0 ? ` · ${ev.registration_count} entries` : '';
+      const name  = (ev.event_name || ev.event_id || '').replace(/</g,'&lt;');
+      return `<div class="event-card ${cls}" onclick="selectEvent(${i})">
+        <div class="event-card-name">${name}</div>
+        <div class="event-card-date">${dateLabel}${count}</div>
+        ${loc ? `<div class="event-card-loc">${loc}</div>` : ''}
+        <div class="event-card-badge">${badge}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('eventPickerErr').textContent = 'Failed to load events — check connection';
+    document.getElementById('eventList').innerHTML = '';
+  }
+}
+
+async function selectEvent(idx) {
+  _snd('select');
+  const ev = _eventsList[idx];
+  currentEvent = { event_id: ev.event_id, event_name: ev.event_name || ev.event_id };
+  document.getElementById('stationBadge').textContent = `🎯 ${currentScanner ? (currentScanner.name || 'DRAW STATION') : 'DRAW STATION'}`;
+  document.getElementById('eventNameBadge').textContent = currentEvent.event_name;
+  await preloadEngines();
+  showScreen('s-scan');
 }
 
 // ─────────────────────────────────────────────────
@@ -656,7 +755,7 @@ let _camContext = 'driver'; // 'driver' | 'seal-confirm' | 'peri-scan'
 
 const CAM_HINTS = {
   driver:         { main: 'SCAN TICKET',        sub: '\ud83d\udd32 QR code \u2014 or ticket barcode' },
-  'seal-confirm': { main: 'SCAN ENGINE SEAL',   sub: '\u25ac\u25ac\u25ac Barcode \u2014 metal seal on engine' },
+  'seal-confirm': { main: 'SCAN SEAL OR ENGINE #', sub: '\u25ac\u25ac\u25ac Seal barcode OR engine serial number' },
   'peri-scan':    { main: 'SCAN COMPONENT',     sub: '\u25ac\u25ac\u25ac Linear barcode on part' },
 };
 
@@ -842,6 +941,8 @@ function handleBarcode(raw) {
 }
 
 // Lookup driver by ticket barcode (ENG####, entry ID, etc)
+// We resolve the race number from the ticket, then delegate to doLookup()
+// so both paths share identical flow: entry picker, engine_returned guard, scan_log fallback.
 async function doLookupByTicket(barcode) {
   lookupErr('');
   const goBtn = document.querySelector('#s-scan .go-btn');
@@ -851,15 +952,15 @@ async function doLookupByTicket(barcode) {
     const d = await r.json();
     if (d.success && (d.driver || d.entry)) {
       const entry = d.driver || d.entry;
-      // engine_serial lives in d.ticket on this API — merge it into entry
-      if (!entry.engine_serial && d.ticket && d.ticket.engine_serial) {
-        entry.engine_serial = d.ticket.engine_serial;
+      const raceNum = String(entry.race_number || '').trim();
+      if (raceNum) {
+        // Delegate to the standard race-number lookup — same flow, same guards
+        setNumDisplay(raceNum);
+        document.getElementById('raceNumInput').value = raceNum;
+        await doLookup();
+      } else {
+        lookupErr('Ticket found but no race number — see admin');
       }
-      setNumDisplay(String(entry.race_number || barcode));
-      document.getElementById('raceNumInput').value = entry.race_number || barcode;
-      await preloadEngines();
-      currentDriver = buildDriver(entry);
-      openDraw();
     } else {
       // Fall back: extract digits and try race number
       const numMatch = barcode.match(/\d+/);
@@ -926,8 +1027,8 @@ function verifySealOrSerial(input) {
 
   // Search ALL engines (not just this class) for seal_number OR engine_serial match
   const match = allEngines.find(e =>
-    (e.seal_number   && e.seal_number.toUpperCase()   === upper) ||
-    (e.engine_serial && e.engine_serial.toUpperCase() === upper)
+    (e.seal_number   && e.seal_number.toUpperCase().trim()   === upper) ||
+    (e.engine_serial && e.engine_serial.toUpperCase().trim() === upper)
   );
 
   if (!match) {
@@ -1017,7 +1118,8 @@ async function doLookup() {
   document.querySelector('#s-scan .go-btn').disabled = true;
   document.querySelector('#s-scan .go-btn').textContent = 'LOOKING UP…';
   try {
-    const r = await fetch(`/api/lookupDriverByNumber?raceNumber=${encodeURIComponent(num)}`);
+    const eid = currentEvent ? `&event_id=${encodeURIComponent(currentEvent.event_id)}` : '';
+    const r = await fetch(`/api/lookupDriverByNumber?raceNumber=${encodeURIComponent(num)}${eid}`);
     const d = await r.json();
     if (!d.success) { _snd('err'); lookupErr(d.error || 'Driver not found'); return; }
 

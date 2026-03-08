@@ -50,7 +50,8 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       // Find entry with this ticket (supports both single ref and JSON array stored refs)
       const result = await pool.query(`
-        SELECT re.entry_id, re.driver_id, re.race_class, re.engine_serial, re.event_id,
+        SELECT re.entry_id, re.driver_id, re.race_class, re.engine_serial,
+               re.engine_returned, re.event_id,
                d.first_name, d.last_name, d.race_number, d.transponder_number
         FROM race_entries re
         JOIN drivers d ON re.driver_id = d.driver_id
@@ -93,7 +94,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         ticket: {
           barcode: barcodeUpper,
           type: ticketType,
-          engine_serial: entry.engine_serial
+          engine_serial: (entry.engine_serial && entry.engine_returned !== true) ? entry.engine_serial : null
         }
       });
     } catch (err) {
@@ -593,8 +594,11 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
   // Lookup driver by race number — returns all confirmed entries with equipment
   router.get('/api/lookupDriverByNumber', async (req, res) => {
     try {
-      const { raceNumber } = req.query;
+      const { raceNumber, event_id } = req.query;
       if (!raceNumber) return res.json({ success: false, error: 'Race number required' });
+
+      const params = [raceNumber];
+      if (event_id) params.push(event_id);
 
       const result = await pool.query(`
         SELECT re.entry_id, re.driver_id, re.race_class,
@@ -608,10 +612,11 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         JOIN drivers d ON re.driver_id = d.driver_id
         LEFT JOIN events e ON re.event_id = e.event_id
         WHERE d.race_number = $1
+          ${event_id ? 'AND re.event_id = $2' : ''}
           AND LOWER(re.payment_status) IN ('completed','confirmed','paid')
           AND re.entry_status NOT IN ('cancelled','canceled')
         ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
-      `, [raceNumber]);
+      `, params);
 
       if (result.rows.length === 0) {
         return res.json({ success: false, error: 'No confirmed entry found for this race number' });
