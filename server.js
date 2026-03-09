@@ -4923,11 +4923,11 @@ app.post('/api/registerFreeRaceEntry', async (req, res) => {
     };
 
     const ticketEngineRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('engine'))
-      ? genRefs('engine', isBothDays ? 3 : 1) : null;
+      ? genRefs('engine', 1) : null;
     const ticketTyresRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('tyre'))
-      ? genRefs('tyres', isBothDays ? 2 : 1) : null;
+      ? genRefs('tyres', 1) : null;
     const ticketTransponderRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('transponder'))
-      ? genRefs('transponder', isBothDays ? 2 : 1) : null;
+      ? genRefs('transponder', 1) : null;
     const ticketFuelRef = selectedItemsArray.some(item => item && item.toLowerCase().includes('fuel'))
       ? genRefs('fuel', 1) : null;
     
@@ -6554,6 +6554,7 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
       driver_id,
       race_class,
       entry_items,
+      race_days,
       payment_status,
       entry_status,
       amount_paid,
@@ -6597,12 +6598,25 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
     const hasTyres = entry_items?.some(item => item.toLowerCase().includes('tyre'));
     const hasTransponder = entry_items?.some(item => item.toLowerCase().includes('transponder'));
     const hasFuel = entry_items?.some(item => item.toLowerCase().includes('fuel'));
-    
-    const ticketEngineRef = hasEngine ? generateUniqueTicketRef('engine', driver_id, event_id) : null;
-    const ticketTyresRef = hasTyres ? generateUniqueTicketRef('tyres', driver_id, event_id) : null;
-    const ticketTransponderRef = hasTransponder ? generateUniqueTicketRef('transponder', driver_id, event_id) : null;
-    const ticketFuelRef = hasFuel ? generateUniqueTicketRef('fuel', driver_id, event_id) : null;
-    
+
+    // Generate multiple ticket refs for Both Days entries (same logic as registerFreeRaceEntry)
+    const isBothDays = (race_days === 'Both');
+    const genRefs = (type, n) => {
+      const refs = [];
+      for (let i = 0; i < n; i++) refs.push(generateUniqueTicketRef(type, driver_id, event_id));
+      return n === 1 ? refs[0] : JSON.stringify(refs);
+    };
+
+    const ticketEngineRef      = hasEngine      ? genRefs('engine',      1) : null;
+    const ticketTyresRef       = hasTyres       ? genRefs('tyres',       1) : null;
+    const ticketTransponderRef = hasTransponder ? genRefs('transponder', 1) : null;
+    const ticketFuelRef        = hasFuel        ? genRefs('fuel', 1) : null;
+
+    console.log(`📅 Race days: ${race_days || 'Saturday'} | isBothDays: ${isBothDays}`);
+    if (hasEngine)      console.log(`  Engine refs: ${ticketEngineRef}`);
+    if (hasTyres)       console.log(`  Tyres refs:  ${ticketTyresRef}`);
+    if (hasTransponder) console.log(`  TX refs:     ${ticketTransponderRef}`);
+
     // Insert entry
     await pool.query(
       `INSERT INTO race_entries (
@@ -6949,7 +6963,7 @@ app.post('/api/sendRaceTicketsEmail', async (req, res) => {
 // Admin: Update entry items and resend tickets (for fixing old entries)
 app.post('/api/updateAndResendTickets', async (req, res) => {
   try {
-    const { race_entry_id, entry_items, amount_paid } = req.body;
+    const { race_entry_id, entry_items, amount_paid, race_days } = req.body;
 
     if (!race_entry_id || !entry_items) {
       throw new Error('Missing race_entry_id or entry_items');
@@ -6983,24 +6997,33 @@ app.post('/api/updateAndResendTickets', async (req, res) => {
     const hasTransponder = entry_items.some(item => item.toLowerCase().includes('transponder'));
     const hasFuel = entry_items.some(item => item.toLowerCase().includes('fuel'));
     
-    // Generate ticket references for missing items
+    // Generate ticket references for missing items (respects race_days for multi-ref generation)
+    const isBothDays = (race_days === 'Both');
+    const genRefs = (type, n) => {
+      const refs = [];
+      for (let i = 0; i < n; i++) refs.push(generateUniqueTicketRef(type, entry.driver_id, entry.event_id));
+      return n === 1 ? refs[0] : JSON.stringify(refs);
+    };
+
     let ticketEngineRef = entry.ticket_engine_ref;
     let ticketTyresRef = entry.ticket_tyres_ref;
     let ticketTransponderRef = entry.ticket_transponder_ref;
     let ticketFuelRef = entry.ticket_fuel_ref;
     
     if (hasEngine && !ticketEngineRef) {
-      ticketEngineRef = generateUniqueTicketRef('engine', entry.driver_id, entry.event_id);
+      ticketEngineRef = genRefs('engine', 1);
     }
     if (hasTyres && !ticketTyresRef) {
-      ticketTyresRef = generateUniqueTicketRef('tyres', entry.driver_id, entry.event_id);
+      ticketTyresRef = genRefs('tyres', 1);
     }
     if (hasTransponder && !ticketTransponderRef) {
-      ticketTransponderRef = generateUniqueTicketRef('transponder', entry.driver_id, entry.event_id);
+      ticketTransponderRef = genRefs('transponder', 1);
     }
     if (hasFuel && !ticketFuelRef) {
-      ticketFuelRef = generateUniqueTicketRef('fuel', entry.driver_id, entry.event_id);
+      ticketFuelRef = genRefs('fuel', 1);
     }
+    
+    console.log(`📅 Race days: ${race_days || 'single'} | isBothDays: ${isBothDays}`);
     
     // Update database with new entry_items, amount, and ticket refs
     await pool.query(
@@ -11369,6 +11392,7 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
       SELECT re.entry_id, re.driver_id, re.race_class,
              CASE WHEN re.engine_returned = true THEN NULL ELSE re.engine_serial END AS engine_serial,
              re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
+             re.tyre_sets,
              re.ticket_engine_ref, re.ticket_tyres_ref, re.ticket_transponder_ref, re.ticket_fuel_ref,
              re.entry_items,
              d.first_name, d.last_name, d.race_number,
@@ -11425,6 +11449,14 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
       }
 
       const tyresOk = !!(fl && fr && rl && rr);
+      // Build tyre_sets array and flat all_tyre_serials for multi-set verification
+      let tyreSets = [];
+      try { tyreSets = Array.isArray(row.tyre_sets) ? row.tyre_sets : (row.tyre_sets ? JSON.parse(row.tyre_sets) : []); } catch(_) {}
+      let allTyreSerials = tyreSets.flatMap(s => [s.fl, s.fr, s.rl, s.rr].filter(Boolean).map(v => v.toUpperCase()));
+      // Fall back to individual column values if tyre_sets is empty
+      if (allTyreSerials.length === 0 && tyresOk) {
+        allTyreSerials = [fl, fr, rl, rr].filter(Boolean).map(v => v.toUpperCase());
+      }
       entries.push({
         driver_id:   row.driver_id,
         entry_id:    row.entry_id,
@@ -11436,8 +11468,10 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
         event_date:  row.event_date  || null,
         event_id:    row.event_id    || null,
         engine_serial:    engineSerial,
-        registered_tyres: tyresOk,
+        registered_tyres: tyresOk || allTyreSerials.length > 0,
         tyres: tyresOk ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null,
+        tyre_sets:       tyreSets,
+        all_tyre_serials: allTyreSerials,
         ticket_engine_ref:      row.ticket_engine_ref      || null,
         ticket_tyres_ref:       row.ticket_tyres_ref       || null,
         ticket_transponder_ref: row.ticket_transponder_ref || null,
@@ -11464,6 +11498,133 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
     });
   } catch (err) {
     console.error('Error looking up driver:', err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Log a driver check-in / engine verify / tyre verify event from check.html
+app.post('/api/logDriverCheck', async (req, res) => {
+  try {
+    const { driver_id, entry_id, driver_name, race_class, engine_serial, scan_type, action_result, notes, scanned_by } = req.body;
+    if (!driver_id) return res.json({ success: false, error: 'driver_id required' });
+    await logEquipmentScan({
+      scan_type: scan_type || 'driver_check',
+      entry_id:         entry_id   || null,
+      driver_id:        driver_id,
+      driver_name:      driver_name || null,
+      race_class:       race_class  || null,
+      equipment_serial: engine_serial || null,
+      scanned_by:       scanned_by || 'Check Station',
+      action_result:    action_result || 'success',
+      notes:            notes || null
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('logDriverCheck error:', err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Look up a race entry by tyre ticket barcode (for tyre-station.html)
+app.get('/api/lookupTicket', async (req, res) => {
+  try {
+    const { barcode } = req.query;
+    if (!barcode) return res.json({ success: false, error: 'barcode required' });
+    const b = barcode.toUpperCase().trim();
+    const result = await pool.query(`
+      SELECT re.entry_id, re.driver_id, re.race_class,
+             re.engine_serial, re.tyre_front_left, re.tyre_front_right,
+             re.tyre_rear_left, re.tyre_rear_right, re.tyre_sets,
+             re.ticket_tyres_ref, re.event_id,
+             d.first_name, d.last_name, d.race_number,
+             e.event_name, e.event_date
+      FROM race_entries re
+      JOIN drivers d ON re.driver_id = d.driver_id
+      LEFT JOIN events e ON re.event_id = e.event_id
+      WHERE UPPER(re.ticket_tyres_ref) = $1
+        AND re.entry_status NOT IN ('cancelled','canceled')
+      ORDER BY e.event_date DESC NULLS LAST LIMIT 1
+    `, [b]);
+    if (result.rows.length === 0) return res.json({ success: false, error: 'Tyre ticket not found' });
+    const row = result.rows[0];
+    let tyreSets = [];
+    try { tyreSets = Array.isArray(row.tyre_sets) ? row.tyre_sets : (row.tyre_sets ? JSON.parse(row.tyre_sets) : []); } catch(_) {}
+    res.json({
+      success: true,
+      driver: {
+        driver_id:    row.driver_id,
+        entry_id:     row.entry_id,
+        first_name:   row.first_name,
+        last_name:    row.last_name,
+        race_number:  row.race_number,
+        race_class:   row.race_class,
+        event_name:   row.event_name   || null,
+        event_date:   row.event_date   || null,
+        event_id:     row.event_id     || null,
+        engine_serial: row.engine_serial || null,
+        ticket_tyres_ref: row.ticket_tyres_ref || null,
+        tyre_sets:    tyreSets,
+        tyres: (row.tyre_front_left && row.tyre_front_right && row.tyre_rear_left && row.tyre_rear_right)
+          ? { front_left: row.tyre_front_left, front_right: row.tyre_front_right,
+              rear_left:  row.tyre_rear_left,  rear_right:  row.tyre_rear_right }
+          : null
+      }
+    });
+  } catch (err) {
+    console.error('lookupTicket error:', err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Save tyre serials for a race entry (called by tyre-station.html)
+app.post('/api/assignTyres', async (req, res) => {
+  try {
+    const { ticketBarcode, tyres, driverId, entryId, scannedBy } = req.body;
+    if (!entryId || !tyres) return res.json({ success: false, error: 'entryId and tyres required' });
+    const { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } = tyres;
+    if (!fl || !fr || !rl || !rr) return res.json({ success: false, error: 'All 4 tyre positions required' });
+
+    const existing = await pool.query(
+      'SELECT tyre_sets, driver_id, event_id, race_class FROM race_entries WHERE entry_id = $1',
+      [entryId]
+    );
+    if (existing.rows.length === 0) return res.json({ success: false, error: 'Entry not found' });
+    const entryRow = existing.rows[0];
+    let currentSets = [];
+    try { currentSets = Array.isArray(entryRow.tyre_sets) ? entryRow.tyre_sets : (entryRow.tyre_sets ? JSON.parse(entryRow.tyre_sets) : []); } catch(_) {}
+
+    const newSet = { fl: fl.toUpperCase(), fr: fr.toUpperCase(), rl: rl.toUpperCase(), rr: rr.toUpperCase() };
+    const updatedSets = [...currentSets, newSet];
+
+    await pool.query(`
+      UPDATE race_entries SET
+        tyre_sets         = $1,
+        tyre_front_left   = $2,
+        tyre_front_right  = $3,
+        tyre_rear_left    = $4,
+        tyre_rear_right   = $5,
+        tyres_registered_at = NOW(),
+        updated_at        = NOW()
+      WHERE entry_id = $6
+    `, [JSON.stringify(updatedSets), newSet.fl, newSet.fr, newSet.rl, newSet.rr, entryId]);
+
+    const serialSummary = `FL:${newSet.fl} FR:${newSet.fr} RL:${newSet.rl} RR:${newSet.rr}`;
+    await logEquipmentScan({
+      scan_type:        'tyres_register',
+      barcode_scanned:  ticketBarcode || null,
+      entry_id:         entryId,
+      driver_id:        driverId || entryRow.driver_id,
+      equipment_serial: serialSummary,
+      scanned_by:       scannedBy || 'Tyre Station',
+      action_result:    'success',
+      notes:            `Set #${updatedSets.length} registered — ${serialSummary}`,
+      event_id:         entryRow.event_id,
+      race_class:       entryRow.race_class
+    });
+
+    res.json({ success: true, setNumber: updatedSets.length, totalSets: updatedSets.length });
+  } catch (err) {
+    console.error('assignTyres error:', err);
     res.json({ success: false, error: err.message });
   }
 });
@@ -11680,6 +11841,28 @@ app.delete('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
     }
     res.json({ success: true });
   } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Admin: Get a single race entry by ID (for pre-populating the Update Entry Items modal)
+app.get('/api/admin/getEntry/:entryId', requireAdmin, async (req, res) => {
+  try {
+    const { entryId } = req.params;
+    const result = await pool.query(
+      `SELECT re.*, d.first_name, d.last_name, c.email AS driver_email
+       FROM race_entries re
+       LEFT JOIN drivers d ON re.driver_id = d.driver_id
+       LEFT JOIN contacts c ON re.driver_id = c.driver_id
+       WHERE re.entry_id = $1`,
+      [entryId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Entry not found' });
+    }
+    res.json({ success: true, entry: result.rows[0] });
+  } catch (err) {
+    console.error('Error fetching entry:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

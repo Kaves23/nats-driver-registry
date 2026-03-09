@@ -2122,6 +2122,15 @@
       </div>
       
       <div class="form-group">
+        <label>Race Days</label>
+        <select id="quickAddRaceDays" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+          <option value="Both">&#127937; Both Days (Saturday &amp; Sunday)</option>
+          <option value="Saturday">Saturday only</option>
+          <option value="Sunday">Sunday only</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label>Payment Status</label>
         <select id="quickAddPaymentStatus" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
           <option value="Completed">Paid (Completed)</option>
@@ -2141,10 +2150,20 @@
   <div class="modal" id="updateEntryItemsModal">
     <div class="modal-content" style="max-width: 600px;">
       <h2>Update Entry Items & Resend Tickets</h2>
-      <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">Select which items this entry should include. Ticket references will be generated for selected items.</p>
+      <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">Select which items this entry should include. New ticket references will be generated only for newly added items.</p>
       
       <input type="hidden" id="updateItemsEntryId">
       <input type="hidden" id="updateItemsDriverEmail">
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="font-weight: 600; color: #1f2937; margin-bottom: 8px; display: block;">Race Days</label>
+        <select id="updateItemRaceDays" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; background: #fff;">
+          <option value="Both">Both Days (Saturday + Sunday)</option>
+          <option value="Saturday">Saturday Only</option>
+          <option value="Sunday">Sunday Only</option>
+        </select>
+        <p style="font-size: 12px; color: #6b7280; margin-top: 4px; margin-bottom: 0;">Used when generating new ticket refs for newly added items only.</p>
+      </div>
       
       <div class="form-group">
         <label style="font-weight: 600; color: #1f2937; margin-bottom: 12px; display: block;">Entry Items</label>
@@ -2156,27 +2175,39 @@
             <input type="number" id="updateItemEntryPrice" placeholder="Price" value="2950" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
           </label>
           
-          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;" id="updateItemEngineLabel">
             <input type="checkbox" id="updateItemEngine" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
-            <span style="flex: 1; font-weight: 600;">Engine Rental</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600;">Engine Rental</div>
+              <div id="updateRefEngine" style="font-size: 11px; color: #6b7280; margin-top: 2px;"></div>
+            </div>
             <input type="number" id="updateItemEnginePrice" placeholder="Price" value="6500" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
           </label>
           
-          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;" id="updateItemTyresLabel">
             <input type="checkbox" id="updateItemTyres" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
-            <span style="flex: 1; font-weight: 600;">Tyres (Optional)</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600;">Tyres (Optional)</div>
+              <div id="updateRefTyres" style="font-size: 11px; color: #6b7280; margin-top: 2px;"></div>
+            </div>
             <input type="number" id="updateItemTyresPrice" placeholder="Price" value="4730" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
           </label>
           
-          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;" id="updateItemTransponderLabel">
             <input type="checkbox" id="updateItemTransponder" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
-            <span style="flex: 1; font-weight: 600;">Rent Transponder</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600;">Rent Transponder</div>
+              <div id="updateRefTransponder" style="font-size: 11px; color: #6b7280; margin-top: 2px;"></div>
+            </div>
             <input type="number" id="updateItemTransponderPrice" placeholder="Price" value="250" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
           </label>
           
-          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;">
+          <label style="display: flex; align-items: center; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; background: #f9fafb;" id="updateItemFuelLabel">
             <input type="checkbox" id="updateItemFuel" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer;">
-            <span style="flex: 1; font-weight: 600;">Controlled Fuel</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600;">Controlled Fuel</div>
+              <div id="updateRefFuel" style="font-size: 11px; color: #6b7280; margin-top: 2px;"></div>
+            </div>
             <input type="number" id="updateItemFuelPrice" placeholder="Price" value="720" style="width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; text-align: right;">
           </label>
         </div>
@@ -3376,26 +3407,112 @@
       }
     }
 
-    function showUpdateEntryItemsModal(entryId, driverEmail) {
+    async function showUpdateEntryItemsModal(entryId, driverEmail) {
       document.getElementById('updateItemsEntryId').value = entryId;
       document.getElementById('updateItemsDriverEmail').value = driverEmail;
+
+      // Reset ref status displays
+      ['updateRefEngine', 'updateRefTyres', 'updateRefTransponder', 'updateRefFuel'].forEach(id => {
+        document.getElementById(id).textContent = 'Loading...';
+      });
+
+      // Default all non-entry checkboxes unchecked, reset borders
+      ['updateItemEngine', 'updateItemTyres', 'updateItemTransponder', 'updateItemFuel'].forEach(id => {
+        document.getElementById(id).checked = false;
+      });
+      ['updateItemEngineLabel', 'updateItemTyresLabel', 'updateItemTransponderLabel', 'updateItemFuelLabel'].forEach(id => {
+        document.getElementById(id).style.borderColor = '#e5e7eb';
+        document.getElementById(id).style.background = '#f9fafb';
+      });
+
+      document.getElementById('updateEntryItemsModal').style.display = 'flex';
+
+      // Fetch entry data to pre-populate
+      try {
+        const resp = await fetch(`/api/admin/getEntry/${entryId}`, {
+          headers: { 'x-admin-token': adminToken }
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          const entry = data.entry;
+          const items = entry.entry_items
+            ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items))
+            : [];
+          const itemContains = (s) => items.some(i => (typeof i === 'string' ? i : (i.name || '')).toLowerCase().includes(s.toLowerCase()));
+
+          // Pre-check based on existing items
+          const checks = {
+            updateItemEngine:      itemContains('engine') || entry.engine == 1,
+            updateItemTyres:       itemContains('tyre'),
+            updateItemTransponder: itemContains('transponder'),
+            updateItemFuel:        itemContains('fuel')
+          };
+          const labels = {
+            updateItemEngine:      'updateItemEngineLabel',
+            updateItemTyres:       'updateItemTyresLabel',
+            updateItemTransponder: 'updateItemTransponderLabel',
+            updateItemFuel:        'updateItemFuelLabel'
+          };
+          Object.entries(checks).forEach(([cbId, checked]) => {
+            document.getElementById(cbId).checked = checked;
+            const lbl = document.getElementById(labels[cbId]);
+            if (checked) {
+              lbl.style.borderColor = '#22c55e';
+              lbl.style.background = '#f0fdf4';
+            } else {
+              lbl.style.borderColor = '#e5e7eb';
+              lbl.style.background = '#f9fafb';
+            }
+          });
+
+          // Show existing ticket refs
+          const refFormatted = (ref) => {
+            if (!ref) return '<span style="color:#ef4444;">Not assigned — will be generated on save</span>';
+            try {
+              const arr = JSON.parse(ref);
+              if (Array.isArray(arr)) return arr.map(r => `<span style="font-family:monospace;color:#059669;">${r}</span>`).join(', ');
+            } catch {}
+            return `<span style="font-family:monospace;color:#059669;">${ref}</span>`;
+          };
+          document.getElementById('updateRefEngine').innerHTML     = refFormatted(entry.ticket_engine_ref);
+          document.getElementById('updateRefTyres').innerHTML      = refFormatted(entry.ticket_tyres_ref);
+          document.getElementById('updateRefTransponder').innerHTML = refFormatted(entry.ticket_transponder_ref);
+          document.getElementById('updateRefFuel').innerHTML       = refFormatted(entry.ticket_fuel_ref);
+        }
+      } catch (e) {
+        console.warn('Could not pre-populate entry items:', e);
+        ['updateRefEngine', 'updateRefTyres', 'updateRefTransponder', 'updateRefFuel'].forEach(id => {
+          document.getElementById(id).textContent = '';
+        });
+      }
       
-      // Add event listeners to checkboxes to update total
+      // Add event listeners to checkboxes to update total and border highlight
       ['updateItemEntry', 'updateItemEngine', 'updateItemTyres', 'updateItemTransponder', 'updateItemFuel'].forEach(id => {
-        document.getElementById(id).addEventListener('change', updateItemsTotal);
+        const el = document.getElementById(id);
+        el.onchange = () => {
+          updateItemsTotal();
+          // Update border colour for items that have a label wrapper
+          const lblId = id + 'Label';
+          const lbl = document.getElementById(lblId);
+          if (lbl) {
+            lbl.style.borderColor = el.checked ? '#22c55e' : '#e5e7eb';
+            lbl.style.background  = el.checked ? '#f0fdf4' : '#f9fafb';
+          }
+        };
       });
       
       // Add event listeners to price inputs
       ['updateItemEntryPrice', 'updateItemEnginePrice', 'updateItemTyresPrice', 'updateItemTransponderPrice', 'updateItemFuelPrice'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateItemsTotal);
+        document.getElementById(id).oninput = updateItemsTotal;
       });
       
       updateItemsTotal();
-      document.getElementById('updateEntryItemsModal').style.display = 'flex';
     }
 
     function closeUpdateEntryItemsModal() {
       document.getElementById('updateEntryItemsModal').style.display = 'none';
+      document.getElementById('updateItemRaceDays').value = 'Both';
     }
 
     function updateItemsTotal() {
@@ -3459,7 +3576,8 @@
           body: JSON.stringify({ 
             race_entry_id: entryId,
             entry_items: entryItems,
-            amount_paid: totalAmount
+            amount_paid: totalAmount,
+            race_days: document.getElementById('updateItemRaceDays').value
           })
         });
 
@@ -4548,6 +4666,7 @@
       document.getElementById('quickAddTyres').checked = false;
       document.getElementById('quickAddTransponder').checked = false;
       document.getElementById('quickAddFuel').checked = false;
+      document.getElementById('quickAddRaceDays').value = 'Both';
       document.getElementById('quickAddPaymentStatus').value = 'Completed';
     }
     
@@ -4575,6 +4694,8 @@
         if (document.getElementById('quickAddTyres').checked) entryItems.push('Tyres (Optional)');
         if (document.getElementById('quickAddTransponder').checked) entryItems.push('Rent Transponder');
         if (document.getElementById('quickAddFuel').checked) entryItems.push('Controlled Fuel');
+
+        const raceDays = document.getElementById('quickAddRaceDays').value;
         
         showToast('Adding entry...', 'info');
         
@@ -4587,6 +4708,7 @@
             driver_id: driverId,
             race_class: driverClass,
             entry_items: entryItems,
+            race_days: raceDays,
             payment_status: paymentStatus,
             entry_status: paymentStatus === 'Completed' || paymentStatus === 'Free' ? 'confirmed' : 'pending_payment',
             amount_paid: paymentStatus === 'Free' ? 0 : null,
@@ -7754,6 +7876,23 @@
       <div id="hist-chips" style="padding:10px 14px;background:#fff;border-bottom:2px solid #e2e8f0;
                                    display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0;min-height:44px;align-items:center;"></div>
 
+      <!-- PDF Export bar -->
+      <div id="hist-pdf-bar" style="padding:7px 14px;background:#f0f4f8;border-bottom:1px solid #e2e8f0;
+                                     display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+        <span style="font-size:10px;font-weight:800;color:#64748b;letter-spacing:.5px;">PDF REPORT</span>
+        <input type="date" id="hist-pdf-from" title="From date"
+               style="font-size:11px;border:1px solid #cbd5e1;border-radius:6px;padding:3px 8px;
+                      color:#334155;background:#fff;cursor:pointer;">
+        <span style="font-size:10px;color:#94a3b8;font-weight:600;">to</span>
+        <input type="date" id="hist-pdf-to" title="To date"
+               style="font-size:11px;border:1px solid #cbd5e1;border-radius:6px;padding:3px 8px;
+                      color:#334155;background:#fff;cursor:pointer;">
+        <button onclick="_downloadHistPDF()"
+                style="background:linear-gradient(135deg,#1e3a5f,#0ea5e9);color:#fff;border:none;
+                       border-radius:7px;padding:5px 14px;font-size:11px;font-weight:800;
+                       cursor:pointer;letter-spacing:.3px;margin-left:auto;white-space:nowrap;">&#8659; Download PDF</button>
+      </div>
+
       <!-- Timeline -->
       <div id="hist-timeline" style="flex:1;overflow-y:auto;padding:14px 14px;background:#f1f5f9;"></div>
 
@@ -7795,6 +7934,163 @@
     document.getElementById('hist-panel').style.display='none';
   }
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeHistPanel(); });
+
+  // ── PDF Export state ──────────────────────────────────────────────────────
+  let _histCurrentEvents = [];
+  let _histCurrentLabel  = '';
+  let _histCurrentSub    = '';
+
+  function _downloadHistPDF(){
+    const fromVal = document.getElementById('hist-pdf-from').value; // YYYY-MM-DD or ''
+    const toVal   = document.getElementById('hist-pdf-to').value;
+    const from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
+    const to   = toVal   ? new Date(toVal   + 'T23:59:59') : null;
+
+    let filtered = _histCurrentEvents.slice().sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+    if(from || to){
+      filtered = filtered.filter(ev=>{
+        if(!ev.ts) return false;
+        const d = new Date(ev.ts);
+        if(from && d < from) return false;
+        if(to   && d > to  ) return false;
+        return true;
+      });
+    }
+    if(!filtered.length){
+      alert('No events found in the selected date range.');
+      return;
+    }
+
+    const title       = _histCurrentLabel || 'History Report';
+    const sub         = _histCurrentSub || '';
+    const rangeLabel  = (fromVal || toVal)
+      ? `${fromVal || 'Start'} &rarr; ${toVal || 'End'}`
+      : 'Full History';
+    const generatedAt = new Date().toLocaleString('en-ZA',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const chipsHTML   = document.getElementById('hist-chips').innerHTML || '';
+
+    // Group by date (ascending)
+    const groups = {};
+    filtered.forEach(ev=>{
+      const date = _histDate(ev.ts);
+      if(!groups[date]) groups[date] = [];
+      groups[date].push(ev);
+    });
+    const sortedDates = Object.keys(groups).sort();
+
+    let timelineRows = '';
+    sortedDates.forEach(date=>{
+      const evts    = groups[date];
+      const firstEv = evts[0];
+      const dc      = _dayColor(firstEv.ts);
+      const dl      = _dayLabel(firstEv.ts);
+      const fd      = new Date(firstEv.ts).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      const evtName = firstEv.event_name || '';
+      timelineRows += `
+        <tr>
+          <td colspan="4" style="padding:10px 10px 4px;background:#f8fafc;border-top:2px solid ${dc}55;">
+            <span style="background:${dc};color:#fff;font-size:10px;font-weight:800;padding:3px 12px;
+                         border-radius:20px;letter-spacing:.5px;">${dl}${evtName?' &middot; '+evtName:''}</span>
+            <span style="font-size:10px;color:#64748b;font-weight:600;margin-left:8px;">${fd}</span>
+          </td>
+        </tr>`;
+      evts.forEach(ev=>{
+        const m    = HIST_TYPE_META[ev.type] || HIST_TYPE_META.default;
+        const time = new Date(ev.ts).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        const lbl  = ev.label || m.label;
+        // Strip HTML tags for clean print output
+        const detailClean = (ev.detail||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+        timelineRows += `
+          <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="width:72px;padding:7px 10px;vertical-align:top;border-left:3px solid ${m.color};background:${m.color}18;">
+              <div style="font-size:10px;font-weight:800;color:${m.color};white-space:nowrap;">${time}</div>
+              <div style="font-size:9px;color:#94a3b8;margin-top:1px;">${date}</div>
+            </td>
+            <td style="width:22px;padding:7px 4px;vertical-align:top;text-align:center;font-size:14px;">${m.icon}</td>
+            <td style="padding:7px 10px 7px 4px;vertical-align:top;">
+              <div style="font-size:11px;font-weight:800;color:${m.color};">${lbl}</div>
+              ${detailClean?`<div style="font-size:10px;color:#334155;margin-top:2px;line-height:1.5;">${detailClean}</div>`:''}
+              ${ev.by?`<div style="font-size:9px;color:#94a3b8;margin-top:2px;">Operator: <strong>${ev.by}</strong></div>`:''}
+            </td>
+            <td style="width:85px;padding:7px 10px;vertical-align:top;text-align:right;">
+              ${ev.event_name?`<span style="background:#0ea5e9;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap;">${ev.event_name}</span>`:''}
+            </td>
+          </tr>`;
+      });
+    });
+
+    const win = window.open('', '_blank');
+    if(!win){
+      alert('Pop-up blocked — please allow pop-ups for this page and try again.');
+      return;
+    }
+
+    const safeTitle = title.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>History Report – ${safeTitle}</title>
+  <style>
+    *  { box-sizing:border-box; margin:0; padding:0; }
+    body { background:#fff; font-family:Arial,Helvetica,sans-serif; font-size:12px; color:#1e293b; padding:20px; }
+    .header { background:linear-gradient(135deg,#0f172a,#1e3a5f); color:#fff; padding:18px 22px; border-radius:8px; margin-bottom:14px; }
+    .header-eyebrow { font-size:8px; font-weight:800; letter-spacing:2px; opacity:.6; margin-bottom:4px; }
+    .header-title   { font-size:20px; font-weight:900; letter-spacing:.2px; }
+    .header-sub     { font-size:11px; opacity:.7; margin-top:3px; }
+    .header-meta    { display:flex; gap:20px; margin-top:12px; font-size:10px; flex-wrap:wrap; }
+    .chips-box  { margin-bottom:12px; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; }
+    .chips-label{ font-size:8px; font-weight:800; color:#64748b; letter-spacing:.8px; margin-bottom:6px; }
+    table { width:100%; border-collapse:collapse; border:1px solid #e2e8f0; }
+    thead tr { background:#1e3a5f; color:#fff; }
+    th { padding:8px 10px; text-align:left; font-size:9px; letter-spacing:.5px; font-weight:800; }
+    th:last-child { text-align:right; }
+    td { vertical-align:top; }
+    .footer { margin-top:14px; padding:7px 12px; background:#f1f5f9; border-radius:5px;
+              display:flex; justify-content:space-between; font-size:9px; color:#64748b; }
+    .print-btn { position:fixed; bottom:20px; right:20px; background:linear-gradient(135deg,#1e3a5f,#0ea5e9);
+                 color:#fff; border:none; border-radius:8px; padding:11px 22px; font-size:14px;
+                 font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.3); letter-spacing:.3px; }
+    @page  { size:A4 portrait; margin:10mm; }
+    @media print { .print-btn { display:none; } body { padding:0; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-eyebrow">LIVENATS &middot; EQUIPMENT HISTORY REPORT</div>
+    <div class="header-title">${safeTitle}</div>
+    ${sub?`<div class="header-sub">${sub}</div>`:''}
+    <div class="header-meta">
+      <div><span style="opacity:.6;">Period: </span><strong>${rangeLabel}</strong></div>
+      <div><span style="opacity:.6;">Events: </span><strong>${filtered.length}</strong></div>
+      <div><span style="opacity:.6;">Generated: </span><strong>${generatedAt}</strong></div>
+    </div>
+  </div>
+  ${chipsHTML?`
+  <div class="chips-box">
+    <div class="chips-label">CURRENT STATE</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;">${chipsHTML}</div>
+  </div>`:''}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:72px;">TIME</th>
+        <th style="width:22px;"></th>
+        <th>EVENT &amp; DETAIL</th>
+        <th style="width:85px;text-align:right;">EVENT</th>
+      </tr>
+    </thead>
+    <tbody>${timelineRows}</tbody>
+  </table>
+  <div class="footer">
+    <div>LIVENATS Event Management System</div>
+    <div>Confidential &middot; Generated ${generatedAt}</div>
+  </div>
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</body>
+</html>`);
+    win.document.close();
+  }
 
   function _histFmt(iso){
     if(!iso) return '—';
@@ -7962,6 +8258,7 @@
     document.getElementById('hist-title').textContent=driverLabel||'Driver History';
     document.getElementById('hist-sub').textContent='Entry ID: '+entryId;
     document.getElementById('hist-chips').innerHTML='';
+    _histCurrentEvents=[];
     document.getElementById('hist-timeline').innerHTML='';
     document.getElementById('hist-loading').style.display='flex';
     document.getElementById('hist-status').style.display='none';
@@ -8070,6 +8367,9 @@
       });
 
       events.sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+      _histCurrentEvents = events;
+      _histCurrentLabel  = driverLabel || 'Driver History';
+      _histCurrentSub    = 'Entry ID: ' + entryId;
       document.getElementById('hist-loading').style.display='none';
       document.getElementById('hist-timeline').innerHTML=_renderTimeline(events);
     }catch(e){
@@ -8083,6 +8383,7 @@
     document.getElementById('hist-title').textContent=label||serial;
     document.getElementById('hist-sub').textContent='Equipment serial: '+serial;
     document.getElementById('hist-chips').innerHTML='';
+    _histCurrentEvents=[];
     document.getElementById('hist-timeline').innerHTML='';
     document.getElementById('hist-loading').style.display='flex';
     document.getElementById('hist-status').style.display='none';
@@ -8199,6 +8500,9 @@
       });
 
       events.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+      _histCurrentEvents = events;
+      _histCurrentLabel  = label || serial;
+      _histCurrentSub    = 'Equipment serial: ' + serial;
       document.getElementById('hist-loading').style.display='none';
       document.getElementById('hist-timeline').innerHTML=_renderTimeline(events);
     }catch(e){
