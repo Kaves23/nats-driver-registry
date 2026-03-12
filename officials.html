@@ -1169,10 +1169,21 @@
       }, 4000);
     }
 
+    // Shared helper: load event branding (header/footer) from S3
+    async function loadEventBranding(eventId) {
+      if (!eventId) return { headerBrandingUrl: null, footerBrandingUrl: null };
+      try {
+        const r = await fetch(`/api/events/${encodeURIComponent(eventId)}/branding`);
+        const d = await r.json();
+        return { headerBrandingUrl: d.header || null, footerBrandingUrl: d.footer || null };
+      } catch(e) { return { headerBrandingUrl: null, footerBrandingUrl: null }; }
+    }
+
     async function exportDriversPDF() {
       try {
         const raceName = document.getElementById('nextRaceName').textContent;
         const raceDate = document.getElementById('nextRaceDate').textContent;
+        const { headerBrandingUrl: _hb, footerBrandingUrl: _fb } = await loadEventBranding(selectedEventId);
 
         // Create PDF container
         const element = document.createElement('div');
@@ -1185,22 +1196,22 @@
         // Professional header with ROK and NATS branding
         const headerHTML = `
           <div style="margin-bottom: 8px;">
-            <!-- Header bar -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 3px solid #1a1a2e;">
-              <!-- ROK Logo area -->
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 6px 12px; border-radius: 3px;">
-                  <span style="font-size: 20px; font-weight: 900; letter-spacing: -1px;">ROK</span>
-                  <span style="font-size: 12px; font-weight: 600; margin-left: 2px;">CUP</span>
+            ${_hb
+              ? `<img src="${_hb}" style="width:100%;max-height:100px;object-fit:contain;display:block;margin-bottom:6px;" crossorigin="anonymous">`
+              : `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 3px solid #1a1a2e;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 6px 12px; border-radius: 3px;">
+                    <span style="font-size: 20px; font-weight: 900; letter-spacing: -1px;">ROK</span>
+                    <span style="font-size: 12px; font-weight: 600; margin-left: 2px;">CUP</span>
+                  </div>
+                  <div style="font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Official Document</div>
                 </div>
-                <div style="font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Official Document</div>
-              </div>
-              <!-- NATS Logo area -->
-              <div style="text-align: right; min-width: 80px;">
-                <div style="font-size: 18px; font-weight: 800; color: #1a1a2e; letter-spacing: 2px;">NATS</div>
-                <div style="font-size: 7px; color: #666; text-transform: uppercase;">National Series</div>
-              </div>
-            </div>
+                <div style="text-align: right; min-width: 80px;">
+                  <div style="font-size: 18px; font-weight: 800; color: #1a1a2e; letter-spacing: 2px;">NATS</div>
+                  <div style="font-size: 7px; color: #666; text-transform: uppercase;">National Series</div>
+                </div>
+              </div>`
+            }
             <!-- Document title and event info -->
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; padding-bottom: 6px; border-bottom: 1px solid #eee;">
               <div>
@@ -1271,14 +1282,14 @@
         `;
 
         // Footer
-        const footerHTML = `
-          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #6c757d;">
+        const footerHTML = _fb
+          ? `<div style="margin-top:10px;text-align:center;"><img src="${_fb}" style="width:100%;max-height:60px;object-fit:contain;" crossorigin="anonymous"></div>`
+          : `<div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #6c757d;">
             <div>ROK Cup NATS • www.rokthenats.co.za • MSA Sanctioned Event</div>
             <div style="text-align: right;">
               Total Entries: ${table.querySelectorAll('tr').length}
             </div>
-          </div>
-        `;
+          </div>`;
 
         element.innerHTML = headerHTML + tableHTML + footerHTML;
 
@@ -1303,6 +1314,7 @@
       try {
         const raceName = document.getElementById('nextRaceName').textContent;
         const raceDate = document.getElementById('nextRaceDate').textContent;
+        const { headerBrandingUrl: _hb, footerBrandingUrl: _fb } = await loadEventBranding(selectedEventId);
 
         // Create PDF container
         const element = document.createElement('div');
@@ -1347,8 +1359,9 @@
         const headerHTML = `
           <div style="margin-bottom: 10px; page-break-after: avoid; page-break-inside: avoid;">
             <!-- Top header with logo -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 3px solid #1a1a2e;">
-              <!-- ROK Logo -->
+            ${_hb
+              ? `<img src="${_hb}" style="width:100%;max-height:100px;object-fit:contain;display:block;margin-bottom:8px;" crossorigin="anonymous">`
+              : `<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 3px solid #1a1a2e;">
               <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 8px 16px; border-radius: 4px;">
                   <span style="font-size: 24px; font-weight: 900; letter-spacing: -1px;">ROK</span>
@@ -1356,12 +1369,12 @@
                 </div>
                 <div style="font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Official Document</div>
               </div>
-              <!-- NATS Logo - moved further left -->
               <div style="text-align: right; margin-right: 20px;">
                 <div style="font-size: 20px; font-weight: 800; color: #1a1a2e; letter-spacing: 2px;">NATS</div>
                 <div style="font-size: 8px; color: #666; text-transform: uppercase;">National Series</div>
               </div>
-            </div>
+            </div>`
+            }
             
             <!-- Document title -->
             <div style="text-align: center; margin: 8px 0;">
@@ -1516,6 +1529,7 @@
               <div>Total Entries: ${sortedRows.length} • Issued: ${new Date().toLocaleString('en-ZA')}</div>
             </div>
           </div>
+          ${_fb ? `<div style="margin-top:8px;text-align:center;"><img src="${_fb}" style="width:100%;max-height:60px;object-fit:contain;" crossorigin="anonymous"></div>` : ''}
         `;
 
         element.innerHTML = signOnHTML + footerHTML;

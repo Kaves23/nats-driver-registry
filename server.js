@@ -42,6 +42,24 @@ const adminNotificationQueue = require('./adminNotificationQueue');
 // Fix #16: Input validation middleware
 const { validateBody, loginSchema, registerDriverSchema, raceEntrySchema } = require('./middleware/validate');
 
+// ─── Excel export & QR code generation ───────────────────────────────────────
+const ExcelJS = require('exceljs');
+const QRCode  = require('qrcode');
+// ─── Z1 / S3-compatible storage ───────────────────────────────────────────────
+const { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
+const s3 = new S3Client({
+  endpoint: process.env.Z1_ENDPOINT || 'https://s3.z1storage.com',
+  region: 'us-east-1',           // z1storage ignores region but SDK requires a value
+  credentials: {
+    accessKeyId:     process.env.Z1_ACCESS_KEY,
+    secretAccessKey: process.env.Z1_SECRET_KEY
+  },
+  forcePathStyle: true           // required for non-AWS S3-compatible providers
+});
+const Z1_BUCKET    = process.env.Z1_BUCKET || 'ftw-media';
+const Z1_BASE_URL  = `${process.env.Z1_ENDPOINT || 'https://s3.z1storage.com'}/${Z1_BUCKET}`;
+// ──────────────────────────────────────────────────────────────────────────────
+
 const app = express();
 const path = require('path');
 
@@ -327,15 +345,16 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Database connection with error handling
+const useSSL = process.env.DB_SSL !== 'false';
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   database: process.env.DB_DATABASE,
   user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
-  ssl: { rejectUnauthorized: false },
+  ssl: useSSL ? { rejectUnauthorized: false } : false,
   // Connection pool settings for stability
-  max: 20,                    // Maximum connections
+  max: useSSL ? 20 : 10,      // Local laptop: keep pool small
   idleTimeoutMillis: 30000,   // Close idle connections after 30s
   connectionTimeoutMillis: 5000  // Fail fast if can't connect in 5s
 });
@@ -346,6 +365,88 @@ pool.on('error', (err, client) => {
   // Don't crash - pool will try to reconnect
 });
 
+// ── Race-day offline sync worker (only in local mode: DB_SSL=false) ──────────
+let lastSyncTime = Date.now();
+if (process.env.DB_SSL === 'false') {
+  const { Pool: CloudPool } = require('pg');
+  const cloudPool = new CloudPool({
+    host: process.env.CLOUD_DB_HOST,
+    port: parseInt(process.env.CLOUD_DB_PORT || '6432'),
+    database: process.env.CLOUD_DB_DATABASE,
+    user: process.env.CLOUD_DB_USERNAME,
+    password: process.env.CLOUD_DB_PASSWORD,
+    ssl: { rejectUnauthorized: false },
+    max: 3,
+    connectionTimeoutMillis: 5000
+  });
+
+  // Ensure sync_queue table exists
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id         SERIAL PRIMARY KEY,
+      table_name VARCHAR(100) NOT NULL,
+      operation  VARCHAR(10)  NOT NULL,
+      row_id     VARCHAR(255) NOT NULL,
+      payload    JSONB        NOT NULL,
+      created_at TIMESTAMP    DEFAULT NOW(),
+      synced_at  TIMESTAMP,
+      attempts   INT          DEFAULT 0
+    )
+  `).catch(e => console.warn('[sync] Could not create sync_queue:', e.message));
+
+  // Push: flush local writes to cloud every 30 seconds
+  setInterval(async () => {
+    try {
+      const { rows } = await pool.query(
+        `SELECT * FROM sync_queue WHERE synced_at IS NULL AND attempts < 5 ORDER BY created_at LIMIT 50`
+      );
+      if (!rows.length) return;
+      let synced = 0;
+      for (const item of rows) {
+        try {
+          const cols   = Object.keys(item.payload);
+          const vals   = cols.map(c => item.payload[c]);
+          const ph     = cols.map((_, i) => `$${i + 1}`).join(',');
+          const update = cols.map(c => `${c} = EXCLUDED.${c}`).join(', ');
+          await cloudPool.query(
+            `INSERT INTO ${item.table_name} (${cols.join(',')}) VALUES (${ph}) ON CONFLICT (id) DO UPDATE SET ${update}`,
+            vals
+          );
+          await pool.query(`UPDATE sync_queue SET synced_at = NOW() WHERE id = $1`, [item.id]);
+          synced++;
+        } catch {
+          await pool.query(`UPDATE sync_queue SET attempts = attempts + 1 WHERE id = $1`, [item.id]);
+        }
+      }
+      if (synced > 0) { lastSyncTime = Date.now(); console.log(`[sync] Flushed ${synced} rows to cloud`); }
+    } catch { /* Cloud unreachable — retry in 30s */ }
+  }, 30_000);
+
+  // Pull: grab new cloud registrations every 60 seconds
+  setInterval(async () => {
+    try {
+      const { rows } = await cloudPool.query(
+        `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '3 hours'`
+      );
+      for (const row of rows) {
+        const cols = Object.keys(row);
+        const vals = cols.map(c => row[c]);
+        const ph   = cols.map((_, i) => `$${i + 1}`).join(',');
+        const upd  = cols.filter(c => c !== 'entry_id').map(c => `${c} = EXCLUDED.${c}`).join(', ');
+        await pool.query(
+          `INSERT INTO race_entries (${cols.join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
+          vals
+        );
+      }
+      if (rows.length > 0) console.log(`[sync] Pulled ${rows.length} entries from cloud`);
+    } catch { /* Cloud unreachable — retry in 60s */ }
+  }, 60_000);
+
+  console.log('[sync] 🏁 Race-day sync worker active (push 30s / pull 60s)');
+}
+
+// Sync status endpoint (local mode only)
+// GET /api/syncStatus
 // Initialize audit log table if it doesn't exist
 const initAuditTable = async () => {
   try {
@@ -2108,6 +2209,23 @@ app.post('/api/test-email', async (req, res) => {
 });
 
 // Test endpoint to check database
+// Sync status — shows whether we're in cloud or local mode and queue depth
+app.get('/api/syncStatus', async (req, res) => {
+  const isLocal = process.env.DB_SSL === 'false';
+  let queueDepth = 0;
+  if (isLocal) {
+    try {
+      const { rows } = await pool.query(`SELECT COUNT(*) as c FROM sync_queue WHERE synced_at IS NULL`);
+      queueDepth = parseInt(rows[0].c);
+    } catch { /* table may not exist yet */ }
+  }
+  res.json({
+    mode: isLocal ? 'local' : 'cloud',
+    queueDepth,
+    lastSyncAgo: isLocal ? `${Math.round((Date.now() - lastSyncTime) / 1000)}s ago` : 'N/A'
+  });
+});
+
 app.get('/api/test-db', async (req, res) => {
   try {
     // Get drivers table columns
@@ -11759,88 +11877,308 @@ const server = app.listen(PORT, () => {
   console.log('🛡️ Global error handlers installed');
 });
 
-// ─── Admin Event Document Management ──────────────────────────────────────────
+// ─── Admin Event Document Management (Z1/S3-backed) ──────────────────────────
 const ADMIN_DOC_FOLDERS = {
-  'official':         'official',
-  'general':          'general',
-  'cadet':            'cadet',
-  'mini-rok':         'mini-rok',
-  'ok-j':             'ok-j',
-  'ok-n':             'ok-n'
+  'official':  'official',
+  'general':   'general',
+  'cadet':     'cadet',
+  'mini-rok':  'mini-rok',
+  'ok-j':      'ok-j',
+  'ok-n':      'ok-n',
+  'branding':  'branding'
 };
 
-// List docs for an event (admin)
-app.get('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
+// Helper: S3 key prefix for an event's docs
+function eventDocPrefix(eventId, folder) {
+  const safeEvent = String(eventId).replace(/[^a-zA-Z0-9_\-]/g, '_');
+  return `event-docs/${safeEvent}/${folder}/`;
+}
+
+// List docs for an event (admin) — reads from S3
+app.get('/api/admin/events/:eventId/docs', requireAdmin, async (req, res) => {
   try {
     const { eventId } = req.params;
-    const baseDir = path.join(__dirname, 'uploads', 'event-docs', eventId);
     const result = [];
-    if (fs.existsSync(baseDir)) {
-      for (const [folderKey, folderDir] of Object.entries(ADMIN_DOC_FOLDERS)) {
-        const dir = path.join(baseDir, folderDir);
-        if (fs.existsSync(dir)) {
-          fs.readdirSync(dir).forEach(file => {
-            if (file.startsWith('.')) return;
-            const stat = fs.statSync(path.join(dir, file));
-            result.push({
-              folder: folderKey,
-              filename: file,
-              size: stat.size,
-              url: `/uploads/event-docs/${eventId}/${folderDir}/${encodeURIComponent(file)}`
-            });
-          });
-        }
+    for (const [folderKey, folderDir] of Object.entries(ADMIN_DOC_FOLDERS)) {
+      const prefix = eventDocPrefix(eventId, folderDir);
+      const listCmd = new ListObjectsV2Command({ Bucket: Z1_BUCKET, Prefix: prefix });
+      const data = await s3.send(listCmd);
+      for (const obj of (data.Contents || [])) {
+        const filename = obj.Key.replace(prefix, '');
+        if (!filename || filename.startsWith('.')) continue;
+        result.push({
+          folder:   folderKey,
+          filename,
+          size:     obj.Size,
+          url:      `${Z1_BASE_URL}/${obj.Key}`
+        });
       }
     }
     res.json({ success: true, docs: result });
   } catch (err) {
+    console.error('S3 list error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Upload a doc for an event (admin)
-app.post('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
+// Upload a doc for an event (admin) — writes to S3
+app.post('/api/admin/events/:eventId/docs', requireAdmin, async (req, res) => {
   try {
     const { eventId } = req.params;
     const { folder, filename, fileContent } = req.body;
     if (!folder || !filename || !fileContent) {
       return res.status(400).json({ success: false, error: 'folder, filename and fileContent required' });
     }
-    const folderDir = ADMIN_DOC_FOLDERS[folder];
-    if (!folderDir) {
+    if (!ADMIN_DOC_FOLDERS[folder]) {
       return res.status(400).json({ success: false, error: 'Invalid folder' });
     }
-    // Sanitise filename
     const safeName = path.basename(filename).replace(/[^a-zA-Z0-9._\- ()]/g, '_');
-    const dir = path.join(__dirname, 'uploads', 'event-docs', eventId, folderDir);
-    fs.mkdirSync(dir, { recursive: true });
+    const key = eventDocPrefix(eventId, ADMIN_DOC_FOLDERS[folder]) + safeName;
     const buffer = Buffer.from(fileContent, 'base64');
-    fs.writeFileSync(path.join(dir, safeName), buffer);
-    console.log(`📄 Admin uploaded ${safeName} → event-docs/${eventId}/${folderDir}/`);
-    res.json({ success: true, filename: safeName, url: `/uploads/event-docs/${eventId}/${folderDir}/${encodeURIComponent(safeName)}` });
+
+    // Guess content type from extension
+    const ext = path.extname(safeName).toLowerCase();
+    const mimeMap = { '.pdf':'application/pdf', '.jpg':'image/jpeg', '.jpeg':'image/jpeg',
+                      '.png':'image/png', '.gif':'image/gif', '.doc':'application/msword',
+                      '.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                      '.xls':'application/vnd.ms-excel',
+                      '.xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+    const contentType = mimeMap[ext] || 'application/octet-stream';
+
+    await s3.send(new PutObjectCommand({
+      Bucket: Z1_BUCKET,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+      ACL: 'public-read'
+    }));
+    console.log(`📄 Admin uploaded ${safeName} → s3://${Z1_BUCKET}/${key}`);
+    res.json({ success: true, filename: safeName, url: `${Z1_BASE_URL}/${key}` });
   } catch (err) {
+    console.error('S3 upload error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Delete a doc for an event (admin)
-app.delete('/api/admin/events/:eventId/docs', requireAdmin, (req, res) => {
+// Delete a doc for an event (admin) — removes from S3
+app.delete('/api/admin/events/:eventId/docs', requireAdmin, async (req, res) => {
   try {
     const { eventId } = req.params;
     const { folder, filename } = req.body;
     if (!folder || !filename) {
       return res.status(400).json({ success: false, error: 'folder and filename required' });
     }
-    const folderDir = ADMIN_DOC_FOLDERS[folder];
-    if (!folderDir) return res.status(400).json({ success: false, error: 'Invalid folder' });
+    if (!ADMIN_DOC_FOLDERS[folder]) return res.status(400).json({ success: false, error: 'Invalid folder' });
     const safeName = path.basename(filename);
-    const filePath = path.join(__dirname, 'uploads', 'event-docs', eventId, folderDir, safeName);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      console.log(`🗑️ Admin deleted ${safeName} from event-docs/${eventId}/${folderDir}/`);
-    }
+    const key = eventDocPrefix(eventId, ADMIN_DOC_FOLDERS[folder]) + safeName;
+    await s3.send(new DeleteObjectCommand({ Bucket: Z1_BUCKET, Key: key }));
+    console.log(`🗑️ Admin deleted s3://${Z1_BUCKET}/${key}`);
     res.json({ success: true });
   } catch (err) {
+    console.error('S3 delete error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Public: Get branding images (header/footer) for an event — no auth required, files are public in S3
+app.get('/api/events/:eventId/branding', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const prefix = eventDocPrefix(eventId, 'branding');
+    const data = await s3.send(new ListObjectsV2Command({ Bucket: Z1_BUCKET, Prefix: prefix }));
+    const result = { header: null, footer: null };
+    for (const obj of (data.Contents || [])) {
+      const filename = obj.Key.replace(prefix, '');
+      const base = filename.replace(/\.[^.]+$/, '').toLowerCase();
+      if (base === 'header') result.header = `${Z1_BASE_URL}/${obj.Key}`;
+      if (base === 'footer') result.footer = `${Z1_BASE_URL}/${obj.Key}`;
+    }
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.json({ success: false, header: null, footer: null });
+  }
+});
+
+// Admin: Export race entries as Excel (.xlsx) with QR codes and event branding
+app.get('/api/admin/events/:eventId/exportExcel', requireAdmin, async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    // ── Fetch entries ──────────────────────────────────────────────────────────
+    const { rows: entries } = await pool.query(
+      `SELECT
+         r.entry_id, r.event_id, r.race_class, r.entry_status,
+         d.race_number,
+         d.first_name AS driver_first_name, d.last_name AS driver_last_name,
+         d.team_name, d.msa_license_number,
+         c.full_name AS entrant_name
+       FROM race_entries r
+       LEFT JOIN drivers d ON r.driver_id = d.driver_id
+       LEFT JOIN contacts c ON r.driver_id = c.driver_id
+       WHERE r.event_id = $1
+         AND r.entry_status != 'cancelled'
+         AND (r.race_class IS NOT NULL AND r.race_class != '')
+       ORDER BY r.race_class, d.race_number`,
+      [eventId]
+    );
+
+    // ── Helper: download S3 object as Buffer ──────────────────────────────────
+    async function s3ToBuffer(key) {
+      try {
+        const cmd = new GetObjectCommand({ Bucket: Z1_BUCKET, Key: key });
+        const data = await s3.send(cmd);
+        const chunks = [];
+        for await (const chunk of data.Body) chunks.push(chunk);
+        return Buffer.concat(chunks);
+      } catch { return null; }
+    }
+
+    // ── Fetch branding images from S3 ─────────────────────────────────────────
+    const prefix = eventDocPrefix(eventId, 'branding');
+    const listed = await s3.send(new ListObjectsV2Command({ Bucket: Z1_BUCKET, Prefix: prefix }));
+    let headerKey = null, footerKey = null;
+    for (const obj of (listed.Contents || [])) {
+      const base = obj.Key.replace(prefix, '').replace(/\.[^.]+$/, '').toLowerCase();
+      if (base === 'header') headerKey = obj.Key;
+      if (base === 'footer') footerKey = obj.Key;
+    }
+    const [headerBuf, footerBuf] = await Promise.all([
+      headerKey ? s3ToBuffer(headerKey) : null,
+      footerKey ? s3ToBuffer(footerKey) : null,
+    ]);
+
+    // ── Build workbook ────────────────────────────────────────────────────────
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Race Entries');
+
+    // Fixed column widths
+    ws.columns = [
+      { key: 'race_number',    width: 12  },
+      { key: 'race_class',     width: 16  },
+      { key: 'driver_name',    width: 26  },
+      { key: 'entrant_name',   width: 26  },
+      { key: 'team_name',      width: 24  },
+      { key: 'msa_license',    width: 20  },
+      { key: 'sign',           width: 28  },
+      { key: 'qr',             width: 10  },
+    ];
+
+    let currentRow = 1;
+
+    // ── Header image ─────────────────────────────────────────────────────────
+    const TOTAL_COLS = 8;
+    if (headerBuf) {
+      const imgId = wb.addImage({ buffer: headerBuf, extension: headerKey.split('.').pop().replace('jpg','jpeg') });
+      const HEADER_ROWS = 5;
+      ws.addImage(imgId, { tl: { col: 0, row: currentRow - 1 }, br: { col: TOTAL_COLS, row: currentRow - 1 + HEADER_ROWS } });
+      for (let r = currentRow; r < currentRow + HEADER_ROWS; r++) ws.getRow(r).height = 18;
+      currentRow += HEADER_ROWS;
+      ws.getRow(currentRow).height = 6; // gap
+      currentRow++;
+    }
+
+    // ── Title row ─────────────────────────────────────────────────────────────
+    ws.mergeCells(currentRow, 1, currentRow, TOTAL_COLS);
+    const titleCell = ws.getCell(currentRow, 1);
+    titleCell.value = `Race Entries — ${eventId}`;
+    titleCell.font = { bold: true, size: 14 };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFD700' } };
+    ws.getRow(currentRow).height = 28;
+    currentRow++;
+    ws.getRow(currentRow).height = 4;
+    currentRow++;
+
+    // ── Header row ────────────────────────────────────────────────────────────
+    const HEADERS = ['Race #', 'Class', 'Driver Full Name', 'Entrant Full Name', 'Team Name', 'MSA Licence #', 'Entrant Signature', 'QR'];
+    const hdrRow  = ws.getRow(currentRow);
+    hdrRow.height = 22;
+    HEADERS.forEach((h, i) => {
+      const cell = hdrRow.getCell(i + 1);
+      cell.value = h;
+      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+    });
+    currentRow++;
+
+    // ── Data rows ──────────────────────────────────────────────────────────────
+    const ROW_HEIGHT = 56; // pixels — enough for QR
+    const QR_SIZE    = 60; // px — QR image
+
+    for (const entry of entries) {
+      const rowIdx = currentRow;
+      const dataRow = ws.getRow(rowIdx);
+      dataRow.height = ROW_HEIGHT;
+
+      const cols = [
+        entry.race_number || '',
+        entry.race_class  || '',
+        [entry.driver_first_name, entry.driver_last_name].filter(Boolean).join(' '),
+        entry.entrant_name || '',
+        entry.team_name || '',
+        entry.msa_license_number || '',
+        '',   // Sign column — left blank
+      ];
+
+      const isEven  = (rowIdx % 2 === 0);
+      const rowFill = isEven
+        ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } }
+        : { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+
+      cols.forEach((val, i) => {
+        const cell = dataRow.getCell(i + 1);
+        cell.value = val;
+        cell.font  = { size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.fill  = rowFill;
+        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      });
+
+      // QR code image in column 8
+      try {
+        const qrData = entry.entry_id || entry.race_number || String(rowIdx);
+        const qrBuf  = await QRCode.toBuffer(String(qrData), { width: QR_SIZE, margin: 1 });
+        const qrId   = wb.addImage({ buffer: qrBuf, extension: 'png' });
+        // Position: tl/br in fractions of column/row — leave 1px padding
+        ws.addImage(qrId, {
+          tl: { col: 7.1, row: rowIdx - 1 + 0.1 },
+          br: { col: 8,   row: rowIdx - 1 + 0.9 },
+          editAs: 'oneCell'
+        });
+      } catch { /* skip QR on error */ }
+
+      // Border for QR cell
+      const qrCell = dataRow.getCell(8);
+      qrCell.fill   = rowFill;
+      qrCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+
+      currentRow++;
+    }
+
+    // ── Footer image ─────────────────────────────────────────────────────────
+    if (footerBuf) {
+      ws.getRow(currentRow).height = 6;
+      currentRow++;
+      const footerId = wb.addImage({ buffer: footerBuf, extension: footerKey.split('.').pop().replace('jpg','jpeg') });
+      const FOOTER_ROWS = 4;
+      ws.addImage(footerId, { tl: { col: 0, row: currentRow - 1 }, br: { col: TOTAL_COLS, row: currentRow - 1 + FOOTER_ROWS } });
+      for (let r = currentRow; r < currentRow + FOOTER_ROWS; r++) ws.getRow(r).height = 15;
+    }
+
+    // ── Freeze header ────────────────────────────────────────────────────────
+    ws.views = [{ state: 'frozen', ySplit: headerBuf ? 9 : 3 }];
+
+    // ── Send file ────────────────────────────────────────────────────────────
+    const safeName = eventId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="Race_Entries_${safeName}.xlsx"`);
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Excel export error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

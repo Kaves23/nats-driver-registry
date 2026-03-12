@@ -11,6 +11,26 @@ async function exportRaceEntriesPDF() {
 
     showToast('Preparing PDF export with barcodes...', 'info');
 
+    // Try to load event branding (header / footer images)
+    let headerBrandingUrl = null;
+    let footerBrandingUrl = null;
+    try {
+      const brandingRes = await fetch(`/api/admin/events/${race}/docs`, {
+        headers: { 'x-admin-token': adminToken }
+      });
+      if (brandingRes.ok) {
+        const brandingData = await brandingRes.json();
+        if (brandingData.success) {
+          for (const doc of (brandingData.docs || [])) {
+            if (doc.folder !== 'branding') continue;
+            const base = doc.filename.replace(/\.[^.]+$/, '').toLowerCase();
+            if (base === 'header') headerBrandingUrl = doc.url + '?t=' + Date.now();
+            if (base === 'footer') footerBrandingUrl = doc.url + '?t=' + Date.now();
+          }
+        }
+      }
+    } catch(e) { /* fall back to default branding */ }
+
     // Fetch race entries data
     const response = await fetch('/api/getRaceEntries', {
       method: 'POST',
@@ -69,7 +89,21 @@ async function exportRaceEntriesPDF() {
     element.style.lineHeight = '1.2';
 
     // Header
-    const headerHTML = `
+    const headerHTML = headerBrandingUrl
+      ? `<div style="margin-bottom:8px;">
+          <img src="${headerBrandingUrl}" style="width:100%;max-height:110px;object-fit:contain;display:block;" crossorigin="anonymous">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:6px;padding-bottom:6px;border-bottom:1px solid #eee;">
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#059669;">RACE ENTRIES WITH BARCODES</div>
+              <div style="font-size:9px;color:#666;margin-top:2px;">${race}</div>
+            </div>
+            <div style="text-align:right;font-size:8px;color:#666;">
+              <div><strong>Issued:</strong> ${new Date().toLocaleDateString('en-ZA')} ${new Date().toLocaleTimeString('en-ZA', {hour:'2-digit',minute:'2-digit'})}</div>
+              <div><strong>Total Entries:</strong> ${entries.length}</div>
+            </div>
+          </div>
+        </div>`
+      : `
       <div style="margin-bottom: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 3px solid #059669;">
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -157,7 +191,9 @@ async function exportRaceEntriesPDF() {
       </table>
     `;
 
-    const footerHTML = `
+    const footerHTML = footerBrandingUrl
+      ? `<div style="margin-top:10px;text-align:center;"><img src="${footerBrandingUrl}" style="width:100%;max-height:70px;object-fit:contain;" crossorigin="anonymous"></div>`
+      : `
       <div style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-left: 3px solid #059669;">
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 7px; color: #666;">
           <div>ROK Cup NATS • www.rokthenats.co.za • Internal Use Only</div>

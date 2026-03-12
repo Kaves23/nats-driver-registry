@@ -658,6 +658,7 @@
         .parts-hist-item .hist-time { color:#f97316; font-weight:700; margin-right:6px; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </head>
 <body>
 
@@ -959,32 +960,27 @@ let searchDebounce   = null;
 let lookupDebounce   = null;
 
 // Shared decoder instances — created once, reused
-let _nativeDet = null;
-let _zxReader  = null;   // multi-format
-let _zxReader1D = null;  // 1D-only with Code 128 hints
+let _nativeDet  = null;
+let _zxReader   = null;   // multi-format
+let _zxReader1D = null;   // 1D-only with Code 128 hints (used for photo decode)
+let _scanRafId  = null;
 (function initDecoders() {
+    // Always use getSupportedFormats() — passing unsupported formats throws on some devices
     if (window.BarcodeDetector) {
-        try {
-            _nativeDet = new BarcodeDetector({ formats: [
-                'qr_code', 'code_128', 'code_39', 'code_93',
-                'ean_13', 'ean_8', 'itf', 'data_matrix', 'aztec', 'pdf_417'
-            ]});
-        } catch(_) {}
+        BarcodeDetector.getSupportedFormats().then(fmts => {
+            try { _nativeDet = new BarcodeDetector({ formats: fmts }); } catch(_) {}
+        }).catch(() => {});
     }
     if (window.ZXing) {
         try {
             _zxReader = new ZXing.BrowserMultiFormatReader();
-            // 1D-focused reader for engine serial / Code 128 scanning
+            // 1D-focused reader kept for photo-decode path
             if (ZXing.DecodeHintType && ZXing.BarcodeFormat) {
                 const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-                    ZXing.BarcodeFormat.CODE_128,
-                    ZXing.BarcodeFormat.CODE_39,
-                    ZXing.BarcodeFormat.CODE_93,
-                    ZXing.BarcodeFormat.EAN_13,
-                    ZXing.BarcodeFormat.EAN_8,
-                    ZXing.BarcodeFormat.ITF,
-                    ZXing.BarcodeFormat.UPC_A,
-                    ZXing.BarcodeFormat.UPC_E,
+                    ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+                    ZXing.BarcodeFormat.CODE_93,  ZXing.BarcodeFormat.EAN_13,
+                    ZXing.BarcodeFormat.EAN_8,    ZXing.BarcodeFormat.ITF,
+                    ZXing.BarcodeFormat.UPC_A,    ZXing.BarcodeFormat.UPC_E,
                 ]]]);
                 _zxReader1D = new ZXing.BrowserMultiFormatReader(hints);
             } else {
@@ -1395,7 +1391,7 @@ function escHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-// ── QR Camera (same logic as engine-management.html) ──────────────────────
+// ── Camera Scanner — engine-draw.html pattern (concurrent BD + ZXing, crop band) ──
 async function openCamera(inputId) {
     currentTargetInput = inputId;
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -1409,16 +1405,9 @@ async function openLiveScanner() {
     overlay.classList.add('active');
     scanningActive = true;
     const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: 'environment',
-            width: { ideal: 1920 }, height: { ideal: 1080 },
-            focusMode: { ideal: 'continuous' },
-            exposureMode: { ideal: 'continuous' },
-            whiteBalanceMode: { ideal: 'continuous' }
-        }
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     cameraStream = stream;
-    // Request continuous autofocus if the device supports it
     try {
         const track = stream.getVideoTracks()[0];
         const caps = track.getCapabilities ? track.getCapabilities() : {};
@@ -1429,50 +1418,66 @@ async function openLiveScanner() {
     const div = document.querySelector('#scanner-reader');
     div.innerHTML = '';
     const video = document.createElement('video');
-    video.setAttribute('playsinline','');
-    video.setAttribute('autoplay','');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('autoplay', '');
     video.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
     div.appendChild(video);
     video.srcObject = stream;
-    await video.play();
-    // Determine if this is a 1D barcode input (engine serial) — skip BarcodeDetector for these,
-    // it frequently misses Code 128 on Android. Use ZXing 1D reader instead.
-    const is1D = currentTargetInput === 'fEngineSerial' || currentTargetInput === 'searchSerial';
-    const reader = is1D ? (_zxReader1D || _zxReader) : (_zxReader);
-
-    // Always run ZXing for 1D fields; use BarcodeDetector only for QR fields
-    if (_nativeDet && !is1D) {
-        async function detect() {
-            if (!scanningActive) return;
-            try {
-                const results = await _nativeDet.detect(video);
-                if (results.length > 0) { onQRFound(results[0].rawValue); return; }
-            } catch(e) {}
-            if (scanningActive) requestAnimationFrame(detect);
-        }
-        requestAnimationFrame(detect);
-    } else if (reader) {
-        const zxCanvas = document.createElement('canvas');
-        const zxCtx = zxCanvas.getContext('2d', { willReadFrequently: true });
-        let lastZxTime = 0;
-        // 1D barcodes need faster polling (50ms) and synchronous try/catch decode
-        const throttle = is1D ? 50 : 80;
-        function liveZXing() {
-            if (!scanningActive) return;
-            const now = Date.now();
-            if (now - lastZxTime > throttle && video.readyState >= video.HAVE_ENOUGH_DATA) {
-                lastZxTime = now;
-                zxCanvas.width = video.videoWidth; zxCanvas.height = video.videoHeight;
-                zxCtx.drawImage(video, 0, 0);
-                try {
-                    const r = reader.decodeFromCanvas(zxCanvas);
-                    if (r && scanningActive) { onQRFound(r.getText()); return; }
-                } catch(_) {} // NotFoundException expected when no barcode in frame
-            }
-            if (scanningActive) requestAnimationFrame(liveZXing);
-        }
-        requestAnimationFrame(liveZXing);
+    // Use multiple events + timeout to reliably detect when video is ready (matches engine-draw.html)
+    let _loopStarted = false;
+    function _tryStart() {
+        if (_loopStarted || video.videoWidth === 0) return;
+        _loopStarted = true;
+        video.play().catch(() => {});
+        _startDecodeLoop(video);
     }
+    video.onloadedmetadata = _tryStart;
+    video.addEventListener('loadeddata', _tryStart);
+    video.addEventListener('canplay',    _tryStart);
+    setTimeout(() => { if (!_loopStarted && video.readyState >= 2) _tryStart(); }, 800);
+    video.play().catch(() => {});
+}
+
+function _startDecodeLoop(vid) {
+    // Matches engine-draw.html: BarcodeDetector fires every frame (async),
+    // ZXing + jsQR throttled at 50ms on a cropped 18% centre band (much faster than full frame)
+    const scanCanvas = document.createElement('canvas');
+    const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
+    let lastSoftwareTime = 0;
+    function tick() {
+        if (!scanningActive) return;
+        if (vid.readyState >= 2 && vid.videoWidth > 0) {
+            // BarcodeDetector — hardware-accelerated, runs concurrently every frame
+            if (_nativeDet) {
+                _nativeDet.detect(vid)
+                    .then(r => { if (r.length && scanningActive) { onQRFound(r[0].rawValue); } })
+                    .catch(() => {});
+            }
+            // ZXing + jsQR — 50ms throttle, decode only an 18% centre strip for speed
+            const now = Date.now();
+            if (now - lastSoftwareTime > 50) {
+                lastSoftwareTime = now;
+                const bandH = Math.max(1, Math.round(vid.videoHeight * 0.18));
+                const sy    = Math.round(vid.videoHeight * 0.41);
+                scanCanvas.width  = vid.videoWidth;
+                scanCanvas.height = bandH;
+                ctx.drawImage(vid, 0, sy, vid.videoWidth, bandH, 0, 0, vid.videoWidth, bandH);
+                if (_zxReader) {
+                    try {
+                        const r = _zxReader.decodeFromCanvas(scanCanvas);
+                        if (r && scanningActive) { onQRFound(r.getText()); return; }
+                    } catch(_) {}
+                }
+                if (window.jsQR) {
+                    const imgData = ctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+                    const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+                    if (qr && scanningActive) { onQRFound(qr.data); return; }
+                }
+            }
+        }
+        if (scanningActive) _scanRafId = requestAnimationFrame(tick);
+    }
+    _scanRafId = requestAnimationFrame(tick);
 }
 
 function openPhotoCapture(inputId) {
@@ -1540,6 +1545,7 @@ function onQRFound(value) {
 
 function closeCamera() {
     scanningActive = false;
+    if (_scanRafId) { cancelAnimationFrame(_scanRafId); _scanRafId = null; }
     document.getElementById('cameraOverlay').classList.remove('active');
     if (cameraStream) { try { cameraStream.getTracks().forEach(t => t.stop()); } catch(_) {} cameraStream = null; }
     const div = document.querySelector('#scanner-reader');

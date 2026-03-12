@@ -611,7 +611,8 @@ function startDecode(){
   function tick(){
     if(!scanning)return;
     if(v.readyState>=2&&v.videoWidth>0){
-      if(_nativeDet){_nativeDet.detect(v).then(r=>{if(r.length&&scanning)onScan(r[0].rawValue)}).catch(()=>{});if(scanning)rafId=requestAnimationFrame(tick);return}
+      // BarcodeDetector fires every frame async — runs concurrently with software decoders
+      if(_nativeDet){_nativeDet.detect(v).then(r=>{if(r.length&&scanning)onScan(r[0].rawValue)}).catch(()=>{});}
       const now=Date.now();
       if(now-lastTime>50){
         lastTime=now;

@@ -330,42 +330,6 @@
       z-index: 10;
     }
 
-    #title {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 4rem;
-      font-weight: bold;
-      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 255, 255, 0.3);
-      opacity: 0;
-      animation: titleDramatic 3s ease-in-out;
-      text-transform: uppercase;
-      letter-spacing: 4px;
-    }
-
-    #branding {
-      position: absolute;
-      bottom: 40px;
-      right: 40px;
-      color: white;
-      font-size: 1.5rem;
-      font-weight: 600;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-      opacity: 0.9;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 8px 16px;
-      border-radius: 5px;
-    }
-
-    @keyframes titleDramatic {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-5deg); filter: blur(10px); }
-      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(2deg); filter: blur(0px); }
-      80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-1deg); filter: blur(0px); }
-      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5) rotate(5deg); filter: blur(5px); }
-    }
-
     /* Enhanced flash transitions - smoother */
     .flash {
       animation: flashBeat 0.5s ease-in-out;
@@ -438,7 +402,8 @@
       transform: translateY(-2px);
     }
 
-    .hide-controls #controls {
+    .hide-controls #controls,
+    .hide-controls #recording-tip {
       display: none;
     }
 
@@ -509,18 +474,6 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="title-input">📝 Title Text (will appear at start)</label>
-          <input type="text" id="title-input" value="YOU SHOULD SEE ME IN A CROWN" />
-        </div>
-        
-        <div class="form-group">
-          <label for="branding-input">🏷️ Watermark Text (bottom-right)</label>
-          <input type="text" id="branding-input" value="ROK THE NATS 2026" />
-        </div>
-      </div>
-
       <p style="text-align: center; margin-top: 20px; color: #aaa;">
         ✨ 10 random images will be automatically selected from your gallery
       </p>
@@ -545,10 +498,7 @@
     </div>
 
     <div id="slideshow">
-      <div id="overlay">
-        <div id="title"></div>
-        <div id="branding"></div>
-      </div>
+      <div id="overlay"></div>
     </div>
 
     <div id="controls">
@@ -672,8 +622,12 @@
     // ==========================================
 
     function getRandomImages(count = 10) {
-      const shuffled = [...AVAILABLE_IMAGES].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, count);
+      const arr = [...AVAILABLE_IMAGES];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr.slice(0, count);
     }
 
     // ==========================================
@@ -685,9 +639,7 @@
       CONFIG = {
         bpm: parseInt(document.getElementById('bpm-input').value),
         duration: parseInt(document.getElementById('duration-input').value),
-        title: document.getElementById('title-input').value,
-        branding: document.getElementById('branding-input').value,
-        images: getRandomImages(10) // Auto-select 10 random images!
+        images: getRandomImages(10)
       };
 
       // Switch to slideshow mode
@@ -697,7 +649,8 @@
 
     function backToConfig() {
       stopShow();
-      document.body.classList.remove('slideshow-mode');
+      document.body.classList.remove('slideshow-mode', 'hide-controls');
+      document.querySelector('#controls button:last-of-type').textContent = 'Hide Controls (H)';
     }
 
     // ==========================================
@@ -723,7 +676,7 @@
     let currentSlide = 0;
     let isPlaying = false;
     let slideInterval;
-    let beatDuration, slideDuration, transitionDuration;
+    let beatDuration, slideDuration;
 
     function initSlideshow() {
       const container = document.getElementById('slideshow');
@@ -735,9 +688,8 @@
       // Calculate timing based on BPM
       beatDuration = 60 / CONFIG.bpm;
       slideDuration = (CONFIG.duration / CONFIG.images.length) * 1000;
-      transitionDuration = beatDuration * 1000;
 
-      CONFIG.images.forEach((imageUrl, index) => {
+      CONFIG.images.forEach((imageUrl) => {
         const slide = document.createElement('div');
         slide.className = 'slide';
         slide.style.backgroundImage = `url('${imageUrl}')`;
@@ -749,91 +701,51 @@
         container.appendChild(slide);
       });
 
-      // Update text overlays
-      document.getElementById('title').textContent = CONFIG.title;
-      document.getElementById('branding').textContent = CONFIG.branding;
-
-      console.log('🎬 Slideshow ready!');
-      console.log(`🎼 BPM: ${CONFIG.bpm}`);
-      console.log(`⏱️ Duration: ${CONFIG.duration}s`);
-      console.log(`🖼️ Images: ${CONFIG.images.length}`);
-      console.log(`⏰ Slide duration: ${(slideDuration / 1000).toFixed(2)}s (${slideDuration}ms)`);
-      console.log(`🎵 Beat duration: ${beatDuration.toFixed(2)}s`);
+      document.querySelector('#controls button:first-of-type').textContent = `▶ Start (${CONFIG.duration}s)`;
     }
 
     function startShow() {
-      if (isPlaying) {
-        console.warn('⚠️ Already playing, ignoring startShow call');
-        return;
-      }
+      if (isPlaying) return;
       
-      console.log('▶️ Starting slideshow...');
       isPlaying = true;
       currentSlide = 0;
       
       const slides = document.querySelectorAll('.slide');
-      console.log(`📊 Total slides: ${slides.length}`);
-      console.log(`⏰ Interval will fire every ${slideDuration}ms (${slideDuration/1000}s)`);
       
       // Show first slide immediately
       slides[0].classList.add('active');
       slides[0].style.zIndex = '2';
-      console.log('✅ First slide (0) activated');
       
       // Change slides at calculated intervals
       slideInterval = setInterval(() => {
-        try {
-          console.log(`🎬 Interval fired - Current slide: ${currentSlide}, Next will be: ${currentSlide + 1}`);
-          
-          // Move to next slide
-          currentSlide++;
-          
-          if (currentSlide >= CONFIG.images.length) {
-            console.log('🏁 Slideshow complete!');
-            stopShow();
-            return;
-          }
-          
-          const previous = slides[currentSlide - 1];
-          const current = slides[currentSlide];
-          
-          console.log(`✅ Transitioning from ${currentSlide - 1} to ${currentSlide}`);
-          console.log(`   Previous exists: ${!!previous}, Current exists: ${!!current}`);
-          
-          // Ensure current slide is on top
-          current.style.zIndex = '2';
-          previous.style.zIndex = '1';
-          
-          // Transition: add current, remove previous (CSS handles smooth fade)
-          current.classList.add('active');
-          
-          setTimeout(() => {
-            previous.classList.remove('active');
-            previous.style.zIndex = '0';
-          }, 600);
-          
-        } catch(err) {
-          console.error('❌ Error in slideshow interval:', err);
+        currentSlide++;
+        
+        if (currentSlide >= CONFIG.images.length) {
           stopShow();
+          return;
         }
+        
+        const previous = slides[currentSlide - 1];
+        const current = slides[currentSlide];
+        
+        current.style.zIndex = '2';
+        previous.style.zIndex = '1';
+        current.classList.add('active');
+        
+        setTimeout(() => {
+          previous.classList.remove('active');
+          previous.style.zIndex = '0';
+        }, 600);
       }, slideDuration);
-      
-      console.log(`🎯 Interval set with ID: ${slideInterval}`);
-      console.log(`⏱️ Next slide in ${slideDuration}ms`);
     }
 
     function stopShow() {
-      console.log('⏹️ stopShow called');
       isPlaying = false;
-      if (slideInterval) {
-        console.log(`🛑 Clearing interval ${slideInterval}`);
-        clearInterval(slideInterval);
-        slideInterval = null;
-      }
+      clearInterval(slideInterval);
+      slideInterval = null;
     }
 
     function resetShow() {
-      console.log('↻ resetShow called');
       stopShow();
       const slides = document.querySelectorAll('.slide');
       slides.forEach(slide => slide.classList.remove('active'));
@@ -841,16 +753,9 @@
     }
 
     function toggleControls() {
-      const controls = document.getElementById('controls');
-      const tip = document.getElementById('recording-tip');
-      
-      if (controls.style.display === 'none') {
-        controls.style.display = 'block';
-        tip.style.display = 'block';
-      } else {
-        controls.style.display = 'none';
-        tip.style.display = 'none';
-      }
+      const isHidden = document.body.classList.toggle('hide-controls');
+      const btn = document.querySelector('#controls button:last-of-type');
+      btn.textContent = isHidden ? 'Show Controls (H)' : 'Hide Controls (H)';
     }
 
     // Keyboard shortcuts
@@ -877,8 +782,6 @@
     // Initialize
     window.addEventListener('load', () => {
       document.getElementById('generate-btn').addEventListener('click', generateSlideshow);
-      console.log('🎬 Slideshow Generator Ready!');
-      console.log(`📸 ${AVAILABLE_IMAGES.length} images available`);
     });
   </script>
 </body>

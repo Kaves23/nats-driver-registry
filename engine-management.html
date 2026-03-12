@@ -1311,12 +1311,7 @@
         let currentTargetInput = null;
         let flashEnabled = false;
         let scanningActive = false;
-        let quaggaRunning = false;
-
-        // Fields that use QR codes — everything else is a 1D barcode
-        function isQrField(inputId) {
-            return inputId === 'ticketBarcode';
-        }
+        let _liveRafId = null;
 
         // Debug logging to screen
         function debugLog(message, type = 'info') {
@@ -1353,12 +1348,14 @@
         let _nativeDet = null;
         let _zxReader  = null;
         (function initDecoders() {
+            // Always use getSupportedFormats() — passing unsupported formats throws on some devices
             if (window.BarcodeDetector) {
-                _nativeDet = new BarcodeDetector({ formats: [
-                    'qr_code', 'code_128', 'code_39', 'code_93',
-                    'ean_13', 'ean_8', 'itf', 'data_matrix', 'aztec', 'pdf_417'
-                ]});
-                debugLog('Native BarcodeDetector ready (multi-format)', 'success');
+                BarcodeDetector.getSupportedFormats().then(fmts => {
+                    try {
+                        _nativeDet = new BarcodeDetector({ formats: fmts });
+                        debugLog('Native BarcodeDetector ready (multi-format)', 'success');
+                    } catch(e) { debugLog('BD ctor failed: ' + e.message, 'error'); }
+                }).catch(e => { debugLog('BD getSupportedFormats failed: ' + e.message, 'error'); });
             }
             if (window.ZXing) {
                 try { _zxReader = new ZXing.BrowserMultiFormatReader(); debugLog('ZXing reader ready', 'success'); } catch(_) {}
@@ -1366,44 +1363,26 @@
         })();
 
         // ── Scanner entry point ──────────────────────────────────────
-        // Routes to jsQR (QR codes) or Quagga2 (1D barcodes) based on field.
         async function openCamera(inputId) {
             currentTargetInput = inputId;
-            debugLog('📷 Scan for: ' + inputId + ' [' + (isQrField(inputId) ? 'QR' : '1D barcode') + ']');
-
+            debugLog('📷 Scan for: ' + inputId);
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    if (isQrField(inputId)) {
-                        await openLiveScanner(inputId);
-                    } else {
-                        await openBarcodeScanner(inputId);
-                    }
-                    return;
-                } catch(err) {
-                    debugLog('Live camera unavailable (' + err.message + ') — using photo mode', 'error');
-                    closeCamera();
-                }
+                try { await openLiveScanner(inputId); return; }
+                catch(err) { debugLog('Live camera unavailable (' + err.message + ') — using photo mode', 'error'); closeCamera(); }
             }
             openPhotoCapture(inputId);
         }
 
-        // Live streaming scanner (requires getUserMedia — works on HTTPS or localhost)
+        // Unified live scanner — engine-draw.html pattern:
+        // BarcodeDetector (async, every frame) runs concurrently with ZXing+jsQR (50ms, cropped band)
         async function openLiveScanner(inputId) {
             const overlay = document.getElementById('cameraOverlay');
             overlay.classList.add('active');
             scanningActive = true;
-
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1920 }, height: { ideal: 1080 },
-                    focusMode: { ideal: 'continuous' },
-                    exposureMode: { ideal: 'continuous' },
-                    whiteBalanceMode: { ideal: 'continuous' }
-                }
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
             });
             cameraStream = stream;
-            // Request continuous autofocus on the track if the device supports it
             try {
                 const track = stream.getVideoTracks()[0];
                 const caps = track.getCapabilities ? track.getCapabilities() : {};
@@ -1411,7 +1390,6 @@
                     track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
                 }
             } catch(_) {}
-
             const scannerDiv = document.querySelector('#scanner-reader');
             scannerDiv.innerHTML = '';
             const video = document.createElement('video');
@@ -1420,122 +1398,61 @@
             video.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
             scannerDiv.appendChild(video);
             video.srcObject = stream;
-            await video.play();
-
-            // Decoder priority: native BarcodeDetector (Android) → jsQR (fast, iOS-friendly) → ZXing fallback
-            const liveCanvas = document.createElement('canvas');
-            const liveCtx = liveCanvas.getContext('2d', { willReadFrequently: true });
-            let lastScanTime = 0;
-
-            if (_nativeDet) {
-                debugLog('Live — BarcodeDetector (hardware-accelerated)', 'success');
-                async function liveDetect() {
-                    if (!scanningActive) return;
-                    try {
-                        const results = await _nativeDet.detect(video);
-                        if (results.length > 0) { onQRFound(results[0].rawValue); return; }
-                    } catch(e) {}
-                    if (scanningActive) requestAnimationFrame(liveDetect);
-                }
-                requestAnimationFrame(liveDetect);
-            } else if (window.jsQR) {
-                debugLog('Live — jsQR fast scanner ready', 'success');
-                function liveJsQR() {
-                    if (!scanningActive) return;
-                    const now = Date.now();
-                    if (now - lastScanTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
-                        lastScanTime = now;
-                        liveCanvas.width = video.videoWidth;
-                        liveCanvas.height = video.videoHeight;
-                        liveCtx.drawImage(video, 0, 0);
-                        const imgData = liveCtx.getImageData(0, 0, liveCanvas.width, liveCanvas.height);
-                        const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
-                        if (code && scanningActive) { onQRFound(code.data); return; }
-                    }
-                    if (scanningActive) requestAnimationFrame(liveJsQR);
-                }
-                requestAnimationFrame(liveJsQR);
-            } else if (_zxReader) {
-                debugLog('Live — ZXing fallback reader', 'success');
-                function liveZXing() {
-                    if (!scanningActive) return;
-                    const now = Date.now();
-                    if (now - lastScanTime > 80 && video.readyState >= video.HAVE_ENOUGH_DATA) {
-                        lastScanTime = now;
-                        liveCanvas.width = video.videoWidth;
-                        liveCanvas.height = video.videoHeight;
-                        liveCtx.drawImage(video, 0, 0);
-                        try {
-                            const r = _zxReader.decodeFromCanvas(liveCanvas);
-                            if (r && scanningActive) { onQRFound(r.getText()); return; }
-                        } catch(_) {}
-                    }
-                    if (scanningActive) requestAnimationFrame(liveZXing);
-                }
-                requestAnimationFrame(liveZXing);
-            } else {
-                debugLog('⚠️ No live decoder available — switching to photo mode', 'error');
-                closeCamera();
-                openPhotoCapture(inputId);
+            // Multiple events + timeout — reliably detects when video is ready (matches engine-draw.html)
+            let _loopStarted = false;
+            function _tryStart() {
+                if (_loopStarted || video.videoWidth === 0) return;
+                _loopStarted = true;
+                video.play().catch(() => {});
+                _startDecodeLoop(video);
             }
+            video.onloadedmetadata = _tryStart;
+            video.addEventListener('loadeddata', _tryStart);
+            video.addEventListener('canplay',    _tryStart);
+            setTimeout(() => { if (!_loopStarted && video.readyState >= 2) _tryStart(); }, 800);
+            video.play().catch(() => {});
         }
 
-        // ── 1D Barcode scanner via Quagga2 (engine seals, tyre serials) ──
-        async function openBarcodeScanner(inputId) {
-            if (typeof Quagga === 'undefined') {
-                debugLog('Quagga2 not loaded — using photo mode', 'error');
-                openPhotoCapture(inputId);
-                return;
-            }
-
-            const overlay = document.getElementById('cameraOverlay');
-            overlay.classList.add('active');
-            scanningActive = true;
-
-            const scannerDiv = document.querySelector('#scanner-reader');
-            scannerDiv.innerHTML = '';
-
-            await new Promise((resolve, reject) => {
-                Quagga.init({
-                    inputStream: {
-                        type: 'LiveStream',
-                        target: scannerDiv,
-                        constraints: {
-                            facingMode: 'environment',
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    },
-                    decoder: {
-                        readers: ['code_128_reader', 'code_39_reader', 'ean_reader', 'ean_8_reader', 'upc_reader'],
-                        multiple: false
-                    },
-                    locate: true
-                }, function(err) {
-                    if (err) { reject(err); return; }
-                    Quagga.start();
-                    quaggaRunning = true;
-                    debugLog('Live — Quagga2 barcode scanner ready', 'success');
-                    resolve();
-                });
-            });
-
-            // Style the Quagga video to fill the viewport
-            const video = scannerDiv.querySelector('video');
-            if (video) video.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
-            const canvas = scannerDiv.querySelector('canvas.drawingBuffer');
-            if (canvas) canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;';
-
-            Quagga.onDetected(function handler(result) {
+        function _startDecodeLoop(vid) {
+            const scanCanvas = document.createElement('canvas');
+            const ctx = scanCanvas.getContext('2d', { willReadFrequently: true });
+            let lastSoftwareTime = 0;
+            debugLog(`Loop start | BD:${_nativeDet?'✅':'❌'} ZX:${_zxReader?'✅':'❌'} jsQR:${window.jsQR?'✅':'❌'}`);
+            function tick() {
                 if (!scanningActive) return;
-                const code = result && result.codeResult && result.codeResult.code;
-                if (code) {
-                    Quagga.offDetected(handler);
-                    onQRFound(code);
+                if (vid.readyState >= 2 && vid.videoWidth > 0) {
+                    // BarcodeDetector — hardware-accelerated, fires every frame async
+                    if (_nativeDet) {
+                        _nativeDet.detect(vid)
+                            .then(r => { if (r.length && scanningActive) { debugLog('BD HIT: ' + r[0].rawValue, 'success'); onQRFound(r[0].rawValue); } })
+                            .catch(e => { debugLog('BD err: ' + e.message, 'error'); });
+                    }
+                    // ZXing + jsQR — 50ms throttle on an 18% cropped centre band (much faster than full frame)
+                    const now = Date.now();
+                    if (now - lastSoftwareTime > 50) {
+                        lastSoftwareTime = now;
+                        const bandH = Math.max(1, Math.round(vid.videoHeight * 0.18));
+                        const sy    = Math.round(vid.videoHeight * 0.41);
+                        scanCanvas.width  = vid.videoWidth;
+                        scanCanvas.height = bandH;
+                        ctx.drawImage(vid, 0, sy, vid.videoWidth, bandH, 0, 0, vid.videoWidth, bandH);
+                        if (_zxReader) {
+                            try {
+                                const r = _zxReader.decodeFromCanvas(scanCanvas);
+                                if (r && scanningActive) { debugLog('ZX HIT: ' + r.getText(), 'success'); onQRFound(r.getText()); return; }
+                            } catch(_) {}
+                        }
+                        if (window.jsQR) {
+                            const imgData = ctx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+                            const qr = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+                            if (qr && scanningActive) { debugLog('jsQR HIT: ' + qr.data, 'success'); onQRFound(qr.data); return; }
+                        }
+                    }
                 }
-            });
+                if (scanningActive) _liveRafId = requestAnimationFrame(tick);
+            }
+            _liveRafId = requestAnimationFrame(tick);
         }
-
         // Photo capture fallback (file input — works on any HTTP context)
         function openPhotoCapture(inputId) {
             debugLog('Photo mode — opening camera');
@@ -1663,10 +1580,7 @@
         // Close live scanner overlay and stop stream
         function closeCamera() {
             scanningActive = false;
-            if (quaggaRunning) {
-                try { Quagga.stop(); } catch(_) {}
-                quaggaRunning = false;
-            }
+            if (_liveRafId) { cancelAnimationFrame(_liveRafId); _liveRafId = null; }
             const overlay = document.getElementById('cameraOverlay');
             overlay.classList.remove('active');
             if (cameraStream) {

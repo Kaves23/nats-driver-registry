@@ -651,17 +651,13 @@ function startDecode(){
   function tick(){
     if(!scanning){return}
     if(v.readyState>=2&&v.videoWidth>0){
-      // ── Path 1: native BarcodeDetector (fastest, hardware-accelerated on Android)
+      // BarcodeDetector fires every frame async — runs concurrently with software decoders
       if(_nativeDet){
         _nativeDet.detect(v)
           .then(r=>{if(r.length&&scanning)onScan(r[0].rawValue)})
           .catch(()=>{});
-        // Don't bother with software fallback when native is running
-        if(scanning)rafId=requestAnimationFrame(tick);
-        return;
       }
-      // ── Path 2: jsQR — fast synchronous QR, works on iOS/WebKit (no BarcodeDetector)
-      // ── Path 3: ZXing — handles 1D barcodes (Code128 etc) synchronously, must use try/catch
+      // jsQR + ZXing — 50ms throttle on 18% cropped centre band for speed
       const now=Date.now();
       if(now-lastZxTime>50){
         lastZxTime=now;
