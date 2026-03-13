@@ -942,7 +942,7 @@ function handleBarcode(raw) {
   if (/^race_entry_/i.test(upper)) {
     setNumDisplay(upper); doLookupByTicket(upper); return;
   }
-  if (/^(ENG|ROK|KZ|CAD)[A-Z0-9]+$/i.test(upper) || /^[A-Z]{2,4}\d{3,}$/i.test(upper)) {
+  if (/^(ENG|ROK|KZ|CAD|TYR|TX|GAS)[A-Z0-9]+$/i.test(upper) || /^[A-Z]{1,4}\d{3,}$/i.test(upper)) {
     setNumDisplay(upper); doLookupByTicket(upper); return;
   }
   const cleaned = upper.replace(/^#/, '');

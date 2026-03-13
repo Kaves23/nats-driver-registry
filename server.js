@@ -426,7 +426,7 @@ if (process.env.DB_SSL === 'false') {
   setInterval(async () => {
     try {
       const { rows } = await cloudPool.query(
-        `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '3 hours'`
+        `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '24 hours'`
       );
       for (const row of rows) {
         const cols = Object.keys(row);
