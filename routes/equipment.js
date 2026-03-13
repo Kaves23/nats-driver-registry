@@ -45,7 +45,73 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         ticketColumn = 'ticket_fuel_ref';
         ticketType = 'Fuel';
       } else {
-        return res.json({ success: false, error: 'Invalid barcode format' });
+        // Not a standard ticket prefix — check if it matches a custom driver barcode (E####, etc.)
+        const customResult = await pool.query(`
+          SELECT re.entry_id, re.driver_id, re.race_class, re.engine_serial,
+                 re.engine_returned, re.event_id,
+                 re.tyre_front_left, re.tyre_front_right, re.tyre_rear_left, re.tyre_rear_right,
+                 re.tyre_sets, re.ticket_tyres_ref,
+                 d.first_name, d.last_name, d.race_number, d.transponder_number
+          FROM race_entries re
+          JOIN drivers d ON re.driver_id = d.driver_id
+          WHERE UPPER(re.driver_barcode_1) = $1
+             OR UPPER(re.driver_barcode_2) = $1
+             OR UPPER(re.driver_barcode_3) = $1
+          ORDER BY re.created_at DESC
+          LIMIT 1
+        `, [barcodeUpper]);
+
+        if (customResult.rows.length === 0) {
+          return res.json({ success: false, error: 'Invalid barcode format' });
+        }
+
+        const entry = customResult.rows[0];
+        const fl = entry.tyre_front_left;
+        const fr = entry.tyre_front_right;
+        const rl = entry.tyre_rear_left;
+        const rr = entry.tyre_rear_right;
+        const tyreSets = Array.isArray(entry.tyre_sets) ? entry.tyre_sets : [];
+        if (tyreSets.length === 0 && fl && fr && rl && rr) tyreSets.push({ fl, fr, rl, rr });
+        const allTyreSerials = [];
+        tyreSets.forEach(s => {
+          ['fl','fr','rl','rr'].forEach(k => { if (s[k]) allTyreSerials.push(s[k].toUpperCase()); });
+        });
+
+        await logEquipmentScan({
+          scan_type: 'ticket_lookup',
+          barcode_scanned: barcodeUpper,
+          entry_id: entry.entry_id,
+          driver_id: entry.driver_id,
+          driver_name: `${entry.first_name} ${entry.last_name}`,
+          scanned_by: 'System',
+          action_result: 'success',
+          notes: `Driver barcode lookup`,
+          race_class: entry.race_class
+        });
+
+        return res.json({
+          success: true,
+          driver: {
+            driver_id: entry.driver_id,
+            entry_id: entry.entry_id,
+            first_name: entry.first_name,
+            last_name: entry.last_name,
+            race_class: entry.race_class,
+            race_number: entry.race_number,
+            transponder_number: entry.transponder_number,
+            event_id: entry.event_id || null,
+            ticket_tyres_ref: entry.ticket_tyres_ref || null,
+            registered_tyres: allTyreSerials.length >= 4,
+            tyre_sets: tyreSets,
+            all_tyre_serials: allTyreSerials,
+            tyres: allTyreSerials.length >= 4 ? { front_left: fl, front_right: fr, rear_left: rl, rear_right: rr } : null
+          },
+          ticket: {
+            barcode: barcodeUpper,
+            type: 'Driver ID',
+            engine_serial: (entry.engine_serial && entry.engine_returned !== true) ? entry.engine_serial : null
+          }
+        });
       }
 
       // Find entry with this ticket (supports both single ref and JSON array stored refs)

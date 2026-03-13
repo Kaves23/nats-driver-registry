@@ -2138,6 +2138,37 @@
     </div>
   </div>
 
+  <!-- Assign Driver Barcodes Modal -->
+  <div class="modal" id="assignBarcodesModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center;">
+    <div class="modal-content" style="max-width:480px;width:94%;background:#1e293b;border-radius:12px;padding:28px;color:#e2e8f0;">
+      <h2 style="margin:0 0 6px;font-size:18px;">🏷️ Assign Driver Barcodes</h2>
+      <p style="color:#64748b;font-size:13px;margin:0 0 20px;">Scan or type up to 3 custom barcodes (e.g. E0045) that should resolve to this driver. Scanning any of these on the engine draw, check-in, or equipment screens will return the correct race number.</p>
+      <input type="hidden" id="assignBarcodesEntryId">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:11px;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Barcode 1</label>
+          <input id="driverBarcode1" type="text" placeholder="e.g. E0045" autocapitalize="characters" autocomplete="off"
+            style="width:100%;margin-top:4px;padding:10px 12px;background:#0f172a;border:2px solid #334155;border-radius:8px;color:#e2e8f0;font-family:monospace;font-size:16px;font-weight:700;letter-spacing:1px;">
+        </div>
+        <div>
+          <label style="font-size:11px;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Barcode 2</label>
+          <input id="driverBarcode2" type="text" placeholder="optional" autocapitalize="characters" autocomplete="off"
+            style="width:100%;margin-top:4px;padding:10px 12px;background:#0f172a;border:2px solid #334155;border-radius:8px;color:#e2e8f0;font-family:monospace;font-size:16px;font-weight:700;letter-spacing:1px;">
+        </div>
+        <div>
+          <label style="font-size:11px;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Barcode 3</label>
+          <input id="driverBarcode3" type="text" placeholder="optional" autocapitalize="characters" autocomplete="off"
+            style="width:100%;margin-top:4px;padding:10px 12px;background:#0f172a;border:2px solid #334155;border-radius:8px;color:#e2e8f0;font-family:monospace;font-size:16px;font-weight:700;letter-spacing:1px;">
+        </div>
+      </div>
+      <div id="assignBarcodesMsg" style="min-height:20px;margin:12px 0 0;font-size:13px;"></div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button onclick="saveEntryBarcodes()" style="flex:1;padding:12px;background:#3b82f6;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">Save Barcodes</button>
+        <button onclick="closeAssignBarcodesModal()" style="flex:1;padding:12px;background:#334155;color:#e2e8f0;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Update Entry Items Modal (for resending tickets) -->
   <div class="modal" id="updateEntryItemsModal">
     <div class="modal-content" style="max-width: 600px;">
@@ -3573,6 +3604,9 @@
         <button onclick="sendToTrello('${entryId}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #0ea5e9; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
           📋 Send to Trello
         </button>
+        <button onclick="showAssignBarcodesModal('${entryId}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
+          🏷️ Assign Barcodes
+        </button>
         <button onclick="deleteRaceEntry('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
           🗑️ Delete Entry
         </button>
@@ -3595,6 +3629,57 @@
       const menu = document.getElementById('entryActionsMenu');
       if (menu) menu.remove();
       document.removeEventListener('click', closeEntryActionsMenu);
+    }
+
+    async function showAssignBarcodesModal(entryId) {
+      document.getElementById('assignBarcodesEntryId').value = entryId;
+      document.getElementById('assignBarcodesMsg').textContent = '';
+      document.getElementById('driverBarcode1').value = '';
+      document.getElementById('driverBarcode2').value = '';
+      document.getElementById('driverBarcode3').value = '';
+      // Try to load existing barcodes from the server
+      try {
+        const r = await fetch(`/api/admin/getEntry/${encodeURIComponent(entryId)}`, { headers: { 'x-admin-token': adminToken } });
+        if (r.ok) {
+          const d = await r.json();
+          const e = d.entry || {};
+          document.getElementById('driverBarcode1').value = e.driver_barcode_1 || '';
+          document.getElementById('driverBarcode2').value = e.driver_barcode_2 || '';
+          document.getElementById('driverBarcode3').value = e.driver_barcode_3 || '';
+        }
+      } catch (_) { /* non-fatal — just start with empty fields */ }
+      document.getElementById('assignBarcodesModal').style.display = 'flex';
+      document.getElementById('driverBarcode1').focus();
+    }
+
+    function closeAssignBarcodesModal() {
+      document.getElementById('assignBarcodesModal').style.display = 'none';
+    }
+
+    async function saveEntryBarcodes() {
+      const entryId = document.getElementById('assignBarcodesEntryId').value;
+      const b1 = document.getElementById('driverBarcode1').value.trim();
+      const b2 = document.getElementById('driverBarcode2').value.trim();
+      const b3 = document.getElementById('driverBarcode3').value.trim();
+      const msgEl = document.getElementById('assignBarcodesMsg');
+      msgEl.style.color = '#94a3b8';
+      msgEl.textContent = 'Saving…';
+      try {
+        const res = await fetch(`/api/admin/entries/${encodeURIComponent(entryId)}/barcodes`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+          body: JSON.stringify({ barcode_1: b1 || null, barcode_2: b2 || null, barcode_3: b3 || null })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Save failed');
+        msgEl.style.color = '#22c55e';
+        msgEl.textContent = '✓ Saved';
+        showToast('Barcodes saved', 'success');
+        setTimeout(closeAssignBarcodesModal, 900);
+      } catch (err) {
+        msgEl.style.color = '#ef4444';
+        msgEl.textContent = '✗ ' + err.message;
+      }
     }
 
     async function exportFinancialReportCSV() {

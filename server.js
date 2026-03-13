@@ -648,6 +648,17 @@ const initRaceEntriesTable = async () => {
       END $$;
     `);
 
+    // Custom driver barcodes — up to 3 scannable codes that resolve to this entry
+    await pool.query(`
+      ALTER TABLE race_entries
+      ADD COLUMN IF NOT EXISTS driver_barcode_1 VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS driver_barcode_2 VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS driver_barcode_3 VARCHAR(100)
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_barcode1 ON race_entries(UPPER(driver_barcode_1)) WHERE driver_barcode_1 IS NOT NULL`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_barcode2 ON race_entries(UPPER(driver_barcode_2)) WHERE driver_barcode_2 IS NOT NULL`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_barcode3 ON race_entries(UPPER(driver_barcode_3)) WHERE driver_barcode_3 IS NOT NULL`);
+
     // Ensure msa_license_number exists on drivers table
     await pool.query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS msa_license_number VARCHAR(100)`);
     // Season package for entry pricing: null=none, 'engine'=engine included, 'full'=full national package
@@ -8580,6 +8591,42 @@ app.post('/api/deleteRaceEntry', async (req, res) => {
   } catch (err) {
     console.error('❌ deleteRaceEntry error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Save up to 3 custom driver barcodes for a race entry
+app.patch('/api/admin/entries/:entryId/barcodes', requireAdmin, async (req, res) => {
+  try {
+    const { entryId } = req.params;
+    const { barcode_1, barcode_2, barcode_3 } = req.body;
+    const b1 = barcode_1 ? barcode_1.trim().toUpperCase() : null;
+    const b2 = barcode_2 ? barcode_2.trim().toUpperCase() : null;
+    const b3 = barcode_3 ? barcode_3.trim().toUpperCase() : null;
+
+    // Check for duplicates across other entries
+    if (b1 || b2 || b3) {
+      const vals = [b1, b2, b3].filter(Boolean);
+      const dupeCheck = await pool.query(`
+        SELECT entry_id, driver_barcode_1, driver_barcode_2, driver_barcode_3
+        FROM race_entries
+        WHERE entry_id != $1
+          AND (UPPER(driver_barcode_1) = ANY($2) OR UPPER(driver_barcode_2) = ANY($2) OR UPPER(driver_barcode_3) = ANY($2))
+      `, [entryId, vals]);
+      if (dupeCheck.rows.length > 0) {
+        return res.json({ success: false, error: 'One or more barcodes are already assigned to another entry' });
+      }
+    }
+
+    await pool.query(`
+      UPDATE race_entries
+      SET driver_barcode_1 = $1, driver_barcode_2 = $2, driver_barcode_3 = $3, updated_at = NOW()
+      WHERE entry_id = $4
+    `, [b1, b2, b3, entryId]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ save barcodes error:', err.message);
+    res.json({ success: false, error: err.message });
   }
 });
 
