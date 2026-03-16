@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Event Check-In</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: white; min-height: 100vh; overflow-x: hidden; }
+
+    /* ── Boot screen ── */
+    #bootScreen {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px; gap: 20px;
+    }
+    #bootScreen h1 { font-size: 28px; font-weight: 800; color: white; margin-bottom: 4px; }
+    #bootScreen p  { font-size: 14px; color: #94a3b8; margin-bottom: 8px; }
+    .boot-card {
+      background: #1e293b; border-radius: 16px; padding: 28px; width: 100%; max-width: 420px;
+      border: 1px solid #334155;
+    }
+    .boot-card label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; margin-bottom: 6px; margin-top: 14px; }
+    .boot-card input, .boot-card select {
+      width: 100%; padding: 12px 14px; background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; color: white; font-size: 15px;
+    }
+    .boot-card input::placeholder { color: #475569; }
+    .boot-card select option { background: #0f172a; }
+    .boot-btn {
+      width: 100%; padding: 14px; background: linear-gradient(135deg,#22c55e,#16a34a);
+      color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 20px;
+    }
+    #bootError { color: #ef4444; font-size: 13px; text-align: center; min-height: 18px; margin-top: 6px; }
+
+    /* ── Main screen ── */
+    #mainScreen { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    #ciHeader {
+      background: #1e293b; border-bottom: 1px solid #334155;
+      padding: 10px 16px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    #ciEventName { font-size: 15px; font-weight: 700; color: white; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #ciCheckinCount { font-size: 12px; color: #94a3b8; }
+    #ciBadge { background: #22c55e; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: none; }
+
+    /* Camera */
+    #cameraWrap {
+      margin: 16px 16px 0; border-radius: 14px; overflow: hidden; position: relative;
+      background: #000; aspect-ratio: 4/3;
+    }
+    #ciVideo { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .aim-box {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 60%; max-width: 200px; aspect-ratio: 1;
+      border: 3px solid rgba(34,197,94,0.8);
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+    }
+    #scanStatus { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      font-size: 11px; color: rgba(255,255,255,0.6); white-space: nowrap; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 10px; }
+
+    /* Manual entry */
+    #manualRow { display: flex; gap: 8px; margin: 12px 16px; }
+    #manualInput {
+      flex: 1; padding: 11px 14px; background: #1e293b; border: 1px solid #334155;
+      border-radius: 8px; color: white; font-size: 14px;
+    }
+    #manualInput::placeholder { color: #475569; }
+    #manualBtn {
+      padding: 11px 16px; background: #334155; color: white; border: none;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+
+    /* Confirm bar — shown after successful QR lookup */
+    #confirmBar {
+      display: none; margin: 0 16px 12px;
+      background: #1e293b; border: 2px solid #22c55e; border-radius: 14px; padding: 16px;
+      animation: confirmPulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes confirmPulse {
+      from { border-color: #22c55e; }
+      to   { border-color: #4ade80; box-shadow: 0 0 20px rgba(34,197,94,0.25); }
+    }
+    #confirmBar.visible { display: block; }
+    #confirmBar.already { border-color: #f59e0b; animation: none; background: #1a1200; }
+    #confirmName    { font-size: 20px; font-weight: 900; color: white; text-align: center; margin-bottom: 4px; }
+    #confirmClass   { font-size: 14px; color: #94a3b8; text-align: center; margin-bottom: 12px; }
+    #confirmEvent   { font-size: 11px; color: #475569; text-align: center; margin-bottom: 12px; }
+    #confirmWarning { font-size: 13px; color: #fbbf24; text-align: center; margin-bottom: 10px; padding: 8px; background: rgba(251,191,36,0.1); border-radius: 8px; }
+    .confirm-row    { display: flex; gap: 10px; }
+    .confirm-yes {
+      flex: 2; padding: 18px; background: #16a34a; color: white; border: none;
+      border-radius: 12px; font-size: 18px; font-weight: 900; cursor: pointer;
+    }
+    .confirm-no  {
+      flex: 1; padding: 18px; background: #374151; color: #d1d5db; border: none;
+      border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer;
+    }
+    #confirmCountdown { font-size: 11px; color: #64748b; text-align: center; margin-top: 8px; }
+
+    /* Result flash */
+    #resultFlash {
+      margin: 12px 16px; border-radius: 14px; padding: 18px 16px;
+      min-height: 80px; display: flex; flex-direction: column; justify-content: center;
+      transition: background 0.3s;
+    }
+    #resultFlash.idle    { background: #1e293b; border: 1px solid #334155; }
+    #resultFlash.success { background: #14532d; border: 2px solid #22c55e; }
+    #resultFlash.error   { background: #7f1d1d; border: 2px solid #ef4444; }
+    #resultFlash.warn    { background: #78350f; border: 2px solid #f59e0b; }
+    #resultStatus  { font-size: 20px; font-weight: 900; margin-bottom: 4px; color: #475569; }
+    #resultSubtext { font-size: 13px; color: #94a3b8; }
+
+    /* Recent log */
+    #recentLog { margin: 0 16px 80px; }
+    #recentLog h3 { font-size: 11px; font-weight: 700; color: #475569; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
+    .ci-log-row {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      background: #1e293b; border-radius: 8px; margin-bottom: 6px; font-size: 13px;
+    }
+    .ci-log-icon { font-size: 16px; width: 24px; text-align: center; }
+    .ci-log-name { flex: 1; font-weight: 600; }
+    .ci-log-meta { font-size: 11px; color: #64748b; text-align: right; }
+
+    /* Footer change-event button */
+    #footerBar {
+      position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a;
+      border-top: 1px solid #1e293b; padding: 10px 16px; display: flex; gap: 8px;
+    }
+    .footer-btn {
+      flex: 1; padding: 10px; background: #1e293b; border: 1px solid #334155;
+      color: #94a3b8; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .footer-btn.primary { background: #1e3a5f; color: #93c5fd; border-color: #2563eb; }
+  </style>
+</head>
+<body>
+
+<!-- ══ BOOT SCREEN ════════════════════════════════════════════════ -->
+<div id="bootScreen">
+  <div style="text-align:center;">
+    <div style="font-size:52px;margin-bottom:8px;">🎟️</div>
+    <h1>Event Check-In</h1>
+    <p>Scan ticket QR codes to sign drivers in</p>
+  </div>
+
+  <div class="boot-card">
+    <label>CHECK-IN PIN</label>
+    <input type="password" id="pinInput" placeholder="Enter check-in PIN" autocomplete="off"
+           onkeydown="if(event.key==='Enter')document.getElementById('deviceInput').focus()">
+
+    <label>YOUR DEVICE NAME</label>
+    <input type="text" id="deviceInput" placeholder="e.g. Welcome Desk" autocomplete="off"
+           onkeydown="if(event.key==='Enter')bootConnect()">
+
+    <label>SELECT EVENT</label>
+    <select id="eventSelect">
+      <option value="">— Enter PIN first —</option>
+    </select>
+
+    <button class="boot-btn" onclick="bootConnect()">🟢 Start Check-In</button>
+    <p id="bootError"></p>
+  </div>
+</div>
+
+<!-- ══ MAIN SCREEN ════════════════════════════════════════════════ -->
+<div id="mainScreen">
+
+  <!-- Header -->
+  <div id="ciHeader">
+    <div>
+      <div id="ciEventName">—</div>
+      <div id="ciCheckinCount">0 checked in</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="ciBadge">✓ Checked In</span>
+      <button onclick="showBoot()" style="padding:6px 12px;background:#334155;color:#94a3b8;border:none;border-radius:6px;font-size:12px;cursor:pointer;">⟵ Exit</button>
+    </div>
+  </div>
+
+  <!-- Result flash (shown above camera) -->
+  <div id="resultFlash" class="idle">
+    <div id="resultStatus">Point camera at ticket QR code</div>
+    <div id="resultSubtext"></div>
+  </div>
+
+  <!-- Camera preview -->
+  <div id="cameraWrap">
+    <video id="ciVideo" playsinline autoplay muted></video>
+    <div class="aim-box"></div>
+    <div id="scanStatus">Initialising scanner…</div>
+  </div>
+
+  <!-- Confirm bar -->
+  <div id="confirmBar">
+    <div id="confirmName">—</div>
+    <div id="confirmClass">—</div>
+    <div id="confirmEvent"></div>
+    <div id="confirmWarning" style="display:none;"></div>
+    <div class="confirm-row">
+      <button class="confirm-yes" onclick="confirmCheckin()">✓ CHECK IN</button>
+      <button class="confirm-no"  onclick="cancelConfirm()">✕</button>
+    </div>
+    <div id="confirmCountdown"></div>
+  </div>
+
+  <!-- Manual entry -->
+  <div id="manualRow">
+    <input type="text" id="manualInput" placeholder="Enter payment reference manually…" autocomplete="off"
+           onkeydown="if(event.key==='Enter')manualLookup()">
+    <button id="manualBtn" onclick="manualLookup()">→ Look Up</button>
+  </div>
+
+  <!-- Recent log -->
+  <div id="recentLog" style="margin-top:8px;">
+    <h3>Recent Check-Ins</h3>
+    <div id="recentLogRows"><p style="color:#475569;font-size:13px;padding:8px 0;">Scans will appear here…</p></div>
+  </div>
+
+  <!-- Footer buttons -->
+  <div id="footerBar">
+    <button class="footer-btn primary" onclick="refreshCount()">↻ Refresh Count</button>
+    <button class="footer-btn" onclick="showBoot()">⚙ Change Event</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════
+let _pin        = '';
+let _deviceName = '';
+let _eventId    = null;
+let _eventName  = '';
+
+let _scanning   = false;
+let _stream     = null;
+let _zxReader   = null;
+let _nativeDet  = null;
+let _rafId      = null;
+let _debounce   = 0;   // timestamp; ignore re-scans within 2s
+
+let _pendingEntry = null;
+let _confirmTimer    = null;
+let _confirmInterval = null;
+
+let _recentCheckins  = [];  // local display list
+let _totalCheckedIn  = 0;
+
+// ═══════════════════════════════════════════════════════════════════
+// Boot
+// ═══════════════════════════════════════════════════════════════════
+async function loadEvents() {
+  const pin = document.getElementById('pinInput').value.trim();
+  if (!pin) return;
+  const sel = document.getElementById('eventSelect');
+  sel.innerHTML = '<option value="">Loading…</option>';
+  try {
+    const r = await fetch(`/api/checkin/events-list?pin=${encodeURIComponent(pin)}`, {
+      headers: { 'x-checkin-pin': pin }
+    });
+    if (r.status === 401) { sel.innerHTML = '<option value="">Invalid PIN</option>'; return; }
+    const d = await r.json();
+    if (!d.success || !d.events.length) {
+      sel.innerHTML = '<option value="">No upcoming events</option>';
+      return;
+    }
+    sel.innerHTML = d.events.map(e => {
+        const dateStr = e.start_date
+          ? new Date(e.start_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
+          : e.event_date
+            ? new Date(e.event_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '';
+        return `<option value="${e.event_id}">${e.event_name}${dateStr ? ' — ' + dateStr : ''}</option>`;
+      }).join('');
+  } catch { sel.innerHTML = '<option value="">Connection error</option>'; }
+}
+
+// Load events when PIN field blurs
+document.getElementById('pinInput').addEventListener('blur', loadEvents);
+document.getElementById('pinInput').addEventListener('change', loadEvents);
+
+async function bootConnect() {
+  const pin       = document.getElementById('pinInput').value.trim();
+  const deviceName= document.getElementById('deviceInput').value.trim() || 'Scanner';
+  const eventSel  = document.getElementById('eventSelect');
+  const errEl     = document.getElementById('bootError');
+  errEl.textContent = '';
+
+  if (!pin) { errEl.textContent = 'Enter the check-in PIN.'; return; }
+  if (!eventSel.value) {
+    // Try loading events if not loaded yet
+    await loadEvents();
+    if (!eventSel.value) { errEl.textContent = 'Select an event.'; return; }
+  }
+
+  _pin        = pin;
+  _deviceName = deviceName;
+  _eventId    = parseInt(eventSel.value, 10);
+  _eventName  = eventSel.options[eventSel.selectedIndex].text;
+
+  document.getElementById('bootScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'flex';
+  document.getElementById('ciEventName').textContent  = _eventName.split(' — ')[0];
+
+  await refreshCount();
+  startCamera();
+}
+
+function showBoot() {
+  stopCamera();
+  cancelConfirm();
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('bootScreen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Camera / scanning
+// ═══════════════════════════════════════════════════════════════════
+async function startCamera() {
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const video = document.getElementById('ciVideo');
+    video.srcObject = _stream;
+    await video.play();
+
+    // Prefer native BarcodeDetector; fall back to ZXing
+    if ('BarcodeDetector' in window) {
+      _nativeDet = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39'] });
+      document.getElementById('scanStatus').textContent = 'Ready (native scanner)';
+    } else if (typeof ZXing !== 'undefined') {
+      _zxReader = new ZXing.BrowserMultiFormatReader();
+      document.getElementById('scanStatus').textContent = 'Ready (ZXing scanner)';
+    } else {
+      document.getElementById('scanStatus').textContent = 'Scanner not available — use manual entry';
+      return;
+    }
+
+    _scanning = true;
+    scanLoop();
+  } catch (e) {
+    document.getElementById('scanStatus').textContent = 'Camera error: ' + e.message;
+  }
+}
+
+function stopCamera() {
+  _scanning = false;
+  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
+}
+
+async function scanLoop() {
+  if (!_scanning) return;
+  const video = document.getElementById('ciVideo');
+  if (video.readyState < 2) { _rafId = requestAnimationFrame(scanLoop); return; }
+
+  try {
+    let barcodes = [];
+    if (_nativeDet) {
+      barcodes = await _nativeDet.detect(video);
+      barcodes = barcodes.map(b => b.rawValue);
+    } else if (_zxReader) {
+      // ZXing decode on canvas
+      const canvas = document.createElement('canvas');
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      try {
+        const r = await _zxReader.decodeFromCanvas(canvas);
+        if (r) barcodes = [r.getText()];
+      } catch(_) {}
+      // Try inverted
+      if (!barcodes.length) {
+        try {
+          const ctx2  = canvas.getContext('2d');
+          const idata = ctx2.getImageData(0, 0, canvas.width, canvas.height);
+          for (let i = 0; i < idata.data.length; i += 4) {
+            idata.data[i]   = 255 - idata.data[i];
+            idata.data[i+1] = 255 - idata.data[i+1];
+            idata.data[i+2] = 255 - idata.data[i+2];
+          }
+          ctx2.putImageData(idata, 0, 0);
+          const r2 = await _zxReader.decodeFromCanvas(canvas);
+          if (r2) barcodes = [r2.getText()];
+        } catch(_) {}
+      }
+    }
+
+    for (const raw of barcodes) {
+      if (!raw) continue;
+      const now = Date.now();
+      if (now - _debounce < 2000) continue;
+      _debounce = now;
+      onScan(raw.trim());
+      break;
+    }
+  } catch(_) {}
+
+  _rafId = requestAnimationFrame(scanLoop);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Scan handler
+// ═══════════════════════════════════════════════════════════════════
+async function onScan(raw) {
+  document.getElementById('scanStatus').textContent = `Scanned: ${raw}`;
+  await lookupQR(raw);
+}
+
+async function manualLookup() {
+  const val = document.getElementById('manualInput').value.trim();
+  if (!val) return;
+  document.getElementById('manualInput').value = '';
+  await lookupQR(val);
+}
+
+async function lookupQR(qrCode) {
+  showResult('idle', 'Looking up…', '');
+  cancelConfirm();
+
+  try {
+    const r = await fetch(`/api/checkin/lookup?pin=${encodeURIComponent(_pin)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-checkin-pin': _pin },
+      body: JSON.stringify({ qr_code: qrCode, event_id: _eventId })
+    });
+    const d = await r.json();
+
+    if (!d.success || !d.entry) {
+      showResult('error', '❌ Not Found', d.error || 'No entry for that QR code');
+      vibrateErr();
+      return;
+    }
+
+    const entry = d.entry;
+    _pendingEntry = entry;
+
+    const name = [entry.first_name, entry.last_name].filter(Boolean).join(' ') || '(Unknown)';
+    const raceNo = entry.driver_race_number || entry.race_number || '—';
+    const cls    = entry.race_class || '—';
+
+    document.getElementById('confirmName').textContent  = name;
+    document.getElementById('confirmClass').textContent = `#${raceNo}  •  ${cls}`;
+    document.getElementById('confirmEvent').textContent = entry.event_name || _eventName;
+
+    const warnEl = document.getElementById('confirmWarning');
+    if (entry.checked_in_at) {
+      const t = new Date(entry.checked_in_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+      warnEl.textContent = `⚠️ Already checked in at ${t} by ${entry.checked_in_by || 'scanner'}`;
+      warnEl.style.display = 'block';
+      document.getElementById('confirmBar').className = 'confirmBar already';
+    } else {
+      warnEl.style.display = 'none';
+      document.getElementById('confirmBar').className = 'confirmBar visible';
+    }
+
+    document.getElementById('confirmBar').style.display = 'block';
+    showResult('idle', `${name}`, `${cls}  •  #${raceNo}`);
+    startConfirmCountdown();
+    vibrateOk();
+
+  } catch(e) {
+    showResult('error', '❌ Error', e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Confirm / Cancel
+// ═══════════════════════════════════════════════════════════════════
+async function confirmCheckin() {
+  if (!_pendingEntry) return;
+  const entry = _pendingEntry;
+  cancelConfirm();
+
+  const name = [entry.first_name, entry.last_name].filter(Boolean).join(' ') || '(Unknown)';
+
+  try {
+    const r = await fetch(`/api/checkin/confirm?pin=${encodeURIComponent(_pin)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-checkin-pin': _pin },
+      body: JSON.stringify({ entry_id: entry.entry_id, device_name: _deviceName })
+    });
+    const d = await r.json();
+
+    if (d.already_checked_in) {
+      const t = new Date(d.checked_in_at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+      showResult('warn', `⚠️ Already checked in`, `${name} — checked in at ${t}`);
+      vibrateErr();
+      return;
+    }
+
+    if (!d.success) {
+      showResult('error', '❌ Failed', d.error || 'Check-in failed');
+      vibrateErr();
+      return;
+    }
+
+    showResult('success', `✓ Checked In!`, name);
+    vibrateOk();
+
+    const raceNo = entry.driver_race_number || entry.race_number || '—';
+    const cls    = entry.race_class || '—';
+    addToRecentLog({ name, raceNo, cls, time: new Date() });
+
+    _totalCheckedIn++;
+    document.getElementById('ciCheckinCount').textContent = `${_totalCheckedIn} checked in`;
+
+    // Flash badge
+    const badge = document.getElementById('ciBadge');
+    badge.style.display = 'inline';
+    setTimeout(() => { badge.style.display = 'none'; }, 2500);
+
+    // Reset result after 3s
+    setTimeout(() => {
+      showResult('idle', 'Point camera at ticket QR code', '');
+    }, 3000);
+
+  } catch(e) {
+    showResult('error', '❌ Error', e.message);
+  }
+}
+
+function cancelConfirm() {
+  if (_confirmTimer)    { clearTimeout(_confirmTimer);  _confirmTimer = null; }
+  if (_confirmInterval) { clearInterval(_confirmInterval); _confirmInterval = null; }
+  _pendingEntry = null;
+  _debounce     = 0;
+  document.getElementById('confirmBar').style.display = 'none';
+  document.getElementById('confirmCountdown').textContent = '';
+}
+
+function startConfirmCountdown() {
+  if (_confirmTimer)    { clearTimeout(_confirmTimer);  }
+  if (_confirmInterval) { clearInterval(_confirmInterval); }
+
+  let secs = 12;
+  document.getElementById('confirmCountdown').textContent = `Auto-cancel in ${secs}s`;
+
+  _confirmInterval = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      document.getElementById('confirmCountdown').textContent = 'Cancelled';
+    } else {
+      document.getElementById('confirmCountdown').textContent = `Auto-cancel in ${secs}s`;
+    }
+  }, 1000);
+
+  _confirmTimer = setTimeout(() => {
+    cancelConfirm();
+    showResult('idle', 'Point camera at ticket QR code', '');
+  }, 12000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UI helpers
+// ═══════════════════════════════════════════════════════════════════
+function showResult(type, status, subtext) {
+  const el = document.getElementById('resultFlash');
+  el.className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'idle';
+  document.getElementById('resultStatus').textContent  = status;
+  document.getElementById('resultSubtext').textContent = subtext;
+}
+
+function addToRecentLog({ name, raceNo, cls, time }) {
+  _recentCheckins.unshift({ name, raceNo, cls, time });
+  if (_recentCheckins.length > 30) _recentCheckins.pop();
+  renderRecentLog();
+}
+
+function renderRecentLog() {
+  const rows = document.getElementById('recentLogRows');
+  if (!_recentCheckins.length) {
+    rows.innerHTML = '<p style="color:#475569;font-size:13px;padding:8px 0;">Scans will appear here…</p>';
+    return;
+  }
+  rows.innerHTML = _recentCheckins.map(ci => {
+    const t = ci.time.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return `<div class="ci-log-row">
+      <span class="ci-log-icon">✓</span>
+      <span class="ci-log-name">${ci.name}</span>
+      <span class="ci-log-meta">#${ci.raceNo} ${ci.cls}<br>${t}</span>
+    </div>`;
+  }).join('');
+}
+
+async function refreshCount() {
+  if (!_eventId || !_pin) return;
+  try {
+    const r = await fetch(`/api/checkin/lookup?pin=${encodeURIComponent(_pin)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-checkin-pin': _pin },
+      body: JSON.stringify({ qr_code: '__COUNT_QUERY__', event_id: _eventId })
+    });
+    // The above intentionally returns "not found" — just test connectivity
+    // Instead use a count query approach: we don't have a dedicated count endpoint,
+    // so we approximate by maintaining _totalCheckedIn locally, or fetch from admin
+    // For a simple count, try the admin report endpoint (may fail without admin token)
+    // Fall back to showing local count only
+  } catch(_) {}
+  document.getElementById('ciCheckinCount').textContent = `${_totalCheckedIn} checked in this session`;
+}
+
+function vibrateOk() {
+  if (navigator.vibrate) navigator.vibrate([100]);
+}
+function vibrateErr() {
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+}
+</script>
+</body>
+</html>

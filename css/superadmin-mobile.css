@@ -1,0 +1,308 @@
+/* =============================================================
+   NATS SUPER ADMIN — Branding & Mobile Override CSS
+   Applied on top of admin.html base styles.
+   Update this file to adjust SA appearance without touching
+   superadmin.html logic. Sync notes: periodically diff
+   superadmin.html vs admin.html to catch new features.
+   ============================================================= */
+
+/* ----------------------------------------------------------
+   BRANDING: Dark header to distinguish from regular admin
+   ---------------------------------------------------------- */
+.admin-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-bottom: 1px solid #334155;
+}
+
+.admin-header h1 {
+  color: #f8fafc;
+  font-size: 20px;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+  transform: none;
+}
+
+/* Tab bar: amber accent instead of green */
+.tab-indicator {
+  background: #f59e0b;
+  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.6), 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+.tab-indicator::after {
+  background: linear-gradient(90deg, transparent, #f59e0b, transparent);
+}
+
+.tab-btn.active {
+  color: #d97706;
+}
+
+/* Login button: amber */
+.login-btn {
+  background: linear-gradient(135deg, #d97706 0%, #92400e 100%);
+}
+
+.login-btn:hover {
+  box-shadow: 0 5px 20px rgba(217, 119, 6, 0.4);
+}
+
+/* SA Badge in header h1 */
+.sa-badge {
+  display: inline-block;
+  background: #f59e0b;
+  color: #0f172a;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-left: 8px;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+/* ----------------------------------------------------------
+   MOBILE OVERRIDES — max-width: 768px (tablets & phones)
+   ---------------------------------------------------------- */
+@media (max-width: 768px) {
+
+  /* Header: compact */
+  .admin-header {
+    padding: 10px 14px;
+    min-height: 46px;
+  }
+
+  .admin-header h1 {
+    font-size: 16px;
+  }
+
+  .logout-btn {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  /* Tabs: smooth horizontal scroll, larger touch targets */
+  .admin-tabs {
+    padding: 0 6px;
+    top: 46px;         /* match compact header height */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .admin-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    padding: 12px 13px;
+    font-size: 13px;
+    min-height: 46px;  /* minimum 44px touch target */
+    white-space: nowrap;
+  }
+
+  /* Content: tighter padding */
+  .admin-content {
+    padding: 10px 10px 24px;
+  }
+
+  /* Filters bar: stack vertically, full width inputs */
+  .filters-bar {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .filters-bar input,
+  .filters-bar select {
+    width: 100%;
+    font-size: 16px;   /* prevents iOS auto-zoom on focus */
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  .search-btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+    padding: 12px;
+    border-radius: 6px;
+    background: #f8fafc;
+    border-color: #d4d4d8;
+  }
+
+  /* Table wrapper: natural mobile scroll */
+  .table-wrapper {
+    max-height: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modals: use nearly full screen width */
+  .modal-content {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 18px;
+    margin: 10px auto;
+  }
+
+  /* All text inputs: prevent iOS 16pt auto-zoom */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* General buttons: decent touch targets */
+  button:not(.tab-btn) {
+    min-height: 36px;
+  }
+
+  /* Login box: comfortable on small screens */
+  .login-box {
+    padding: 28px 20px;
+    margin: 16px;
+  }
+}
+
+/* ----------------------------------------------------------
+   SMALL PHONES — max-width: 400px (e.g. Titan 2)
+   ---------------------------------------------------------- */
+@media (max-width: 400px) {
+
+  .admin-header h1 {
+    font-size: 14px;
+  }
+
+  .sa-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .tab-btn {
+    font-size: 12px;
+    padding: 10px 10px;
+  }
+
+  .admin-content {
+    padding: 8px 8px 20px;
+  }
+
+  .filters-bar {
+    padding: 8px;
+    gap: 6px;
+  }
+}
+
+/* ----------------------------------------------------------
+   NO-HORIZONTAL-SCROLL — Titan 2 & similar (≤480px)
+   Tables show only the most essential columns so no left/right
+   page scroll is needed. All other data is still in Edit modal.
+   ---------------------------------------------------------- */
+@media (max-width: 480px) {
+
+  /* Lock the page itself — only table wrappers scroll internally */
+  html, .admin-wrapper { overflow-x: hidden; }
+  .admin-content       { max-width: 100vw; overflow-x: hidden; }
+
+  /* Let tables shrink to fit their visible columns */
+  table { min-width: 0 !important; }
+
+  /* ── Drivers tab (basic view, 11 cols)
+        Keep: 2 Name, 3 Class, 9 Status, 11 Actions
+        Hide: 1 Email, 4 Race#, 5 Team, 6 Transponder,
+              7 License#, 8 Phone, 10 Paid               */
+  #driversTab table th:nth-child(1),
+  #driversTab table td:nth-child(1),
+  #driversTab table th:nth-child(4),
+  #driversTab table td:nth-child(4),
+  #driversTab table th:nth-child(5),
+  #driversTab table td:nth-child(5),
+  #driversTab table th:nth-child(6),
+  #driversTab table td:nth-child(6),
+  #driversTab table th:nth-child(7),
+  #driversTab table td:nth-child(7),
+  #driversTab table th:nth-child(8),
+  #driversTab table td:nth-child(8),
+  #driversTab table th:nth-child(10),
+  #driversTab table td:nth-child(10) { display: none; }
+
+  /* ── Race Entries tab (17 cols)
+        Keep: 3 Name, 5 Class, 15 Payment Status, 17 Actions */
+  #raceEntriesTab .table-wrapper table th:nth-child(1),
+  #raceEntriesTab .table-wrapper table td:nth-child(1),
+  #raceEntriesTab .table-wrapper table th:nth-child(2),
+  #raceEntriesTab .table-wrapper table td:nth-child(2),
+  #raceEntriesTab .table-wrapper table th:nth-child(4),
+  #raceEntriesTab .table-wrapper table td:nth-child(4),
+  #raceEntriesTab .table-wrapper table th:nth-child(6),
+  #raceEntriesTab .table-wrapper table td:nth-child(6),
+  #raceEntriesTab .table-wrapper table th:nth-child(7),
+  #raceEntriesTab .table-wrapper table td:nth-child(7),
+  #raceEntriesTab .table-wrapper table th:nth-child(8),
+  #raceEntriesTab .table-wrapper table td:nth-child(8),
+  #raceEntriesTab .table-wrapper table th:nth-child(9),
+  #raceEntriesTab .table-wrapper table td:nth-child(9),
+  #raceEntriesTab .table-wrapper table th:nth-child(10),
+  #raceEntriesTab .table-wrapper table td:nth-child(10),
+  #raceEntriesTab .table-wrapper table th:nth-child(11),
+  #raceEntriesTab .table-wrapper table td:nth-child(11),
+  #raceEntriesTab .table-wrapper table th:nth-child(12),
+  #raceEntriesTab .table-wrapper table td:nth-child(12),
+  #raceEntriesTab .table-wrapper table th:nth-child(13),
+  #raceEntriesTab .table-wrapper table td:nth-child(13),
+  #raceEntriesTab .table-wrapper table th:nth-child(14),
+  #raceEntriesTab .table-wrapper table td:nth-child(14),
+  #raceEntriesTab .table-wrapper table th:nth-child(16),
+  #raceEntriesTab .table-wrapper table td:nth-child(16) { display: none; }
+
+  /* ── Events tab (9 cols)
+        Keep: 1 Name, 2 Date, 6 Reg Status, 9 Actions   */
+  #eventsTab table th:nth-child(3),
+  #eventsTab table td:nth-child(3),
+  #eventsTab table th:nth-child(4),
+  #eventsTab table td:nth-child(4),
+  #eventsTab table th:nth-child(5),
+  #eventsTab table td:nth-child(5),
+  #eventsTab table th:nth-child(7),
+  #eventsTab table td:nth-child(7),
+  #eventsTab table th:nth-child(8),
+  #eventsTab table td:nth-child(8) { display: none; }
+
+  /* Visible cells: allow more room, softer truncation */
+  td { max-width: 140px; }
+
+  /* Actions column: sticky to right edge so it's always reachable */
+  #driversTab     table td:nth-child(11),
+  #raceEntriesTab .table-wrapper table td:nth-child(17),
+  #eventsTab      table td:nth-child(9) {
+    position: sticky;
+    right: 0;
+    background: white;
+    z-index: 2;
+    box-shadow: -3px 0 6px rgba(0,0,0,0.08);
+  }
+
+  /* Barcode lookup bar: wrap to two lines on tiny screens */
+  #barcodeBar {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+  }
+  #barcodeBar > span { width: 100%; }
+  #barcodeSearchResult { min-width: 0 !important; width: 100%; }
+
+  /* Filters bar "Export" buttons: smaller text so they fit */
+  .search-btn { font-size: 12px; padding: 10px 8px; }
+}

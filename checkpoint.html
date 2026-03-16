@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Checkpoint Scanner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: white; min-height: 100vh; overflow-x: hidden; }
+
+    /* ── Boot / PIN screen ── */
+    #bootScreen {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px; gap: 20px;
+    }
+    #bootScreen h1 { font-size: 28px; font-weight: 800; color: white; margin-bottom: 4px; }
+    #bootScreen p  { font-size: 14px; color: #94a3b8; margin-bottom: 8px; }
+    .boot-card {
+      background: #1e293b; border-radius: 16px; padding: 28px; width: 100%; max-width: 420px;
+      border: 1px solid #334155;
+    }
+    .boot-card label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; margin-bottom: 6px; margin-top: 14px; }
+    .boot-card input, .boot-card select {
+      width: 100%; padding: 12px 14px; background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; color: white; font-size: 15px;
+    }
+    .boot-card input::placeholder { color: #475569; }
+    .boot-btn {
+      width: 100%; padding: 14px; background: linear-gradient(135deg,#22c55e,#16a34a);
+      color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+      cursor: pointer; margin-top: 20px;
+    }
+    #bootError { color: #ef4444; font-size: 13px; text-align: center; min-height: 18px; margin-top: 6px; }
+
+    /* ── Main checkpoint screen ── */
+    #mainScreen { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* Header bar */
+    #cpHeader {
+      background: #1e293b; border-bottom: 1px solid #334155;
+      padding: 10px 16px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    #cpAreaName  { font-size: 15px; font-weight: 700; color: white; }
+    #cpCapacity  { font-size: 12px; color: #94a3b8; }
+    #cpQueueBadge {
+      background: #f59e0b; color: white; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; display: none;
+    }
+
+    /* Confirm bar — appears after scan; operator taps ENTERING or EXITING */
+    #confirmBar {
+      display: none; margin: 12px 16px;
+      background: #1e293b; border: 2px solid #f59e0b; border-radius: 14px; padding: 14px;
+      animation: confirmPulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes confirmPulse {
+      from { border-color: #f59e0b; }
+      to   { border-color: #fbbf24; box-shadow: 0 0 16px rgba(251,191,36,0.25); }
+    }
+    #confirmBar.visible { display: block; }
+    #confirmInfo { font-size: 13px; color: #94a3b8; text-align: center; margin-bottom: 10px; }
+    #confirmInfo strong { display: block; font-size: 16px; color: white; margin-bottom: 2px; }
+    .confirm-dir-btn {
+      flex: 1; padding: 20px 8px; border: none; border-radius: 12px;
+      font-size: 17px; font-weight: 900; cursor: pointer; letter-spacing: 0.5px;
+    }
+    .confirm-dir-btn.in  { background: #16a34a; color: white; }
+    .confirm-dir-btn.out { background: #2563eb; color: white; }
+
+    /* Result flash */
+    #resultFlash {
+      margin: 0 16px 12px; border-radius: 14px; padding: 20px 18px;
+      min-height: 110px; display: flex; flex-direction: column; justify-content: center;
+      transition: background 0.3s;
+    }
+    #resultFlash.idle    { background: #1e293b; border: 1px solid #334155; }
+    #resultFlash.allowed { background: #14532d; border: 2px solid #22c55e; }
+    #resultFlash.denied  { background: #7f1d1d; border: 2px solid #ef4444; }
+    #resultFlash.warning { background: #78350f; border: 2px solid #f59e0b; }
+    #resultStatusLine { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+    #resultName       { font-size: 18px; font-weight: 700; }
+    #resultDetails    { font-size: 13px; color: #cbd5e1; margin-top: 4px; }
+    #resultReason     { font-size: 12px; color: #fca5a5; margin-top: 6px; }
+
+    /* Camera */
+    #cameraWrap {
+      margin: 0 16px; border-radius: 14px; overflow: hidden; position: relative;
+      background: #000; aspect-ratio: 4/3;
+    }
+    #cpVideo { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .aim-line {
+      position: absolute; left: 10%; right: 10%; top: 50%; height: 3px;
+      background: rgba(34,197,94,0.8); border-radius: 2px;
+      box-shadow: 0 0 10px rgba(34,197,94,0.6);
+      transform: translateY(-50%);
+    }
+    #scanStatus { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      font-size: 11px; color: rgba(255,255,255,0.6); white-space: nowrap; }
+
+    /* Manual entry */
+    #manualRow {
+      display: flex; gap: 8px; margin: 12px 16px;
+    }
+    #manualInput {
+      flex: 1; padding: 12px 14px; background: #1e293b; border: 1px solid #334155;
+      border-radius: 8px; color: white; font-size: 15px;
+    }
+    #manualInput::placeholder { color: #475569; }
+    #manualBtn {
+      padding: 12px 18px; background: #334155; color: white; border: none;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+
+    /* Action bar */
+    #actionBar {
+      display: flex; gap: 8px; margin: 0 16px 16px; flex-wrap: wrap;
+    }
+    .ac-btn {
+      flex: 1; min-width: 100px; padding: 10px; background: #1e293b; border: 1px solid #334155;
+      color: #94a3b8; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .ac-btn.primary { background: #1e3a5f; color: #93c5fd; border-color: #2563eb; }
+    .ac-btn.danger  { background: #450a0a; color: #f87171; border-color: #ef4444; }
+
+    /* Recent log */
+    #recentLog { margin: 0 16px 80px; }
+    #recentLog h3 { font-size: 12px; font-weight: 700; color: #64748b; letter-spacing: 1px; margin-bottom: 8px; }
+    .log-row {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      background: #1e293b; border-radius: 8px; margin-bottom: 6px; font-size: 13px;
+    }
+    .log-dir { font-weight: 800; width: 30px; text-align: center; }
+    .log-dir.in  { color: #22c55e; }
+    .log-dir.out { color: #3b82f6; }
+    .log-ok   { color: #22c55e; }
+    .log-deny { color: #ef4444; }
+    .log-warn { color: #f59e0b; }
+    .log-name { flex: 1; font-weight: 600; }
+    .log-time { font-size: 11px; color: #475569; }
+
+    /* Sync overlay */
+    #syncOverlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      align-items: center; justify-content: center; z-index: 200; flex-direction: column; gap: 12px;
+    }
+    #syncOverlay p { font-size: 15px; color: #94a3b8; }
+
+    /* Vibration cues handled in JS */
+  </style>
+</head>
+<body>
+
+<!-- ══ BOOT SCREEN ══════════════════════════════════════════════════════ -->
+<div id="bootScreen">
+  <div style="text-align:center;">
+    <div style="font-size:48px;margin-bottom:8px;">🔒</div>
+    <h1>Checkpoint Scanner</h1>
+    <p>Area access control for race events</p>
+  </div>
+
+  <div class="boot-card">
+    <label>CHECKPOINT PIN</label>
+    <input type="password" id="pinInput" placeholder="Enter checkpoint PIN" autocomplete="off">
+
+    <label>YOUR DEVICE NAME</label>
+    <input type="text" id="deviceIdInput" placeholder="e.g. Gate 1 Phone" autocomplete="off">
+
+    <button class="boot-btn" onclick="bootConnect()">🔗 Connect &amp; Load Areas</button>
+    <p id="bootError"></p>
+  </div>
+</div>
+
+<!-- ══ AREA SELECT SCREEN ═══════════════════════════════════════════════ -->
+<div id="areaSelectScreen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;gap:16px;">
+  <div style="text-align:center;margin-bottom:8px;">
+    <div style="font-size:40px;margin-bottom:6px;">📍</div>
+    <h2 style="font-size:22px;font-weight:800;">Select Your Area</h2>
+    <p style="font-size:13px;color:#94a3b8;margin-top:4px;">Which checkpoint are you guarding?</p>
+  </div>
+  <div id="areaList" style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;"></div>
+  <button onclick="showBoot()" style="margin-top:12px;padding:10px 20px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:8px;font-size:13px;cursor:pointer;">← Back</button>
+</div>
+
+<!-- ══ MAIN SCREEN ══════════════════════════════════════════════════════ -->
+<div id="mainScreen">
+
+  <!-- Header -->
+  <div id="cpHeader">
+    <div>
+      <div id="cpAreaName">—</div>
+      <div id="cpCapacity"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="cpQueueBadge">0 queued</span>
+      <button onclick="showSyncOverlay()" style="padding:6px 12px;background:#334155;color:#94a3b8;border:none;border-radius:6px;font-size:12px;cursor:pointer;">☁ Sync</button>
+    </div>
+  </div>
+
+  <!-- Confirm bar — visible after scan; hidden while waiting -->
+  <div id="confirmBar">
+    <div id="confirmInfo">Waiting for scan…</div>
+    <div style="display:flex;gap:10px;">
+      <button class="confirm-dir-btn in"  onclick="confirmDirection('IN')" >▶ ENTERING</button>
+      <button class="confirm-dir-btn out" onclick="confirmDirection('OUT')">◀ EXITING</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+      <div id="confirmCountdown" style="font-size:12px;color:#94a3b8;"></div>
+      <button onclick="cancelConfirm()" style="padding:5px 14px;background:#334155;color:#94a3b8;border:none;border-radius:6px;font-size:12px;cursor:pointer;">✕ Cancel</button>
+    </div>
+  </div>
+
+  <!-- Result flash -->
+  <div id="resultFlash" class="idle">
+    <div id="resultStatusLine" style="color:#475569;">Waiting for scan…</div>
+    <div id="resultName"></div>
+    <div id="resultDetails"></div>
+    <div id="resultReason"></div>
+  </div>
+
+  <!-- Camera -->
+  <div id="cameraWrap">
+    <video id="cpVideo" playsinline autoplay muted></video>
+    <div class="aim-line"></div>
+    <div id="scanStatus">Initialising scanner…</div>
+  </div>
+
+  <!-- Manual entry row -->
+  <div id="manualRow">
+    <input type="text" id="manualInput" placeholder="Type barcode manually (E0045…)" autocomplete="off"
+           onkeydown="if(event.key==='Enter')manualLookup()">
+    <button id="manualBtn" onclick="manualLookup()">→ Check</button>
+  </div>
+
+  <!-- Action buttons -->
+  <div id="actionBar">
+    <button class="ac-btn primary" onclick="showSyncOverlay()">☁ Sync Now</button>
+    <button class="ac-btn" onclick="changeArea()">📍 Change Area</button>
+    <button class="ac-btn danger"  onclick="clearLocalData()">🗑 Clear Local</button>
+  </div>
+
+  <!-- Recent log -->
+  <div id="recentLog">
+    <h3>RECENT SCANS</h3>
+    <div id="recentLogRows"></div>
+  </div>
+</div>
+
+<!-- ══ SYNC OVERLAY ═════════════════════════════════════════════════════ -->
+<div id="syncOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);
+     display:none;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:14px;">
+  <div style="font-size:48px;">☁</div>
+  <h2 style="font-size:20px;font-weight:800;">Sync</h2>
+  <p id="syncStatus" style="font-size:14px;color:#94a3b8;text-align:center;max-width:320px;padding:0 16px;"></p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px;">
+    <button onclick="doSync(true)"  style="padding:12px 24px;background:#22c55e;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🔄 Re-sync Data</button>
+    <button onclick="doSync(false)" style="padding:12px 24px;background:#3b82f6;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">📤 Upload Log Only</button>
+    <button onclick="hideSyncOverlay()" style="padding:12px 24px;background:#334155;color:#94a3b8;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════
+const DB_NAME    = 'checkpoint_v1';
+const STORE_SYNC = 'sync_data';   // one record per areaId — {entries, permissions, area, synced_at}
+const STORE_LOG  = 'access_log';  // unsynced scan events
+
+let _db         = null;
+let _pin        = '';
+let _deviceId   = '';
+let _areaId     = null;
+let _area       = null;
+let _entryMap   = {};   // barcode→entry  (built from sync data)
+let _permissions= [];   // [{race_class, window_start, window_end}]
+let _recentScans    = [];
+let _pendingEntry   = null;  // entry waiting for direction confirmation
+let _pendingBarcode = '';    // raw barcode waiting for confirmation
+let _pendingIsManual= false;
+let _confirmTimer   = null;  // auto-cancel timeout
+let _confirmInterval= null;  // countdown tick
+let _scanning   = false;
+let _stream     = null;
+let _rafId      = null;
+let _resultTimer= null;
+let _zxReader   = null;
+let _nativeDet  = null;
+
+// ═══════════════════════════════════════════════════════════════════
+// IndexedDB helpers
+// ═══════════════════════════════════════════════════════════════════
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_SYNC)) db.createObjectStore(STORE_SYNC, { keyPath: 'area_id' });
+      if (!db.objectStoreNames.contains(STORE_LOG))  {
+        const ls = db.createObjectStore(STORE_LOG, { keyPath: 'id', autoIncrement: true });
+        ls.createIndex('synced', 'synced', { unique: false });
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function dbGet(store, key) {
+  return new Promise((resolve, reject) => {
+    const tx = _db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function dbPut(store, value) {
+  return new Promise((resolve, reject) => {
+    const tx = _db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).put(value);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function dbGetAll(store) {
+  return new Promise((resolve, reject) => {
+    const tx = _db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+function dbClearStore(store) {
+  return new Promise((resolve, reject) => {
+    const tx = _db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).clear();
+    req.onsuccess = e => resolve();
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+async function dbDeleteByIndex(store, indexName, value) {
+  return new Promise((resolve, reject) => {
+    const tx  = _db.transaction(store, 'readwrite');
+    const idx = tx.objectStore(store).index(indexName);
+    const req = idx.openCursor(IDBKeyRange.only(value));
+    const toDelete = [];
+    req.onsuccess = e => {
+      const cursor = e.target.result;
+      if (cursor) { toDelete.push(cursor.primaryKey); cursor.continue(); }
+      else {
+        toDelete.forEach(k => tx.objectStore(store).delete(k));
+        resolve(toDelete.length);
+      }
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Boot flow
+// ═══════════════════════════════════════════════════════════════════
+async function bootConnect() {
+  const pin      = document.getElementById('pinInput').value.trim();
+  const deviceId = document.getElementById('deviceIdInput').value.trim() || 'Unknown Device';
+  const errEl    = document.getElementById('bootError');
+  errEl.textContent = '';
+  if (!pin) { errEl.textContent = 'Enter the checkpoint PIN.'; return; }
+  try {
+    const r = await fetch(`/api/access/areas-public?pin=${encodeURIComponent(pin)}`, { headers: { 'x-checkpoint-pin': pin } });
+    if (r.status === 401) { errEl.textContent = 'Incorrect PIN.'; return; }
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    _pin      = pin;
+    _deviceId = deviceId;
+    _db       = await openDB();
+    showAreaSelect(d.areas);
+  } catch(e) {
+    errEl.textContent = 'Connection error: ' + e.message;
+  }
+}
+
+function showBoot() {
+  document.getElementById('bootScreen').style.display = 'flex';
+  document.getElementById('areaSelectScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'none';
+}
+
+function showAreaSelect(areas) {
+  document.getElementById('bootScreen').style.display = 'none';
+  document.getElementById('areaSelectScreen').style.display = 'flex';
+  document.getElementById('mainScreen').style.display = 'none';
+  const list = document.getElementById('areaList');
+  if (!areas.length) {
+    list.innerHTML = '<p style="text-align:center;color:#94a3b8;">No active areas defined. Please add areas in Admin → Access Control.</p>';
+    return;
+  }
+  list.innerHTML = areas.map(a => `
+    <button onclick="selectArea(${a.area_id})"
+            style="width:100%;padding:18px 20px;background:#1e293b;border:1px solid #334155;border-radius:12px;
+                   color:white;font-size:16px;font-weight:700;cursor:pointer;text-align:left;">
+      📍 ${a.area_name}
+      ${a.max_capacity ? `<span style="float:right;font-size:12px;color:#94a3b8;font-weight:400;">Max ${a.max_capacity}</span>` : ''}
+      ${a.description ? `<br><span style="font-size:12px;font-weight:400;color:#94a3b8;">${a.description}</span>` : ''}
+    </button>`).join('');
+}
+
+async function selectArea(areaId) {
+  _areaId = areaId;
+  document.getElementById('areaSelectScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'flex';
+  // Try to load cached sync data first, then fetch fresh
+  const cached = await dbGet(STORE_SYNC, areaId);
+  if (cached) {
+    applySync(cached);
+    document.getElementById('syncStatus').textContent = `Loaded from cache (${new Date(cached.synced_at).toLocaleTimeString()})`;
+    updateQueueBadge();
+    startCamera();
+  }
+  // Always refresh in background
+  doSync(true, /* silent */ true);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Sync
+// ═══════════════════════════════════════════════════════════════════
+function showSyncOverlay() {
+  const overlay = document.getElementById('syncOverlay');
+  overlay.style.display = 'flex';
+  const unsyncedCount = 0;
+  document.getElementById('syncStatus').textContent = 'Ready to sync.';
+  updateQueueBadge();
+}
+function hideSyncOverlay() {
+  document.getElementById('syncOverlay').style.display = 'none';
+}
+
+async function doSync(refreshData, silent) {
+  document.getElementById('syncStatus').textContent = 'Syncing…';
+  let uploadedCount = 0;
+
+  try {
+    // 1. Upload pending log events
+    const allLog = await dbGetAll(STORE_LOG);
+    const pending = allLog.filter(l => !l.synced);
+    if (pending.length) {
+      const r = await fetch(`/api/access/log?pin=${encodeURIComponent(_pin)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-checkpoint-pin': _pin },
+        body: JSON.stringify({ area_id: _areaId, device_id: _deviceId, events: pending })
+      });
+      const d = await r.json();
+      if (d.success) {
+        // Mark as synced
+        for (const ev of pending) {
+          ev.synced = true;
+          await dbPut(STORE_LOG, ev);
+        }
+        uploadedCount = d.inserted;
+      }
+    }
+
+    // 2. Pull fresh data if requested
+    if (refreshData) {
+      const r = await fetch(`/api/access/sync/${_areaId}?pin=${encodeURIComponent(_pin)}`, {
+        headers: { 'x-checkpoint-pin': _pin }
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.error);
+      const syncRecord = { area_id: _areaId, ...d };
+      await dbPut(STORE_SYNC, syncRecord);
+      applySync(syncRecord);
+      document.getElementById('syncStatus').textContent = `✓ ${d.entries.length} entries loaded · ${uploadedCount} log events uploaded`;
+    } else {
+      document.getElementById('syncStatus').textContent = `✓ ${uploadedCount} log events uploaded`;
+    }
+    updateQueueBadge();
+    if (!silent) setTimeout(hideSyncOverlay, 2000);
+  } catch(e) {
+    document.getElementById('syncStatus').textContent = '✗ Error: ' + e.message;
+  }
+}
+
+function applySync(syncData) {
+  _area        = syncData.area;
+  _permissions = syncData.permissions || [];
+  // Build barcode → entry lookup map
+  _entryMap = {};
+  (syncData.entries || []).forEach(e => {
+    (e.barcodes || []).forEach(b => { _entryMap[b.toUpperCase()] = e; });
+  });
+  // Update header
+  document.getElementById('cpAreaName').textContent  = _area.area_name || '—';
+  document.getElementById('cpCapacity').textContent  =
+    _area.max_capacity ? `Max capacity: ${_area.max_capacity}` : '';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Access decision logic (100% local)
+// ═══════════════════════════════════════════════════════════════════
+function checkAccess(entry, direction) {
+  // 1. Hard block / impound
+  if (entry.flag) {
+    if (entry.flag.type === 'BLOCK' || entry.flag.type === 'IMPOUND') {
+      return { allowed: false, reason: entry.flag.message || 'Entry flagged — contact Race Director', flagType: entry.flag.type };
+    }
+    if (entry.flag.type === 'WARNING') {
+      return { allowed: true, warning: entry.flag.message };
+    }
+  }
+
+  // 2. No permission rules = open area
+  if (!_permissions || !_permissions.length) return { allowed: true };
+
+  // 3. Find a matching permission for this entry's class
+  const cls = (entry.race_class || '').toLowerCase();
+  const matching = _permissions.filter(p => !p.race_class || p.race_class.toLowerCase() === cls);
+  if (!matching.length) {
+    return { allowed: false, reason: `Class "${entry.race_class}" not permitted in this area` };
+  }
+
+  // 4. Time window check
+  const nowTime = new Date().toTimeString().substring(0, 5); // HH:MM
+  for (const p of matching) {
+    if (!p.window_start && !p.window_end) return { allowed: true }; // all-day
+    const start = p.window_start || '00:00';
+    const end   = p.window_end   || '23:59';
+    if (nowTime >= start && nowTime <= end) return { allowed: true };
+  }
+  const first = matching[0];
+  const openStr  = first.window_start ? first.window_start.substring(0,5) : '—';
+  const closeStr = first.window_end   ? first.window_end.substring(0,5)   : '—';
+  return { allowed: false, reason: `Access window: ${openStr} – ${closeStr}` };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Scan handler
+// ═══════════════════════════════════════════════════════════════════
+let _lastBarcode = '';
+let _lastTime    = 0;
+
+async function handleScan(raw) {
+  const barcode = raw.toUpperCase().trim();
+  const now = Date.now();
+  // Debounce — ignore same barcode within 3 seconds
+  if (barcode === _lastBarcode && now - _lastTime < 3000) return;
+  // If a confirm is already pending, ignore new scans until resolved
+  if (_pendingEntry !== null || _pendingBarcode) return;
+  _lastBarcode = barcode;
+  _lastTime    = now;
+
+  const entry = _entryMap[barcode] || null;
+  _pendingEntry   = entry;
+  _pendingBarcode = barcode;
+  _pendingIsManual = false;
+  showConfirmBar(entry, barcode);
+}
+
+function showConfirmBar(entry, barcode) {
+  const bar = document.getElementById('confirmBar');
+  const info = document.getElementById('confirmInfo');
+  if (entry) {
+    info.innerHTML = `<strong>${entry.first_name} ${entry.last_name}</strong>#${entry.race_number} · ${entry.race_class}`;
+  } else {
+    info.innerHTML = `<strong style="color:#ef4444;">UNKNOWN BARCODE</strong>${barcode}`;
+  }
+  bar.classList.add('visible');
+  vibrate([30]);
+  // 10-second auto-cancel countdown
+  let secs = 10;
+  document.getElementById('confirmCountdown').textContent = `Auto-cancel in ${secs}s`;
+  if (_confirmInterval) clearInterval(_confirmInterval);
+  if (_confirmTimer)    clearTimeout(_confirmTimer);
+  _confirmInterval = setInterval(() => {
+    secs--;
+    document.getElementById('confirmCountdown').textContent = secs > 0 ? `Auto-cancel in ${secs}s` : '';
+  }, 1000);
+  _confirmTimer = setTimeout(() => cancelConfirm(), 10000);
+}
+
+async function confirmDirection(dir) {
+  clearTimeout(_confirmTimer);
+  clearInterval(_confirmInterval);
+  _confirmTimer = null;
+  _confirmInterval = null;
+  document.getElementById('confirmBar').classList.remove('visible');
+
+  const entry  = _pendingEntry;
+  const barcode= _pendingBarcode;
+  const isManual = _pendingIsManual;
+  _pendingEntry   = null;
+  _pendingBarcode = '';
+  _pendingIsManual = false;
+
+  let logEntry;
+  if (!entry) {
+    showResult('denied', '✗ UNKNOWN', barcode, '—', 'Not found in sync data');
+    vibrate([100,50,100]);
+    logEntry = { entry_id: null, direction: dir, was_allowed: false,
+                 denial_reason: 'Barcode not found: ' + barcode,
+                 scanned_at: new Date().toISOString(), is_manual_override: isManual, synced: false };
+  } else {
+    const decision   = checkAccess(entry, dir);
+    const isWarning  = decision.allowed && decision.warning;
+    const flashType  = !decision.allowed ? 'denied' : (isWarning ? 'warning' : 'allowed');
+    const statusText = !decision.allowed ? '✗ DENIED' : (isWarning ? '⚠ WARNING' : '✓ ALLOWED');
+    const name       = `${entry.first_name} ${entry.last_name}`;
+    const details    = `#${entry.race_number} · ${entry.race_class}`;
+    const reason     = !decision.allowed ? decision.reason : (decision.warning || '');
+    showResult(flashType, statusText, name, details, reason, dir);
+    vibrate(!decision.allowed ? [100,50,100] : [50]);
+    addRecentScan({ name, details, direction: dir, allowed: decision.allowed, warning: isWarning, barcode });
+    logEntry = {
+      entry_id: entry.entry_id, direction: dir,
+      was_allowed: decision.allowed,
+      denial_reason: !decision.allowed ? decision.reason : null,
+      scanned_at: new Date().toISOString(),
+      is_manual_override: isManual, synced: false
+    };
+  }
+  await dbPut(STORE_LOG, logEntry);
+  updateQueueBadge();
+}
+
+function cancelConfirm() {
+  clearTimeout(_confirmTimer);
+  clearInterval(_confirmInterval);
+  _confirmTimer = null;
+  _confirmInterval = null;
+  _pendingEntry   = null;
+  _pendingBarcode = '';
+  _pendingIsManual = false;
+  document.getElementById('confirmBar').classList.remove('visible');
+  document.getElementById('confirmCountdown').textContent = '';
+  // Reset debounce so operator can re-scan immediately
+  _lastTime = 0;
+}
+
+function showResult(type, statusLine, name, details, reason, direction) {
+  const el = document.getElementById('resultFlash');
+  el.className = type;
+  document.getElementById('resultStatusLine').textContent = statusLine;
+  document.getElementById('resultName').textContent       = name;
+  document.getElementById('resultDetails').textContent    = details + (direction ? ` · ${direction}` : '');
+  document.getElementById('resultReason').textContent     = reason || '';
+  if (_resultTimer) clearTimeout(_resultTimer);
+  _resultTimer = setTimeout(() => {
+    el.className = 'idle';
+    document.getElementById('resultStatusLine').textContent = 'Waiting for scan…';
+    document.getElementById('resultName').textContent    = '';
+    document.getElementById('resultDetails').textContent = '';
+    document.getElementById('resultReason').textContent  = '';
+  }, 4000);
+}
+
+function addRecentScan(scan) {
+  _recentScans.unshift(scan);
+  if (_recentScans.length > 20) _recentScans.pop();
+  renderRecentLog();
+}
+
+function renderRecentLog() {
+  const el = document.getElementById('recentLogRows');
+  if (!_recentScans.length) { el.innerHTML = '<p style="color:#475569;font-size:13px;">No scans yet this session</p>'; return; }
+  el.innerHTML = _recentScans.map(s => `
+    <div class="log-row">
+      <span class="log-dir ${s.direction === 'IN' ? 'in' : 'out'}">${s.direction}</span>
+      <span class="log-name ${s.allowed ? (s.warning?'log-warn':'log-ok') : 'log-deny'}">${s.name || s.barcode}</span>
+      <span style="font-size:12px;color:#64748b;">${s.details||''}</span>
+      <span class="log-time">${new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Camera & decode loop
+// ═══════════════════════════════════════════════════════════════════
+async function startCamera() {
+  if (_scanning) return;
+  // Init decoders
+  if (window.BarcodeDetector) {
+    try {
+      const fmts = await BarcodeDetector.getSupportedFormats();
+      _nativeDet = new BarcodeDetector({ formats: fmts });
+    } catch(_) {}
+  }
+  if (window.ZXing) {
+    try { _zxReader = new ZXing.BrowserMultiFormatReader(); } catch(_) {}
+  }
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    // Continuous focus
+    try {
+      const track = _stream.getVideoTracks()[0];
+      const caps  = track.getCapabilities ? track.getCapabilities() : {};
+      if (caps.focusMode && caps.focusMode.includes('continuous'))
+        track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(()=>{});
+    } catch(_) {}
+    const vid = document.getElementById('cpVideo');
+    vid.srcObject = _stream;
+    _scanning = true;
+    let started = false;
+    function tryStart() {
+      if (started || vid.videoWidth === 0) return;
+      started = true;
+      vid.play().catch(()=>{});
+      startDecodeLoop(vid);
+    }
+    vid.onloadedmetadata = tryStart;
+    vid.addEventListener('loadeddata', tryStart);
+    vid.addEventListener('canplay',    tryStart);
+    setTimeout(()=>{ if(!started && vid.readyState >= 2) tryStart(); }, 800);
+    vid.play().catch(()=>{});
+    document.getElementById('scanStatus').textContent = 'Align barcode with line';
+  } catch(e) {
+    document.getElementById('scanStatus').textContent = 'Camera unavailable — use manual entry';
+  }
+}
+
+function startDecodeLoop(vid) {
+  const canvas = document.createElement('canvas');
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+  let lastSW   = 0;
+
+  function tick() {
+    if (!_scanning) return;
+    if (vid.readyState >= 2 && vid.videoWidth > 0) {
+      // BarcodeDetector — hardware, every frame
+      if (_nativeDet) {
+        _nativeDet.detect(vid)
+          .then(r => { if (r.length && _scanning) handleScan(r[0].rawValue); })
+          .catch(()=>{});
+      }
+      // ZXing — 50ms, cropped centre band
+      const now = Date.now();
+      if (now - lastSW > 50) {
+        lastSW = now;
+        const bandH = Math.max(1, Math.round(vid.videoHeight * 0.18));
+        const sy    = Math.round(vid.videoHeight * 0.41);
+        canvas.width  = vid.videoWidth;
+        canvas.height = bandH;
+        ctx.drawImage(vid, 0, sy, vid.videoWidth, bandH, 0, 0, vid.videoWidth, bandH);
+        if (_zxReader) {
+          // Normal decode
+          try {
+            const r = _zxReader.decodeFromCanvas(canvas);
+            if (r && _scanning) { handleScan(r.getText()); return; }
+          } catch(_) {}
+          // Inverted high-contrast pass — white-on-dark (blue metal seals)
+          try {
+            const inv = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pd  = inv.data;
+            for (let i = 0; i < pd.length; i += 4) {
+              const g = 0.299*pd[i] + 0.587*pd[i+1] + 0.114*pd[i+2];
+              const v = g > 140 ? 0 : 255;
+              pd[i] = pd[i+1] = pd[i+2] = v; pd[i+3] = 255;
+            }
+            ctx.putImageData(inv, 0, 0);
+            const r2 = _zxReader.decodeFromCanvas(canvas);
+            if (r2 && _scanning) { handleScan(r2.getText()); return; }
+          } catch(_) {}
+        }
+      }
+    }
+    if (_scanning) _rafId = requestAnimationFrame(tick);
+  }
+  _rafId = requestAnimationFrame(tick);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UI helpers
+// ═══════════════════════════════════════════════════════════════════
+function manualLookup() {
+  const val = (document.getElementById('manualInput').value || '').trim();
+  if (!val) return;
+  // If already waiting for confirm, ignore
+  if (_pendingEntry !== null || _pendingBarcode) return;
+  const barcode = val.toUpperCase();
+  const entry   = _entryMap[barcode] || null;
+  _pendingEntry    = entry;
+  _pendingBarcode  = barcode;
+  _pendingIsManual = true;
+  document.getElementById('manualInput').value = '';
+  showConfirmBar(entry, barcode);
+}
+
+async function updateQueueBadge() {
+  if (!_db) return;
+  const all = await dbGetAll(STORE_LOG);
+  const count = all.filter(l => !l.synced).length;
+  const badge = document.getElementById('cpQueueBadge');
+  if (count > 0) { badge.style.display=''; badge.textContent = count + ' queued'; }
+  else           { badge.style.display='none'; }
+}
+
+function vibrate(pattern) {
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(_) {}
+}
+
+async function clearLocalData() {
+  if (!confirm('Clear all local sync data and unsynced log? This cannot be undone.')) return;
+  await dbClearStore(STORE_SYNC);
+  await dbClearStore(STORE_LOG);
+  _entryMap = {};
+  _permissions = [];
+  _recentScans = [];
+  renderRecentLog();
+  updateQueueBadge();
+  alert('Local data cleared.');
+}
+
+function changeArea() {
+  if (_scanning) { _scanning=false; if(_rafId){cancelAnimationFrame(_rafId);_rafId=null;} }
+  if (_stream) { _stream.getTracks().forEach(t=>t.stop()); _stream=null; }
+  showBoot();
+}
+</script>
+</body>
+</html>

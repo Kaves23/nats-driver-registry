@@ -696,6 +696,7 @@
           <button class="secondary" onclick="exportTimingCSV()">📥 Export CSV - Timing System</button>
           <button class="secondary" onclick="exportDriversPDF()" style="background: #e74c3c;">📄 Export PDF - Drivers</button>
           <button class="secondary" onclick="exportSignOnPDF()" style="background: #e74c3c;">📄 Export PDF - Sign-On Sheet</button>
+          <button class="secondary" onclick="exportSignOnExcel()" style="background: #1d6f42;">📊 Export Excel - Sign-On Sheet</button>
           <label style="margin-left: 20px; color: #ef4444; font-size: 14px; cursor: pointer; font-weight: 600;">
             <input type="checkbox" id="showCancelledEntries" onchange="if(selectedEventId) loadRaceDrivers(selectedEventId)" style="margin-right: 6px; cursor: pointer;">
             Show Cancelled/Incomplete
@@ -909,7 +910,7 @@
           throw new Error(result.error?.message || 'Failed to load events');
         }
 
-        const events = result.data || [];
+        const events = result.events || result.data || [];
         const selector = document.getElementById('eventSelector');
         
         if (events.length === 0) {
@@ -1307,6 +1308,35 @@
       } catch (err) {
         console.error('PDF export error:', err);
         showToast('Error generating PDF: ' + err.message, 'error');
+      }
+    }
+
+    async function exportSignOnExcel() {
+      if (!selectedEventId) { showToast('Please select an event first', 'error'); return; }
+      const token = localStorage.getItem('officialToken');
+      if (!token) { showLogin(); return; }
+      showToast('Generating Excel sign-on sheet…', 'info');
+      try {
+        const response = await fetch(`/api/officials/events/${encodeURIComponent(selectedEventId)}/exportExcel`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || 'Server error');
+        }
+        const blob = await response.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `SignOn_Sheet_${selectedEventId.replace(/[^a-zA-Z0-9]/g,'_')}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Excel sign-on sheet downloaded ✓', 'success');
+      } catch (err) {
+        console.error('Excel sign-on export error:', err);
+        showToast('Export failed: ' + err.message, 'error');
       }
     }
 

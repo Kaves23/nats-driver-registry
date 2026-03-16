@@ -30,6 +30,8 @@ function getPayFastConfig() {
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
 const { Pool } = require('pg');
 const bcryptjs = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
@@ -111,15 +113,24 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'http://localhost:5500', // Live Server for local dev
 ];
+// Allow any LAN IP on port 3000 (race day tablet/phone access on local network)
+const lanOriginPattern = /^http:\/\/(?:10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+):3000$/;
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (curl, PayFast webhooks, Render health checks)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Allow any private LAN IP — covers race day devices on local network
+    if (lanOriginPattern.test(origin)) return callback(null, true);
     callback(new Error(`CORS: Origin ${origin} not allowed`));
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-token', 'x-checkpoint-pin']
 }));
+// Security headers (CSP disabled to allow inline scripts in admin SPA)
+app.use(helmet({ contentSecurityPolicy: false }));
+// Gzip compression — reduces API + HTML payload size ~3-5x on slow mobile connections
+app.use(compression());
 // Fix #10: Reduce JSON body limit from 50mb to 5mb
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
@@ -210,11 +221,18 @@ function requireAdmin(req, res, next) {
 
 // Admin login endpoint
 app.post('/api/admin/login', (req, res) => {
+  const clientIp = req.ip || req.connection.remoteAddress;
+  const rateCheck = checkLoginRateLimit(clientIp);
+  if (!rateCheck.allowed) {
+    return res.status(429).json({ success: false, error: rateCheck.message });
+  }
   const { password } = req.body;
   const adminSecret = process.env.ADMIN_SECRET || 'natsadmin2026';
   if (!password || password !== adminSecret) {
+    recordFailedLogin(clientIp);
     return res.status(401).json({ success: false, error: 'Invalid password' });
   }
+  clearLoginAttempts(clientIp);
   const token = uuidv4();
   adminTokens.set(token, { expires: Date.now() + 8 * 60 * 60 * 1000 }); // 8 hour session
   console.log(`✅ Admin login successful - session created`);
@@ -238,11 +256,18 @@ app.post('/api/admin/logout', (req, res) => {
 
 // Titan terminal login — authenticates with TITAN_PASSWORD and returns an admin-scoped token
 app.post('/api/titan/login', (req, res) => {
+  const clientIp = req.ip || req.connection.remoteAddress;
+  const rateCheck = checkLoginRateLimit(clientIp);
+  if (!rateCheck.allowed) {
+    return res.status(429).json({ success: false, error: rateCheck.message });
+  }
   const { password } = req.body;
   const titanPassword = process.env.TITAN_PASSWORD || 'titan2026';
   if (!password || password !== titanPassword) {
+    recordFailedLogin(clientIp);
     return res.status(401).json({ success: false, error: 'Invalid access code' });
   }
+  clearLoginAttempts(clientIp);
   const token = uuidv4();
   adminTokens.set(token, { expires: Date.now() + 12 * 60 * 60 * 1000, source: 'titan' }); // 12 hour session
   console.log('✅ Titan terminal login — session created');
@@ -658,6 +683,10 @@ const initRaceEntriesTable = async () => {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_barcode1 ON race_entries(UPPER(driver_barcode_1)) WHERE driver_barcode_1 IS NOT NULL`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_barcode2 ON race_entries(UPPER(driver_barcode_2)) WHERE driver_barcode_2 IS NOT NULL`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_barcode3 ON race_entries(UPPER(driver_barcode_3)) WHERE driver_barcode_3 IS NOT NULL`);
+    // Core lookup indexes — event_id and driver_id are the most-queried columns in race_entries
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_event_id  ON race_entries(event_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_driver_id ON race_entries(driver_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_entry_status ON race_entries(entry_status) WHERE entry_status IS NOT NULL`);
 
     // Ensure msa_license_number exists on drivers table
     await pool.query(`ALTER TABLE drivers ADD COLUMN IF NOT EXISTS msa_license_number VARCHAR(100)`);
@@ -805,6 +834,72 @@ async function initEquipmentScanLog() {
     // Add day_label column if it doesn't exist yet (migration for existing tables)
     await pool.query(`ALTER TABLE entry_engine_draws ADD COLUMN IF NOT EXISTS day_label VARCHAR(50)`).catch(() => {});
     console.log('✅ Entry engine draws table initialized');
+
+    // ── Access Control ─────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS access_areas (
+        area_id       SERIAL PRIMARY KEY,
+        area_name     VARCHAR(100) NOT NULL,
+        description   TEXT         NOT NULL DEFAULT '',
+        max_capacity  INTEGER,
+        is_active     BOOLEAN      NOT NULL DEFAULT true,
+        created_at    TIMESTAMP    DEFAULT NOW()
+      )
+    `);
+    console.log('✅ access_areas table initialized');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS area_permissions (
+        permission_id SERIAL PRIMARY KEY,
+        area_id       INTEGER NOT NULL REFERENCES access_areas(area_id) ON DELETE CASCADE,
+        race_class    VARCHAR(100),
+        window_start  TIME,
+        window_end    TIME,
+        is_active     BOOLEAN NOT NULL DEFAULT true
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ap_area ON area_permissions(area_id)`).catch(() => {});
+    console.log('✅ area_permissions table initialized');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS entry_access_flags (
+        flag_id        SERIAL PRIMARY KEY,
+        entry_id       VARCHAR(100) NOT NULL,
+        flag_type      VARCHAR(50)  NOT NULL DEFAULT 'BLOCK',
+        public_message VARCHAR(200) NOT NULL DEFAULT 'Entry flagged — contact Race Director',
+        admin_note     TEXT         NOT NULL DEFAULT '',
+        flagged_by     VARCHAR(100) NOT NULL DEFAULT 'Admin',
+        is_active      BOOLEAN      NOT NULL DEFAULT true,
+        created_at     TIMESTAMP    DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_eaf_entry ON entry_access_flags(entry_id) WHERE is_active = true`).catch(() => {});
+    console.log('✅ entry_access_flags table initialized');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS access_log (
+        log_id             SERIAL PRIMARY KEY,
+        entry_id           VARCHAR(100),
+        area_id            INTEGER,
+        direction          VARCHAR(10) NOT NULL DEFAULT 'IN',
+        was_allowed        BOOLEAN     NOT NULL DEFAULT true,
+        denial_reason      VARCHAR(200),
+        scanned_at         TIMESTAMP   NOT NULL DEFAULT NOW(),
+        device_id          VARCHAR(100),
+        is_manual_override BOOLEAN     NOT NULL DEFAULT false,
+        synced_at          TIMESTAMP   DEFAULT NOW()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_al_area      ON access_log(area_id)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_al_entry     ON access_log(entry_id)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_al_scanned   ON access_log(scanned_at DESC)`).catch(() => {});
+    console.log('✅ access_log table initialized');
+
+    // Check-in columns on race_entries
+    await pool.query(`ALTER TABLE race_entries ADD COLUMN IF NOT EXISTS checked_in_at TIMESTAMP`).catch(() => {});
+    await pool.query(`ALTER TABLE race_entries ADD COLUMN IF NOT EXISTS checked_in_by VARCHAR(100)`).catch(() => {});
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_re_checkin ON race_entries(checked_in_at) WHERE checked_in_at IS NOT NULL`).catch(() => {});
+    console.log('✅ race_entries check-in columns ready');
 
   } catch (err) {
     console.error('Equipment scan log init error:', err.message);
@@ -7445,10 +7540,10 @@ app.get('/api/getAvailableEvents', async (req, res) => {
 app.get('/api/getUpcomingEvents', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open
+      `SELECT event_id, event_name, event_date, start_date, end_date, location, registration_deadline, entry_fee, registration_open
        FROM events
-       WHERE event_date >= CURRENT_DATE
-       ORDER BY event_date ASC`
+       ORDER BY COALESCE(start_date, event_date) DESC
+       LIMIT 30`
     );
     res.json({ success: true, events: result.rows });
   } catch (err) {
@@ -10175,6 +10270,164 @@ app.post('/api/exportOfficialsCSV', async (req, res) => {
   }
 });
 
+// Sign-On Sheet Excel export for officials portal
+app.get('/api/officials/events/:eventId/exportExcel', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const { eventId } = req.params;
+
+    const { rows: entries } = await pool.query(
+      `SELECT
+         r.entry_id, r.event_id, r.race_class, r.entry_status,
+         d.race_number,
+         d.first_name AS driver_first_name, d.last_name AS driver_last_name,
+         d.team_name, d.msa_license_number,
+         c.full_name AS entrant_name
+       FROM race_entries r
+       LEFT JOIN drivers d ON r.driver_id = d.driver_id
+       LEFT JOIN contacts c ON r.driver_id = c.driver_id
+       WHERE r.event_id = $1
+         AND r.entry_status != 'cancelled'
+         AND (r.race_class IS NOT NULL AND r.race_class != '')
+       ORDER BY r.race_class, d.race_number`,
+      [eventId]
+    );
+
+    // Fetch optional S3 branding images
+    async function s3ToBuffer(key) {
+      try {
+        const cmd = new GetObjectCommand({ Bucket: Z1_BUCKET, Key: key });
+        const data = await s3.send(cmd);
+        const chunks = [];
+        for await (const chunk of data.Body) chunks.push(chunk);
+        return Buffer.concat(chunks);
+      } catch { return null; }
+    }
+    const prefix = eventDocPrefix(eventId, 'branding');
+    const listed = await s3.send(new ListObjectsV2Command({ Bucket: Z1_BUCKET, Prefix: prefix }));
+    let headerKey = null, footerKey = null;
+    for (const obj of (listed.Contents || [])) {
+      const base = obj.Key.replace(prefix, '').replace(/\.[^.]+$/, '').toLowerCase();
+      if (base === 'header') headerKey = obj.Key;
+      if (base === 'footer') footerKey = obj.Key;
+    }
+    const [headerBuf, footerBuf] = await Promise.all([
+      headerKey ? s3ToBuffer(headerKey) : null,
+      footerKey ? s3ToBuffer(footerKey) : null,
+    ]);
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Sign-On Sheet');
+    const TOTAL_COLS = 8;
+
+    ws.columns = [
+      { key: 'race_number',  width: 12 },
+      { key: 'race_class',   width: 16 },
+      { key: 'driver_name',  width: 26 },
+      { key: 'entrant_name', width: 26 },
+      { key: 'team_name',    width: 24 },
+      { key: 'msa_license',  width: 20 },
+      { key: 'sign',         width: 28 },
+      { key: 'qr',           width: 10 },
+    ];
+
+    let currentRow = 1;
+
+    if (headerBuf) {
+      const imgId = wb.addImage({ buffer: headerBuf, extension: headerKey.split('.').pop().replace('jpg','jpeg') });
+      const HEADER_ROWS = 5;
+      ws.addImage(imgId, { tl: { col: 0, row: currentRow - 1 }, br: { col: TOTAL_COLS, row: currentRow - 1 + HEADER_ROWS } });
+      for (let r = currentRow; r < currentRow + HEADER_ROWS; r++) ws.getRow(r).height = 18;
+      currentRow += HEADER_ROWS;
+      ws.getRow(currentRow).height = 6;
+      currentRow++;
+    }
+
+    ws.mergeCells(currentRow, 1, currentRow, TOTAL_COLS);
+    const titleCell = ws.getCell(currentRow, 1);
+    titleCell.value = `Sign-On Sheet — ${eventId}`;
+    titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFD700' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    ws.getRow(currentRow).height = 28;
+    currentRow++;
+    ws.getRow(currentRow).height = 4;
+    currentRow++;
+
+    const HEADERS = ['Race #', 'Class', 'Driver Full Name', 'Entrant Full Name', 'Team Name', 'MSA Licence #', 'Entrant Signature', 'QR'];
+    const hdrRow = ws.getRow(currentRow);
+    hdrRow.height = 22;
+    HEADERS.forEach((h, i) => {
+      const cell = hdrRow.getCell(i + 1);
+      cell.value = h;
+      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+    });
+    currentRow++;
+
+    const ROW_HEIGHT = 56;
+    const QR_SIZE = 60;
+    for (const entry of entries) {
+      const rowIdx = currentRow;
+      ws.getRow(rowIdx).height = ROW_HEIGHT;
+      const cols = [
+        entry.race_number || '',
+        entry.race_class  || '',
+        [entry.driver_first_name, entry.driver_last_name].filter(Boolean).join(' '),
+        entry.entrant_name || '',
+        entry.team_name || '',
+        entry.msa_license_number || '',
+        '',
+      ];
+      const rowFill = (rowIdx % 2 === 0)
+        ? { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } }
+        : { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+      cols.forEach((val, i) => {
+        const cell = ws.getRow(rowIdx).getCell(i + 1);
+        cell.value = val;
+        cell.font  = { size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.fill  = rowFill;
+        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      });
+      try {
+        const qrBuf = await QRCode.toBuffer(String(entry.entry_id || entry.race_number || rowIdx), { width: QR_SIZE, margin: 1 });
+        const qrId  = wb.addImage({ buffer: qrBuf, extension: 'png' });
+        ws.addImage(qrId, { tl: { col: 7.1, row: rowIdx - 1 + 0.1 }, br: { col: 8, row: rowIdx - 1 + 0.9 }, editAs: 'oneCell' });
+      } catch { /* skip QR on error */ }
+      const qrCell = ws.getRow(rowIdx).getCell(8);
+      qrCell.fill   = rowFill;
+      qrCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      currentRow++;
+    }
+
+    if (footerBuf) {
+      ws.getRow(currentRow).height = 6;
+      currentRow++;
+      const footerId = wb.addImage({ buffer: footerBuf, extension: footerKey.split('.').pop().replace('jpg','jpeg') });
+      const FOOTER_ROWS = 4;
+      ws.addImage(footerId, { tl: { col: 0, row: currentRow - 1 }, br: { col: TOTAL_COLS, row: currentRow - 1 + FOOTER_ROWS } });
+      for (let r = currentRow; r < currentRow + FOOTER_ROWS; r++) ws.getRow(r).height = 15;
+    }
+
+    ws.views = [{ state: 'frozen', ySplit: headerBuf ? 9 : 3 }];
+
+    const safeName = eventId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="SignOn_Sheet_${safeName}.xlsx"`);
+    await wb.xlsx.write(res);
+    res.end();
+    console.log(`✅ Officials Excel sign-on export: ${entries.length} entries for ${eventId}`);
+  } catch (err) {
+    console.error('❌ officials exportExcel error:', err.message);
+    if (!res.headersSent) res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Get audit log entries (unified: audit_log + equipment_scan_log)
 app.post('/api/getAuditLog', async (req, res) => {
   try {
@@ -10727,9 +10980,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Fix #12: Protect admin.html behind HTTP Basic Auth (adds browser-level barrier)
+// Fix #12: Protect admin.html + superadmin.html behind HTTP Basic Auth (adds browser-level barrier)
 // This runs BEFORE express.static so it intercepts the file request first
-app.get(['/admin.html', '/admin'], (req, res, next) => {
+app.get(['/admin.html', '/admin', '/superadmin.html', '/superadmin'], (req, res, next) => {
   const authHeader = req.headers.authorization;
   const adminSecret = process.env.ADMIN_SECRET || 'natsadmin2026';
   if (authHeader && authHeader.startsWith('Basic ')) {
@@ -10761,7 +11014,321 @@ app.use('/uploads', (req, res, next) => {
   next();
 });
 
+// ── Public shareable board pages (no auth — read-only, shareable via WhatsApp) ─
+
+// ── Shared helpers for /share/* board pages ──────────────────────────────────
+
+// Class colour map — matches CLASS_COLORS in admin.html
+const SHARE_CLASS_COLORS = {
+  'Cadet':         { bg:'#dc2626', text:'#fff'    },
+  'Mini ROK':      { bg:'#f59e0b', text:'#1a1a1a' },
+  'Mini ROK U10':  { bg:'#f97316', text:'#fff'    },
+  'Mini ROK U/10': { bg:'#f97316', text:'#fff'    },
+  'OK-J':          { bg:'#16a34a', text:'#fff'    },
+  'OK Junior':     { bg:'#16a34a', text:'#fff'    },
+  'OK-N':          { bg:'#0ea5e9', text:'#fff'    },
+  'OK National':   { bg:'#0ea5e9', text:'#fff'    },
+  'KZ2':           { bg:'#7c3aed', text:'#fff'    },
+  'Senior ROK':    { bg:'#1e40af', text:'#fff'    },
+};
+
+function shareClassColor(cls) {
+  return SHARE_CLASS_COLORS[cls] || { bg:'#475569', text:'#fff' };
+}
+
+// Fetch branding images (header/footer) for an event from S3
+async function getShareBranding(eventId) {
+  try {
+    const prefix = eventDocPrefix(eventId, 'branding');
+    const data = await s3.send(new ListObjectsV2Command({ Bucket: Z1_BUCKET, Prefix: prefix }));
+    const result = { header: null, footer: null };
+    for (const obj of (data.Contents || [])) {
+      const filename = obj.Key.replace(prefix, '');
+      const base = filename.replace(/\.[^.]+$/, '').toLowerCase();
+      if (base === 'header') result.header = `${Z1_BASE_URL}/${obj.Key}`;
+      if (base === 'footer') result.footer = `${Z1_BASE_URL}/${obj.Key}`;
+    }
+    return result;
+  } catch (_) { return { header: null, footer: null }; }
+}
+
+// Shared page CSS — same base for both boards
+function shareBoardCSS(accentBg = '#0f172a') {
+  return `
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;color:#1e293b;}
+    .branding-header img,.branding-footer img{width:100%;max-width:100%;display:block;}
+    .page-header{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .page-header h1{color:#fff;font-size:20px;font-weight:700;margin:0;}
+    .page-header .sub{color:#94a3b8;font-size:12px;margin-top:3px;}
+    .page-header .evtname{color:#f59e0b;font-size:13px;font-weight:600;margin-top:2px;}
+    .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+    .refresh-btn{padding:7px 13px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.25);border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;}
+    .refresh-btn:hover{background:rgba(255,255,255,0.18);}
+    .summary-bar{background:#1e3a5f;color:#94a3b8;font-size:12px;padding:6px 20px;text-align:right;}
+    .summary-bar strong{color:#f59e0b;}
+    .content{padding:16px;max-width:960px;margin:0 auto;}
+    .class-group{margin-bottom:24px;}
+    .class-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;padding:10px 16px;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:space-between;}
+    .class-stats{font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;opacity:0.75;}
+    .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    table{width:100%;border-collapse:collapse;background:white;border-radius:0 0 8px 8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+    th{background:#0f172a;color:#cbd5e1;padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;white-space:nowrap;}
+    td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr.assigned,tr.registered{background:#f0fdf4;}
+    tr.unassigned td,tr.unregistered td{color:#94a3b8;}
+    .driver-name{font-weight:700;color:#059669;font-size:14px;}
+    .race-num{display:inline-block;background:#1e3a5f;color:white;padding:2px 9px;border-radius:12px;font-size:12px;font-weight:700;}
+    .draw-num{display:inline-block;background:#f59e0b;color:#1a1a1a;padding:2px 9px;border-radius:4px;font-size:13px;font-weight:800;}
+    .mono{font-family:'Courier New',monospace;font-size:12px;letter-spacing:0.03em;}
+    .badge-green{display:inline-block;background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+    .badge-red{display:inline-block;background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+    .time-badge{display:inline-block;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}
+    .empty{color:#cbd5e1;}
+    .page-footer{text-align:center;padding:20px 16px;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;margin-top:8px;}
+    .page-footer a{color:#94a3b8;}
+    @media(max-width:600px){
+      .page-header h1{font-size:16px;}
+      td,th{padding:8px 7px;font-size:12px;}
+      .draw-num,.driver-name{font-size:12px;}
+    }
+  `;
+}
+
+app.get('/share/engine-draw', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT pe.draw_number, pe.engine_serial, pe.seal_number,
+             pe.carb_number, pe.airbox_number, pe.exhaust_number,
+             pe.class, pe.notes, pe.active,
+             d.first_name || ' ' || d.last_name AS assigned_driver_name,
+             d.race_number                        AS assigned_race_number
+      FROM pool_engines pe
+      LEFT JOIN race_entries re
+             ON UPPER(re.engine_serial) = UPPER(pe.engine_serial)
+            AND re.engine_returned IS NOT TRUE
+            AND re.engine_serial IS NOT NULL
+            AND pe.engine_serial IS NOT NULL
+            AND pe.engine_serial <> ''
+      LEFT JOIN drivers d ON re.driver_id = d.driver_id
+      WHERE pe.deleted_at IS NULL AND pe.active = true
+      ORDER BY pe.class,
+        NULLIF(regexp_replace(pe.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
+        pe.draw_number
+    `);
+
+    // Use most recent event for branding
+    const latestEvt = await pool.query(`SELECT event_id FROM events ORDER BY event_date DESC NULLS LAST LIMIT 1`);
+    const branding = latestEvt.rows.length ? await getShareBranding(latestEvt.rows[0].event_id) : { header: null, footer: null };
+
+    const engines = result.rows;
+    const classes = [...new Set(engines.map(e => e.class || 'Unclassified'))];
+    const generatedAt = new Date().toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' });
+    const assignedCount = engines.filter(e => e.assigned_driver_name).length;
+
+    const classGroupsHTML = classes.map(cls => {
+      const { bg, text } = shareClassColor(cls);
+      const clsEngines = engines.filter(e => (e.class || 'Unclassified') === cls);
+      const rows = clsEngines.map(e => {
+        const assigned = !!e.assigned_driver_name;
+        return `<tr class="${assigned ? 'assigned' : 'unassigned'}">
+          <td><span class="draw-num" style="background:${bg};color:${text};">${e.draw_number}</span></td>
+          <td>${assigned ? `<span class="driver-name">${e.assigned_driver_name}</span>` : '<span class="empty">—</span>'}</td>
+          <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
+          <td class="mono">${e.engine_serial || '—'}</td>
+          <td class="mono">${e.seal_number || '—'}</td>
+          <td>${assigned ? '<span class="badge-green">Assigned</span>' : '<span class="badge-red">Available</span>'}</td>
+        </tr>`;
+      }).join('');
+      const assignedInClass = clsEngines.filter(e => e.assigned_driver_name).length;
+      return `<div class="class-group">
+        <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
+        <div class="table-scroll">
+        <table>
+          <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Seal #</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </div>`;
+    }).join('');
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NATS Engine Draw Board</title>
+  <link rel="icon" type="image/png" href="/rok-cup-favicon.png">
+  <style>${shareBoardCSS()}</style>
+</head>
+<body>
+  ${branding.header ? `<div class="branding-header"><img src="${branding.header}" alt="Event Header"></div>` : ''}
+  <div class="page-header">
+    <div>
+      <h1>🔧 Engine Draw Board</h1>
+      <div class="sub">Generated: ${generatedAt}</div>
+    </div>
+    <div class="header-right">
+      <a href="/share/engine-draw" class="refresh-btn">🔄 Refresh</a>
+    </div>
+  </div>
+  <div class="summary-bar">
+    <strong>${assignedCount}</strong> of <strong>${engines.length}</strong> engines assigned
+  </div>
+  <div class="content">${classGroupsHTML}</div>
+  ${branding.footer ? `<div class="branding-footer"><img src="${branding.footer}" alt="Event Footer"></div>` : ''}
+  <div class="page-footer">NATS Race Management System &bull; <a href="https://rokthenats.co.za">rokthenats.co.za</a></div>
+</body></html>`);
+  } catch (err) {
+    console.error('GET /share/engine-draw error:', err.message);
+    res.status(500).send(`<h2 style="font-family:sans-serif;padding:40px;color:#dc2626;">Error loading engine draw: ${err.message}</h2>`);
+  }
+});
+
+app.get('/share/tyre-board', async (req, res) => {
+  try {
+    const { event_id } = req.query;
+
+    // No event selected — show event picker
+    if (!event_id) {
+      const evtRes = await pool.query(`
+        SELECT event_id, event_name, event_date FROM events
+        ORDER BY event_date DESC NULLS LAST LIMIT 20
+      `);
+      const options = evtRes.rows.map(e => {
+        const dateStr = e.event_date ? new Date(e.event_date).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : '';
+        return `<a href="/share/tyre-board?event_id=${encodeURIComponent(e.event_id)}" class="event-link">
+          <strong>${e.event_name}</strong><span class="event-date">${dateStr}</span>
+        </a>`;
+      }).join('');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(`<!DOCTYPE html><html lang="en"><head>
+        <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <title>NATS Tyre Board — Select Event</title>
+        <link rel="icon" type="image/png" href="/rok-cup-favicon.png">
+        <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f4f8;min-height:100vh;}
+        .page-header{background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:20px;}
+        .page-header h1{color:#fff;font-size:20px;font-weight:700;}.page-header .sub{color:#94a3b8;font-size:12px;margin-top:4px;}
+        .content{padding:24px;max-width:600px;margin:0 auto;}.title{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:14px;}
+        .event-link{display:flex;justify-content:space-between;align-items:center;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:10px;text-decoration:none;color:#1e293b;transition:border-color 0.15s;}
+        .event-link:hover{border-color:#f59e0b;background:#fffbeb;}.event-link strong{font-size:14px;}
+        .event-date{font-size:12px;color:#64748b;}</style>
+        </head><body>
+        <div class="page-header"><h1>🏁 Tyre Registration Board</h1><div class="sub">Select an event to view registrations</div></div>
+        <div class="content"><div class="title">Select Event</div>${options || '<p style="color:#94a3b8;font-size:14px;">No events found</p>'}</div>
+        </body></html>`);
+    }
+
+    const [entryRes, evtRes, branding] = await Promise.all([
+      pool.query(`
+        SELECT r.entry_id, r.race_class,
+               r.tyre_front_left, r.tyre_front_right, r.tyre_rear_left, r.tyre_rear_right,
+               r.tyre_sets, r.tyres_registered_at,
+               d.first_name, d.last_name, d.race_number
+        FROM race_entries r
+        LEFT JOIN drivers d ON r.driver_id = d.driver_id
+        WHERE r.event_id = $1
+          AND r.entry_status NOT IN ('cancelled','incomplete')
+        ORDER BY r.race_class, d.race_number::int NULLS LAST, d.last_name
+      `, [event_id]),
+      pool.query(`SELECT event_name, event_date FROM events WHERE event_id = $1`, [event_id]),
+      getShareBranding(event_id),
+    ]);
+
+    const evt = evtRes.rows[0] || {};
+    const eventLabel = evt.event_name || 'Event';
+    const eventDate = evt.event_date ? new Date(evt.event_date).toLocaleDateString('en-ZA', { day:'numeric', month:'long', year:'numeric' }) : '';
+    const generatedAt = new Date().toLocaleString('en-ZA', { timeZone:'Africa/Johannesburg', dateStyle:'medium', timeStyle:'short' });
+
+    const entries = entryRes.rows;
+    const registeredEntries = entries.filter(e => e.tyre_front_left || (e.tyre_sets && e.tyre_sets.length));
+    const classes = [...new Set(entries.map(e => e.race_class || 'General'))];
+
+    const classGroupsHTML = classes.map(cls => {
+      const { bg, text } = shareClassColor(cls);
+      const clsEntries = entries.filter(e => (e.race_class || 'General') === cls);
+      const rows = clsEntries.map(e => {
+        const hasTyres = !!(e.tyre_front_left || (e.tyre_sets && e.tyre_sets.length));
+        let sets = [];
+        try { sets = Array.isArray(e.tyre_sets) ? e.tyre_sets : (e.tyre_sets ? JSON.parse(e.tyre_sets) : []); } catch(_) {}
+        const displaySet = sets.length > 0 ? sets[sets.length - 1] : { fl: e.tyre_front_left, fr: e.tyre_front_right, rl: e.tyre_rear_left, rr: e.tyre_rear_right };
+        const regTime = e.tyres_registered_at ? new Date(e.tyres_registered_at).toLocaleTimeString('en-ZA', { timeZone:'Africa/Johannesburg', hour:'2-digit', minute:'2-digit' }) : null;
+        const multiSet = sets.length > 1 ? `<span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;margin-left:4px;">${sets.length} sets</span>` : '';
+
+        if (hasTyres && displaySet) {
+          return `<tr class="registered">
+            <td>${e.race_number ? `<span class="race-num">#${e.race_number}</span>` : '—'}</td>
+            <td class="driver-name">${e.first_name || ''} ${e.last_name || ''}</td>
+            <td class="mono">${displaySet.fl || '—'}</td>
+            <td class="mono">${displaySet.fr || '—'}</td>
+            <td class="mono">${displaySet.rl || '—'}</td>
+            <td class="mono">${displaySet.rr || '—'}</td>
+            <td>${regTime ? `<span class="time-badge">${regTime}</span>` : '—'}${multiSet}</td>
+          </tr>`;
+        } else {
+          return `<tr class="unregistered">
+            <td>${e.race_number ? `<span class="race-num" style="opacity:0.4">#${e.race_number}</span>` : '—'}</td>
+            <td style="color:#94a3b8">${e.first_name || ''} ${e.last_name || ''}</td>
+            <td colspan="4" style="color:#cbd5e1;font-size:12px;font-style:italic;">Not yet registered</td>
+            <td><span class="badge-red">Pending</span></td>
+          </tr>`;
+        }
+      }).join('');
+      const regInClass = clsEntries.filter(e => e.tyre_front_left || (e.tyre_sets && e.tyre_sets.length)).length;
+      return `<div class="class-group">
+        <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${regInClass}/${clsEntries.length} registered</span></div>
+        <div class="table-scroll">
+        <table>
+          <thead><tr><th>Race #</th><th>Driver</th><th>FL</th><th>FR</th><th>RL</th><th>RR</th><th>Time</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </div>`;
+    }).join('');
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NATS Tyre Board — ${eventLabel}</title>
+  <link rel="icon" type="image/png" href="/rok-cup-favicon.png">
+  <style>${shareBoardCSS()}</style>
+</head>
+<body>
+  ${branding.header ? `<div class="branding-header"><img src="${branding.header}" alt="Event Header"></div>` : ''}
+  <div class="page-header">
+    <div>
+      <h1>🏁 Tyre Registration Board</h1>
+      <div class="evtname">${eventLabel}${eventDate ? ' &bull; ' + eventDate : ''}</div>
+      <div class="sub">Generated: ${generatedAt}</div>
+    </div>
+    <div class="header-right">
+      <a href="/share/tyre-board?event_id=${encodeURIComponent(event_id)}" class="refresh-btn">🔄 Refresh</a>
+      <a href="/share/tyre-board" class="refresh-btn" style="font-size:11px;padding:5px 10px;opacity:0.7;">↩ Events</a>
+    </div>
+  </div>
+  <div class="summary-bar">
+    <strong>${registeredEntries.length}</strong> of <strong>${entries.length}</strong> drivers registered tyres
+  </div>
+  <div class="content">${classGroupsHTML || '<p style="padding:40px;color:#94a3b8;text-align:center;">No entries found for this event.</p>'}</div>
+  ${branding.footer ? `<div class="branding-footer"><img src="${branding.footer}" alt="Event Footer"></div>` : ''}
+  <div class="page-footer">NATS Race Management System &bull; <a href="https://rokthenats.co.za">rokthenats.co.za</a></div>
+</body></html>`);
+  } catch (err) {
+    console.error('GET /share/tyre-board error:', err.message);
+    res.status(500).send(`<h2 style="font-family:sans-serif;padding:40px;color:#dc2626;">Error loading tyre board: ${err.message}</h2>`);
+  }
+});
+
 // Serve static files from the project root (AFTER all API routes)
+// Block server-side source files from being served directly
+app.use((req, res, next) => {
+  const blocked = /^\/(\.env|server\.js|package(?:-lock)?\.json|.*\.bat|.*\.sh|logs\/|uploads\/)/.test(req.path);
+  if (blocked) return res.status(403).send('Forbidden');
+  next();
+});
 app.use(express.static(path.join(__dirname, '.')));
 
 // Fix #17: safeError helper — never expose raw error messages in production
@@ -10792,7 +11359,49 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
     const fs = require('fs');
     const path = require('path');
 
-    // ── 1. Scan filesystem first (admin-uploaded files) ──────────────────────
+    // ── 1. Check S3 first (admin-uploaded files via admin panel) ─────────────
+    const S3_FOLDER_META = {
+      'official':  { category: 'official', label: 'OFFICIAL' },
+      'general':   { category: 'general',  label: 'General' },
+      'cadet':     { category: 'cadet',    label: 'Cadet / Mini ROK U10' },
+      'mini-rok':  { category: 'mini',     label: 'Mini ROK' },
+      'ok-j':      { category: 'okj',      label: 'OK-J' },
+      'ok-n':      { category: 'okn',      label: 'OK-N' }
+    };
+    try {
+      const s3Docs = [];
+      for (const [folderKey, meta] of Object.entries(S3_FOLDER_META)) {
+        const prefix = eventDocPrefix(eventId, folderKey);
+        const listCmd = new ListObjectsV2Command({ Bucket: Z1_BUCKET, Prefix: prefix });
+        const data = await s3.send(listCmd);
+        for (const obj of (data.Contents || [])) {
+          const filename = obj.Key.replace(prefix, '');
+          if (!filename || filename.startsWith('.')) continue;
+          const ext = path.extname(filename).toLowerCase();
+          let icon = '📄';
+          if (ext === '.pdf') icon = '📕';
+          else if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) icon = '🖼️';
+          else if (['.doc', '.docx'].includes(ext)) icon = '📝';
+          else if (['.xls', '.xlsx'].includes(ext)) icon = '📊';
+          const fileUrl = `${Z1_BASE_URL}/${obj.Key}`;
+          s3Docs.push({
+            display_name: path.basename(filename, ext).replace(/[-_]/g, ' '),
+            document_type: meta.label,
+            file_path: fileUrl,
+            preview_url: fileUrl,
+            category: meta.category,
+            icon
+          });
+        }
+      }
+      if (s3Docs.length > 0) {
+        return res.json({ success: true, documents: s3Docs, count: s3Docs.length, source: 's3' });
+      }
+    } catch (s3Err) {
+      console.warn('S3 doc list failed, falling back to filesystem:', s3Err.message);
+    }
+
+    // ── 2. Scan filesystem (legacy local uploads) ─────────────────────────────
     const fsDocFolderMap = {
       'official':  { category: 'official',  label: 'OFFICIAL' },
       'general':   { category: 'general',   label: 'General' },
@@ -11258,6 +11867,8 @@ app.get('/api/engineSealHistory', async (req, res) => {
 });
 
 app.use(require('./routes/equipment')(pool, logEquipmentScan));
+app.use(require('./routes/access')(pool, requireAdmin));
+app.use(require('./routes/checkin')(pool, requireAdmin));
 
 // returnEngine is handled by routes/equipment.js (mounted above)
 // Return signature viewer

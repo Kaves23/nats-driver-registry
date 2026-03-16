@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NATS Admin Portal</title>
+  <title>NATS Super Admin</title>
   <link rel="icon" type="image/png" href="/rok-cup-favicon.png" />
   <link rel="apple-touch-icon" href="/rok-cup-favicon.png" />
   <style>
@@ -841,6 +841,7 @@
       animation: successBorderFlash 0.8s ease-out;
     }
   </style>
+  <link rel="stylesheet" href="/css/superadmin-mobile.css">
 </head>
 <body>
   <!-- Login Screen -->
@@ -863,7 +864,7 @@
   <!-- Admin Dashboard -->
   <div class="admin-wrapper" id="adminWrapper">
     <div class="admin-header">
-      <h1>Driver Management</h1>
+      <h1>Super Admin <span class="sa-badge">SA</span></h1>
       <button class="logout-btn" onclick="adminLogout()">Logout</button>
     </div>
 
@@ -974,7 +975,6 @@
         <button class="search-btn" onclick="exportRaceEntriesExcel()" style="background: #1d6f42;">&#128202; Export Excel</button>
         <button class="search-btn" onclick="exportFinancialReportCSV()" style="background: #f59e0b; color: #1a1a1a;">&#128184; Financial Report</button>
         <button class="search-btn" onclick="openTyreBoardShare()" style="background:#0f172a;color:white;">🏁 Share Tyre Board</button>
-        <button class="search-btn" onclick="printQRStickers()" style="background: #7c3aed; color: white;">🏷️ QR Sticker Sheet</button>
         <label style="margin-left: 20px; color: #ef4444; font-size: 14px; cursor: pointer; font-weight: 600;">
           <input type="checkbox" id="showCancelledEntries" onchange="loadRaceEntries()" style="margin-right: 6px; cursor: pointer;">
           Show Cancelled/Incomplete
@@ -982,7 +982,7 @@
       </div>
 
       <!-- Barcode search bar -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;">
+      <div id="barcodeBar" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;">
         <span style="font-size:13px;color:#94a3b8;white-space:nowrap;">🔍 Barcode lookup:</span>
         <input id="barcodeSearchInput" type="text" placeholder="e.g. E0013, GAS0045, ENG6033…"
           autocapitalize="characters" autocomplete="off" spellcheck="false"
@@ -2528,15 +2528,30 @@
 
     // =========================================================
     // Global fetch interceptor — automatically injects admin
-    // token into every /api/ request from this page
-    // =========================================================
-    const _origFetch = window.fetch.bind(window);
-    window.fetch = function(url, options = {}) {
-      if (typeof url === 'string' && url.startsWith('/api/') && adminToken) {
+    // token into every /api/ request from this page.
+    // Wrapped in try/catch in case SES lockdown (MetaMask) makes
+    // window.fetch non-writable.
+    let _fetchPatched = false;
+    try {
+      const _origFetch = window.fetch.bind(window);
+      window.fetch = function(url, options = {}) {
+        if (typeof url === 'string' && url.startsWith('/api/') && adminToken) {
+          options = { ...options, headers: { 'x-admin-token': adminToken, ...(options.headers || {}) } };
+        }
+        return _origFetch(url, options);
+      };
+      _fetchPatched = true;
+    } catch(e) {
+      console.warn('Fetch interceptor blocked (SES lockdown active) — explicit headers required');
+    }
+
+    // apiFetch: always injects the token regardless of whether the patch worked
+    function apiFetch(url, options = {}) {
+      if (adminToken) {
         options = { ...options, headers: { 'x-admin-token': adminToken, ...(options.headers || {}) } };
       }
-      return _origFetch(url, options);
-    };
+      return fetch(url, options);
+    }
 
     async function adminLogin() {
       const pwEl = document.getElementById('adminPassword');
@@ -5679,9 +5694,11 @@
     // ============= MSA LICENSES FUNCTIONS =============
 
     async function loadAdminMSAEventDropdown() {
+      if (!adminToken) return;  // don't call before login
       try {
-        const response = await fetch('/api/getAllEvents');
-        
+        const response = await fetch('/api/getAllEvents', {
+          headers: { 'x-admin-token': adminToken }
+        });
         if (!response.ok) throw new Error('Failed to load events');
         
         const result = await response.json();
@@ -6331,132 +6348,6 @@
         const d = await r.json();
         return { headerBrandingUrl: d.header || null, footerBrandingUrl: d.footer || null };
       } catch(e) { return { headerBrandingUrl: null, footerBrandingUrl: null }; }
-    }
-
-    // ─── QR Sticker Sheet export ─────────────────────────────────────────────
-    // Generates a printable A4 sheet of QR stickers, one per checked-in entry.
-    // Each sticker shows: driver name, race#, class, and the ticket QR code.
-    // Opens in a new browser tab → user triggers Print from that tab.
-    async function printQRStickers() {
-      const race = document.getElementById('filterRace').value;
-      if (!race) { showToast('Please select a race first', 'info'); return; }
-      showToast('Generating QR sticker sheet…', 'info');
-
-      try {
-        // Fetch entries for this event
-        const r = await fetch(`/api/allRaceEntries`, { headers: { 'x-admin-token': adminToken } });
-        if (!r.ok) throw new Error('Failed to load entries');
-        const all = await r.json();
-
-        // Filter to selected event and entries that have a payment_reference (the QR data)
-        const entries = all.filter(e =>
-          String(e.event_id) === String(race) &&
-          e.payment_reference &&
-          e.entry_status !== 'cancelled'
-        );
-
-        if (!entries.length) {
-          showToast('No entries with QR codes found for this event', 'info');
-          return;
-        }
-
-        // Get event name from the first entry
-        const eventName = (entries[0].event_name || 'Race Event').toUpperCase();
-
-        // Class → colour map (background, text) for sticker badges
-        function classColour(cls) {
-          const c = (cls || '').toUpperCase();
-          if (c.includes('SENIOR'))   return ['#1d4ed8','#fff'];
-          if (c.includes('JUNIOR'))   return ['#15803d','#fff'];
-          if (c.includes('MICRO'))    return ['#7c3aed','#fff'];
-          if (c.includes('MINI'))     return ['#c2410c','#fff'];
-          if (c.includes('SHIFTER') || c.includes('SHIFT')) return ['#b91c1c','#fff'];
-          if (c.includes('SUPER'))    return ['#9f1239','#fff'];
-          if (c.includes('GP'))       return ['#0b2e55','#fff'];
-          if (c.includes('CADET'))    return ['#0f766e','#fff'];
-          if (c.includes('VLR'))      return ['#b45309','#fff'];
-          if (c.includes('DD2') || c.includes('MAX') || c.includes('OK'))  return ['#0e7490','#fff'];
-          if (c.includes('ROTAX'))    return ['#be185d','#fff'];
-          if (c.includes('125'))      return ['#4f46e5','#fff'];
-          return ['#374151','#fff'];
-        }
-
-        // Build sticker HTML for each entry
-        const stickers = entries.map(e => {
-          const name    = [e.driver_first_name, e.driver_last_name].filter(Boolean).join(' ') || e.entrant_name || '—';
-          const raceNo  = e.race_number || '—';
-          const cls     = (e.race_class || '—').toUpperCase();
-          const qrData  = e.payment_reference.toUpperCase();
-          const qrUrl   = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=4&data=${encodeURIComponent(qrData)}`;
-          const [clsBg, clsFg] = classColour(cls);
-          return `
-            <div class="sticker">
-              <div class="sticker-event">${eventName}</div>
-              <img class="sticker-qr" src="${qrUrl}" alt="QR ${qrData}" loading="lazy">
-              <div class="sticker-name">${name}</div>
-              <div class="sticker-detail">
-                <span class="sticker-raceno">#${raceNo}</span>
-                <span class="sticker-class" style="background:${clsBg};color:${clsFg};">${cls}</span>
-              </div>
-            </div>`;
-        }).join('');
-
-        // Full printable page
-        const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>QR Sticker Sheet — ${eventName}</title>
-<style>
-  @page { size: A4 portrait; margin: 10mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: white; }
-  h1 { font-size: 14px; text-align: center; margin-bottom: 8px; color: #111; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 4mm;
-  }
-  .sticker {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 6px 8px;
-    text-align: center;
-    page-break-inside: avoid;
-    background: white;
-  }
-  .sticker-event { font-size: 7px; font-weight: 700; color: #0b2e55; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sticker-qr    { width: 90px; height: 90px; display: block; margin: 0 auto 4px; }
-  .sticker-name  { font-size: 10px; font-weight: 700; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-  .sticker-detail{ display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; }
-  .sticker-raceno { font-size: 11px; font-weight: 700; color: #111; }
-  .sticker-class  { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.4px; text-transform: uppercase; }
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .no-print { display: none !important; }
-  }
-</style>
-</head>
-<body>
-<div class="no-print" style="padding:12px;background:#0b2e55;color:white;text-align:center;margin-bottom:12px;font-size:14px;">
-  <strong>${eventName}</strong> — ${entries.length} stickers &nbsp;&nbsp;
-  <button onclick="window.print()" style="padding:8px 20px;background:#22c55e;color:white;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-left:12px;">🖨️ Print</button>
-  <button onclick="window.close()" style="padding:8px 14px;background:#6b7280;color:white;border:none;border-radius:6px;font-size:13px;cursor:pointer;margin-left:8px;">✕ Close</button>
-</div>
-<div class="grid">${stickers}</div>
-</body>
-</html>`;
-
-        const win = window.open('', '_blank');
-        if (!win) { showToast('Pop-up blocked — please allow pop-ups for this page', 'error'); return; }
-        win.document.write(html);
-        win.document.close();
-        showToast(`${entries.length} stickers generated ✓`, 'success');
-
-      } catch(err) {
-        console.error('QR sticker export error:', err);
-        showToast('Sticker export failed: ' + err.message, 'error');
-      }
     }
 
     // Export Race Entries as Excel (.xlsx) with QR codes and event branding
