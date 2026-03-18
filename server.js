@@ -478,23 +478,41 @@ if (process.env.DB_SSL === 'false') {
     } catch { /* Cloud unreachable — retry in 30s */ }
   }, 30_000);
 
-  // Pull: grab new cloud registrations every 60 seconds
+  // Pull: grab cloud registrations every 60 seconds
+  // Uses column intersection so it's safe even if local schema is missing some columns.
+  // Pulls last 30 days to cover all entries for the upcoming race.
   setInterval(async () => {
     try {
-      const { rows } = await cloudPool.query(
-        `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '24 hours'`
+      // Get local columns to safely intersect with cloud columns
+      const { rows: localColRows } = await pool.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name='race_entries' AND table_schema='public'`
       );
+      const localCols = new Set(localColRows.map(r => r.column_name));
+
+      const { rows } = await cloudPool.query(
+        `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '30 days'`
+      );
+      if (!rows.length) return;
+
+      // Intersect cloud columns with local columns
+      const allCloudCols = Object.keys(rows[0]);
+      const safeCols = allCloudCols.filter(c => localCols.has(c));
+      if (!safeCols.includes('entry_id')) return; // safety check
+
+      let pulled = 0;
       for (const row of rows) {
-        const cols = Object.keys(row);
-        const vals = cols.map(c => row[c]);
-        const ph   = cols.map((_, i) => `$${i + 1}`).join(',');
-        const upd  = cols.filter(c => c !== 'entry_id').map(c => `${c} = EXCLUDED.${c}`).join(', ');
-        await pool.query(
-          `INSERT INTO race_entries (${cols.join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
-          vals
-        );
+        const vals = safeCols.map(c => row[c]);
+        const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
+        const upd  = safeCols.filter(c => c !== 'entry_id').map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
+        try {
+          await pool.query(
+            `INSERT INTO race_entries (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
+            vals
+          );
+          pulled++;
+        } catch { /* skip bad row */ }
       }
-      if (rows.length > 0) console.log(`[sync] Pulled ${rows.length} entries from cloud`);
+      if (pulled > 0) { lastSyncTime = Date.now(); console.log(`[sync] Pulled ${pulled} entries from cloud`); }
     } catch { /* Cloud unreachable — retry in 60s */ }
   }, 60_000);
 
