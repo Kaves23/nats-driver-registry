@@ -506,19 +506,26 @@ if (process.env.DB_SSL === 'false') {
   }
 
   // Pull entries (and their prerequisites) from cloud.
-  // Uses a dedicated client with FK checks disabled so inserts never fail due to missing parents.
+  // TRUNCATEs race_entries first to wipe any stale/partial data, then re-inserts
+  // with FK triggers disabled (session_replication_role = replica).
+  // Note: unique constraints are still enforced even with replica role, so TRUNCATE
+  // is essential to avoid payment_reference / unique_driver_event_payment conflicts.
   async function pullEntriesFromCloud() {
     const localClient = await pool.connect();
     let pulled = 0;
     try {
       await localClient.query('SET session_replication_role = replica');
 
-      // Sync prerequisite tables first so FK constraints are satisfied on re-enable
+      // Upsert events, drivers, contacts first (parents before children)
       await syncTableFromCloud('events',  'event_id',  localClient);
       await syncTableFromCloud('drivers', 'driver_id', localClient);
       await syncTableFromCloud('contacts','driver_id', localClient);
 
-      // Now sync race_entries for the last 30 days
+      // Wipe race_entries completely before re-inserting — eliminates all unique
+      // constraint conflicts (payment_reference, unique_driver_event_payment etc.)
+      await localClient.query('TRUNCATE TABLE race_entries CASCADE');
+
+      // Fetch all race_entries from last 30 days and insert fresh
       const { rows: localColRows } = await pool.query(
         `SELECT column_name FROM information_schema.columns WHERE table_name='race_entries' AND table_schema='public'`
       );
@@ -529,18 +536,21 @@ if (process.env.DB_SSL === 'false') {
       if (rows.length) {
         const safeCols = Object.keys(rows[0]).filter(c => localCols.has(c));
         if (safeCols.includes('entry_id')) {
+          let firstErr = null;
           for (const row of rows) {
             const vals = safeCols.map(c => row[c]);
             const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
-            const upd  = safeCols.filter(c => c !== 'entry_id').map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
             try {
               await localClient.query(
-                `INSERT INTO race_entries (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
+                `INSERT INTO race_entries (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph})`,
                 vals
               );
               pulled++;
-            } catch { /* skip bad row */ }
+            } catch (e) {
+              if (!firstErr) { firstErr = e.message; }
+            }
           }
+          if (firstErr) console.warn('[sync] ⚠️  Some race_entries rows failed:', firstErr);
         }
       }
     } finally {
