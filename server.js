@@ -9104,7 +9104,7 @@ app.post('/api/exportRaceEntriesCSV', async (req, res) => {
         r.*,
         d.first_name,
         d.last_name,
-        d.email,
+        c.email,
         d.transponder_number,
         d.license_number,
         d.kart_brand,
@@ -9114,6 +9114,7 @@ app.post('/api/exportRaceEntriesCSV', async (req, res) => {
         d.race_number as driver_race_number
        FROM race_entries r
        LEFT JOIN drivers d ON r.driver_id = d.driver_id
+       LEFT JOIN contacts c ON d.driver_id = c.driver_id
        WHERE r.event_id = $1 AND r.entry_status != 'cancelled'
        ORDER BY r.race_class, r.race_number`,
       [race_event]
