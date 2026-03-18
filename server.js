@@ -635,6 +635,8 @@ const initRaceEntriesTable = async () => {
         payment_reference VARCHAR(255) UNIQUE,
         payment_status VARCHAR(100),
         entry_status VARCHAR(100),
+        race_class VARCHAR(100),
+        entry_items JSONB DEFAULT '[]',
         transponder_selection VARCHAR(255),
         tyres_ordered BOOLEAN DEFAULT FALSE,
         wets_ordered BOOLEAN DEFAULT FALSE,
@@ -645,6 +647,13 @@ const initRaceEntriesTable = async () => {
         FOREIGN KEY (event_id) REFERENCES events(event_id),
         FOREIGN KEY (driver_id) REFERENCES drivers(driver_id)
       )
+    `);
+
+    // Migration: add race_class and entry_items if missing from existing installs
+    await pool.query(`
+      ALTER TABLE race_entries
+      ADD COLUMN IF NOT EXISTS race_class VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS entry_items JSONB DEFAULT '[]'
     `);
 
     // Migration: rename race_entry_id -> entry_id on existing installs
