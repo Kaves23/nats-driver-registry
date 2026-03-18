@@ -3297,7 +3297,8 @@
         const isGreyedOut = isCancelled || hasNoClass;
         const rowStyle = isGreyedOut ? 'style="background-color: #505050; opacity: 0.6;"' : '';
         
-        const itemsArray = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
+        const _parsedItems = entry.entry_items ? (typeof entry.entry_items === 'string' ? JSON.parse(entry.entry_items) : entry.entry_items) : [];
+        const itemsArray = Array.isArray(_parsedItems) ? _parsedItems : [];
         
         // Helper function to check if item contains text (handles both string arrays and object arrays)
         const itemContains = (searchText) => itemsArray.some(i => {
@@ -6560,7 +6561,8 @@
           const bgColor = idx % 2 === 0 ? '#ffffff' : '#f8f9fa';
           
           // Parse items to check what was purchased
-          const itemsArray = entry.entry_items ? JSON.parse(typeof entry.entry_items === 'string' ? entry.entry_items : JSON.stringify(entry.entry_items)) : [];
+          const _parsedItems2 = entry.entry_items ? (typeof entry.entry_items === 'string' ? JSON.parse(entry.entry_items) : entry.entry_items) : [];
+          const itemsArray = Array.isArray(_parsedItems2) ? _parsedItems2 : [];
           const itemContains = (searchText) => itemsArray.some(i => {
             const itemName = typeof i === 'string' ? i : (i.name || '');
             return itemName.toLowerCase().includes(searchText.toLowerCase());
