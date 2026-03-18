@@ -478,35 +478,74 @@ if (process.env.DB_SSL === 'false') {
     } catch { /* Cloud unreachable — retry in 30s */ }
   }, 30_000);
 
-  // Pull entries from cloud — shared function used by interval AND manual trigger
-  async function pullEntriesFromCloud() {
-    // Get local columns to safely intersect with cloud columns
+  // Helper: upsert all rows from a cloud table into the local DB (column-safe)
+  async function syncTableFromCloud(tableName, pkCol, localClient) {
     const { rows: localColRows } = await pool.query(
-      `SELECT column_name FROM information_schema.columns WHERE table_name='race_entries' AND table_schema='public'`
+      `SELECT column_name FROM information_schema.columns WHERE table_name=$1 AND table_schema='public'`,
+      [tableName]
     );
     const localCols = new Set(localColRows.map(r => r.column_name));
-
-    const { rows } = await cloudPool.query(
-      `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '30 days'`
-    );
+    const { rows } = await cloudPool.query(`SELECT * FROM ${tableName}`);
     if (!rows.length) return 0;
-
-    const allCloudCols = Object.keys(rows[0]);
-    const safeCols = allCloudCols.filter(c => localCols.has(c));
-    if (!safeCols.includes('entry_id')) return 0;
-
-    let pulled = 0;
+    const safeCols = Object.keys(rows[0]).filter(c => localCols.has(c));
+    if (!safeCols.includes(pkCol)) return 0;
+    let count = 0;
     for (const row of rows) {
       const vals = safeCols.map(c => row[c]);
       const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
-      const upd  = safeCols.filter(c => c !== 'entry_id').map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
+      const upd  = safeCols.filter(c => c !== pkCol).map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
       try {
-        await pool.query(
-          `INSERT INTO race_entries (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
+        await localClient.query(
+          `INSERT INTO ${tableName} (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT (${pkCol}) DO UPDATE SET ${upd}`,
           vals
         );
-        pulled++;
+        count++;
       } catch { /* skip bad row */ }
+    }
+    return count;
+  }
+
+  // Pull entries (and their prerequisites) from cloud.
+  // Uses a dedicated client with FK checks disabled so inserts never fail due to missing parents.
+  async function pullEntriesFromCloud() {
+    const localClient = await pool.connect();
+    let pulled = 0;
+    try {
+      await localClient.query('SET session_replication_role = replica');
+
+      // Sync prerequisite tables first so FK constraints are satisfied on re-enable
+      await syncTableFromCloud('events',  'event_id',  localClient);
+      await syncTableFromCloud('drivers', 'driver_id', localClient);
+      await syncTableFromCloud('contacts','driver_id', localClient);
+
+      // Now sync race_entries for the last 30 days
+      const { rows: localColRows } = await pool.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name='race_entries' AND table_schema='public'`
+      );
+      const localCols = new Set(localColRows.map(r => r.column_name));
+      const { rows } = await cloudPool.query(
+        `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '30 days'`
+      );
+      if (rows.length) {
+        const safeCols = Object.keys(rows[0]).filter(c => localCols.has(c));
+        if (safeCols.includes('entry_id')) {
+          for (const row of rows) {
+            const vals = safeCols.map(c => row[c]);
+            const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
+            const upd  = safeCols.filter(c => c !== 'entry_id').map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
+            try {
+              await localClient.query(
+                `INSERT INTO race_entries (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
+                vals
+              );
+              pulled++;
+            } catch { /* skip bad row */ }
+          }
+        }
+      }
+    } finally {
+      await localClient.query('SET session_replication_role = DEFAULT');
+      localClient.release();
     }
     return pulled;
   }
