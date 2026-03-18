@@ -478,6 +478,17 @@ if (process.env.DB_SSL === 'false') {
     } catch { /* Cloud unreachable — retry in 30s */ }
   }, 30_000);
 
+  // Serialize objects/arrays to JSON strings so pg passes them correctly to JSONB columns.
+  // Without this, pg may pass a JS array as a PostgreSQL array literal, which PostgreSQL
+  // rejects with "invalid input syntax for type json".
+  function pgVals(row, cols) {
+    return cols.map(c => {
+      const v = row[c];
+      if (v !== null && v !== undefined && typeof v === 'object') return JSON.stringify(v);
+      return v;
+    });
+  }
+
   // Helper: upsert all rows from a cloud table into the local DB (column-safe)
   async function syncTableFromCloud(tableName, pkCol, localClient) {
     const { rows: localColRows } = await pool.query(
@@ -491,7 +502,7 @@ if (process.env.DB_SSL === 'false') {
     if (!safeCols.includes(pkCol)) return 0;
     let count = 0;
     for (const row of rows) {
-      const vals = safeCols.map(c => row[c]);
+      const vals = pgVals(row, safeCols);
       const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
       const upd  = safeCols.filter(c => c !== pkCol).map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
       try {
@@ -538,7 +549,7 @@ if (process.env.DB_SSL === 'false') {
         if (safeCols.includes('entry_id')) {
           let firstErr = null;
           for (const row of rows) {
-            const vals = safeCols.map(c => row[c]);
+            const vals = pgVals(row, safeCols);
             const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
             try {
               await localClient.query(
