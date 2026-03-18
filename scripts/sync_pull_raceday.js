@@ -30,15 +30,15 @@ const localPool = new Pool({
   max: 3
 });
 
-// Tables to snapshot — add any new tables here
+// Tables to snapshot in dependency order (parents before children)
 const TABLES = [
+  'events',
   'drivers',
   'contacts',
   'engines',
   'engine_assignments',
   'race_entries',
   'audit_log',
-  'events',
   'event_class_pricing',
   'equipment_scan_log',
   'tyre_scans',
@@ -46,24 +46,63 @@ const TABLES = [
   'transponders'
 ];
 
-async function pullTable(tableName) {
+async function getLocalColumns(tableName) {
+  const { rows } = await localPool.query(
+    `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND table_schema = 'public'`,
+    [tableName]
+  );
+  return rows.map(r => r.column_name);
+}
+
+async function pullTable(tableName, localClient) {
   process.stdout.write(`  Pulling ${tableName}... `);
-  const { rows } = await cloudPool.query(`SELECT * FROM ${tableName}`);
-  if (!rows.length) {
+
+  // Check table exists in local DB
+  const { rows: tableCheck } = await localPool.query(
+    `SELECT 1 FROM information_schema.tables WHERE table_name = $1 AND table_schema = 'public'`,
+    [tableName]
+  );
+  if (!tableCheck.length) {
+    console.log('⚠️  SKIPPED (table does not exist locally)');
+    return 0;
+  }
+
+  // Get columns that exist in BOTH cloud and local
+  const localCols = await getLocalColumns(tableName);
+  const { rows: cloudRows } = await cloudPool.query(`SELECT * FROM ${tableName} LIMIT 1`);
+  if (!cloudRows.length) {
+    // table exists but is empty — just truncate local and return
+    await localClient.query(`TRUNCATE TABLE ${tableName} CASCADE`);
     console.log('(empty)');
     return 0;
   }
-  const cols = Object.keys(rows[0]);
-  await localPool.query(`DELETE FROM ${tableName}`);
+  const cloudCols = Object.keys(cloudRows[0]);
+  const cols = cloudCols.filter(c => localCols.includes(c));
+
+  if (!cols.length) {
+    console.log('⚠️  SKIPPED (no matching columns)');
+    return 0;
+  }
+
+  // Fetch all rows from cloud using only matching columns
+  const { rows } = await cloudPool.query(`SELECT ${cols.map(c => `"${c}"`).join(',')} FROM ${tableName}`);
+
+  // Clear local table (CASCADE handles FK children)
+  await localClient.query(`TRUNCATE TABLE ${tableName} CASCADE`);
+
   let inserted = 0;
   for (const row of rows) {
     const vals = cols.map(c => row[c]);
     const ph   = cols.map((_, i) => `$${i + 1}`).join(',');
-    await localPool.query(
-      `INSERT INTO ${tableName} (${cols.join(',')}) VALUES (${ph}) ON CONFLICT DO NOTHING`,
-      vals
-    );
-    inserted++;
+    try {
+      await localClient.query(
+        `INSERT INTO ${tableName} (${cols.map(c => `"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT DO NOTHING`,
+        vals
+      );
+      inserted++;
+    } catch (e) {
+      // skip individual bad rows silently
+    }
   }
   console.log(`${inserted} rows ✓`);
   return inserted;
@@ -81,12 +120,20 @@ async function pullTable(tableName) {
     console.log('📥 Pulling snapshot from cloud...');
     console.log('─'.repeat(40));
 
-    for (const table of TABLES) {
-      try {
-        totalRows += await pullTable(table);
-      } catch (e) {
-        console.log(`⚠️  SKIPPED (${e.message})`);
+    // Use a single client so session_replication_role applies to all operations
+    const localClient = await localPool.connect();
+    try {
+      await localClient.query('SET session_replication_role = replica');
+      for (const table of TABLES) {
+        try {
+          totalRows += await pullTable(table, localClient);
+        } catch (e) {
+          console.log(`⚠️  SKIPPED (${e.message})`);
+        }
       }
+    } finally {
+      await localClient.query('SET session_replication_role = DEFAULT');
+      localClient.release();
     }
 
     console.log('─'.repeat(40));
