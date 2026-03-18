@@ -608,11 +608,12 @@ const initEventsTable = async () => {
       )
     `);    
     
-    // Add start_date and end_date columns if they don't exist
+    // Add start_date, end_date and registration_open columns if they don't exist
     await pool.query(`
       ALTER TABLE events
       ADD COLUMN IF NOT EXISTS start_date DATE,
-      ADD COLUMN IF NOT EXISTS end_date DATE
+      ADD COLUMN IF NOT EXISTS end_date DATE,
+      ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT false
     `);
     
     console.log('✅ Events table initialized with start/end date columns');
@@ -626,7 +627,7 @@ const initRaceEntriesTable = async () => {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS race_entries (
-        race_entry_id VARCHAR(255) PRIMARY KEY,
+        entry_id VARCHAR(255) PRIMARY KEY,
         event_id VARCHAR(255) NOT NULL,
         driver_id VARCHAR(255) NOT NULL,
         entry_fee DECIMAL(10, 2),
@@ -644,6 +645,22 @@ const initRaceEntriesTable = async () => {
         FOREIGN KEY (event_id) REFERENCES events(event_id),
         FOREIGN KEY (driver_id) REFERENCES drivers(driver_id)
       )
+    `);
+
+    // Migration: rename race_entry_id -> entry_id on existing installs
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name='race_entries' AND column_name='race_entry_id'
+        ) AND NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name='race_entries' AND column_name='entry_id'
+        ) THEN
+          ALTER TABLE race_entries RENAME COLUMN race_entry_id TO entry_id;
+        END IF;
+      END $$
     `);
 
     // Add engine column if it doesn't exist
@@ -8096,7 +8113,7 @@ app.get('/api/getAllEvents', async (req, res) => {
     const result = await pool.query(
       `SELECT e.event_id, e.event_name, e.event_date, e.start_date, e.end_date, e.location, e.entry_fee, 
               e.registration_deadline, e.registration_open, e.created_at,
-              COUNT(r.entry_id) FILTER (
+              COUNT(*) FILTER (
                 WHERE r.entry_status != 'cancelled'
                   AND r.payment_status IN ('Completed','completed','Confirmed','confirmed','paid')
               ) AS registration_count
