@@ -153,8 +153,35 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // ADMIN AUTHENTICATION - Server-side token system
 // =========================================================
 
-// In-memory token store: token -> { expires: Date }
+// Token store: token -> { expires: Date, source? }
 const adminTokens = new Map();
+
+// Persist tokens to disk so sessions survive server restarts
+const ADMIN_TOKENS_FILE = path.join(__dirname, 'data', 'admin-tokens.json');
+
+function saveAdminTokens() {
+  const now = Date.now();
+  const obj = {};
+  for (const [token, data] of adminTokens.entries()) {
+    if (data.expires > now) obj[token] = data;
+  }
+  try { fs.writeFileSync(ADMIN_TOKENS_FILE, JSON.stringify(obj), 'utf8'); }
+  catch (e) { console.warn('⚠️  Could not save admin tokens:', e.message); }
+}
+
+function loadAdminTokens() {
+  try {
+    if (fs.existsSync(ADMIN_TOKENS_FILE)) {
+      const obj = JSON.parse(fs.readFileSync(ADMIN_TOKENS_FILE, 'utf8'));
+      const now = Date.now();
+      for (const [token, data] of Object.entries(obj)) {
+        if (data.expires > now) adminTokens.set(token, data);
+      }
+      console.log(`🔑 Loaded ${adminTokens.size} active admin session(s) from disk`);
+    }
+  } catch (e) { console.warn('⚠️  Could not load admin tokens:', e.message); }
+}
+loadAdminTokens();
 
 // Clean up expired tokens every hour
 setInterval(() => {
@@ -162,6 +189,7 @@ setInterval(() => {
   for (const [token, data] of adminTokens.entries()) {
     if (data.expires < now) adminTokens.delete(token);
   }
+  saveAdminTokens();
 }, 60 * 60 * 1000);
 
 // =========================================================
@@ -214,6 +242,7 @@ function requireAdmin(req, res, next) {
   const session = adminTokens.get(token);
   if (!session || session.expires < Date.now()) {
     adminTokens.delete(token);
+    saveAdminTokens();
     return res.status(401).json({ success: false, error: 'Session expired or invalid' });
   }
   next();
@@ -235,6 +264,7 @@ app.post('/api/admin/login', (req, res) => {
   clearLoginAttempts(clientIp);
   const token = uuidv4();
   adminTokens.set(token, { expires: Date.now() + 8 * 60 * 60 * 1000 }); // 8 hour session
+  saveAdminTokens();
   console.log(`✅ Admin login successful - session created`);
   res.json({ success: true, token });
 });
@@ -250,7 +280,7 @@ app.get('/api/admin/verify', (req, res) => {
 // Admin logout
 app.post('/api/admin/logout', (req, res) => {
   const token = req.headers['x-admin-token'];
-  if (token) adminTokens.delete(token);
+  if (token) { adminTokens.delete(token); saveAdminTokens(); }
   res.json({ success: true });
 });
 
@@ -270,6 +300,7 @@ app.post('/api/titan/login', (req, res) => {
   clearLoginAttempts(clientIp);
   const token = uuidv4();
   adminTokens.set(token, { expires: Date.now() + 12 * 60 * 60 * 1000, source: 'titan' }); // 12 hour session
+  saveAdminTokens();
   console.log('✅ Titan terminal login — session created');
   res.json({ success: true, token });
 });
