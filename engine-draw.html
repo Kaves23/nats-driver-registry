@@ -1485,6 +1485,9 @@ function renderRetBody() {
     }).join('');
   }
 
+  html += `<div class="ret-section">DRIVER FEEDBACK <span style="font-size:0.6em;font-weight:400;opacity:0.6;">(optional)</span></div>
+  <textarea id="retFeedback" placeholder="Any comments about this engine? (noise, issues, performance…)" style="width:100%;box-sizing:border-box;background:#1a2332;color:#e2e8f0;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;font-size:28px;min-height:110px;resize:vertical;margin-bottom:4px;"></textarea>`;
+
   html += `<div class="ret-section">DRIVER SIGNATURE</div>
   <div class="sig-wrap" id="sigWrap">
     <canvas id="sigCanvas" height="160"></canvas>
@@ -1579,6 +1582,8 @@ async function confirmReturn() {
   btn.textContent = 'PROCESSING…';
   document.getElementById('retErr').textContent = '';
 
+  const feedbackVal = (document.getElementById('retFeedback')?.value || '').trim();
+
   let signatureData = null;
   try { signatureData = _sigCanvas.toDataURL('image/png'); } catch(_) {}
 
@@ -1593,7 +1598,7 @@ async function confirmReturn() {
       peripheralsChecked: _periState,
       signatureData:      signatureData,
       scannedBy:          currentScanner?.name || currentScanner?.scanner_name || 'Return Station',
-      notes: `Draw #${e.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`
+      notes: [feedbackVal ? `Driver feedback: ${feedbackVal}` : null, `Draw #${e.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`].filter(Boolean).join(' | ')
     };
     const r    = await fetch('/api/returnEngine', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
