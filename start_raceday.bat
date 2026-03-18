@@ -19,8 +19,8 @@ echo.
 :: Change to the folder this bat file lives in (works from Dropbox or any path)
 cd /d "%~dp0"
 
-:: Kill any existing node process on port 3000
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000 " ^| findstr LISTENING') do taskkill /F /PID %%a 2>nul
+:: Kill any existing node process
+taskkill /F /IM node.exe 2>nul
 timeout /t 1 /nobreak >nul
 
 node -r dotenv/config server.js dotenv_config_path=.env.raceday
