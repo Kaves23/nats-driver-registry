@@ -478,45 +478,69 @@ if (process.env.DB_SSL === 'false') {
     } catch { /* Cloud unreachable — retry in 30s */ }
   }, 30_000);
 
-  // Pull: grab cloud registrations every 60 seconds
-  // Uses column intersection so it's safe even if local schema is missing some columns.
-  // Pulls last 30 days to cover all entries for the upcoming race.
+  // Pull entries from cloud — shared function used by interval AND manual trigger
+  async function pullEntriesFromCloud() {
+    // Get local columns to safely intersect with cloud columns
+    const { rows: localColRows } = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name='race_entries' AND table_schema='public'`
+    );
+    const localCols = new Set(localColRows.map(r => r.column_name));
+
+    const { rows } = await cloudPool.query(
+      `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '30 days'`
+    );
+    if (!rows.length) return 0;
+
+    const allCloudCols = Object.keys(rows[0]);
+    const safeCols = allCloudCols.filter(c => localCols.has(c));
+    if (!safeCols.includes('entry_id')) return 0;
+
+    let pulled = 0;
+    for (const row of rows) {
+      const vals = safeCols.map(c => row[c]);
+      const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
+      const upd  = safeCols.filter(c => c !== 'entry_id').map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
+      try {
+        await pool.query(
+          `INSERT INTO race_entries (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
+          vals
+        );
+        pulled++;
+      } catch { /* skip bad row */ }
+    }
+    return pulled;
+  }
+
+  // Pull every 60 seconds
   setInterval(async () => {
     try {
-      // Get local columns to safely intersect with cloud columns
-      const { rows: localColRows } = await pool.query(
-        `SELECT column_name FROM information_schema.columns WHERE table_name='race_entries' AND table_schema='public'`
-      );
-      const localCols = new Set(localColRows.map(r => r.column_name));
-
-      const { rows } = await cloudPool.query(
-        `SELECT * FROM race_entries WHERE created_at > NOW() - INTERVAL '30 days'`
-      );
-      if (!rows.length) return;
-
-      // Intersect cloud columns with local columns
-      const allCloudCols = Object.keys(rows[0]);
-      const safeCols = allCloudCols.filter(c => localCols.has(c));
-      if (!safeCols.includes('entry_id')) return; // safety check
-
-      let pulled = 0;
-      for (const row of rows) {
-        const vals = safeCols.map(c => row[c]);
-        const ph   = safeCols.map((_, i) => `$${i + 1}`).join(',');
-        const upd  = safeCols.filter(c => c !== 'entry_id').map(c => `"${c}" = EXCLUDED."${c}"`).join(', ');
-        try {
-          await pool.query(
-            `INSERT INTO race_entries (${safeCols.map(c=>`"${c}"`).join(',')}) VALUES (${ph}) ON CONFLICT (entry_id) DO UPDATE SET ${upd}`,
-            vals
-          );
-          pulled++;
-        } catch { /* skip bad row */ }
-      }
+      const pulled = await pullEntriesFromCloud();
       if (pulled > 0) { lastSyncTime = Date.now(); console.log(`[sync] Pulled ${pulled} entries from cloud`); }
     } catch { /* Cloud unreachable — retry in 60s */ }
   }, 60_000);
 
-  console.log('[sync] 🏁 Race-day sync worker active (push 30s / pull 60s)');
+  // Also pull immediately on startup (don't wait 60s for first sync)
+  setTimeout(async () => {
+    try {
+      const pulled = await pullEntriesFromCloud();
+      console.log(`[sync] ⬇️  Initial pull: ${pulled} entries synced from cloud`);
+      if (pulled > 0) lastSyncTime = Date.now();
+    } catch (e) { console.log('[sync] Initial pull failed (no internet?):', e.message); }
+  }, 5_000); // 5 seconds after startup — schema init will be done by then
+
+  // Admin endpoint to trigger a manual sync pull immediately
+  app.post('/api/admin/syncNow', requireAdmin, async (req, res) => {
+    try {
+      const pulled = await pullEntriesFromCloud();
+      lastSyncTime = Date.now();
+      console.log(`[sync] Manual pull triggered: ${pulled} entries synced`);
+      res.json({ success: true, pulled, message: `${pulled} entries synced from cloud` });
+    } catch (e) {
+      res.status(503).json({ success: false, error: 'Cloud unreachable: ' + e.message });
+    }
+  });
+
+  console.log('[sync] 🏁 Race-day sync worker active (push 30s / pull 60s + immediate on start)');
 }
 
 // Sync status endpoint (local mode only)
