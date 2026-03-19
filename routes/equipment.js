@@ -1011,7 +1011,8 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       const { raceNumber, event_id } = req.query;
       if (!raceNumber) return res.json({ success: false, error: 'Race number required' });
 
-      const params = [raceNumber];
+      const normNum = String(raceNumber).trim().toUpperCase();
+      const params = [normNum];
       if (event_id) params.push(event_id);
 
       const result = await pool.query(`
@@ -1026,9 +1027,17 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         FROM race_entries re
         JOIN drivers d ON re.driver_id = d.driver_id
         LEFT JOIN events e ON re.event_id = e.event_id
-        WHERE d.race_number = $1
+        WHERE (
+          d.race_number = $1
+          OR UPPER(re.driver_barcode_1) = $1
+          OR UPPER(re.driver_barcode_2) = $1
+          OR UPPER(re.driver_barcode_3) = $1
+          OR UPPER(re.ticket_engine_ref) = $1
+          OR UPPER(re.ticket_tyres_ref) = $1
+          OR UPPER(re.ticket_transponder_ref) = $1
+        )
           ${event_id ? 'AND re.event_id = $2' : ''}
-          AND LOWER(re.payment_status) IN ('completed','confirmed','paid','pending')
+          AND LOWER(re.payment_status) IN ('completed','confirmed','paid','pending','pending_payment')
           AND re.entry_status NOT IN ('cancelled','canceled')
         ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
       `, params);
