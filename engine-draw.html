@@ -344,7 +344,7 @@ button{touch-action:manipulation}
 <!-- ── ENTRY PICKER SCREEN ─────────────────── -->
 <div id="s-pick" class="screen">
   <div class="pick-name" id="pickDriverName">—</div>
-  <div class="pick-sub">MULTIPLE ENTRIES FOUND — SELECT CLASS</div>
+  <div class="pick-sub">MULTIPLE ENTRIES FOUND — SELECT DRIVER &amp; CLASS</div>
   <div class="pick-list" id="pickList"></div>
   <button class="pick-back" onclick="goScan()">← BACK</button>
 </div>
@@ -1116,8 +1116,11 @@ function buildDriver(entry) {
 
 function showEntryPicker(entries) {
   const first = entries[0];
-  document.getElementById('pickDriverName').textContent =
-    `#${first.race_number} ${first.first_name} ${first.last_name}`;
+  // If all entries belong to the same driver, show the name; otherwise show the race number only
+  const allSameDriver = entries.every(e => e.driver_id === first.driver_id);
+  document.getElementById('pickDriverName').textContent = allSameDriver
+    ? `#${first.race_number} ${first.first_name} ${first.last_name}`
+    : `RACE #${first.race_number}`;
 
   const classBgMap = {
     'Cadet':'#e74c3c','Mini ROK':'#f1c40f','Mini ROK U10':'#f39c12',
@@ -1126,9 +1129,9 @@ function showEntryPicker(entries) {
 
   document.getElementById('pickList').innerHTML = entries.map((e, i) => {
     const bg = classBgMap[e.race_class] || '#64748b';
-    const fg = e.race_class === 'Mini ROK' ? '#000' : '#fff';
     return `<div class="pick-entry" onclick="pickEntry(${i})">
       <div class="pe-class" style="color:${bg}">${e.race_class || '(No class)'}</div>
+      <div class="pe-event" style="color:#e2e8f0;font-size:34px;font-weight:700;margin-top:4px">${e.first_name} ${e.last_name}</div>
       <div class="pe-event">${e.event_name || e.event_id || 'Event'}</div>
       ${e.engine_serial ? `<div class="pe-engine">⚠️ Already drawn: ${e.engine_serial}</div>` : ''}
     </div>`;
