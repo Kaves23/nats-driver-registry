@@ -12326,6 +12326,7 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
     const { raceNumber } = req.query;
     if (!raceNumber) return res.json({ success: false, error: 'Race number required' });
 
+    const normNum = String(raceNumber).trim().toUpperCase();
     const result = await pool.query(`
       SELECT re.entry_id, re.driver_id, re.race_class,
              CASE WHEN re.engine_returned = true THEN NULL ELSE re.engine_serial END AS engine_serial,
@@ -12338,11 +12339,16 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
       FROM race_entries re
       JOIN drivers d ON re.driver_id = d.driver_id
       LEFT JOIN events e ON re.event_id = e.event_id
-      WHERE d.race_number = $1
+      WHERE (
+        d.race_number = $1
+        OR UPPER(re.driver_barcode_1) = $1
+        OR UPPER(re.driver_barcode_2) = $1
+        OR UPPER(re.driver_barcode_3) = $1
+      )
         AND re.payment_status IN ('Completed','completed','Confirmed','confirmed','paid')
         AND re.entry_status NOT IN ('cancelled','canceled')
       ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
-    `, [raceNumber]);
+    `, [normNum]);
 
     if (result.rows.length === 0) {
       return res.json({ success: false, error: 'No confirmed entry found for this race number' });
