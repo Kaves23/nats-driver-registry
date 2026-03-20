@@ -969,6 +969,7 @@
         </select>
         <button class="search-btn" onclick="loadRaceEntries()">Load Entries</button>
         <button class="search-btn" id="syncNowBtn" onclick="forceSyncNow()" style="background: #0891b2;" title="Re-pull all entries from cloud (use when wifi is available)">⬇️ Sync from Cloud</button>
+        <button class="search-btn" id="pushOfflineBtn" onclick="pushOfflineData()" style="background: #d97706;" title="Push engine draws & assignments from this laptop to cloud (use after racing offline)">⬆️ Push to Cloud</button>
         <button class="search-btn" onclick="showQuickAddEntryModal()" style="background: #22c55e;">+ Quick Add Entry</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
         <button class="search-btn" onclick="exportRaceEntriesPDF()" style="background: #2563eb;">Export PDF with Barcodes</button>
@@ -3232,6 +3233,25 @@
         showToast('Sync failed: ' + e.message, 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = '⬇️ Sync from Cloud'; }
+      }
+    }
+
+    // Push offline engine draws + assignments from this laptop to cloud
+    async function pushOfflineData() {
+      const btn = document.getElementById('pushOfflineBtn');
+      if (btn) { btn.disabled = true; btn.textContent = '⬆️ Pushing...'; }
+      try {
+        const res = await fetch('/api/admin/pushOfflineData', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ ${data.drawsPushed} draws pushed, ${data.drawsUpdated} updated, ${data.entriesUpdated} entries synced to cloud`, 'success');
+        } else {
+          showToast('Push failed: ' + (data.error || 'No internet?'), 'error');
+        }
+      } catch (e) {
+        showToast('Push failed: ' + e.message, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '⬆️ Push to Cloud'; }
       }
     }
 

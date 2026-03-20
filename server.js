@@ -600,7 +600,101 @@ if (process.env.DB_SSL === 'false') {
     }
   });
 
-  console.log('[sync] 🏁 Race-day sync worker active (push 30s / pull 60s + immediate on start)');
+  // Push local offline data (engine draws + race_entries engine fields) to cloud.
+  // Designed for end-of-day sync after running offline on the raceday laptop.
+  async function pushEngineDataToCloud() {
+    let drawsPushed = 0, drawsUpdated = 0, entriesUpdated = 0;
+
+    // ── 1. entry_engine_draws ──────────────────────────────────────────────
+    const { rows: localDraws } = await pool.query(
+      `SELECT entry_id, engine_serial, draw_number, day_label, assigned_at,
+              returned, returned_at, engine_issue, replaced_by, notes
+       FROM entry_engine_draws ORDER BY assigned_at`
+    );
+
+    for (const row of localDraws) {
+      // Insert only if cloud has no record for the same driver + engine + day
+      const ins = await cloudPool.query(
+        `INSERT INTO entry_engine_draws
+           (entry_id, engine_serial, draw_number, day_label, assigned_at,
+            returned, returned_at, engine_issue, replaced_by, notes)
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+         WHERE NOT EXISTS (
+           SELECT 1 FROM entry_engine_draws
+           WHERE entry_id = $1
+             AND UPPER(engine_serial) = UPPER($2)
+             AND (
+               ($4 IS NOT NULL AND day_label = $4)
+               OR ($4 IS NULL AND assigned_at::date = $5::date)
+             )
+         )`,
+        [row.entry_id, row.engine_serial, row.draw_number, row.day_label,
+         row.assigned_at, row.returned, row.returned_at, row.engine_issue,
+         row.replaced_by, row.notes]
+      );
+      if (ins.rowCount > 0) {
+        drawsPushed++;
+      } else if (row.returned) {
+        // Row already exists in cloud — update returned status
+        const upd = await cloudPool.query(
+          `UPDATE entry_engine_draws
+           SET returned = $3, returned_at = $4, engine_issue = $5
+           WHERE entry_id = $1
+             AND UPPER(engine_serial) = UPPER($2)
+             AND returned = false`,
+          [row.entry_id, row.engine_serial, row.returned, row.returned_at, row.engine_issue]
+        );
+        if (upd.rowCount > 0) drawsUpdated++;
+      }
+    }
+
+    // ── 2. race_entries — engine columns only ─────────────────────────────
+    const { rows: localEntries } = await pool.query(
+      `SELECT entry_id, engine_serial, engine_assigned_at, engine_returned, engine_returned_at
+       FROM race_entries WHERE engine_serial IS NOT NULL`
+    );
+    for (const row of localEntries) {
+      const upd = await cloudPool.query(
+        `UPDATE race_entries
+         SET engine_serial       = $2,
+             engine_assigned_at  = $3,
+             engine_returned     = $4,
+             engine_returned_at  = $5,
+             updated_at          = NOW()
+         WHERE entry_id = $1`,
+        [row.entry_id, row.engine_serial, row.engine_assigned_at,
+         row.engine_returned, row.engine_returned_at]
+      );
+      if (upd.rowCount > 0) entriesUpdated++;
+    }
+
+    return { drawsPushed, drawsUpdated, entriesUpdated };
+  }
+
+  // Admin endpoint — manual push of offline engine data to cloud
+  app.post('/api/admin/pushOfflineData', requireAdmin, async (req, res) => {
+    try {
+      const result = await pushEngineDataToCloud();
+      lastSyncTime = Date.now();
+      console.log(`[sync] Manual push: ${result.drawsPushed} draws inserted, ${result.drawsUpdated} updated, ${result.entriesUpdated} entries updated`);
+      res.json({ success: true, ...result, message: `${result.drawsPushed} draws pushed, ${result.entriesUpdated} entries updated` });
+    } catch (e) {
+      res.status(503).json({ success: false, error: 'Cloud unreachable: ' + e.message });
+    }
+  });
+
+  // Auto-push offline engine data every 2 minutes (kicks in when internet reconnects)
+  setInterval(async () => {
+    try {
+      const result = await pushEngineDataToCloud();
+      if (result.drawsPushed > 0 || result.drawsUpdated > 0 || result.entriesUpdated > 0) {
+        lastSyncTime = Date.now();
+        console.log(`[sync] Auto-pushed offline data: ${result.drawsPushed} draws, ${result.entriesUpdated} entries`);
+      }
+    } catch { /* Cloud unreachable — retry in 2min */ }
+  }, 120_000);
+
+  console.log('[sync] 🏁 Race-day sync worker active (push 30s / pull 60s + engine push 2min)');
 }
 
 // Sync status endpoint (local mode only)
