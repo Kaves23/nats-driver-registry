@@ -7104,20 +7104,25 @@ the paddock quickly and consistently.
     ];
 
     // All races with dates for "next race" logic - pageIndex matches the seasons array index
+    // endDate: last day of the event at 23:59 — keeps the landing page on this event until it's fully over
     const allRaces = [
-      { pageIndex: 0, date: new Date(2026, 1, 14), displayDate: '14 FEB - REDSTAR' },
-      { pageIndex: 1, date: new Date(2026, 2, 20), displayDate: '20-22 MAR' },
-      { pageIndex: 2, date: new Date(2026, 3, 11), displayDate: '11 APR - VKC' },
-      { pageIndex: 3, date: new Date(2026, 4, 8),  displayDate: '08-10 MAY' },
-      { pageIndex: 4, date: new Date(2026, 6, 10), displayDate: '10-12 JULY' },
-      { pageIndex: 5, date: new Date(2026, 8, 10), displayDate: '10-12 SEP' },
-      { pageIndex: 6, date: new Date(2026, 10, 7), displayDate: '07 NOV - REDSTAR' }
+      { pageIndex: 0, date: new Date(2026, 1, 14), endDate: new Date(2026, 1, 14, 23, 59), displayDate: '14 FEB - REDSTAR' },
+      { pageIndex: 1, date: new Date(2026, 2, 20), endDate: new Date(2026, 2, 22, 23, 59), displayDate: '20-22 MAR' },
+      { pageIndex: 2, date: new Date(2026, 3, 11), endDate: new Date(2026, 3, 11, 23, 59), displayDate: '11 APR - VKC' },
+      { pageIndex: 3, date: new Date(2026, 4, 8),  endDate: new Date(2026, 4, 10, 23, 59), displayDate: '08-10 MAY' },
+      { pageIndex: 4, date: new Date(2026, 6, 10), endDate: new Date(2026, 6, 12, 23, 59), displayDate: '10-12 JULY' },
+      { pageIndex: 5, date: new Date(2026, 8, 10), endDate: new Date(2026, 8, 12, 23, 59), displayDate: '10-12 SEP' },
+      { pageIndex: 6, date: new Date(2026, 10, 7), endDate: new Date(2026, 10, 7,  23, 59), displayDate: '07 NOV - REDSTAR' }
     ];
 
     function getNextRace() {
       const now = new Date();
+      // Show current event if we're within its window (started but not yet finished)
+      const current = allRaces.find(race => race.date <= now && race.endDate >= now);
+      if (current) return current;
+      // Otherwise show the next upcoming event
       const upcoming = allRaces.filter(race => race.date > now).sort((a, b) => a.date - b.date);
-      return upcoming.length > 0 ? upcoming[0] : allRaces[0];
+      return upcoming.length > 0 ? upcoming[0] : allRaces[allRaces.length - 1];
     }
 
     let currentIndex = getNextRace().pageIndex;
