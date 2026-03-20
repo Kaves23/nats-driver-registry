@@ -5725,8 +5725,9 @@
     // ============= MSA LICENSES FUNCTIONS =============
 
     async function loadAdminMSAEventDropdown() {
+      if (!adminToken) return; // not yet authenticated — caller will retry after login
       try {
-        const response = await fetch('/api/getAllEvents');
+        const response = await fetch('/api/getAllEvents', { headers: { 'x-admin-token': adminToken } });
         
         if (!response.ok) throw new Error('Failed to load events');
         

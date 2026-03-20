@@ -624,8 +624,8 @@ if (process.env.DB_SSL === 'false') {
            WHERE entry_id = $1
              AND UPPER(engine_serial) = UPPER($2)
              AND (
-               ($4 IS NOT NULL AND day_label = $4)
-               OR ($4 IS NULL AND assigned_at::date = $5::date)
+               ($4::text IS NOT NULL AND day_label = $4::text)
+               OR ($4::text IS NULL AND assigned_at::date = $5::timestamptz::date)
              )
          )`,
         [row.entry_id, row.engine_serial, row.draw_number, row.day_label,
