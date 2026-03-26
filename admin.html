@@ -141,6 +141,19 @@
       z-index: 100;
     }
 
+    #syncStatusBar {
+      display: none;
+      padding: 6px 30px;
+      font-size: 13px;
+      font-weight: 500;
+      position: sticky;
+      top: 57px;
+      z-index: 99;
+    }
+    #syncStatusBar.online  { background: #dcfce7; color: #15803d; border-bottom: 1px solid #bbf7d0; }
+    #syncStatusBar.offline { background: #fef9c3; color: #92400e; border-bottom: 1px solid #fde68a; }
+    #syncStatusBar.error   { background: #fee2e2; color: #991b1b; border-bottom: 1px solid #fecaca; }
+
     .admin-header h1 {
       color: #000000;
       font-size: 22px;
@@ -866,6 +879,7 @@
       <h1>Driver Management</h1>
       <button class="logout-btn" onclick="adminLogout()">Logout</button>
     </div>
+    <div id="syncStatusBar"></div>
 
     <div class="admin-tabs" id="adminTabsContainer">
       <div class="tab-indicator" id="tabIndicator"></div>
@@ -969,7 +983,7 @@
         </select>
         <button class="search-btn" onclick="loadRaceEntries()">Load Entries</button>
         <button class="search-btn" id="syncNowBtn" onclick="forceSyncNow()" style="background: #0891b2;" title="Re-pull all entries from cloud (use when wifi is available)">⬇️ Sync from Cloud</button>
-        <button class="search-btn" id="pushOfflineBtn" onclick="pushOfflineData()" style="background: #d97706;" title="Push engine draws & assignments from this laptop to cloud (use after racing offline)">⬆️ Push to Cloud</button>
+        <button class="search-btn" id="pushOfflineBtn" onclick="pushOfflineData()" style="background: #d97706; display:none;" title="Push engine draws & assignments from this laptop to cloud (use after racing offline)">⬆️ Push to Cloud</button>
         <button class="search-btn" onclick="showQuickAddEntryModal()" style="background: #22c55e;">+ Quick Add Entry</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
         <button class="search-btn" onclick="exportRaceEntriesPDF()" style="background: #2563eb;">Export PDF with Barcodes</button>
@@ -2574,6 +2588,7 @@
           document.getElementById('filterPaid').value = '';
           loadDrivers();
           loadAdminMSAEventDropdown();
+          checkLocalMode();
           
           // Initialize tab indicator position
           setTimeout(() => {
@@ -2610,7 +2625,7 @@
             if (adminWrapper) adminWrapper.style.display = 'block';
             loadDrivers();
             loadAdminMSAEventDropdown();
-          } else {
+            checkLocalMode();
             sessionStorage.removeItem('adminToken');
             adminToken = null;
           }
@@ -3214,6 +3229,37 @@
       }
     }
 
+    // Show Push to Cloud button only when server is in local/offline mode
+    async function checkLocalMode() {
+      const bar = document.getElementById('syncStatusBar');
+      try {
+        const r = await fetch('/api/syncStatus');
+        const d = await r.json();
+        const btn = document.getElementById('pushOfflineBtn');
+        const syncBtn = document.getElementById('syncNowBtn');
+        if (d.mode === 'local') {
+          if (btn) btn.style.display = '';
+          if (syncBtn) syncBtn.style.display = '';
+          if (bar) {
+            bar.style.display = '';
+            bar.className = d.cloudReachable === false ? 'offline' : 'online';
+            bar.textContent = d.cloudReachable === false
+              ? '⚠️ Offline Mode — Cloud unreachable. Data is stored locally and will sync when internet is available.'
+              : '✅ Offline Mode (Local DB) — Cloud connected. Use "Push to Cloud" to sync engine data.';
+          }
+        } else {
+          if (btn) btn.style.display = 'none';
+          if (bar) bar.style.display = 'none';
+        }
+      } catch {
+        if (bar) {
+          bar.style.display = '';
+          bar.className = 'error';
+          bar.textContent = '❌ Cannot reach local server.';
+        }
+      }
+    }
+
     // Force-pull entries from cloud immediately
     async function forceSyncNow() {
       const btn = document.getElementById('syncNowBtn');
@@ -3241,10 +3287,11 @@
       const btn = document.getElementById('pushOfflineBtn');
       if (btn) { btn.disabled = true; btn.textContent = '⬆️ Pushing...'; }
       try {
-        const res = await fetch('/api/admin/pushOfflineData', { method: 'POST' });
+        const res = await fetch('/api/admin/pushOfflineData', { method: 'POST', headers: adminHeaders() });
         const data = await res.json();
         if (data.success) {
           showToast(`✅ ${data.drawsPushed} draws pushed, ${data.drawsUpdated} updated, ${data.entriesUpdated} entries synced to cloud`, 'success');
+          checkLocalMode();
         } else {
           showToast('Push failed: ' + (data.error || 'No internet?'), 'error');
         }

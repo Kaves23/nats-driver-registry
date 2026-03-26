@@ -433,7 +433,9 @@ if (process.env.DB_SSL === 'false') {
     password: process.env.CLOUD_DB_PASSWORD,
     ssl: { rejectUnauthorized: false },
     max: 3,
-    connectionTimeoutMillis: 5000
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,    // release idle connections before PlanetScale kills them
+    keepAlive: true               // TCP keepalive to prevent silent drops
   });
 
   // Ensure sync_queue table exists
@@ -679,6 +681,7 @@ if (process.env.DB_SSL === 'false') {
       console.log(`[sync] Manual push: ${result.drawsPushed} draws inserted, ${result.drawsUpdated} updated, ${result.entriesUpdated} entries updated`);
       res.json({ success: true, ...result, message: `${result.drawsPushed} draws pushed, ${result.entriesUpdated} entries updated` });
     } catch (e) {
+      console.error('[sync] ❌ Manual push failed:', e.message, e.stack);
       res.status(503).json({ success: false, error: 'Cloud unreachable: ' + e.message });
     }
   });
@@ -2572,15 +2575,24 @@ app.post('/api/test-email', async (req, res) => {
 app.get('/api/syncStatus', async (req, res) => {
   const isLocal = process.env.DB_SSL === 'false';
   let queueDepth = 0;
+  let cloudReachable = null;
   if (isLocal) {
     try {
       const { rows } = await pool.query(`SELECT COUNT(*) as c FROM sync_queue WHERE synced_at IS NULL`);
       queueDepth = parseInt(rows[0].c);
     } catch { /* table may not exist yet */ }
+    try {
+      const { Pool: CP } = require('pg');
+      const cp = new CP({ host: process.env.CLOUD_DB_HOST, port: parseInt(process.env.CLOUD_DB_PORT||'6432'), database: process.env.CLOUD_DB_DATABASE, user: process.env.CLOUD_DB_USERNAME, password: process.env.CLOUD_DB_PASSWORD, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 4000, max: 1 });
+      await cp.query('SELECT 1');
+      await cp.end();
+      cloudReachable = true;
+    } catch { cloudReachable = false; }
   }
   res.json({
     mode: isLocal ? 'local' : 'cloud',
     queueDepth,
+    cloudReachable,
     lastSyncAgo: isLocal ? `${Math.round((Date.now() - lastSyncTime) / 1000)}s ago` : 'N/A'
   });
 });
