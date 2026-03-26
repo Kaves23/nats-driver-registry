@@ -620,7 +620,8 @@ if (process.env.DB_SSL === 'false') {
         `INSERT INTO entry_engine_draws
            (entry_id, engine_serial, draw_number, day_label, assigned_at,
             returned, returned_at, engine_issue, replaced_by, notes)
-         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+         SELECT $1::text, $2::text, $3::int, $4::text, $5::timestamptz,
+                $6::boolean, $7::timestamptz, $8::text, $9::text, $10::text
          WHERE NOT EXISTS (
            SELECT 1 FROM entry_engine_draws
            WHERE entry_id = $1
