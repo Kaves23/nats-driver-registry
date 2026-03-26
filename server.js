@@ -10070,42 +10070,43 @@ app.post('/api/uploadMSALicense', async (req, res) => {
       throw new Error('driver_id, file_name, and file_data required');
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = path.join(__dirname, 'uploads', 'msa-licenses');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // Decode base64 and save file
-    const document_id = require('uuid').v4();
+    const document_id = uuidv4();
     const buffer = Buffer.from(file_data, 'base64');
-    const file_path = path.join(uploadDir, `${document_id}_${file_name}`);
-    
-    fs.writeFileSync(file_path, buffer);
     const file_size = buffer.length;
+    const z1Key = `msa-licenses/${document_id}_${file_name}`;
 
-    // Delete any existing license for this driver
+    // Delete any existing license for this driver (Z1 + DB)
     const existingResult = await pool.query(
       'SELECT document_id, file_path FROM msa_licenses WHERE driver_id = $1',
       [driver_id]
     );
 
     if (existingResult.rows.length > 0) {
-      const oldDoc = existingResult.rows[0];
-      if (fs.existsSync(oldDoc.file_path)) {
-        fs.unlinkSync(oldDoc.file_path);
+      const oldKey = existingResult.rows[0].file_path;
+      try {
+        await s3.send(new DeleteObjectCommand({ Bucket: Z1_BUCKET, Key: oldKey }));
+      } catch (delErr) {
+        console.warn('⚠️ Could not delete old Z1 MSA file:', delErr.message);
       }
       await pool.query('DELETE FROM msa_licenses WHERE driver_id = $1', [driver_id]);
     }
 
-    // Insert into database
+    // Upload to Z1 persistent storage
+    await s3.send(new PutObjectCommand({
+      Bucket: Z1_BUCKET,
+      Key: z1Key,
+      Body: buffer,
+      ContentType: file_type || 'application/octet-stream'
+    }));
+
+    // Store Z1 key in file_path column
     await pool.query(
       `INSERT INTO msa_licenses (document_id, driver_id, file_name, file_path, file_size, file_type)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [document_id, driver_id, file_name, file_path, file_size, file_type]
+      [document_id, driver_id, file_name, z1Key, file_size, file_type]
     );
 
-    console.log(`📄 MSA License uploaded for driver ${driver_id}: ${file_name}`);
+    console.log(`📄 MSA License uploaded to Z1 for driver ${driver_id}: ${file_name}`);
 
     res.json({
       success: true,
@@ -10162,7 +10163,7 @@ app.get('/api/downloadMSALicense/:document_id', async (req, res) => {
     const { document_id } = req.params;
 
     const result = await pool.query(
-      'SELECT file_path, file_name FROM msa_licenses WHERE document_id = $1',
+      'SELECT file_path, file_name, file_type FROM msa_licenses WHERE document_id = $1',
       [document_id]
     );
 
@@ -10170,13 +10171,13 @@ app.get('/api/downloadMSALicense/:document_id', async (req, res) => {
       throw new Error('Document not found');
     }
 
-    const { file_path, file_name } = result.rows[0];
+    const { file_path: z1Key, file_name, file_type } = result.rows[0];
 
-    if (!fs.existsSync(file_path)) {
-      throw new Error('File not found on server');
-    }
+    const s3Res = await s3.send(new GetObjectCommand({ Bucket: Z1_BUCKET, Key: z1Key }));
 
-    res.download(file_path, file_name);
+    res.setHeader('Content-Disposition', `attachment; filename="${file_name}"`);
+    res.setHeader('Content-Type', file_type || 'application/octet-stream');
+    s3Res.Body.pipe(res);
   } catch (err) {
     console.error('❌ Download error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
@@ -10205,10 +10206,12 @@ app.post('/api/deleteMSALicense', async (req, res) => {
       throw new Error('Document not found');
     }
 
-    // Delete file from disk
-    const file_path = docResult.rows[0].file_path;
-    if (fs.existsSync(file_path)) {
-      fs.unlinkSync(file_path);
+    // Delete from Z1
+    const z1Key = docResult.rows[0].file_path;
+    try {
+      await s3.send(new DeleteObjectCommand({ Bucket: Z1_BUCKET, Key: z1Key }));
+    } catch (delErr) {
+      console.warn('⚠️ Could not delete Z1 MSA file:', delErr.message);
     }
 
     // Delete from database
