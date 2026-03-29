@@ -276,7 +276,7 @@ namespace ROKControl
             }
             catch (Exception ex)
             {
-                return new RegistrationResult { Success = false, Message = ex.GetType().Name + ": " + ex.Message };
+                return new RegistrationResult { Success = false, Message = ex.GetType().Name + ": " + ex.Message + " [" + _cfg.ServerUrl + "]" };
             }
         }
 
