@@ -243,8 +243,6 @@ namespace ROKControl
 
                 System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient();
                 tcp.Connect(host, port);
-                tcp.ReceiveTimeout = 10000;
-                tcp.SendTimeout    = 10000;
 
                 System.Net.Sockets.NetworkStream ns = tcp.GetStream();
                 ns.Write(headerBytes, 0, headerBytes.Length);
