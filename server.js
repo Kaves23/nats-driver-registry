@@ -130,7 +130,13 @@ app.use(cors({
 // Security headers (CSP disabled to allow inline scripts in admin SPA)
 app.use(helmet({ contentSecurityPolicy: false }));
 // Gzip compression — reduces API + HTML payload size ~3-5x on slow mobile connections
-app.use(compression());
+// SSE streams must be excluded: compression buffers output, breaking live event delivery
+app.use(compression({
+  filter: (req, res) => {
+    if (res.getHeader('Content-Type') === 'text/event-stream') return false;
+    return compression.filter(req, res);
+  }
+}));
 // Fix #10: Reduce JSON body limit from 50mb to 5mb
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
