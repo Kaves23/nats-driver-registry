@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace ROKControl
@@ -208,63 +209,73 @@ namespace ROKControl
         // ── Registration (live, single scan) ──────────────────────────────────
 
         /// <summary>
-        /// Send a single engine-serial assignment to the server immediately.
-        /// CF-safe: POSTs with HTTP/1.0, reads only the HTTP status code, closes
-        /// the connection without reading the response body (avoids ReceiveFailure, status=3).
+        /// Send engine assignment via raw TCP socket — completely bypasses
+        /// CF's broken HttpWebRequest which fails with ReceiveFailure (status=3)
+        /// on any modern HTTP server response.
         /// </summary>
         public RegistrationResult SendRegistration(string vehicleNumber, string engineSerial)
         {
             if (string.IsNullOrEmpty(_cfg.ServerUrl))
                 return new RegistrationResult { Success = false, Message = "Server URL not configured." };
 
-            string url = _cfg.ServerUrl.TrimEnd('/') + "/api/rokcontrol/register";
             try
             {
-                string json = "{\"race_number\":\"" + J(vehicleNumber) +
-                              "\",\"engine_serial\":\"" + J(engineSerial) +
-                              "\",\"scanned_by\":\"ROKControl\"}";
+                Uri    uri  = new Uri(_cfg.ServerUrl.TrimEnd('/') + "/api/rokcontrol/register");
+                string host = uri.Host;
+                int    port = uri.Port > 0 ? uri.Port : 80;
+                string path = uri.PathAndQuery;
 
-                byte[] body = Encoding.UTF8.GetBytes(json);
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                req.Method          = "POST";
-                req.ContentType     = "application/json; charset=utf-8";
-                req.ContentLength   = body.Length;
-                req.Timeout         = 15000;
-                req.ProtocolVersion = HttpVersion.Version10;
-                req.KeepAlive       = false;
-                if (!string.IsNullOrEmpty(_cfg.ApiToken))
-                    req.Headers.Add("x-admin-token", _cfg.ApiToken);
-                req.Headers.Add("Accept-Encoding", "identity");
-                // Disable Expect: 100-continue — CF sends it by default and some servers stall
-                System.Net.ServicePointManager.Expect100Continue = false;
+                string jsonBody = "{\"race_number\":\"" + J(vehicleNumber) +
+                                  "\",\"engine_serial\":\"" + J(engineSerial) +
+                                  "\",\"scanned_by\":\"ROKControl\"}";
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(jsonBody);
 
-                using (Stream s = req.GetRequestStream())
-                    s.Write(body, 0, body.Length);
+                // Build a minimal HTTP/1.0 POST request — no chunking, no keep-alive
+                string headers =
+                    "POST " + path + " HTTP/1.0\r\n" +
+                    "Host: " + host + ":" + port + "\r\n" +
+                    "Content-Type: application/json; charset=utf-8\r\n" +
+                    "Content-Length: " + bodyBytes.Length + "\r\n" +
+                    "x-admin-token: " + (_cfg.ApiToken ?? "") + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+                byte[] headerBytes = Encoding.UTF8.GetBytes(headers);
 
-                // CF ReceiveFailure fix: read status code ONLY, do NOT read body, close immediately.
-                HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
-                int statusCode = (int)resp.StatusCode;
-                resp.Close();
+                System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient();
+                tcp.Connect(host, port);
+                tcp.ReceiveTimeout = 10000;
+                tcp.SendTimeout    = 10000;
 
-                if (statusCode >= 200 && statusCode < 300)
-                    return new RegistrationResult { Success = true, Message = "Sent OK (" + vehicleNumber + ")" };
-                else
-                    return new RegistrationResult { Success = false, Message = "HTTP " + statusCode };
-            }
-            catch (System.Net.WebException we)
-            {
-                // If server returned 4xx/5xx, GetResponse() throws — read status from the response
-                if (we.Response != null)
+                System.Net.Sockets.NetworkStream ns = tcp.GetStream();
+                ns.Write(headerBytes, 0, headerBytes.Length);
+                ns.Write(bodyBytes,   0, bodyBytes.Length);
+                ns.Flush();
+
+                // Read just the first 128 bytes — enough to get "HTTP/1.x NNN"
+                byte[] buf   = new byte[128];
+                int    read  = ns.Read(buf, 0, buf.Length);
+                string resp  = Encoding.UTF8.GetString(buf, 0, read);
+                tcp.Close();
+
+                // Parse status code from "HTTP/1.x 200 OK..."
+                int spaceIdx = resp.IndexOf(' ');
+                if (spaceIdx >= 0 && resp.Length >= spaceIdx + 4)
                 {
-                    int sc = (int)((HttpWebResponse)we.Response).StatusCode;
-                    we.Response.Close();
-                    return new RegistrationResult { Success = false, Message = "HTTP " + sc };
+                    string codeStr = resp.Substring(spaceIdx + 1, 3);
+                    int code;
+                    if (int.TryParse(codeStr, out code))
+                    {
+                        if (code >= 200 && code < 300)
+                            return new RegistrationResult { Success = true, Message = "Sent OK (" + vehicleNumber + ")" };
+                        else
+                            return new RegistrationResult { Success = false, Message = "HTTP " + code };
+                    }
                 }
-                return new RegistrationResult { Success = false, Message = "NetErr status=" + (int)we.Status };
+                return new RegistrationResult { Success = false, Message = "Bad resp: " + resp };
             }
             catch (Exception ex)
             {
-                return new RegistrationResult { Success = false, Message = ex.GetType().Name };
+                return new RegistrationResult { Success = false, Message = ex.GetType().Name + ": " + ex.Message };
             }
         }
 
