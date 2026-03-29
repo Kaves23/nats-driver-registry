@@ -311,6 +311,109 @@ namespace ROKControl
             return json.Substring(start, end - start);
         }
 
+        // ── Event list fetch ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Fetch the list of events from GET /api/public/events (no auth required).
+        /// Returns null on failure; caller should handle gracefully.
+        /// Uses raw TCP — same pattern as SendRegistration.
+        /// </summary>
+        public List<EventRecord> FetchEvents()
+        {
+            if (string.IsNullOrEmpty(_cfg.ServerUrl))
+                return null;
+            try
+            {
+                Uri    uri  = new Uri(_cfg.ServerUrl.TrimEnd('/') + "/api/public/events");
+                string host = uri.Host;
+                int    port = uri.Port > 0 ? uri.Port : 80;
+                string path = uri.PathAndQuery;
+
+                string req =
+                    "GET " + path + " HTTP/1.0\r\n" +
+                    "Host: " + host + ":" + port + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+                byte[] reqBytes = Encoding.UTF8.GetBytes(req);
+
+                TcpClient tcp = new TcpClient();
+                tcp.Connect(host, port);
+                NetworkStream ns = tcp.GetStream();
+                ns.Write(reqBytes, 0, reqBytes.Length);
+                ns.Flush();
+
+                // Read full response (events list is small — < 8KB)
+                System.IO.MemoryStream ms = new System.IO.MemoryStream();
+                byte[] buf = new byte[1024];
+                int read;
+                while ((read = ns.Read(buf, 0, buf.Length)) > 0)
+                    ms.Write(buf, 0, read);
+                tcp.Close();
+
+                string body = Encoding.UTF8.GetString(ms.ToArray());
+
+                // Strip HTTP headers — body starts after \r\n\r\n
+                int bodyStart = body.IndexOf("\r\n\r\n");
+                if (bodyStart >= 0) body = body.Substring(bodyStart + 4);
+
+                return ParseEventList(body);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private List<EventRecord> ParseEventList(string json)
+        {
+            List<EventRecord> results = new List<EventRecord>();
+            // Find the events array: "events":[{...},{...}]
+            int arrStart = json.IndexOf("\"events\":[");
+            if (arrStart < 0) return results;
+            arrStart = json.IndexOf('[', arrStart);
+            if (arrStart < 0) return results;
+            int arrEnd = json.IndexOf(']', arrStart);
+            if (arrEnd < 0) return results;
+            string arr = json.Substring(arrStart + 1, arrEnd - arrStart - 1);
+
+            // Split into individual objects by "},{"
+            int pos = 0;
+            while (pos < arr.Length)
+            {
+                int objStart = arr.IndexOf('{', pos);
+                if (objStart < 0) break;
+                int objEnd = arr.IndexOf('}', objStart);
+                if (objEnd < 0) break;
+                string obj = arr.Substring(objStart, objEnd - objStart + 1);
+
+                EventRecord ev = new EventRecord();
+                ev.EventId   = ExtractJsonInt(obj, "event_id");
+                ev.EventName = ExtractJsonString(obj, "event_name") ?? "(unnamed)";
+                ev.EventDate = ExtractJsonString(obj, "event_date") ?? string.Empty;
+                // Trim date to just yyyy-MM-dd
+                if (ev.EventDate.Length > 10) ev.EventDate = ev.EventDate.Substring(0, 10);
+                if (ev.EventId > 0)
+                    results.Add(ev);
+
+                pos = objEnd + 1;
+            }
+            return results;
+        }
+
+        private static int ExtractJsonInt(string json, string key)
+        {
+            string search = "\"" + key + "\":";
+            int start = json.IndexOf(search);
+            if (start < 0) return 0;
+            start += search.Length;
+            // Skip whitespace
+            while (start < json.Length && json[start] == ' ') start++;
+            int end = start;
+            while (end < json.Length && (char.IsDigit(json[end]) || json[end] == '-')) end++;
+            if (end == start) return 0;
+            try { return int.Parse(json.Substring(start, end - start)); } catch { return 0; }
+        }
+
         private void RaiseProgress(string message, bool done, int percent)
         {
             if (Progress != null)
@@ -324,6 +427,20 @@ namespace ROKControl
         public string DriverName { get; set; }
         public string RaceClass  { get; set; }
         public string Message    { get; set; }
+    }
+
+    public class EventRecord
+    {
+        public int    EventId   { get; set; }
+        public string EventName { get; set; }
+        public string EventDate { get; set; }
+
+        public override string ToString()
+        {
+            if (!string.IsNullOrEmpty(EventDate))
+                return EventDate + "  " + EventName;
+            return EventName;
+        }
     }
 
     public class SyncProgressEventArgs : EventArgs

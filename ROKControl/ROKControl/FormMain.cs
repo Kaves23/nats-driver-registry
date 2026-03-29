@@ -63,6 +63,29 @@ namespace ROKControl
             ResetForm();
             UpdateClock(null, null);
 
+            // Fetch events from server in background; show picker if no event selected yet
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                ServerSync sync = new ServerSync(_config);
+                System.Collections.Generic.List<EventRecord> events = sync.FetchEvents();
+                this.Invoke(new MethodInvoker(delegate
+                {
+                    if (events != null && events.Count > 0)
+                    {
+                        if (_config.EventId == 0)
+                            ShowEventPicker(events);
+                        else
+                            lblStatus.Text = "Event: " + _config.EventName;
+                    }
+                    else
+                    {
+                        lblStatus.Text = _config.EventId == 0
+                            ? "No event set -- use menu to select."
+                            : "Event: " + _config.EventName;
+                    }
+                }));
+            });
+
             // Wire slot panel tap-to-select
             for (int i = 0; i < SLOT_COUNT; i++)
             {
@@ -275,6 +298,39 @@ namespace ROKControl
                 _config.Save();
                 lblControlPoint.Text = _config.ControlPointName;
                 lblEvent.Text = _config.EventName;
+            }
+        }
+
+        private void menuSelectEvent_Click(object sender, EventArgs e)
+        {
+            lblStatus.Text = "Fetching events...";
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                ServerSync sync = new ServerSync(_config);
+                System.Collections.Generic.List<EventRecord> events = sync.FetchEvents();
+                this.Invoke(new MethodInvoker(delegate
+                {
+                    if (events == null || events.Count == 0)
+                    {
+                        MessageBox.Show("Could not fetch events from server.", "Error");
+                        lblStatus.Text = "Event fetch failed.";
+                        return;
+                    }
+                    ShowEventPicker(events);
+                }));
+            });
+        }
+
+        private void ShowEventPicker(System.Collections.Generic.List<EventRecord> events)
+        {
+            FormEventPicker fp = new FormEventPicker(events);
+            if (fp.ShowDialog() == DialogResult.OK && fp.SelectedEvent != null)
+            {
+                _config.EventId   = fp.SelectedEvent.EventId;
+                _config.EventName = fp.SelectedEvent.EventName;
+                _config.Save();
+                lblEvent.Text  = _config.EventName;
+                lblStatus.Text = "Event set: " + _config.EventName;
             }
         }
 

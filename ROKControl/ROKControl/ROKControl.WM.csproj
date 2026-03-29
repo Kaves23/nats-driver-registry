@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ROKControl — Windows Mobile 6 Professional (Compact Framework 3.5) build.
+  Open this project in VS 2008 AFTER installing the Windows Mobile 6 SDK.
+  Download SDK: https://www.microsoft.com/en-us/download/details.aspx?id=6135
+
+  Build produces an ARM binary in bin\Release\ROKControl.exe.
+  Deploy via ActiveSync: copy to \Program Files\ROKControl\ on device.
+  The .NET CF 3.5 runtime must already be on device (GoControl installs it).
+-->
+<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">Windows Mobile 6 Professional SDK</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{A1B2C3D5-E5F6-7890-ABCD-EF1234567891}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ROKControl</RootNamespace>
+    <AssemblyName>ROKControl</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <ProjectTypeGuids>{4D628B5B-2FBC-4AA6-8C16-197242AEB884};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <PlatformFamilyName>WindowsMobile</PlatformFamilyName>
+    <PlatformID>3C41C503-53EF-4c2a-8DD4-A8217CAD115E</PlatformID>
+    <NoStdLib>true</NoStdLib>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|Windows Mobile 6 Professional SDK' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\WM_Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;WM_DEVICE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoConfig>true</NoConfig>
+    <OSVersion>5.02</OSVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Windows Mobile 6 Professional SDK' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\WM_Release\</OutputPath>
+    <DefineConstants>TRACE;WM_DEVICE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <NoConfig>true</NoConfig>
+    <OSVersion>5.02</OSVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.WindowsMobile" />
+    <Reference Include="Microsoft.WindowsMobile.Status" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AppConfig.cs" />
+    <Compile Include="DataStore.cs" />
+    <Compile Include="FormMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMain.Designer.cs">
+      <DependentUpon>FormMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormConfig.Designer.cs">
+      <DependentUpon>FormConfig.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormDriverLookup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormDriverLookup.Designer.cs">
+      <DependentUpon>FormDriverLookup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormEventPicker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormEventPicker.Designer.cs">
+      <DependentUpon>FormEventPicker.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ScannerHelper.cs" />
+    <Compile Include="ServerSync.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsMobile\v1.0\Microsoft.CompactFramework.CSharp.targets" />
+</Project>
