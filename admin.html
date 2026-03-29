@@ -986,6 +986,7 @@
         <button class="search-btn" id="pushOfflineBtn" onclick="pushOfflineData()" style="background: #d97706; display:none;" title="Push engine draws & assignments from this laptop to cloud (use after racing offline)">⬆️ Push to Cloud</button>
         <button class="search-btn" onclick="showQuickAddEntryModal()" style="background: #22c55e;">+ Quick Add Entry</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
+        <button class="search-btn" onclick="exportROKControlCSV()" style="background: #b91c1c;" title="Export drivers.csv for ROKControl scanner app">🔴 ROKControl CSV</button>
         <button class="search-btn" onclick="exportRaceEntriesPDF()" style="background: #2563eb;">Export PDF with Barcodes</button>
         <button class="search-btn" onclick="exportRaceEntriesExcel()" style="background: #1d6f42;">&#128202; Export Excel</button>
         <button class="search-btn" onclick="exportFinancialReportCSV()" style="background: #f59e0b; color: #1a1a1a;">&#128184; Financial Report</button>
@@ -3193,6 +3194,30 @@
         showToast('CSV export downloaded successfully', 'success');
       } catch (err) {
         console.error('exportDriversCSV error:', err);
+        showToast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // Export drivers in ROKControl scanner CSV format: race_number,FullName,race_class
+    async function exportROKControlCSV() {
+      try {
+        showToast('Preparing ROKControl CSV...', 'info');
+        const eventId = document.getElementById('raceEntriesEventSelect')?.value || '';
+        const url = '/api/admin/exportROKControlCSV' + (eventId ? '?eventId=' + encodeURIComponent(eventId) : '');
+        const response = await fetch(url, { headers: { 'Content-Type': 'application/json' } });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const csvText = await response.text();
+        const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'drivers.csv';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('drivers.csv downloaded — copy to \\My Documents\\ROKControl\\ on scanner device', 'success');
+      } catch (err) {
+        console.error('exportROKControlCSV error:', err);
         showToast('Error: ' + err.message, 'error');
       }
     }

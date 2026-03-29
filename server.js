@@ -233,12 +233,17 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
+// Permanent token for ROKControl scanner devices (never expires)
+const ROKCONTROL_DEVICE_TOKEN = '0298423f-ab4b-4a48-abad-31a3e72dc463';
+
 // Middleware to protect admin routes
 function requireAdmin(req, res, next) {
   const token = req.headers['x-admin-token'];
   if (!token) {
     return res.status(401).json({ success: false, error: 'Admin authentication required' });
   }
+  // Allow permanent ROKControl device token
+  if (token === ROKCONTROL_DEVICE_TOKEN) return next();
   const session = adminTokens.get(token);
   if (!session || session.expires < Date.now()) {
     adminTokens.delete(token);
@@ -9764,6 +9769,180 @@ app.post('/api/admin/exportDriversCSV', async (req, res) => {
   } catch (err) {
     console.error('❌ exportDriversCSV error:', err.message);
     res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// ============================================
+// ROKControl Scanner CSV Export
+// GET /api/admin/exportROKControlCSV?eventId=X
+// Returns: race_number,FullName,race_class  (one driver per line)
+// ============================================
+app.get('/api/admin/exportROKControlCSV', requireAdmin, async (req, res) => {
+  try {
+    const { eventId } = req.query;
+    let rows;
+    if (eventId) {
+      const result = await pool.query(
+        `SELECT d.race_number, d.first_name, d.last_name, re.race_class
+           FROM race_entries re
+           JOIN drivers d ON re.driver_id = d.driver_id
+          WHERE re.event_id = $1
+            AND re.status NOT IN ('cancelled','incomplete')
+          ORDER BY re.race_class, d.race_number`,
+        [eventId]
+      );
+      rows = result.rows;
+    } else {
+      const result = await pool.query(
+        `SELECT d.race_number, d.first_name, d.last_name, re.race_class
+           FROM race_entries re
+           JOIN drivers d ON re.driver_id = d.driver_id
+          WHERE re.status NOT IN ('cancelled','incomplete')
+          ORDER BY re.race_class, d.race_number`
+      );
+      rows = result.rows;
+    }
+
+    const lines = rows.map(r => {
+      const num   = (r.race_number  || '').toString().replace(/,/g, '');
+      const name  = `${r.first_name || ''} ${r.last_name || ''}`.trim().replace(/,/g, ' ');
+      const cls   = (r.race_class   || '').replace(/,/g, ' ');
+      return `${num},${name},${cls}`;
+    });
+
+    const csv = lines.join('\r\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="drivers.csv"');
+    res.send(csv);
+  } catch (err) {
+    console.error('exportROKControlCSV error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
+// ROKControl Scanner - Sync endpoint
+// POST /api/rokcontrol/sync
+// Body: {
+//   records: [{ts, vehicle, driver, class, control, heat,
+//              items:[...11 strings...],
+//              tyreFL, tyreFR, tyreRL, tyreRR}],
+//   controlPoint: N,
+//   controlPointName: "...",
+//   eventName: "..."
+// }
+// ============================================
+app.post('/api/rokcontrol/sync', requireAdmin, async (req, res) => {
+  try {
+    const { records, controlPoint, controlPointName, eventName } = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.json({ inserted: 0 });
+    }
+
+    let inserted = 0;
+    const errors = [];
+
+    for (const rec of records) {
+      const vehicle = (rec.vehicle || '').trim();
+      const driver  = (rec.driver  || '').trim();
+      const cls     = (rec.class   || '').trim();
+      const heat    = (rec.heat    || '').trim();
+      const control = (rec.control || '').trim();
+      const items   = Array.isArray(rec.items) ? rec.items : [];
+      const tyreFL  = (rec.tyreFL  || '').trim();
+      const tyreFR  = (rec.tyreFR  || '').trim();
+      const tyreRL  = (rec.tyreRL  || '').trim();
+      const tyreRR  = (rec.tyreRR  || '').trim();
+
+      const scannedBy = `ROKControl CP${controlPoint || 0} ${controlPointName || ''}`.trim();
+      const baseNotes = `Vehicle:${vehicle} Heat:${heat} Event:${eventName || ''}`.trim();
+
+      // Try to find the entry by race_number so we can set entry_id
+      let entryId = null;
+      if (vehicle) {
+        try {
+          const entryRes = await pool.query(
+            `SELECT re.entry_id FROM race_entries re
+               JOIN drivers d ON re.driver_id = d.driver_id
+              WHERE d.race_number = $1
+                AND re.status NOT IN ('cancelled', 'incomplete')
+              ORDER BY re.entry_id DESC LIMIT 1`,
+            [vehicle]
+          );
+          if (entryRes.rows.length) entryId = entryRes.rows[0].entry_id;
+        } catch (_) {}
+      }
+
+      // Log each non-empty scanned item (slots 1-11)
+      for (let i = 0; i < items.length; i++) {
+        const code = (items[i] || '').trim();
+        if (!code) continue;
+        try {
+          await logEquipmentScan({
+            scan_type:        'CONTROL_SCAN',
+            barcode_scanned:  code,
+            entry_id:         entryId,
+            driver_name:      driver,
+            equipment_serial: code,
+            scanned_by:       scannedBy,
+            action_result:    'success',
+            notes:            `${baseNotes} Slot:${i + 1}`,
+            race_class:       cls
+          });
+          inserted++;
+        } catch (e) { errors.push(e.message); }
+      }
+
+      // Log tyre RFID scans by position
+      const tyrePositions = [
+        { type: 'TYRE_FL', code: tyreFL },
+        { type: 'TYRE_FR', code: tyreFR },
+        { type: 'TYRE_RL', code: tyreRL },
+        { type: 'TYRE_RR', code: tyreRR }
+      ];
+      for (const tyre of tyrePositions) {
+        if (!tyre.code) continue;
+        try {
+          await logEquipmentScan({
+            scan_type:        tyre.type,
+            barcode_scanned:  tyre.code,
+            entry_id:         entryId,
+            driver_name:      driver,
+            equipment_serial: tyre.code,
+            scanned_by:       scannedBy,
+            action_result:    'success',
+            notes:            baseNotes,
+            race_class:       cls
+          });
+          inserted++;
+        } catch (e) { errors.push(e.message); }
+      }
+
+      // Update race_entries tyre columns if we matched an entry
+      if (entryId) {
+        const updates = [];
+        const vals    = [];
+        let   p       = 1;
+        if (tyreFL) { updates.push(`tyre_front_left  = $${p++}`); vals.push(tyreFL); }
+        if (tyreFR) { updates.push(`tyre_front_right = $${p++}`); vals.push(tyreFR); }
+        if (tyreRL) { updates.push(`tyre_rear_left   = $${p++}`); vals.push(tyreRL); }
+        if (tyreRR) { updates.push(`tyre_rear_right  = $${p++}`); vals.push(tyreRR); }
+        if (updates.length) {
+          vals.push(entryId);
+          try {
+            await pool.query(
+              `UPDATE race_entries SET ${updates.join(', ')} WHERE entry_id = $${p}`,
+              vals
+            );
+          } catch (_) {}
+        }
+      }
+    }
+
+    res.json({ inserted, errors: errors.length ? errors : undefined });
+  } catch (err) {
+    console.error('rokcontrol sync error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

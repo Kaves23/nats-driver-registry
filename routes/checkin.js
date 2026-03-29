@@ -138,6 +138,75 @@ module.exports = function checkinRoutes(pool, requireAdmin) {
   });
 
   // ─────────────────────────────────────────────────────────────────
+  // PUBLIC endpoints  (read-only, no auth — safe minimal data only)
+  // ─────────────────────────────────────────────────────────────────
+
+  // List of events (for signon-board event picker)
+  router.get('/api/public/events', async (req, res) => {
+    try {
+      const r = await pool.query(
+        `SELECT event_id, event_name, event_date, start_date, end_date, location
+           FROM events
+          ORDER BY COALESCE(start_date, event_date) DESC
+          LIMIT 30`
+      );
+      res.json({ success: true, events: r.rows });
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // Sign-on board — all confirmed entries for an event with check-in status
+  // Returns only non-sensitive display fields: name, race number, class, checked_in_at
+  router.get('/api/public/signon/:event_id', async (req, res) => {
+    try {
+      const { event_id } = req.params;
+
+      const evtRes = await pool.query(
+        `SELECT event_id, event_name, event_date, start_date, end_date, location
+           FROM events WHERE event_id = $1`,
+        [event_id]
+      );
+      if (!evtRes.rows.length) {
+        return res.status(404).json({ success: false, error: 'Event not found' });
+      }
+      const event = evtRes.rows[0];
+
+      const entriesRes = await pool.query(
+        `SELECT
+            re.race_number,
+            re.race_class,
+            re.checked_in_at,
+            d.first_name,
+            d.last_name
+           FROM race_entries re
+           LEFT JOIN drivers d ON re.driver_id = d.driver_id
+          WHERE re.event_id = $1
+            AND re.entry_status IN ('confirmed', 'paid')
+            AND re.payment_status = 'Completed'
+          ORDER BY re.race_class ASC, re.race_number ASC`,
+        [event_id]
+      );
+
+      const entries = entriesRes.rows.map(r => ({
+        race_number:   r.race_number,
+        race_class:    r.race_class,
+        first_name:    r.first_name,
+        last_name:     r.last_name,
+        signed_on:     !!r.checked_in_at,
+        signed_on_at:  r.checked_in_at || null
+      }));
+
+      const total    = entries.length;
+      const signedOn = entries.filter(e => e.signed_on).length;
+
+      res.json({ success: true, event, entries, stats: { total, signed_on: signedOn } });
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────
   // ADMIN endpoints
   // ─────────────────────────────────────────────────────────────────
 

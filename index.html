@@ -7117,12 +7117,13 @@ the paddock quickly and consistently.
 
     function getNextRace() {
       const now = new Date();
+      const activeRaces = allRaces.filter(race => race.pageIndex !== 2); // 11 APR VKC cancelled
       // Show current event if we're within its window (started but not yet finished)
-      const current = allRaces.find(race => race.date <= now && race.endDate >= now);
+      const current = activeRaces.find(race => race.date <= now && race.endDate >= now);
       if (current) return current;
       // Otherwise show the next upcoming event
-      const upcoming = allRaces.filter(race => race.date > now).sort((a, b) => a.date - b.date);
-      return upcoming.length > 0 ? upcoming[0] : allRaces[allRaces.length - 1];
+      const upcoming = activeRaces.filter(race => race.date > now).sort((a, b) => a.date - b.date);
+      return upcoming.length > 0 ? upcoming[0] : activeRaces[activeRaces.length - 1];
     }
 
     let currentIndex = getNextRace().pageIndex;
@@ -7287,7 +7288,11 @@ the paddock quickly and consistently.
       infoModalTitle.textContent  = `${season.name} - INFORMATION`;
       enterModalTitle.textContent = `ENTER ${season.name}`;
       eventMetaMain.textContent   = season.track;
-      eventDatesMain.textContent  = season.dates;
+      if (index === 2) {
+        eventDatesMain.innerHTML = '<s>11 APR 2026</s> &nbsp;CANCELLED';
+      } else {
+        eventDatesMain.textContent = season.dates;
+      }
 
       // Show slideshow only for Feb 14 race (index 0)
       const slideshow = document.getElementById('eventSlideshow');
@@ -7309,10 +7314,10 @@ the paddock quickly and consistently.
       // Update Next Race button state
       updateNextRaceButton(index);
 
-      if (season.id === 'summer') {
-        btnEnterNow.textContent = 'ENTER NOW';
-        btnEnterNow.classList.remove('btn--disabled');
+      if (index === 2) {
+        btnEnterNow.style.display = 'none';
       } else {
+        btnEnterNow.style.display = '';
         btnEnterNow.textContent = 'ENTER NOW';
         btnEnterNow.classList.remove('btn--disabled');
       }
