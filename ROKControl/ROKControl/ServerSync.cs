@@ -350,7 +350,8 @@ namespace ROKControl
                     ms.Write(buf, 0, read);
                 tcp.Close();
 
-                string body = Encoding.UTF8.GetString(ms.ToArray());
+                byte[] bodyArr = ms.ToArray();
+                string body = Encoding.UTF8.GetString(bodyArr, 0, bodyArr.Length);
 
                 // Strip HTTP headers — body starts after \r\n\r\n
                 int bodyStart = body.IndexOf("\r\n\r\n");
