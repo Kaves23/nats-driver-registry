@@ -89,6 +89,22 @@ namespace ROKControl
             FilterList(txtFilter.Text);
         }
 
+        private void txtFilter_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // Enter key selects top match immediately
+            if (e.KeyChar == '\r' || e.KeyChar == '\n')
+            {
+                if (lstDrivers.Items.Count > 0)
+                    lstDrivers.SelectedIndex = 0;
+                e.Handled = true;
+            }
+        }
+
+        private void lstDrivers_DoubleClick(object sender, EventArgs e)
+        {
+            btnSelect_Click(sender, e);
+        }
+
         private void lstDrivers_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (lstDrivers.SelectedIndex < 0) return;
