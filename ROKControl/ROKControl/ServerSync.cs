@@ -274,9 +274,14 @@ namespace ROKControl
                 }
                 return new RegistrationResult { Success = false, Message = "Bad resp: " + resp };
             }
+            catch (System.Net.Sockets.SocketException se)
+            {
+                // ErrorCode numbers: 10061=connection refused, 10060=timeout, 10051=network unreachable
+                return new RegistrationResult { Success = false, Message = "Socket " + se.ErrorCode + " -> " + _cfg.ServerUrl };
+            }
             catch (Exception ex)
             {
-                return new RegistrationResult { Success = false, Message = ex.GetType().Name + ": " + ex.Message + " [" + _cfg.ServerUrl + "]" };
+                return new RegistrationResult { Success = false, Message = ex.GetType().Name + " -> " + _cfg.ServerUrl };
             }
         }
 
