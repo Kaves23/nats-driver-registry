@@ -262,14 +262,15 @@ namespace ROKControl
                 if (spaceIdx >= 0 && resp.Length >= spaceIdx + 4)
                 {
                     string codeStr = resp.Substring(spaceIdx + 1, 3);
-                    int code;
-                    if (int.TryParse(codeStr, out code))
+                    try
                     {
+                        int code = int.Parse(codeStr);
                         if (code >= 200 && code < 300)
                             return new RegistrationResult { Success = true, Message = "Sent OK (" + vehicleNumber + ")" };
                         else
                             return new RegistrationResult { Success = false, Message = "HTTP " + code };
                     }
+                    catch { }
                 }
                 return new RegistrationResult { Success = false, Message = "Bad resp: " + resp };
             }
