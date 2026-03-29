@@ -209,7 +209,8 @@ namespace ROKControl
 
         /// <summary>
         /// Send a single engine-serial assignment to the server immediately.
-        /// Called at registration: race number + engine serial → server assigns + fires monitor event.
+        /// CF-safe: POSTs with HTTP/1.0, reads only the HTTP status code, closes
+        /// the connection without reading the response body (avoids ReceiveFailure, status=3).
         /// </summary>
         public RegistrationResult SendRegistration(string vehicleNumber, string engineSerial)
         {
@@ -222,16 +223,48 @@ namespace ROKControl
                 string json = "{\"race_number\":\"" + J(vehicleNumber) +
                               "\",\"engine_serial\":\"" + J(engineSerial) +
                               "\",\"scanned_by\":\"ROKControl\"}";
-                string resp = PostJson(url, json);
-                return ParseRegistrationResponse(resp, url);
+
+                byte[] body = Encoding.UTF8.GetBytes(json);
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                req.Method          = "POST";
+                req.ContentType     = "application/json; charset=utf-8";
+                req.ContentLength   = body.Length;
+                req.Timeout         = 15000;
+                req.ProtocolVersion = HttpVersion.Version10;
+                req.KeepAlive       = false;
+                if (!string.IsNullOrEmpty(_cfg.ApiToken))
+                    req.Headers.Add("x-admin-token", _cfg.ApiToken);
+                req.Headers.Add("Accept-Encoding", "identity");
+                // Disable Expect: 100-continue — CF sends it by default and some servers stall
+                System.Net.ServicePointManager.Expect100Continue = false;
+
+                using (Stream s = req.GetRequestStream())
+                    s.Write(body, 0, body.Length);
+
+                // CF ReceiveFailure fix: read status code ONLY, do NOT read body, close immediately.
+                HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
+                int statusCode = (int)resp.StatusCode;
+                resp.Close();
+
+                if (statusCode >= 200 && statusCode < 300)
+                    return new RegistrationResult { Success = true, Message = "Sent OK (" + vehicleNumber + ")" };
+                else
+                    return new RegistrationResult { Success = false, Message = "HTTP " + statusCode };
+            }
+            catch (System.Net.WebException we)
+            {
+                // If server returned 4xx/5xx, GetResponse() throws — read status from the response
+                if (we.Response != null)
+                {
+                    int sc = (int)((HttpWebResponse)we.Response).StatusCode;
+                    we.Response.Close();
+                    return new RegistrationResult { Success = false, Message = "HTTP " + sc };
+                }
+                return new RegistrationResult { Success = false, Message = "NetErr status=" + (int)we.Status };
             }
             catch (Exception ex)
             {
-                System.Net.WebException we = ex as System.Net.WebException;
-                string msg = we != null
-                    ? "Network error: status=" + (int)we.Status
-                    : ex.GetType().Name;
-                return new RegistrationResult { Success = false, Message = msg };
+                return new RegistrationResult { Success = false, Message = ex.GetType().Name };
             }
         }
 
