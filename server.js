@@ -9947,6 +9947,88 @@ app.post('/api/rokcontrol/sync', requireAdmin, async (req, res) => {
 });
 
 // ============================================
+// ROKControl Scanner - Registration endpoint
+// POST /api/rokcontrol/register
+// Body: { race_number, engine_serial, scanned_by }
+// Assigns engine serial to driver and fires engine_assign to monitor SSE
+// ============================================
+app.post('/api/rokcontrol/register', requireAdmin, async (req, res) => {
+  try {
+    const { race_number, engine_serial, scanned_by } = req.body;
+    if (!race_number || !engine_serial) {
+      return res.status(400).json({ success: false, error: 'race_number and engine_serial required' });
+    }
+
+    // Look up driver + most recent confirmed entry by race number
+    const entryRes = await pool.query(
+      `SELECT re.entry_id, re.driver_id, re.race_class, re.event_id,
+              d.first_name, d.last_name, d.race_number
+         FROM race_entries re
+         JOIN drivers d ON re.driver_id = d.driver_id
+        WHERE d.race_number = $1
+          AND re.entry_status IN ('confirmed', 'paid')
+          AND re.payment_status = 'Completed'
+        ORDER BY re.entry_id DESC
+        LIMIT 1`,
+      [race_number]
+    );
+
+    const engineUpper = engine_serial.toUpperCase();
+
+    if (!entryRes.rows.length) {
+      await logEquipmentScan({
+        scan_type:        'engine_assign',
+        barcode_scanned:  race_number,
+        equipment_serial: engineUpper,
+        driver_name:      'UNKNOWN #' + race_number,
+        scanned_by:       scanned_by || 'ROKControl',
+        action_result:    'error',
+        notes:            'Race number not found: ' + race_number
+      });
+      return res.json({ success: false, error: 'Driver not found for race number: ' + race_number });
+    }
+
+    const entry = entryRes.rows[0];
+    const driverName = `${entry.first_name} ${entry.last_name}`;
+
+    // Assign engine serial to entry
+    await pool.query(
+      `UPDATE race_entries
+          SET engine_serial = $1, engine_assigned_at = NOW(),
+              engine_returned = false, updated_at = NOW()
+        WHERE entry_id = $2`,
+      [engineUpper, entry.entry_id]
+    );
+
+    // Log as engine_assign → SSE broadcasts to monitor
+    await logEquipmentScan({
+      scan_type:        'engine_assign',
+      barcode_scanned:  engineUpper,
+      entry_id:         entry.entry_id,
+      driver_id:        entry.driver_id,
+      driver_name:      driverName,
+      equipment_serial: engineUpper,
+      scanned_by:       scanned_by || 'ROKControl',
+      action_result:    'success',
+      notes:            `Registration: Engine ${engineUpper} → ${driverName} (#${race_number})`,
+      event_id:         entry.event_id,
+      race_class:       entry.race_class
+    });
+
+    res.json({
+      success:      true,
+      driver_name:  driverName,
+      race_class:   entry.race_class,
+      engine_serial: engineUpper,
+      entry_id:     entry.entry_id
+    });
+  } catch (err) {
+    console.error('rokcontrol register error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============================================
 // OFFICIALS PORTAL ENDPOINTS
 // ============================================
 
