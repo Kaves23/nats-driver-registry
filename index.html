@@ -7117,7 +7117,7 @@ the paddock quickly and consistently.
 
     function getNextRace() {
       const now = new Date();
-      const activeRaces = allRaces.filter(race => race.pageIndex !== 2); // 11 APR VKC cancelled
+      const activeRaces = allRaces.filter(race => race.pageIndex !== 2); // 11 APR VKC postponed
       // Show current event if we're within its window (started but not yet finished)
       const current = activeRaces.find(race => race.date <= now && race.endDate >= now);
       if (current) return current;
@@ -7289,7 +7289,7 @@ the paddock quickly and consistently.
       enterModalTitle.textContent = `ENTER ${season.name}`;
       eventMetaMain.textContent   = season.track;
       if (index === 2) {
-        eventDatesMain.innerHTML = '<s>11 APR 2026</s> &nbsp;CANCELLED';
+        eventDatesMain.innerHTML = '<s>11 APR 2026</s> &nbsp;POSTPONED';
       } else {
         eventDatesMain.textContent = season.dates;
       }
