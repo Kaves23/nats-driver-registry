@@ -6966,7 +6966,7 @@
         { seasonId: 'summer', date: new Date(2026, 2, 20), color: '#facc15' },
         { seasonId: 'northern', date: new Date(2026, 2, 21), color: '#1e40af' },
         { seasonId: 'northern', date: new Date(2026, 2, 22), color: '#1e40af' },
-        { seasonId: 'northern', date: new Date(2026, 3, 11), color: '#1e40af' },
+        // { seasonId: 'northern', date: new Date(2026, 3, 11), color: '#1e40af' }, // VKC postponed
         { seasonId: 'autumn', date: new Date(2026, 4, 8), color: '#f97316' },
         { seasonId: 'winter', date: new Date(2026, 6, 10), color: '#0ea5e9' },
         { seasonId: 'northern', date: new Date(2026, 6, 11), color: '#1e40af' },
@@ -7238,10 +7238,10 @@
       let season = 'winter'; // default
       
       // Determine season based on approximate NATS calendar
-      if (month >= 2 && month <= 3) {
-        season = 'summer'; // March-April (Summer NATS)
-      } else if (month >= 4 && month <= 5) {
-        season = 'autumn'; // May-June (Autumn NATS)
+      if (month === 2) {
+        season = 'summer'; // March (Summer NATS)
+      } else if (month >= 3 && month <= 5) {
+        season = 'autumn'; // April-June (next race: Autumn NATS)
       } else if (month >= 6 && month <= 7) {
         season = 'winter'; // July-August (Winter NATS)
       } else if (month >= 8 && month <= 9) {
