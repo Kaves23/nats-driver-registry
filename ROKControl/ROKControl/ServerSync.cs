@@ -384,7 +384,11 @@ namespace ROKControl
             {
                 string url = _cfg.ServerUrl.TrimEnd('/') + "/api/public/events";
                 string body = GetJson(url, null);
-                return ParseEventList(body);
+                List<EventRecord> list = ParseEventList(body);
+                if (list.Count == 0)
+                    LastError = "Parsed 0 events. Body[0-120]: " +
+                                (body.Length > 120 ? body.Substring(0, 120) : body);
+                return list;
             }
             catch (Exception ex)
             {
