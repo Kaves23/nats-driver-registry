@@ -31,7 +31,7 @@ namespace ROKControl
             InitializeComponent();
             // Try server first; fall back to CSV
             if (_config.EventId > 0)
-                FetchFromServer(showNewOnly: false);
+                FetchFromServer(false);
             else
                 LoadFromCsv();
         }
@@ -147,7 +147,8 @@ namespace ROKControl
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 foreach (string[] d in list)
                     sb.AppendLine(string.Join(",", d));
-                File.WriteAllText(csvPath, sb.ToString(), System.Text.Encoding.UTF8);
+                using (StreamWriter sw = new StreamWriter(csvPath, false, System.Text.Encoding.UTF8))
+                    sw.Write(sb.ToString());
             }
             catch { }
         }
@@ -219,7 +220,7 @@ namespace ROKControl
                 MessageBox.Show("No event selected. Use Menu > Select Event first.", "Refresh");
                 return;
             }
-            FetchFromServer(showNewOnly: true);
+            FetchFromServer(true);
         }
 
         private void btnSelect_Click(object sender, EventArgs e)

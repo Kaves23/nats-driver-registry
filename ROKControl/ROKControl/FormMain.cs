@@ -371,7 +371,8 @@ namespace ROKControl
                     string cls  = (d.ClassName     ?? string.Empty).Replace(",", " ");
                     sb.AppendLine(num + "," + name + "," + cls);
                 }
-                System.IO.File.WriteAllText(csvPath, sb.ToString(), System.Text.Encoding.UTF8);
+                using (System.IO.StreamWriter sw = new System.IO.StreamWriter(csvPath, false, System.Text.Encoding.UTF8))
+                    sw.Write(sb.ToString());
             }
             catch { }
         }
