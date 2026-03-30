@@ -72,7 +72,7 @@ namespace ROKControl
                 {
                     if (events != null && events.Count > 0)
                     {
-                        if (_config.EventId == 0)
+                        if (string.IsNullOrEmpty(_config.EventId))
                             ShowEventPicker(events);
                         else
                             lblStatus.Text = "Event: " + _config.EventName;
@@ -80,7 +80,7 @@ namespace ROKControl
                     else
                     {
                         string err = sync.LastError;
-                        lblStatus.Text = _config.EventId == 0
+                        lblStatus.Text = string.IsNullOrEmpty(_config.EventId)
                             ? (err != null ? "Fetch failed: " + err : "No event set -- use menu to select.")
                             : "Event: " + _config.EventName;
                     }
@@ -337,7 +337,7 @@ namespace ROKControl
                 lblStatus.Text = "Event set: " + _config.EventName + " — fetching drivers...";
 
                 // Pre-fetch driver list in background so it's ready when driver lookup opens
-                int eventId = _config.EventId;
+                string eventId = _config.EventId;
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     ServerSync sync = new ServerSync(_config);

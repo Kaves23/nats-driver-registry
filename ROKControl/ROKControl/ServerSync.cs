@@ -320,9 +320,9 @@ namespace ROKControl
         /// Fetch the list of race entries for the given event.
         /// Uses HttpWebRequest (supports HTTP and HTTPS).
         /// </summary>
-        public List<DriverEntry> FetchDriversForEvent(int eventId)
+        public List<DriverEntry> FetchDriversForEvent(string eventId)
         {
-            if (string.IsNullOrEmpty(_cfg.ServerUrl) || eventId <= 0)
+            if (string.IsNullOrEmpty(_cfg.ServerUrl) || string.IsNullOrEmpty(eventId))
                 return null;
             try
             {
@@ -385,9 +385,6 @@ namespace ROKControl
                 string url = _cfg.ServerUrl.TrimEnd('/') + "/api/public/events";
                 string body = GetJson(url, null);
                 List<EventRecord> list = ParseEventList(body);
-                if (list.Count == 0)
-                    LastError = "Parsed 0 events. Body[0-120]: " +
-                                (body.Length > 120 ? body.Substring(0, 120) : body);
                 return list;
             }
             catch (Exception ex)
@@ -469,12 +466,12 @@ namespace ROKControl
                 string obj = arr.Substring(objStart, objEnd - objStart + 1);
 
                 EventRecord ev = new EventRecord();
-                ev.EventId   = ExtractJsonInt(obj, "event_id");
+                ev.EventId   = ExtractJsonString(obj, "event_id") ?? string.Empty;
                 ev.EventName = ExtractJsonString(obj, "event_name") ?? "(unnamed)";
                 ev.EventDate = ExtractJsonString(obj, "event_date") ?? string.Empty;
                 // Trim date to just yyyy-MM-dd
                 if (ev.EventDate.Length > 10) ev.EventDate = ev.EventDate.Substring(0, 10);
-                if (ev.EventId > 0)
+                if (!string.IsNullOrEmpty(ev.EventId))
                     results.Add(ev);
 
                 pos = objEnd + 1;
@@ -488,7 +485,6 @@ namespace ROKControl
             int start = json.IndexOf(search);
             if (start < 0) return 0;
             start += search.Length;
-            // Skip whitespace
             while (start < json.Length && json[start] == ' ') start++;
             int end = start;
             while (end < json.Length && (char.IsDigit(json[end]) || json[end] == '-')) end++;
@@ -513,7 +509,7 @@ namespace ROKControl
 
     public class EventRecord
     {
-        public int    EventId   { get; set; }
+        public string EventId   { get; set; }
         public string EventName { get; set; }
         public string EventDate { get; set; }
 

@@ -30,7 +30,7 @@ namespace ROKControl
             _config = config;
             InitializeComponent();
             // Try server first; fall back to CSV
-            if (_config.EventId > 0)
+            if (!string.IsNullOrEmpty(_config.EventId))
                 FetchFromServer(false);
             else
                 LoadFromCsv();
@@ -215,7 +215,7 @@ namespace ROKControl
 
         private void btnRefresh_Click(object sender, EventArgs e)
         {
-            if (_config.EventId <= 0)
+            if (string.IsNullOrEmpty(_config.EventId))
             {
                 MessageBox.Show("No event selected. Use Menu > Select Event first.", "Refresh");
                 return;

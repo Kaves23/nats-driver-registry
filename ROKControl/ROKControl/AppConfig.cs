@@ -36,7 +36,7 @@ namespace ROKControl
         public bool RfidEnabled { get; set; }
 
         // Selected event (picked at startup from server)
-        public int    EventId   { get; set; }   // 0 = not selected
+        public string EventId   { get; set; }   // null/empty = not selected
 
         public AppConfig()
         {
@@ -52,7 +52,7 @@ namespace ROKControl
             FiaDecoding = false;
             ScannerType = 0;
             RfidEnabled = true;
-            EventId     = 0;
+            EventId     = string.Empty;
         }
 
         public static AppConfig Load()
@@ -83,7 +83,7 @@ namespace ROKControl
                 cfg.FiaDecoding = GetBool(root, "FiaDecoding", cfg.FiaDecoding);
                 cfg.ScannerType = GetInt(root, "ScannerType", cfg.ScannerType);
                 cfg.RfidEnabled = GetBool(root, "RfidEnabled", cfg.RfidEnabled);
-                cfg.EventId     = GetInt(root,  "EventId",     cfg.EventId);
+                cfg.EventId     = GetStr(root,  "EventId",     cfg.EventId);
             }
             catch { /* return defaults on any parse error */ }
 
