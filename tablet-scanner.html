@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#111111">
+  <title>NATS Scanner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      overflow: hidden;
+    }
+
+    /* ---- SCREEN MANAGEMENT ---- */
+    .screen {
+      display: none;
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+    }
+    .screen.active {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-direction: column;
+              flex-direction: column;
+    }
+
+    h1 { font-size: 26px; text-align: center; margin-bottom: 4px; color: #00aaff; }
+    h2 { font-size: 20px; text-align: center; margin-bottom: 14px; }
+    .sub { text-align: center; color: #555; font-size: 13px; margin-bottom: 10px; }
+
+    /* ---- MODE BUTTONS ---- */
+    .mode-grid {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-direction: column;
+              flex-direction: column;
+      gap: 14px;
+      margin: auto 0;
+      padding: 10px 0;
+    }
+
+    .mode-btn {
+      background: #1a1a2e;
+      border: 2px solid #00aaff;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .mode-btn.green  { border-color: #00ff66; }
+    .mode-btn.orange { border-color: #ffaa00; }
+    .mode-btn .sub2 {
+      display: block;
+      font-size: 13px;
+      font-weight: normal;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    /* ---- PIN SCREEN ---- */
+    .pin-display {
+      font-size: 42px;
+      letter-spacing: 18px;
+      text-align: center;
+      margin: 14px 0;
+      min-height: 58px;
+      color: #00aaff;
+    }
+    .keypad {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-wrap: wrap;
+              flex-wrap: wrap;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    .key {
+      width: 33.33%;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 28px;
+      font-weight: bold;
+      padding: 18px 0;
+      text-align: center;
+      cursor: pointer;
+      -webkit-user-select: none;
+              user-select: none;
+      margin: 3px 0;
+    }
+    .key:active { background: #333; }
+    .key.del { background: #2a0000; font-size: 20px; }
+    .key.ok  { background: #0a3a10; font-size: 18px; color: #00ff66; width: 66.66%; }
+
+    /* ---- GENERIC BUTTONS ---- */
+    .btn {
+      background: #0a3050;
+      border: 1px solid #00aaff;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 18px;
+      padding: 15px;
+      width: 100%;
+      margin-top: 10px;
+      cursor: pointer;
+      text-align: center;
+      display: block;
+    }
+    .btn:active { opacity: 0.7; }
+    .btn.green  { background: #0a3a10; border-color: #00ff66; color: #00ff66; }
+    .btn.red    { background: #3a0000; border-color: #ff3333; color: #ff6666; }
+    .btn.orange { background: #3a2000; border-color: #ffaa00; color: #ffaa00; }
+    .btn.grey   { background: #1e1e1e; border-color: #444;    color: #999;    }
+    .btn.sm     { font-size: 14px; padding: 10px; margin-top: 6px; }
+
+    /* ---- INPUTS ---- */
+    select, input[type="text"] {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 18px;
+      padding: 12px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    select option { background: #222; }
+
+    /* ---- TOP BAR ---- */
+    .top-bar {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+              align-items: center;
+      -webkit-box-pack: justify;
+              justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .top-bar h2  { margin: 0; font-size: 15px; }
+    .top-bar-spacer { width: 72px; }
+
+    /* ---- SCANNER SCREEN ---- */
+    #scan-video-wrap {
+      position: relative;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      -webkit-flex-shrink: 0;
+              flex-shrink: 0;
+    }
+    #scan-video {
+      width: 100%;
+      display: block;
+      max-height: 44vh;
+      object-fit: cover;
+    }
+    .scan-aim {
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+              align-items: center;
+      -webkit-box-pack: center;
+              justify-content: center;
+      pointer-events: none;
+    }
+    /* aim box — inline dimensions so old Android doesn't need aspect-ratio */
+    .aim-box {
+      width: 52%;
+      height: 0;
+      padding-bottom: 52%;
+      border: 3px solid #00aaff;
+      border-radius: 6px;
+      position: relative;
+      box-shadow: 0 0 0 2000px rgba(0,0,0,0.45);
+    }
+    .scan-line {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: #00aaff;
+      -webkit-animation: scanmove 2s linear infinite;
+              animation: scanmove 2s linear infinite;
+    }
+    @-webkit-keyframes scanmove { 0%{top:0} 100%{top:100%} }
+    @keyframes         scanmove { 0%{top:0} 100%{top:100%} }
+
+    .status-bar {
+      text-align: center;
+      font-size: 14px;
+      padding: 7px 4px;
+      color: #888;
+      min-height: 34px;
+    }
+
+    /* ---- RESULT CARDS ---- */
+    .result-card {
+      background: #0d2010;
+      border: 2px solid #00ff66;
+      border-radius: 10px;
+      padding: 14px;
+      margin: 8px 0;
+    }
+    .result-card.warn  { background: #1e1400; border-color: #ffaa00; }
+    .result-card.error { background: #1e0000; border-color: #ff3333; }
+    .result-name   { font-size: 22px; font-weight: bold; margin-bottom: 3px; }
+    .result-detail { font-size: 14px; color: #aaa; }
+
+    .confirm-row {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .confirm-row .btn { margin-top: 0; -webkit-flex: 1; flex: 1; font-size: 19px; padding: 19px 4px; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 4px;
+    }
+    .badge.green  { background: #0a3a10; color: #00ff66; }
+    .badge.red    { background: #3a0000; color: #ff6666; }
+    .badge.orange { background: #3a2000; color: #ffaa00; }
+
+    /* ---- DIRECTION BUTTONS (checkpoint) ---- */
+    .dir-row {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .dir-row .btn { -webkit-flex: 1; flex: 1; margin-top: 0; font-size: 21px; padding: 22px 4px; }
+
+    /* ---- ENGINE PHASE indicator ---- */
+    #engine-phase-bar {
+      text-align: center;
+      padding: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      background: #1a1000;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* ---- MISC ---- */
+    .spinner {
+      border: 3px solid #2a2a2a;
+      border-top: 3px solid #00aaff;
+      border-radius: 50%;
+      width: 34px; height: 34px;
+      -webkit-animation: spin 0.8s linear infinite;
+              animation: spin 0.8s linear infinite;
+      margin: 18px auto;
+    }
+    @-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
+    @keyframes         spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+    .sync-note { font-size: 12px; color: #555; text-align: center; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     SCREEN: MODE SELECT
+     ============================================================ -->
+<div id="screen-mode" class="screen active">
+  <h1>NATS Scanner</h1>
+  <p class="sub">Tablet Edition &mdash; select scanner mode</p>
+  <div class="mode-grid">
+    <div class="mode-btn" onclick="selectMode('checkin')">
+      Gate Check&#8209;In
+      <span class="sub2">Scan driver entry tickets at the gate</span>
+    </div>
+    <div class="mode-btn green" onclick="selectMode('checkpoint')">
+      Area Access Control
+      <span class="sub2">Checkpoint &mdash; pit lane, paddock, restricted zones</span>
+    </div>
+    <div class="mode-btn orange" onclick="selectMode('engine')">
+      Engine Scanner
+      <span class="sub2">Assign sealed engine serials to drivers</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: PIN
+     ============================================================ -->
+<div id="screen-pin" class="screen">
+  <div class="top-bar">
+    <button class="btn grey sm" style="width:auto;padding:9px 14px;margin:0"
+            onclick="showScreen('screen-mode')">&#9664; Back</button>
+    <h2 id="pin-title">Enter PIN</h2>
+    <div class="top-bar-spacer"></div>
+  </div>
+  <p id="pin-desc" class="sub"></p>
+  <div class="pin-display" id="pin-display">&#8211;&#8211;&#8211;&#8211;</div>
+  <div class="keypad" id="keypad">
+    <div class="key" onclick="keyPress('1')">1</div>
+    <div class="key" onclick="keyPress('2')">2</div>
+    <div class="key" onclick="keyPress('3')">3</div>
+    <div class="key" onclick="keyPress('4')">4</div>
+    <div class="key" onclick="keyPress('5')">5</div>
+    <div class="key" onclick="keyPress('6')">6</div>
+    <div class="key" onclick="keyPress('7')">7</div>
+    <div class="key" onclick="keyPress('8')">8</div>
+    <div class="key" onclick="keyPress('9')">9</div>
+    <div class="key del" onclick="keyPress('del')">&#9003;</div>
+    <div class="key" onclick="keyPress('0')">0</div>
+    <div class="key ok" onclick="keyPress('ok')">&#10003; OK</div>
+  </div>
+  <div id="pin-error" style="color:#ff6666;text-align:center;margin-top:12px;font-size:14px;min-height:20px;"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: SETUP  (event / area selection)
+     ============================================================ -->
+<div id="screen-setup" class="screen">
+  <div class="top-bar">
+    <button class="btn grey sm" style="width:auto;padding:9px 14px;margin:0"
+            onclick="showScreen('screen-pin')">&#9664; Back</button>
+    <h2 id="setup-title">Setup</h2>
+    <div class="top-bar-spacer"></div>
+  </div>
+  <div id="setup-body"><div class="spinner"></div></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: SCANNER
+     ============================================================ -->
+<div id="screen-scan" class="screen">
+  <div class="top-bar">
+    <button class="btn grey sm" style="width:auto;padding:9px 14px;margin:0"
+            onclick="goBackFromScan()">&#9664;</button>
+    <h2 id="scan-title">Scanning</h2>
+    <button class="btn grey sm" style="width:auto;padding:9px 14px;margin:0"
+            id="sync-btn" onclick="doSync()">&#8635; Sync</button>
+  </div>
+
+  <!-- Engine phase indicator -->
+  <div id="engine-phase-bar" class="hidden"></div>
+
+  <!-- Video -->
+  <div id="scan-video-wrap">
+    <video id="scan-video" autoplay muted playsinline webkit-playsinline></video>
+    <div class="scan-aim">
+      <div class="aim-box"><div class="scan-line"></div></div>
+    </div>
+  </div>
+
+  <div class="status-bar" id="scan-status">Initialising camera&hellip;</div>
+
+  <!-- Photo fallback -->
+  <button class="btn grey sm" id="photo-btn" onclick="triggerPhoto()" style="display:none">
+    &#128247; Take Photo to Scan (camera fallback)
+  </button>
+  <input type="file" accept="image/*" capture="environment"
+         id="photo-input" style="display:none" onchange="handlePhoto(this)">
+
+  <!-- Manual entry -->
+  <input type="text" id="manual-input"
+         placeholder="Type barcode / reference number manually&hellip;"
+         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <button class="btn sm" onclick="doManualSubmit()" style="margin-top:6px">Submit Manual Entry</button>
+
+  <!-- Result area -->
+  <div id="scan-result" class="hidden"></div>
+
+  <!-- Checkpoint direction -->
+  <div id="dir-wrap" class="hidden">
+    <div class="dir-row">
+      <button class="btn green" onclick="logAccess('ENTERING')">ENTERING</button>
+      <button class="btn red"   onclick="logAccess('EXITING')">EXITING</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden decode canvas -->
+<canvas id="decode-canvas" style="display:none"></canvas>
+
+<!-- jsQR — pure-JS QR decoder, works on any Android/Chrome version -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===================== STATE =====================
+  var state = {
+    mode:           null,   // 'checkin' | 'checkpoint' | 'engine'
+    pin:            '',
+    pinDigits:      '',
+    eventId:        null,
+    areaId:         null,
+    stream:         null,
+    scanAnimId:     null,
+    scanning:       false,
+    lastCode:       null,
+    lastCodeTime:   0,
+    debounceMs:     2500,
+    db:             null,
+    syncData:       null,   // checkpoint: { entries, permissions }
+    logQueue:       [],
+    pendingEntry:   null,
+    pendingCode:    null,
+    enginePhase:    'driver',
+    pendingDriver:  null
+  };
+
+  var zxingReader = null; // populated once ZXing CDN loads
+
+  // ===================== SCREEN =====================
+  function showScreen(id) {
+    var screens = document.querySelectorAll('.screen');
+    for (var i = 0; i < screens.length; i++) {
+      screens[i].classList.remove('active');
+    }
+    document.getElementById(id).classList.add('active');
+  }
+  window.showScreen = showScreen;
+
+  // ===================== MODE SELECT =====================
+  window.selectMode = function (mode) {
+    state.mode       = mode;
+    state.pinDigits  = '';
+    updatePinDisplay();
+    document.getElementById('pin-error').textContent = '';
+
+    var titles = {
+      checkin:    'Check-In PIN',
+      checkpoint: 'Access Control PIN',
+      engine:     'Engine Scanner PIN'
+    };
+    var descs = {
+      checkin:    'Enter your gate check-in operator PIN',
+      checkpoint: 'Enter your checkpoint operator PIN',
+      engine:     'Enter your scanner PIN'
+    };
+    document.getElementById('pin-title').textContent = titles[mode];
+    document.getElementById('pin-desc').textContent  = descs[mode];
+    showScreen('screen-pin');
+  };
+
+  // ===================== PIN =====================
+  function updatePinDisplay() {
+    var d = state.pinDigits, out = '';
+    for (var i = 0; i < 4; i++) { out += (i < d.length ? '\u25CF' : '\u2013'); }
+    document.getElementById('pin-display').textContent = out;
+  }
+
+  window.keyPress = function (k) {
+    var errEl = document.getElementById('pin-error');
+    if (k === 'del') {
+      state.pinDigits = state.pinDigits.slice(0, -1);
+      updatePinDisplay();
+    } else if (k === 'ok') {
+      if (state.pinDigits.length < 4) { errEl.textContent = 'PIN must be 4 digits'; return; }
+      errEl.textContent = '';
+      verifyPin(state.pinDigits);
+    } else if (state.pinDigits.length < 4) {
+      state.pinDigits += k;
+      updatePinDisplay();
+      if (state.pinDigits.length === 4) { setTimeout(function () { verifyPin(state.pinDigits); }, 220); }
+    }
+  };
+
+  function verifyPin(pin) {
+    document.getElementById('pin-error').textContent = 'Verifying\u2026';
+
+    if (state.mode === 'engine') {
+      xhrPost('/api/verifyScanner', { pin: pin }, function (ok, data) {
+        if (ok && data && data.valid) {
+          state.pin = pin;
+          document.getElementById('pin-error').textContent = '';
+          loadEngineSetup();
+        } else {
+          document.getElementById('pin-error').textContent = 'Invalid PIN';
+          state.pinDigits = ''; updatePinDisplay();
+        }
+      });
+    } else {
+      var url = state.mode === 'checkin'
+        ? '/api/checkin/events-list?pin=' + encodeURIComponent(pin)
+        : '/api/access/areas-public?pin=' + encodeURIComponent(pin);
+
+      xhrGet(url, function (ok, data) {
+        // Endpoints return { success: true, events: [...] } or { success: true, areas: [...] }
+        var list = null;
+        if (ok && data && data.success) {
+          list = data.events || data.areas || null;
+        } else if (ok && Array.isArray(data)) {
+          list = data; // legacy: raw array
+        }
+
+        if (list !== null) {
+          state.pin = pin;
+          document.getElementById('pin-error').textContent = '';
+          if (state.mode === 'checkin') { loadCheckinSetup(list); }
+          else                          { loadCheckpointSetup(list); }
+        } else if (ok && data && data.error) {
+          document.getElementById('pin-error').textContent = data.error;
+          state.pinDigits = ''; updatePinDisplay();
+        } else {
+          document.getElementById('pin-error').textContent = 'Invalid PIN or connection error';
+          state.pinDigits = ''; updatePinDisplay();
+        }
+      });
+    }
+  }
+
+  // ===================== CHECK-IN SETUP =====================
+  function loadCheckinSetup(events) {
+    document.getElementById('setup-title').textContent = 'Gate Check-In';
+    var body = document.getElementById('setup-body');
+
+    if (!events.length) {
+      body.innerHTML = '<p style="text-align:center;color:#666;margin:32px 0">No events available.</p>';
+      showScreen('screen-setup'); return;
+    }
+
+    var html = '<p style="color:#888;font-size:14px;margin-bottom:6px">Select event to check in for:</p>'
+             + '<select id="event-select">';
+    for (var i = 0; i < events.length; i++) {
+      var ev = events[i];
+      html += '<option value="' + esc(ev.id || ev.event_id || '') + '">'
+            + esc(ev.name || ev.event_name || ('Event ' + (i + 1))) + '</option>';
+    }
+    html += '</select>'
+          + '<button class="btn green" onclick="startCheckin()" style="margin-top:20px;font-size:20px;padding:20px">'
+          + 'Start Scanning &#9654;</button>';
+    body.innerHTML = html;
+    showScreen('screen-setup');
+  }
+
+  window.startCheckin = function () {
+    var sel = document.getElementById('event-select');
+    state.eventId = sel.value;
+    document.getElementById('scan-title').textContent = '\u2714 Gate Check-In';
+    document.getElementById('sync-btn').classList.add('hidden');
+    document.getElementById('engine-phase-bar').classList.add('hidden');
+    openScanner();
+  };
+
+  // ===================== CHECKPOINT SETUP =====================
+  function loadCheckpointSetup(areas) {
+    document.getElementById('setup-title').textContent = 'Area Access';
+    var body = document.getElementById('setup-body');
+
+    if (!areas.length) {
+      body.innerHTML = '<p style="text-align:center;color:#666;margin:32px 0">No areas found for this PIN.</p>';
+      showScreen('screen-setup'); return;
+    }
+
+    var html = '<p style="color:#888;font-size:14px;margin-bottom:6px">Select checkpoint area:</p>'
+             + '<select id="area-select" onchange="checkCachedSync()">';
+    for (var i = 0; i < areas.length; i++) {
+      var a = areas[i];
+      html += '<option value="' + esc(a.area_id || a.id || '') + '">'
+            + esc(a.area_name || a.name || ('Area ' + (i + 1))) + '</option>';
+    }
+    html += '</select>'
+          + '<p class="sync-note" id="sync-note">Checking for cached data&hellip;</p>'
+          + '<button class="btn green" onclick="syncAndStart()" style="margin-top:14px;font-size:18px;padding:20px">'
+          + '&#8635; Sync &amp; Start</button>'
+          + '<button class="btn grey sm" onclick="startCheckpointOffline()">Use Cached Data (offline mode)</button>';
+    body.innerHTML = html;
+
+    openDb(function () { checkCachedSync(); });
+    showScreen('screen-setup');
+  }
+
+  window.checkCachedSync = function () {
+    if (!state.db) return;
+    var sel = document.getElementById('area-select');
+    if (!sel) return;
+    var tx    = state.db.transaction(['sync_data'], 'readonly');
+    var store = tx.objectStore('sync_data');
+    var req   = store.get(sel.value);
+    req.onsuccess = function (e) {
+      var note = document.getElementById('sync-note');
+      if (!note) return;
+      var cached = e.target.result;
+      if (cached && cached.timestamp) {
+        var d = new Date(cached.timestamp);
+        note.textContent = 'Cached ' + d.toLocaleTimeString()
+          + ' \u2014 ' + ((cached.entries && cached.entries.length) || 0) + ' entries';
+        note.style.color = '#00ff66';
+      } else {
+        note.textContent = 'No cached data \u2014 sync required for offline use';
+        note.style.color = '#ffaa00';
+      }
+    };
+  };
+
+  window.syncAndStart = function () {
+    var sel = document.getElementById('area-select');
+    state.areaId = sel.value;
+    document.getElementById('setup-body').innerHTML =
+      '<div class="spinner"></div><p style="text-align:center;color:#888">Syncing\u2026</p>';
+
+    xhrGet('/api/access/sync/' + encodeURIComponent(state.areaId) + '?pin=' + encodeURIComponent(state.pin),
+      function (ok, data) {
+        if (ok && data) {
+          state.syncData = data;
+          openDb(function () {
+            if (state.db) {
+              try {
+                var tx    = state.db.transaction(['sync_data'], 'readwrite');
+                var store = tx.objectStore('sync_data');
+                store.put({
+                  id:          state.areaId,
+                  timestamp:   Date.now(),
+                  entries:     data.entries     || [],
+                  permissions: data.permissions || []
+                });
+              } catch (ignore) {}
+            }
+            startCheckpoint();
+          });
+        } else {
+          // Sync failed — try offline
+          loadOfflineData(function (cached) {
+            if (cached) { state.syncData = cached; startCheckpoint(); }
+            else {
+              document.getElementById('setup-body').innerHTML =
+                '<p style="color:#ff6666;text-align:center;margin:24px 0">Sync failed. Check network.</p>'
+                + '<button class="btn" onclick="syncAndStart()">Retry</button>';
+            }
+          });
+        }
+      });
+  };
+
+  window.startCheckpointOffline = function () {
+    var sel = document.getElementById('area-select');
+    state.areaId = sel.value;
+    loadOfflineData(function (cached) {
+      if (cached) { state.syncData = cached; startCheckpoint(); }
+      else {
+        document.getElementById('setup-body').innerHTML =
+          '<p style="color:#ff6666;text-align:center;margin:24px 0">No cached data. Please sync first.</p>'
+          + '<button class="btn" onclick="syncAndStart()">Sync Now</button>';
+      }
+    });
+  };
+
+  function loadOfflineData(cb) {
+    openDb(function () {
+      if (!state.db) { cb(null); return; }
+      var tx  = state.db.transaction(['sync_data'], 'readonly');
+      var req = tx.objectStore('sync_data').get(state.areaId);
+      req.onsuccess = function (e) { cb(e.target.result || null); };
+      req.onerror   = function ()  { cb(null); };
+    });
+  }
+
+  function startCheckpoint() {
+    document.getElementById('scan-title').textContent = 'Access Control';
+    document.getElementById('sync-btn').classList.remove('hidden');
+    document.getElementById('engine-phase-bar').classList.add('hidden');
+    uploadLogQueue();
+    openScanner();
+  }
+
+  // ===================== ENGINE SETUP =====================
+  function loadEngineSetup() {
+    document.getElementById('setup-title').textContent = 'Engine Scanner';
+    document.getElementById('setup-body').innerHTML = '<div class="spinner"></div>';
+    showScreen('screen-setup');
+
+    xhrGet('/api/getDrawEvents', function (ok, data) {
+      var events = (ok && Array.isArray(data)) ? data : (ok && data && data.events ? data.events : []);
+      if (!events.length) {
+        document.getElementById('setup-body').innerHTML =
+          '<p style="color:#ff6666;text-align:center;margin:24px 0">Could not load events.</p>';
+        return;
+      }
+      var html = '<p style="color:#888;font-size:14px;margin-bottom:6px">Select event:</p>'
+               + '<select id="event-select">';
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        html += '<option value="' + esc(ev.id || ev.event_id || '') + '">'
+              + esc(ev.name || ev.event_name || ('Event ' + (i + 1))) + '</option>';
+      }
+      html += '</select>'
+            + '<button class="btn orange" onclick="startEngine()" style="margin-top:20px;font-size:20px;padding:20px">'
+            + 'Start Engine Scanning &#9654;</button>';
+      document.getElementById('setup-body').innerHTML = html;
+    });
+  }
+
+  window.startEngine = function () {
+    var sel = document.getElementById('event-select');
+    state.eventId      = sel.value;
+    state.enginePhase  = 'driver';
+    state.pendingDriver = null;
+    document.getElementById('scan-title').textContent = 'Engine Scanner';
+    document.getElementById('sync-btn').classList.add('hidden');
+    var bar = document.getElementById('engine-phase-bar');
+    bar.classList.remove('hidden');
+    bar.textContent = 'STEP 1 \u2014 Scan driver ticket';
+    bar.style.color = '#ffaa00';
+    openScanner();
+  };
+
+  // ===================== CAMERA =====================
+  function openScanner() {
+    showScreen('screen-scan');
+    document.getElementById('scan-result').classList.add('hidden');
+    document.getElementById('dir-wrap').classList.add('hidden');
+    document.getElementById('manual-input').value = '';
+    updateStatus('Starting camera\u2026');
+
+    state.scanning     = true;
+    state.lastCode     = null;
+    state.lastCodeTime = 0;
+
+    var constraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 640 },
+        height: { ideal: 480 }
+      }
+    };
+
+    function onStream(stream) {
+      state.stream = stream;
+      var v = document.getElementById('scan-video');
+      v.srcObject = stream;
+      v.play();
+      v.onloadedmetadata = function () {
+        // Try to lock autofocus
+        try {
+          var track = stream.getVideoTracks()[0];
+          if (track && track.applyConstraints) {
+            track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+          }
+        } catch (ignore) {}
+        document.getElementById('photo-btn').style.display = 'none';
+        updateStatus('Camera ready \u2014 aim at barcode');
+        startScanLoop();
+      };
+    }
+
+    function onErr() {
+      updateStatus('Camera unavailable \u2014 use the photo button below');
+      document.getElementById('photo-btn').style.display = '';
+    }
+
+    // Progressive fallback chain for getUserMedia
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia(constraints).then(onStream).catch(onErr);
+    } else if (navigator.getUserMedia) {
+      navigator.getUserMedia(constraints, onStream, onErr);
+    } else if (navigator.webkitGetUserMedia) {
+      navigator.webkitGetUserMedia(constraints, onStream, onErr);
+    } else if (navigator.mozGetUserMedia) {
+      navigator.mozGetUserMedia(constraints, onStream, onErr);
+    } else {
+      onErr();
+    }
+  }
+
+  function stopScan() {
+    state.scanning = false;
+    if (state.scanAnimId) { cancelAnimationFrame(state.scanAnimId); state.scanAnimId = null; }
+    if (state.stream) {
+      var tracks = state.stream.getTracks();
+      for (var i = 0; i < tracks.length; i++) { tracks[i].stop(); }
+      state.stream = null;
+    }
+    document.getElementById('scan-video').srcObject = null;
+  }
+
+  window.goBackFromScan = function () {
+    stopScan();
+    showScreen('screen-setup');
+  };
+
+  // ===================== SCAN LOOP =====================
+  function startScanLoop() {
+    var video  = document.getElementById('scan-video');
+    var canvas = document.getElementById('decode-canvas');
+    var ctx    = canvas.getContext('2d');
+
+    // Native BarcodeDetector — runs async in parallel, best on modern Chrome/Android
+    var nativeDetector = null;
+    if (window.BarcodeDetector) {
+      try {
+        nativeDetector = new BarcodeDetector({
+          formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'upc_a']
+        });
+      } catch (ignore) {}
+    }
+
+    if (nativeDetector) {
+      (function nativePoll() {
+        if (!state.scanning) return;
+        nativeDetector.detect(video).then(function (codes) {
+          if (codes && codes.length && state.scanning) { onCodeFound(codes[0].rawValue); }
+        }).catch(function () {}).then(function () {
+          if (state.scanning) { setTimeout(nativePoll, 180); }
+        });
+      }());
+    }
+
+    // ZXing polling (1D barcodes) — runs after library loads, 400 ms interval
+    (function zxingPoll() {
+      if (!state.scanning) return;
+      if (zxingReader && video.videoWidth && state.scanning) {
+        try {
+          // decodeFromCanvas is available on ZXing BrowserMultiFormatReader instances
+          var res = typeof zxingReader.decodeFromCanvas === 'function'
+            ? zxingReader.decodeFromCanvas(canvas)
+            : null;
+          if (res && res.text) { onCodeFound(res.text); }
+        } catch (ignore) {}
+      }
+      if (state.scanning) { setTimeout(zxingPoll, 400); }
+    }());
+
+    // RAF loop — jsQR (primary pure-JS QR decoder, runs every frame)
+    function rafLoop() {
+      if (!state.scanning) return;
+      if (video.readyState >= 2 && video.videoWidth) {
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        if (window.jsQR) {
+          try {
+            var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var code = jsQR(imgData.data, imgData.width, imgData.height,
+                            { inversionAttempts: 'dontInvert' });
+            if (code && code.data) { onCodeFound(code.data); return; }
+            // Second pass: inverted (handles white-on-dark codes)
+            var code2 = jsQR(imgData.data, imgData.width, imgData.height,
+                             { inversionAttempts: 'onlyInvert' });
+            if (code2 && code2.data) { onCodeFound(code2.data); return; }
+          } catch (ignore) {}
+        }
+      }
+      state.scanAnimId = requestAnimationFrame(rafLoop);
+    }
+    state.scanAnimId = requestAnimationFrame(rafLoop);
+  }
+
+  function onCodeFound(raw) {
+    if (!raw) return;
+    var now = Date.now();
+    if (raw === state.lastCode && (now - state.lastCodeTime) < state.debounceMs) return;
+    state.lastCode     = raw;
+    state.lastCodeTime = now;
+    if (navigator.vibrate) { navigator.vibrate(90); }
+    updateStatus('Code: ' + raw.substring(0, 30));
+    processCode(raw);
+  }
+
+  function updateStatus(msg) {
+    document.getElementById('scan-status').textContent = msg;
+  }
+
+  // ===================== PHOTO FALLBACK =====================
+  window.triggerPhoto = function () {
+    document.getElementById('photo-input').click();
+  };
+
+  window.handlePhoto = function (input) {
+    if (!input.files || !input.files[0]) return;
+    var url = URL.createObjectURL(input.files[0]);
+    var img = new Image();
+    img.onload = function () {
+      var canvas = document.getElementById('decode-canvas');
+      var ctx    = canvas.getContext('2d');
+      var maxW   = 1200;
+      var scale  = Math.min(1, maxW / img.width);
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+
+      var found = false;
+      if (window.jsQR) {
+        try {
+          var d    = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var code = jsQR(d.data, d.width, d.height);
+          if (code && code.data) { onCodeFound(code.data); found = true; }
+        } catch (ignore) {}
+      }
+      if (!found && window.BarcodeDetector) {
+        var det = new BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39', 'ean_13'] });
+        det.detect(canvas).then(function (codes) {
+          if (codes && codes.length) { onCodeFound(codes[0].rawValue); }
+          else { updateStatus('No barcode found in photo. Try again or use manual entry.'); }
+        }).catch(function () { updateStatus('Photo decode failed. Use manual entry.'); });
+      } else if (!found) {
+        updateStatus('No barcode found. Use manual entry.');
+      }
+      input.value = '';
+    };
+    img.src = url;
+  };
+
+  // ===================== MANUAL ENTRY =====================
+  window.doManualSubmit = function () {
+    var val = document.getElementById('manual-input').value.trim();
+    if (val) { processCode(val); }
+  };
+
+  // ===================== CODE DISPATCH =====================
+  function processCode(code) {
+    if      (state.mode === 'checkin')    { processCheckin(code); }
+    else if (state.mode === 'checkpoint') { processCheckpoint(code); }
+    else if (state.mode === 'engine')     { processEngine(code); }
+  }
+
+  // ===================== CHECK-IN LOGIC =====================
+  function processCheckin(code) {
+    updateStatus('Looking up entry\u2026');
+    xhrPost('/api/checkin/lookup',
+      { pin: state.pin, barcode: code, event_id: state.eventId },
+      function (ok, data) {
+        if (!ok || !data) {
+          showResult({ type: 'error', title: 'Lookup Failed', detail: 'Network error. Try again.' });
+          return;
+        }
+        if (data.error) { showResult({ type: 'error', title: 'Not Found', detail: data.error }); return; }
+
+        state.pendingEntry = data;
+        state.pendingCode  = code;
+
+        var flags = '';
+        if (data.already_checked_in) { flags += '<span class="badge orange">Already Checked In</span> '; }
+        if (data.status === 'CANCELLED') { flags += '<span class="badge red">CANCELLED</span>'; }
+
+        var html = '<div class="result-card' + (data.already_checked_in ? ' warn' : '') + '">'
+                 + '<div class="result-name">' + esc(data.driver_name || data.name || code) + '</div>'
+                 + '<div class="result-detail">Race #' + esc(String(data.race_number || ''))
+                 + ' &mdash; ' + esc(data.class_name || '') + '</div>';
+        if (data.vehicle) { html += '<div class="result-detail">' + esc(data.vehicle) + '</div>'; }
+        if (flags) { html += '<div style="margin-top:7px">' + flags + '</div>'; }
+        html += '</div>';
+
+        if (!data.already_checked_in && data.status !== 'CANCELLED') {
+          html += '<div class="confirm-row">'
+                + '<button class="btn green" onclick="confirmCheckin()" style="font-size:20px">\u2714 CONFIRM</button>'
+                + '<button class="btn red"   onclick="cancelResult()"  style="font-size:20px">\u2717 Cancel</button>'
+                + '</div>';
+        } else {
+          html += '<button class="btn grey sm" onclick="cancelResult()" style="margin-top:10px">Dismiss</button>';
+        }
+        showResult(html);
+        updateStatus('Confirm or cancel');
+      });
+  }
+
+  window.confirmCheckin = function () {
+    if (!state.pendingEntry || !state.pendingCode) { cancelResult(); return; }
+    updateStatus('Confirming\u2026');
+    showResult('<div class="spinner"></div>');
+
+    xhrPost('/api/checkin/confirm', {
+      pin:      state.pin,
+      barcode:  state.pendingCode,
+      event_id: state.eventId,
+      entry_id: state.pendingEntry.entry_id || state.pendingEntry.id
+    }, function (ok, data) {
+      state.pendingEntry = null;
+      state.pendingCode  = null;
+      if (ok && data && !data.error) {
+        showResult('<div class="result-card">'
+          + '<div class="result-name" style="color:#00ff66">\u2714 Checked In</div>'
+          + '<div class="result-detail">Ready for next scan</div></div>');
+        setTimeout(cancelResult, 2000);
+      } else {
+        showResult({ type: 'error', title: 'Confirm Failed', detail: (data && data.error) || 'Unknown error' });
+      }
+      updateStatus('Ready');
+    });
+  };
+
+  // ===================== CHECKPOINT LOGIC =====================
+  function processCheckpoint(code) {
+    document.getElementById('dir-wrap').classList.add('hidden');
+
+    if (!state.syncData || !state.syncData.entries) {
+      showResult({ type: 'error', title: 'No Data', detail: 'Please sync before scanning.' });
+      return;
+    }
+
+    var entry = findEntry(code);
+    if (!entry) {
+      showResult({ type: 'error', title: 'Not Found', detail: 'Not in synced list: ' + code.substring(0, 22) });
+      return;
+    }
+
+    state.pendingEntry = entry;
+    state.pendingCode  = code;
+
+    var access = checkAccess(entry);
+    var html = '<div class="result-card' + (access.allowed ? '' : ' error') + '">'
+             + '<div class="result-name">' + esc(entry.driver_name || entry.name || '') + '</div>'
+             + '<div class="result-detail">Race #' + esc(String(entry.race_number || ''))
+             + ' &mdash; ' + esc(entry.class_name || '') + '</div>';
+
+    var entryFlags = entry.flags || [];
+    if (entryFlags.length) {
+      html += '<div style="margin-top:7px">';
+      for (var i = 0; i < entryFlags.length; i++) {
+        var f = entryFlags[i];
+        var cls = f.flag_type === 'BLOCK' ? 'red' : 'orange';
+        html += '<span class="badge ' + cls + '">' + esc(f.flag_type) + ': ' + esc(f.reason || '') + '</span> ';
+      }
+      html += '</div>';
+    }
+
+    if (!access.allowed) {
+      html += '<div style="color:#ff4444;font-weight:bold;margin-top:8px">&#9940; ACCESS DENIED</div>'
+            + '<div style="font-size:13px;color:#888">' + esc(access.reason || '') + '</div>';
+    }
+    html += '</div>';
+    showResult(html);
+
+    if (access.allowed) {
+      document.getElementById('dir-wrap').classList.remove('hidden');
+      updateStatus('Select direction');
+    } else {
+      updateStatus('Access denied');
+    }
+  }
+
+  window.logAccess = function (direction) {
+    if (!state.pendingEntry) return;
+    var event = {
+      barcode:     state.pendingCode,
+      entry_id:    state.pendingEntry.entry_id || state.pendingEntry.id,
+      driver_name: state.pendingEntry.driver_name || state.pendingEntry.name || '',
+      area_id:     state.areaId,
+      direction:   direction,
+      timestamp:   new Date().toISOString()
+    };
+    queueLog(event);
+
+    state.pendingEntry = null;
+    state.pendingCode  = null;
+    document.getElementById('dir-wrap').classList.add('hidden');
+
+    var col = direction === 'ENTERING' ? '#00ff66' : '#ffaa00';
+    showResult('<div class="result-card"><div class="result-name" style="color:' + col + '">'
+      + direction + ' logged</div></div>');
+    setTimeout(cancelResult, 1400);
+    updateStatus('Ready');
+  };
+
+  function findEntry(code) {
+    var entries = state.syncData.entries || [];
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      if (e.barcode === code || e.ticket_barcode === code || e.qr_code === code
+          || String(e.entry_id) === code) {
+        return e;
+      }
+    }
+    return null;
+  }
+
+  function checkAccess(entry) {
+    var flags = entry.flags || [];
+    for (var i = 0; i < flags.length; i++) {
+      if (flags[i].flag_type === 'BLOCK') {
+        return { allowed: false, reason: flags[i].reason || 'Entry blocked' };
+      }
+    }
+    var permissions = (state.syncData && state.syncData.permissions) || [];
+    if (permissions.length && entry.class_id) {
+      var ok = false;
+      for (var j = 0; j < permissions.length; j++) {
+        if (permissions[j].class_id === entry.class_id || permissions[j].class_id === '*') {
+          ok = true; break;
+        }
+      }
+      if (!ok) { return { allowed: false, reason: 'Class not permitted in this area' }; }
+    }
+    return { allowed: true };
+  }
+
+  // ===================== ENGINE LOGIC =====================
+  function processEngine(code) {
+    var bar = document.getElementById('engine-phase-bar');
+
+    if (state.enginePhase === 'driver') {
+      updateStatus('Looking up driver\u2026');
+      xhrGet('/api/lookupTicket?barcode=' + encodeURIComponent(code)
+           + '&event_id=' + encodeURIComponent(state.eventId), function (ok, data) {
+        if (ok && data && !data.error) { gotDriver(data); return; }
+        // Fallback: try by race number
+        xhrGet('/api/lookupDriverByNumber?raceNumber=' + encodeURIComponent(code)
+             + '&event_id=' + encodeURIComponent(state.eventId), function (ok2, data2) {
+          if (ok2 && data2 && !data2.error) { gotDriver(data2); }
+          else {
+            showResult({ type: 'error', title: 'Driver Not Found',
+                         detail: 'No match for: ' + code.substring(0, 22) });
+          }
+        });
+      });
+    } else if (state.enginePhase === 'engine') {
+      assignEngine(code);
+    }
+  }
+
+  function gotDriver(data) {
+    state.pendingDriver = data;
+    state.enginePhase   = 'engine';
+
+    var bar = document.getElementById('engine-phase-bar');
+    bar.textContent   = 'STEP 2 \u2014 Now scan the engine serial';
+    bar.style.color   = '#00aaff';
+
+    var html = '<div class="result-card">'
+             + '<div class="result-name">' + esc(data.driver_name || data.name || '') + '</div>'
+             + '<div class="result-detail">Race #' + esc(String(data.race_number || ''))
+             + ' &mdash; ' + esc(data.class_name || '') + '</div>';
+    if (data.engine_serial) {
+      html += '<div style="margin-top:6px">'
+            + '<span class="badge orange">Already has engine: ' + esc(data.engine_serial) + '</span>'
+            + '</div>';
+    }
+    html += '</div>'
+          + '<p style="text-align:center;color:#ffaa00;font-size:17px;margin:10px 0">'
+          + '&#128269; Now scan the engine serial barcode</p>';
+    showResult(html);
+    updateStatus('Scan engine serial barcode');
+  }
+
+  function assignEngine(serial) {
+    if (!state.pendingDriver) { cancelResult(); return; }
+    updateStatus('Assigning engine\u2026');
+    showResult('<div class="spinner"></div>');
+
+    var driver = state.pendingDriver;
+    xhrPost('/api/assignEngine', {
+      pin:           state.pin,
+      entry_id:      driver.entry_id || driver.id,
+      event_id:      state.eventId,
+      engine_serial: serial,
+      raceNumber:    driver.race_number,
+      timestamp:     new Date().toISOString()
+    }, function (ok, data) {
+      state.pendingDriver = null;
+      state.enginePhase   = 'driver';
+
+      var bar = document.getElementById('engine-phase-bar');
+      bar.textContent = 'STEP 1 \u2014 Scan driver ticket';
+      bar.style.color = '#ffaa00';
+
+      if (ok && data && !data.error) {
+        showResult('<div class="result-card">'
+          + '<div class="result-name" style="color:#00ff66">\u2714 Engine Assigned</div>'
+          + '<div class="result-detail">'
+          + esc(driver.driver_name || '') + ' \u2192 ' + esc(serial)
+          + '</div></div>');
+        setTimeout(function () { cancelResult(); updateStatus('Scan next driver ticket'); }, 2400);
+      } else {
+        showResult({ type: 'error', title: 'Assignment Failed',
+                     detail: (data && data.error) || 'Unknown error' });
+      }
+    });
+  }
+
+  // ===================== RESULT DISPLAY =====================
+  function showResult(html) {
+    var el = document.getElementById('scan-result');
+    if (typeof html === 'string') {
+      el.innerHTML = html;
+    } else {
+      el.innerHTML = '<div class="result-card' + (html.type === 'error' ? ' error' : '') + '">'
+                   + '<div class="result-name">' + esc(html.title || '') + '</div>'
+                   + '<div class="result-detail">' + esc(html.detail || '') + '</div>'
+                   + '<button class="btn grey sm" onclick="cancelResult()" style="margin-top:8px">Dismiss</button>'
+                   + '</div>';
+    }
+    el.classList.remove('hidden');
+  }
+
+  window.cancelResult = function () {
+    document.getElementById('scan-result').classList.add('hidden');
+    document.getElementById('dir-wrap').classList.add('hidden');
+    state.pendingEntry = null;
+    state.pendingCode  = null;
+    state.lastCode     = null;
+    updateStatus('Ready \u2014 aim at barcode');
+  };
+
+  // ===================== SYNC BUTTON =====================
+  window.doSync = function () {
+    if (!state.areaId) return;
+    var btn = document.getElementById('sync-btn');
+    btn.textContent = 'Syncing\u2026';
+    btn.disabled    = true;
+
+    xhrGet('/api/access/sync/' + encodeURIComponent(state.areaId)
+         + '?pin=' + encodeURIComponent(state.pin), function (ok, data) {
+      btn.textContent = '\u21BB Sync';
+      btn.disabled    = false;
+      if (ok && data) {
+        state.syncData = data;
+        if (state.db) {
+          try {
+            var tx = state.db.transaction(['sync_data'], 'readwrite');
+            tx.objectStore('sync_data').put({
+              id: state.areaId, timestamp: Date.now(),
+              entries: data.entries || [], permissions: data.permissions || []
+            });
+          } catch (ignore) {}
+        }
+        updateStatus('Synced \u2014 ' + ((data.entries && data.entries.length) || 0) + ' entries');
+        uploadLogQueue();
+      } else {
+        updateStatus('Sync failed \u2014 using cached data');
+      }
+    });
+  };
+
+  // ===================== ACCESS LOG QUEUE =====================
+  function queueLog(ev) {
+    state.logQueue.push(ev);
+    if (state.db) {
+      try {
+        var tx = state.db.transaction(['access_log'], 'readwrite');
+        tx.objectStore('access_log').put(ev);
+      } catch (ignore) {}
+    }
+    uploadLogQueue();
+  }
+
+  function uploadLogQueue() {
+    if (!state.logQueue.length) return;
+    var batch = state.logQueue.slice();
+    xhrPost('/api/access/log?pin=' + encodeURIComponent(state.pin),
+      { events: batch, area_id: state.areaId }, function (ok, data) {
+        if (ok && data && !data.error) {
+          state.logQueue = [];
+          if (state.db) {
+            try {
+              var tx = state.db.transaction(['access_log'], 'readwrite');
+              tx.objectStore('access_log').clear();
+            } catch (ignore) {}
+          }
+        }
+      });
+  }
+
+  // ===================== INDEXEDDB =====================
+  function openDb(cb) {
+    if (state.db) { cb(); return; }
+    try {
+      var req = indexedDB.open('nats_tablet_v1', 1);
+      req.onupgradeneeded = function (e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('sync_data')) {
+          db.createObjectStore('sync_data', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('access_log')) {
+          db.createObjectStore('access_log', { keyPath: 'timestamp' });
+        }
+      };
+      req.onsuccess = function (e) { state.db = e.target.result; cb(); };
+      req.onerror   = function ()  { cb(); };
+    } catch (ignore) { cb(); }
+  }
+
+  // Pre-open the DB
+  openDb(function () {});
+
+  // ===================== XHR HELPERS =====================
+  function xhrGet(url, cb) {
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.timeout = 15000;
+      xhr.onload  = function () {
+        try { cb(true, JSON.parse(xhr.responseText)); } catch (e) { cb(false, null); }
+      };
+      xhr.onerror   = function () { cb(false, null); };
+      xhr.ontimeout = function () { cb(false, null); };
+      xhr.send();
+    } catch (e) { cb(false, null); }
+  }
+
+  function xhrPost(url, body, cb) {
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.timeout = 15000;
+      xhr.onload  = function () {
+        try { cb(true, JSON.parse(xhr.responseText)); } catch (e) { cb(false, null); }
+      };
+      xhr.onerror   = function () { cb(false, null); };
+      xhr.ontimeout = function () { cb(false, null); };
+      xhr.send(JSON.stringify(body));
+    } catch (e) { cb(false, null); }
+  }
+
+  // ===================== HTML ESCAPE =====================
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,  '&amp;')
+      .replace(/</g,  '&lt;')
+      .replace(/>/g,  '&gt;')
+      .replace(/"/g,  '&quot;');
+  }
+
+  // ===================== LAZY-LOAD ZXING (1D barcode support) =====================
+  // Loaded non-blocking so it doesn't delay the page on slow tablets.
+  // ZXing adds support for Code 128 / Code 39 engine serials on devices
+  // that lack native BarcodeDetector.
+  (function () {
+    var s    = document.createElement('script');
+    s.async  = true;
+    s.src    = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.3/umd/index.min.js';
+    s.onload = function () {
+      try { zxingReader = new ZXing.BrowserMultiFormatReader(); } catch (ignore) {}
+    };
+    document.head.appendChild(s);
+  }());
+
+}());
+</script>
+</body>
+</html>
