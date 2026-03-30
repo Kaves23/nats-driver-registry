@@ -79,8 +79,9 @@ namespace ROKControl
                     }
                     else
                     {
+                        string err = sync.LastError;
                         lblStatus.Text = _config.EventId == 0
-                            ? "No event set -- use menu to select."
+                            ? (err != null ? "Fetch failed: " + err : "No event set -- use menu to select.")
                             : "Event: " + _config.EventName;
                     }
                 }));
@@ -308,12 +309,15 @@ namespace ROKControl
             {
                 ServerSync sync = new ServerSync(_config);
                 System.Collections.Generic.List<EventRecord> events = sync.FetchEvents();
+                string fetchErr = sync.LastError;
                 this.Invoke(new MethodInvoker(delegate
                 {
                     if (events == null || events.Count == 0)
                     {
-                        MessageBox.Show("Could not fetch events from server.", "Error");
-                        lblStatus.Text = "Event fetch failed.";
+                        string msg = "Could not fetch events.\n" + (_config.ServerUrl ?? "(no URL)");
+                        if (fetchErr != null) msg += "\n" + fetchErr;
+                        MessageBox.Show(msg, "Event Fetch Failed");
+                        lblStatus.Text = fetchErr != null ? fetchErr : "Event fetch failed — check server URL in Settings.";
                         return;
                     }
                     ShowEventPicker(events);

@@ -19,10 +19,8 @@ namespace ROKControl
         private readonly AppConfig _cfg;
         public event EventHandler<SyncProgressEventArgs> Progress;
 
-        public ServerSync(AppConfig cfg)
-        {
-            _cfg = cfg;
-        }
+        /// <summary>Set after any failed fetch — contains the exception message for display in UI.</summary>
+        public string LastError { get; private set; }
 
         /// <summary>
         /// Send all locally stored control records to the server via HTTP POST.
@@ -359,8 +357,9 @@ namespace ROKControl
 
                 return ParseDriverList(body);
             }
-            catch
+            catch (Exception ex)
             {
+                LastError = ex.GetType().Name + ": " + ex.Message;
                 return null;
             }
         }
@@ -424,6 +423,7 @@ namespace ROKControl
                 byte[] reqBytes = Encoding.UTF8.GetBytes(req);
 
                 TcpClient tcp = new TcpClient();
+                tcp.ReceiveTimeout = 12000;
                 tcp.Connect(host, port);
                 NetworkStream ns = tcp.GetStream();
                 ns.Write(reqBytes, 0, reqBytes.Length);
@@ -446,8 +446,9 @@ namespace ROKControl
 
                 return ParseEventList(body);
             }
-            catch
+            catch (Exception ex)
             {
+                LastError = ex.GetType().Name + ": " + ex.Message;
                 return null;
             }
         }
