@@ -317,9 +317,8 @@ namespace ROKControl
         // ── Driver list fetch ─────────────────────────────────────────────────
 
         /// <summary>
-        /// Fetch the list of race entries for the given event from GET /api/rokcontrol/drivers?event_id=N.
-        /// Returns null on failure; returns empty list if no entries found.
-        /// Uses raw TCP — same pattern as SendRegistration (CF HttpWebRequest is unreliable).
+        /// Fetch the list of race entries for the given event.
+        /// Uses HttpWebRequest (supports HTTP and HTTPS).
         /// </summary>
         public List<DriverEntry> FetchDriversForEvent(int eventId)
         {
@@ -327,39 +326,8 @@ namespace ROKControl
                 return null;
             try
             {
-                Uri    uri  = new Uri(_cfg.ServerUrl.TrimEnd('/') + "/api/rokcontrol/drivers?event_id=" + eventId);
-                string host = uri.Host;
-                int    port = uri.Port > 0 ? uri.Port : 80;
-                string path = uri.PathAndQuery;
-
-                string req =
-                    "GET " + path + " HTTP/1.0\r\n" +
-                    "Host: " + host + ":" + port + "\r\n" +
-                    "x-admin-token: " + (_cfg.ApiToken ?? "") + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-                byte[] reqBytes = Encoding.UTF8.GetBytes(req);
-
-                TcpClient tcp = new TcpClient();
-                tcp.Connect(host, port);
-                NetworkStream ns = tcp.GetStream();
-                ns.Write(reqBytes, 0, reqBytes.Length);
-                ns.Flush();
-
-                System.IO.MemoryStream ms = new System.IO.MemoryStream();
-                byte[] buf = new byte[1024];
-                int read;
-                while ((read = ns.Read(buf, 0, buf.Length)) > 0)
-                    ms.Write(buf, 0, read);
-                tcp.Close();
-
-                byte[] bodyArr = ms.ToArray();
-                string body = Encoding.UTF8.GetString(bodyArr, 0, bodyArr.Length);
-
-                // Strip HTTP headers — body starts after \r\n\r\n
-                int bodyStart = body.IndexOf("\r\n\r\n");
-                if (bodyStart >= 0) body = body.Substring(bodyStart + 4);
-
+                string url = _cfg.ServerUrl.TrimEnd('/') + "/api/rokcontrol/drivers?event_id=" + eventId;
+                string body = GetJson(url, _cfg.ApiToken);
                 return ParseDriverList(body);
             }
             catch (Exception ex)
@@ -405,9 +373,8 @@ namespace ROKControl
         // ── Event list fetch ──────────────────────────────────────────────
 
         /// <summary>
-        /// Fetch the list of events from GET /api/public/events (no auth required).
-        /// Returns null on failure; caller should handle gracefully.
-        /// Uses raw TCP — same pattern as SendRegistration.
+        /// Fetch the list of events from GET /api/public/events.
+        /// Uses HttpWebRequest (supports HTTP and HTTPS).
         /// </summary>
         public List<EventRecord> FetchEvents()
         {
@@ -415,40 +382,8 @@ namespace ROKControl
                 return null;
             try
             {
-                Uri    uri  = new Uri(_cfg.ServerUrl.TrimEnd('/') + "/api/public/events");
-                string host = uri.Host;
-                int    port = uri.Port > 0 ? uri.Port : 80;
-                string path = uri.PathAndQuery;
-
-                string req =
-                    "GET " + path + " HTTP/1.0\r\n" +
-                    "Host: " + host + ":" + port + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
-                byte[] reqBytes = Encoding.UTF8.GetBytes(req);
-
-                TcpClient tcp = new TcpClient();
-                tcp.ReceiveTimeout = 12000;
-                tcp.Connect(host, port);
-                NetworkStream ns = tcp.GetStream();
-                ns.Write(reqBytes, 0, reqBytes.Length);
-                ns.Flush();
-
-                // Read full response (events list is small — < 8KB)
-                System.IO.MemoryStream ms = new System.IO.MemoryStream();
-                byte[] buf = new byte[1024];
-                int read;
-                while ((read = ns.Read(buf, 0, buf.Length)) > 0)
-                    ms.Write(buf, 0, read);
-                tcp.Close();
-
-                byte[] bodyArr = ms.ToArray();
-                string body = Encoding.UTF8.GetString(bodyArr, 0, bodyArr.Length);
-
-                // Strip HTTP headers — body starts after \r\n\r\n
-                int bodyStart = body.IndexOf("\r\n\r\n");
-                if (bodyStart >= 0) body = body.Substring(bodyStart + 4);
-
+                string url = _cfg.ServerUrl.TrimEnd('/') + "/api/public/events";
+                string body = GetJson(url, null);
                 return ParseEventList(body);
             }
             catch (Exception ex)
@@ -456,6 +391,28 @@ namespace ROKControl
                 LastError = ex.GetType().Name + ": " + ex.Message;
                 return null;
             }
+        }
+
+        // ── Shared HTTP GET helper ────────────────────────────────────────
+
+        /// <summary>
+        /// Perform a GET request and return the response body as a string.
+        /// Works with both HTTP and HTTPS. Throws on error — caller catches.
+        /// </summary>
+        private static string GetJson(string url, string token)
+        {
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+            req.Method          = "GET";
+            req.Timeout         = 15000;
+            req.ProtocolVersion = HttpVersion.Version10;
+            req.KeepAlive       = false;
+            req.Headers.Add("Accept-Encoding", "identity");
+            if (!string.IsNullOrEmpty(token))
+                req.Headers.Add("x-admin-token", token);
+
+            using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+            using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                return sr.ReadToEnd();
         }
 
         private List<EventRecord> ParseEventList(string json)

@@ -41,7 +41,7 @@ namespace ROKControl
         public AppConfig()
         {
             // Defaults
-            ServerUrl = "http://10.0.0.18:3000";
+            ServerUrl = "https://www.rokthenats.co.za";
             ApiToken  = "0298423f-ab4b-4a48-abad-31a3e72dc463";
             EventName = "ROK Cup Event";
             ControlPointName = "Control 1";
