@@ -22,6 +22,11 @@ namespace ROKControl
         /// <summary>Set after any failed fetch — contains the exception message for display in UI.</summary>
         public string LastError { get; private set; }
 
+        public ServerSync(AppConfig cfg)
+        {
+            _cfg = cfg;
+        }
+
         /// <summary>
         /// Send all locally stored control records to the server via HTTP POST.
         /// This is called from a worker thread; fires Progress events back to UI.
