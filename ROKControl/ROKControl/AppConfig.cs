@@ -41,7 +41,7 @@ namespace ROKControl
         public AppConfig()
         {
             // Defaults
-            ServerUrl = "https://www.rokthenats.co.za";
+            ServerUrl = "http://10.0.0.18:3000";
             ApiToken  = "0298423f-ab4b-4a48-abad-31a3e72dc463";
             EventName = "ROK Cup Event";
             ControlPointName = "Control 1";
@@ -71,7 +71,7 @@ namespace ROKControl
                 cfg.ApiToken  = GetStr(root, "ApiToken",  cfg.ApiToken);
                 // Always fall back to hardcoded defaults if blank
                 if (string.IsNullOrEmpty(cfg.ServerUrl))
-                    cfg.ServerUrl = "http://10.0.0.18:3000";
+                    cfg.ServerUrl = "http://10.0.0.18:3000"; // CF 3.5 only supports TLS 1.0; use HTTP on LAN
                 if (string.IsNullOrEmpty(cfg.ApiToken))
                     cfg.ApiToken = "0298423f-ab4b-4a48-abad-31a3e72dc463";
                 cfg.EventName = GetStr(root, "EventName", cfg.EventName);
