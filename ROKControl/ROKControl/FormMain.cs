@@ -330,8 +330,50 @@ namespace ROKControl
                 _config.EventName = fp.SelectedEvent.EventName;
                 _config.Save();
                 lblEvent.Text  = _config.EventName;
-                lblStatus.Text = "Event set: " + _config.EventName;
+                lblStatus.Text = "Event set: " + _config.EventName + " — fetching drivers...";
+
+                // Pre-fetch driver list in background so it's ready when driver lookup opens
+                int eventId = _config.EventId;
+                ThreadPool.QueueUserWorkItem(delegate
+                {
+                    ServerSync sync = new ServerSync(_config);
+                    System.Collections.Generic.List<DriverEntry> drivers = sync.FetchDriversForEvent(eventId);
+                    this.Invoke(new MethodInvoker(delegate
+                    {
+                        if (drivers != null)
+                        {
+                            // Save to CSV cache on device
+                            SaveDriversCsv(drivers);
+                            lblStatus.Text = _config.EventName + " — " + drivers.Count + " drivers ready.";
+                        }
+                        else
+                        {
+                            lblStatus.Text = _config.EventName + " — driver fetch failed, using cached CSV.";
+                        }
+                    }));
+                });
             }
+        }
+
+        /// <summary>Save a driver list to the local CSV cache.</summary>
+        private void SaveDriversCsv(System.Collections.Generic.List<DriverEntry> drivers)
+        {
+            try
+            {
+                if (!System.IO.Directory.Exists(AppConfig.ConfigDir))
+                    System.IO.Directory.CreateDirectory(AppConfig.ConfigDir);
+                string csvPath = System.IO.Path.Combine(AppConfig.ConfigDir, "drivers.csv");
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                foreach (DriverEntry d in drivers)
+                {
+                    string num  = (d.VehicleNumber ?? string.Empty).Replace(",", " ");
+                    string name = (d.DriverName    ?? string.Empty).Replace(",", " ");
+                    string cls  = (d.ClassName     ?? string.Empty).Replace(",", " ");
+                    sb.AppendLine(num + "," + name + "," + cls);
+                }
+                System.IO.File.WriteAllText(csvPath, sb.ToString(), System.Text.Encoding.UTF8);
+            }
+            catch { }
         }
 
         private void menuDeleteControls_Click(object sender, EventArgs e)

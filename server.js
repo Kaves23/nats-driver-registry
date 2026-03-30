@@ -10035,6 +10035,40 @@ app.post('/api/rokcontrol/register', requireAdmin, async (req, res) => {
 });
 
 // ============================================
+// ROKControl Scanner - Drivers list endpoint
+// GET /api/rokcontrol/drivers?event_id=X
+// Returns JSON list of drivers for an event (used by WM scanner to build live list)
+// Authenticated with the ROKControl device token (x-admin-token header)
+// ============================================
+app.get('/api/rokcontrol/drivers', requireAdmin, async (req, res) => {
+  try {
+    const { event_id } = req.query;
+    if (!event_id) return res.status(400).json({ success: false, error: 'event_id required' });
+
+    const result = await pool.query(
+      `SELECT d.race_number, d.first_name, d.last_name, re.race_class
+         FROM race_entries re
+         JOIN drivers d ON re.driver_id = d.driver_id
+        WHERE re.event_id = $1
+          AND re.entry_status NOT IN ('cancelled','canceled','incomplete')
+        ORDER BY re.race_class, CAST(d.race_number AS TEXT)`,
+      [event_id]
+    );
+
+    const drivers = result.rows.map(r => ({
+      race_number: r.race_number || '',
+      driver_name: ((r.first_name || '') + ' ' + (r.last_name || '')).trim(),
+      race_class:  r.race_class || ''
+    }));
+
+    res.json({ success: true, count: drivers.length, drivers });
+  } catch (err) {
+    console.error('rokcontrol drivers error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============================================
 // OFFICIALS PORTAL ENDPOINTS
 // ============================================
 

@@ -311,7 +311,94 @@ namespace ROKControl
             return json.Substring(start, end - start);
         }
 
-        // ── Event list fetch ──────────────────────────────────────────────────
+        // ── Driver list fetch ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Fetch the list of race entries for the given event from GET /api/rokcontrol/drivers?event_id=N.
+        /// Returns null on failure; returns empty list if no entries found.
+        /// Uses raw TCP — same pattern as SendRegistration (CF HttpWebRequest is unreliable).
+        /// </summary>
+        public List<DriverEntry> FetchDriversForEvent(int eventId)
+        {
+            if (string.IsNullOrEmpty(_cfg.ServerUrl) || eventId <= 0)
+                return null;
+            try
+            {
+                Uri    uri  = new Uri(_cfg.ServerUrl.TrimEnd('/') + "/api/rokcontrol/drivers?event_id=" + eventId);
+                string host = uri.Host;
+                int    port = uri.Port > 0 ? uri.Port : 80;
+                string path = uri.PathAndQuery;
+
+                string req =
+                    "GET " + path + " HTTP/1.0\r\n" +
+                    "Host: " + host + ":" + port + "\r\n" +
+                    "x-admin-token: " + (_cfg.ApiToken ?? "") + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+                byte[] reqBytes = Encoding.UTF8.GetBytes(req);
+
+                TcpClient tcp = new TcpClient();
+                tcp.Connect(host, port);
+                NetworkStream ns = tcp.GetStream();
+                ns.Write(reqBytes, 0, reqBytes.Length);
+                ns.Flush();
+
+                System.IO.MemoryStream ms = new System.IO.MemoryStream();
+                byte[] buf = new byte[1024];
+                int read;
+                while ((read = ns.Read(buf, 0, buf.Length)) > 0)
+                    ms.Write(buf, 0, read);
+                tcp.Close();
+
+                byte[] bodyArr = ms.ToArray();
+                string body = Encoding.UTF8.GetString(bodyArr, 0, bodyArr.Length);
+
+                // Strip HTTP headers — body starts after \r\n\r\n
+                int bodyStart = body.IndexOf("\r\n\r\n");
+                if (bodyStart >= 0) body = body.Substring(bodyStart + 4);
+
+                return ParseDriverList(body);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private List<DriverEntry> ParseDriverList(string json)
+        {
+            List<DriverEntry> results = new List<DriverEntry>();
+            // Find the drivers array: "drivers":[{...},{...}]
+            int arrStart = json.IndexOf("\"drivers\":[");
+            if (arrStart < 0) return results;
+            arrStart = json.IndexOf('[', arrStart);
+            if (arrStart < 0) return results;
+            int arrEnd = json.LastIndexOf(']');
+            if (arrEnd < 0 || arrEnd <= arrStart) return results;
+            string arr = json.Substring(arrStart + 1, arrEnd - arrStart - 1);
+
+            int pos = 0;
+            while (pos < arr.Length)
+            {
+                int objStart = arr.IndexOf('{', pos);
+                if (objStart < 0) break;
+                int objEnd = arr.IndexOf('}', objStart);
+                if (objEnd < 0) break;
+                string obj = arr.Substring(objStart, objEnd - objStart + 1);
+
+                DriverEntry d = new DriverEntry();
+                d.VehicleNumber = ExtractJsonString(obj, "race_number") ?? string.Empty;
+                d.DriverName    = ExtractJsonString(obj, "driver_name") ?? string.Empty;
+                d.ClassName     = ExtractJsonString(obj, "race_class")  ?? string.Empty;
+                if (!string.IsNullOrEmpty(d.VehicleNumber) || !string.IsNullOrEmpty(d.DriverName))
+                    results.Add(d);
+
+                pos = objEnd + 1;
+            }
+            return results;
+        }
+
+        // ── Event list fetch ──────────────────────────────────────────────
 
         /// <summary>
         /// Fetch the list of events from GET /api/public/events (no auth required).
