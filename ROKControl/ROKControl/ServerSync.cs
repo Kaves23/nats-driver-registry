@@ -393,26 +393,53 @@ namespace ROKControl
             }
         }
 
-        // ── Shared HTTP GET helper ────────────────────────────────────────
+        // ── Shared HTTP GET helper (raw TCP, same pattern as SendRegistration) ──
 
         /// <summary>
-        /// Perform a GET request and return the response body as a string.
-        /// Works with both HTTP and HTTPS. Throws on error — caller catches.
+        /// Perform a plain HTTP GET via raw TCP socket.
+        /// Avoids HttpWebRequest TLS/chunking issues on CF 3.5.
+        /// Throws on error — caller catches.
         /// </summary>
         private static string GetJson(string url, string token)
         {
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-            req.Method          = "GET";
-            req.Timeout         = 15000;
-            req.ProtocolVersion = HttpVersion.Version10;
-            req.KeepAlive       = false;
-            req.Headers.Add("Accept-Encoding", "identity");
-            if (!string.IsNullOrEmpty(token))
-                req.Headers.Add("x-admin-token", token);
+            Uri    uri  = new Uri(url);
+            string host = uri.Host;
+            int    port = uri.Port > 0 ? uri.Port : 80;
+            string path = uri.PathAndQuery;
 
-            using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-            using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
-                return sr.ReadToEnd();
+            string reqStr =
+                "GET " + path + " HTTP/1.0\r\n" +
+                "Host: " + host + ":" + port + "\r\n" +
+                "Connection: close\r\n" +
+                (string.IsNullOrEmpty(token) ? "" : "x-admin-token: " + token + "\r\n") +
+                "\r\n";
+            byte[] reqBytes = Encoding.UTF8.GetBytes(reqStr);
+
+            System.Net.Sockets.TcpClient tcp = new System.Net.Sockets.TcpClient();
+            tcp.Connect(host, port);
+            tcp.SendTimeout    = 10000;
+            tcp.ReceiveTimeout = 15000;
+
+            System.Net.Sockets.NetworkStream ns = tcp.GetStream();
+            ns.Write(reqBytes, 0, reqBytes.Length);
+            ns.Flush();
+
+            // Read full response until server closes connection
+            System.Collections.Generic.List<byte> allBytes = new System.Collections.Generic.List<byte>();
+            byte[] buf = new byte[4096];
+            int read;
+            while ((read = ns.Read(buf, 0, buf.Length)) > 0)
+            {
+                for (int i = 0; i < read; i++)
+                    allBytes.Add(buf[i]);
+            }
+            tcp.Close();
+
+            string full = Encoding.UTF8.GetString(allBytes.ToArray(), 0, allBytes.Count);
+
+            // Extract body after blank line between headers and body
+            int bodyStart = full.IndexOf("\r\n\r\n");
+            return bodyStart >= 0 ? full.Substring(bodyStart + 4) : full;
         }
 
         private List<EventRecord> ParseEventList(string json)
