@@ -824,9 +824,16 @@ const initEventsTable = async () => {
       ALTER TABLE events
       ADD COLUMN IF NOT EXISTS start_date DATE,
       ADD COLUMN IF NOT EXISTS end_date DATE,
-      ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT false
+      ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS national_only BOOLEAN DEFAULT false
     `);
-    
+
+    // Auto-flag known national-only events (Autumn NATS is nationals only, no regional option)
+    await pool.query(`
+      UPDATE events SET national_only = true
+      WHERE LOWER(event_name) LIKE '%autumn%' AND national_only = false
+    `);
+
     console.log('✅ Events table initialized with start/end date columns');
   } catch (err) {
     console.error('Events table init error:', err.message);
@@ -1176,6 +1183,10 @@ async function initEquipmentScanLog() {
 
 // Helper function to log equipment scans
 const monitorClients = new Set();
+
+// Flag display state (for flag.html)
+const flagClients = new Set();
+let currentFlag = 'none';
 
 async function logEquipmentScan(scanData) {
   try {
@@ -7799,7 +7810,7 @@ app.get('/api/admin/getAllPoolEngineRentals', async (req, res) => {
 app.get('/api/getAvailableEvents', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open
+      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open, national_only
        FROM events
        WHERE registration_deadline >= CURRENT_DATE
        ORDER BY event_date ASC`
@@ -8384,7 +8395,7 @@ app.get('/api/getEvent/:eventId', async (req, res) => {
 // Create new event
 app.post('/api/createEvent', async (req, res) => {
   try {
-    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only } = req.body;
 
     if (!event_name || !location || !entry_fee || !registration_deadline) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -8401,12 +8412,13 @@ app.post('/api/createEvent', async (req, res) => {
     
     // Default registration_open to false if not provided
     const regOpen = registration_open === true || registration_open === 'true' ? true : false;
+    const natOnly = national_only === true || national_only === 'true' ? true : false;
 
     const result = await pool.query(
-      `INSERT INTO events (event_id, event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO events (event_id, event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [event_id, event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen]
+      [event_id, event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, natOnly]
     );
 
     console.log(`✅ Event created: ${event_name} (${start_date && end_date ? `${start_date} to ${end_date}` : mainEventDate})`);
@@ -8421,20 +8433,21 @@ app.post('/api/createEvent', async (req, res) => {
 app.put('/api/updateEvent/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
-    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only } = req.body;
     
     // Use start_date as event_date if provided, otherwise use event_date for backwards compatibility
     const mainEventDate = start_date || event_date;
     
-    // Convert registration_open to boolean
+    // Convert registration_open/national_only to booleans
     const regOpen = registration_open === true || registration_open === 'true' ? true : false;
+    const natOnly = national_only === true || national_only === 'true' ? true : false;
 
     const result = await pool.query(
       `UPDATE events 
-       SET event_name = $1, event_date = $2, start_date = $3, end_date = $4, location = $5, entry_fee = $6, registration_deadline = $7, registration_open = $8, updated_at = NOW()
-       WHERE event_id = $9
+       SET event_name = $1, event_date = $2, start_date = $3, end_date = $4, location = $5, entry_fee = $6, registration_deadline = $7, registration_open = $8, national_only = $9, updated_at = NOW()
+       WHERE event_id = $10
        RETURNING *`,
-      [event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, eventId]
+      [event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, natOnly, eventId]
     );
 
     if (result.rows.length === 0) {
@@ -11926,6 +11939,29 @@ app.use((err, req, res, next) => {
 
 // ============= EVENT DOCUMENTS (Google Drive / JSON Config) =============
 // Reads from event-documents.json - no file uploads needed!
+// Static class-level documents that always appear in their respective folders
+// regardless of which event is loaded. Add new season docs here.
+const STATIC_CLASS_DOCS = [
+  {
+    display_name: 'Race Day Engine Instructions',
+    document_type: 'Mini ROK',
+    file_path: '/documents/raceday/RDOC001-mini-rok-race-day-engine-instructions.html',
+    preview_url: '/documents/raceday/RDOC001-mini-rok-race-day-engine-instructions.html',
+    category: 'mini',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Race Day Engine Instructions',
+    document_type: 'Mini ROK U10',
+    file_path: '/documents/raceday/RDOC001-mini-rok-race-day-engine-instructions.html',
+    preview_url: '/documents/raceday/RDOC001-mini-rok-race-day-engine-instructions.html',
+    category: 'miniu10',
+    icon: '📄',
+    isStatic: true
+  }
+];
+
 app.get('/api/events/:eventId/docs', async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -11968,7 +12004,8 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
         }
       }
       if (s3Docs.length > 0) {
-        return res.json({ success: true, documents: s3Docs, count: s3Docs.length, source: 's3' });
+        const merged = [...s3Docs, ...STATIC_CLASS_DOCS];
+        return res.json({ success: true, documents: merged, count: merged.length, source: 's3' });
       }
     } catch (s3Err) {
       console.warn('S3 doc list failed, falling back to filesystem:', s3Err.message);
@@ -12010,21 +12047,22 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
       }
     }
     if (fsDocs.length > 0) {
-      return res.json({ success: true, documents: fsDocs, count: fsDocs.length, source: 'filesystem' });
+      const merged = [...fsDocs, ...STATIC_CLASS_DOCS];
+      return res.json({ success: true, documents: merged, count: merged.length, source: 'filesystem' });
     }
 
     // ── 2. Fallback: JSON config file ─────────────────────────────────────────
     const configPath = path.join(__dirname, 'data', 'event-documents.json');
     
     if (!fs.existsSync(configPath)) {
-      return res.json({ success: true, documents: [], message: 'No documents config file found' });
+      return res.json({ success: true, documents: [...STATIC_CLASS_DOCS], count: STATIC_CLASS_DOCS.length, source: 'static' });
     }
     
     const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     const eventDocs = configData.events?.[eventId];
     
     if (!eventDocs || !eventDocs.documents || eventDocs.documents.length === 0) {
-      return res.json({ success: true, documents: [], message: 'No documents for this event' });
+      return res.json({ success: true, documents: [...STATIC_CLASS_DOCS], count: STATIC_CLASS_DOCS.length, source: 'static' });
     }
     
     // Map documents with icons based on type
@@ -12063,7 +12101,8 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
         return a.display_name.localeCompare(b.display_name);
       });
     
-    res.json({ success: true, documents, count: documents.length, eventName: eventDocs.name });
+    const allDocs = [...documents, ...STATIC_CLASS_DOCS];
+    res.json({ success: true, documents: allDocs, count: allDocs.length, eventName: eventDocs.name });
     
   } catch (err) {
     console.error('Error reading event documents:', err);
@@ -12473,6 +12512,211 @@ app.get('/api/engineReturnSignature', async (req, res) => {
   }
 });
 
+
+// ── FLAG DISPLAY ────────────────────────────────────────────────────────────
+
+// Set the current flag (called by clerk.html - no auth required, local network only)
+app.post('/api/flag/set', (req, res) => {
+  const allowed = ['red', 'yellow', 'green', 'blue', 'white', 'checkered', 'none'];
+  const { flag } = req.body;
+  if (!flag || !allowed.includes(flag)) {
+    return res.status(400).json({ success: false, error: 'Invalid flag' });
+  }
+  currentFlag = flag;
+  const payload = JSON.stringify({ flag });
+  for (const client of flagClients) {
+    try { client.write(`data: ${payload}\n\n`); } catch (_) { flagClients.delete(client); }
+  }
+  res.json({ success: true, flag });
+});
+
+// SSE stream for flag.html
+app.get('/api/flag/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+  // Send current flag immediately on connect
+  res.write(`data: ${JSON.stringify({ flag: currentFlag })}\n\n`);
+  flagClients.add(res);
+  const ping = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch (_) { clearInterval(ping); flagClients.delete(res); }
+  }, 15000);
+  req.on('close', () => { clearInterval(ping); flagClients.delete(res); });
+});
+
+// ── APEX TIMING WATCHER ──────────────────────────────────────────────────────
+// Connects to the Apex Timing WebSocket and mirrors flag changes to flag.html
+// Protocol reverse-engineered from javascript_live_timing.min.js:
+//   - Data: newline-separated lines, each pipe-delimited: dataId|cssClass|value
+//   - WebSocket URL: wss://<host>:<port+3>/  (HTTPS) or ws://<host>:<port+2>/
+//   - No handshake needed — just connect and receive
+
+const APEX_FLAG_CLASSES = {
+  // ── Confirmed from live data on 'light' data-id ──────────────────────────
+  // These are the CSS classes Apex Timing sets on the main flag indicator element.
+  'lg':         'green',       // lights go / green flag (race running)
+  'ly':         'yellow',      // yellow flag
+  'lr':         'red',         // red flag
+  'lc':         'checkered',   // chequered flag
+  'lo':         'none',        // lights out / session not started
+  'ls':         'none',        // safety conditions
+  // ── Legacy / alternative class names ─────────────────────────────────────
+  'gr':         'green',
+  'yf':         'yellow',
+  'rf':         'red',
+  'bf':         'blue',
+  'wf':         'white',
+  'ch':         'checkered',
+  'chequered':  'checkered',
+  'checkered':  'checkered',
+  'no':         'none',
+  'sc':         'none',        // safety car
+  // Fallback: full-word variants
+  'green':      'green',
+  'yellow':     'yellow',
+  'red':        'red',
+  'blue':       'blue',
+  'white':      'white',
+};
+
+// Ring buffer for recent raw messages — readable via /api/apex/status for debugging
+let apexMessageLog = [];
+const APEX_LOG_MAX = 200;
+
+let apexSocket = null;
+let apexReconnectTimer = null;
+let apexReconnectDelay = 5000;
+const APEX_MAX_RECONNECT = 60000;
+
+const apexConfig = {
+  enabled: false,
+  host: 'www.apex-timing.com',
+  port: 7550,
+  // 'light' confirmed from live data: the main race status element uses this data-id.
+  // Set to null to accept any element that carries a known flag class (for debugging).
+  flagDataId: 'light',
+};
+
+function apexBroadcastFlag(flagName, dataId) {
+  if (!flagName || flagName === currentFlag) return;
+  currentFlag = flagName;
+  const payload = JSON.stringify({ flag: flagName });
+  for (const client of flagClients) {
+    try { client.write(`data: ${payload}\n\n`); } catch (_) { flagClients.delete(client); }
+  }
+  console.log(`[Apex] Flag → ${flagName} (from data-id="${dataId}")`);
+}
+
+function apexHandleData(raw) {
+  if (!raw || !raw.trim()) return;
+  const lines = raw.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Log to ring buffer (truncate long lines)
+    const logEntry = { ts: Date.now(), line: line.length > 150 ? line.slice(0, 150) + '…' : line };
+    apexMessageLog.push(logEntry);
+    if (apexMessageLog.length > APEX_LOG_MAX) apexMessageLog.shift();
+
+    const parts = line.split('|');
+    if (parts.length < 2) continue;
+
+    const dataId = parts[0];
+    const cssClass = parts[1];
+
+    const flagName = APEX_FLAG_CLASSES[cssClass];
+    if (flagName === undefined) continue;
+
+    // If flagDataId is configured, only respond to that specific element
+    if (apexConfig.flagDataId && dataId !== apexConfig.flagDataId) {
+      console.log(`[Apex] Flag class "${cssClass}" on data-id="${dataId}" (not watching this id, flagDataId="${apexConfig.flagDataId}")`);
+      continue;
+    }
+
+    apexBroadcastFlag(flagName, dataId);
+  }
+}
+
+function apexConnect() {
+  if (!apexConfig.enabled) return;
+
+  const url = `wss://${apexConfig.host}:${apexConfig.port + 3}/`;
+  console.log(`[Apex] Connecting to ${url}`);
+
+  try {
+    apexSocket = new WebSocket(url);
+
+    apexSocket.onopen = function () {
+      console.log('[Apex] Connected to Apex Timing WebSocket');
+      apexReconnectDelay = 5000; // reset backoff on success
+    };
+
+    apexSocket.onmessage = function (event) {
+      apexHandleData(event.data);
+    };
+
+    apexSocket.onerror = function (err) {
+      console.log('[Apex] WebSocket error:', err.message || err.type || 'unknown error');
+    };
+
+    apexSocket.onclose = function () {
+      console.log('[Apex] Disconnected');
+      apexSocket = null;
+      if (apexConfig.enabled) {
+        apexReconnectTimer = setTimeout(apexConnect, apexReconnectDelay);
+        apexReconnectDelay = Math.min(apexReconnectDelay * 2, APEX_MAX_RECONNECT);
+      }
+    };
+  } catch (e) {
+    console.log('[Apex] Connect error:', e.message);
+    if (apexConfig.enabled) {
+      apexReconnectTimer = setTimeout(apexConnect, apexReconnectDelay);
+      apexReconnectDelay = Math.min(apexReconnectDelay * 2, APEX_MAX_RECONNECT);
+    }
+  }
+}
+
+// Enable the Apex watcher (call this when a race goes live)
+app.post('/api/apex/enable', (req, res) => {
+  // Optional: override host/port/flagDataId from body
+  if (req.body.host) apexConfig.host = req.body.host;
+  if (req.body.port) apexConfig.port = parseInt(req.body.port, 10);
+  if (req.body.flagDataId !== undefined) apexConfig.flagDataId = req.body.flagDataId || null;
+
+  apexConfig.enabled = true;
+  if (apexReconnectTimer) { clearTimeout(apexReconnectTimer); apexReconnectTimer = null; }
+  const isOpen = apexSocket && apexSocket.readyState === 1; // 1 = OPEN
+  if (!isOpen) {
+    apexReconnectDelay = 5000;
+    apexConnect();
+  }
+  res.json({ success: true, status: 'enabled', config: { host: apexConfig.host, port: apexConfig.port, flagDataId: apexConfig.flagDataId } });
+});
+
+// Disable the Apex watcher
+app.post('/api/apex/disable', (req, res) => {
+  apexConfig.enabled = false;
+  if (apexReconnectTimer) { clearTimeout(apexReconnectTimer); apexReconnectTimer = null; }
+  if (apexSocket) { try { apexSocket.close(); } catch (_) {} apexSocket = null; }
+  res.json({ success: true, status: 'disabled' });
+});
+
+// Status + debug log (last 20 messages)
+app.get('/api/apex/status', (req, res) => {
+  res.json({
+    enabled: apexConfig.enabled,
+    connected: !!(apexSocket && apexSocket.readyState === 1),
+    config: { host: apexConfig.host, port: apexConfig.port, flagDataId: apexConfig.flagDataId },
+    currentFlag,
+    recentMessages: apexMessageLog.slice(-20),
+  });
+});
+
+// ── LIVE MONITOR SSE STREAM ──────────────────────────────────────────────────
 
 // Live monitor SSE stream
 app.get('/api/monitor/events', (req, res) => {
@@ -13110,6 +13354,82 @@ app.get('/api/equipmentByItem', async (req, res) => {
     res.json({ success: false, error: err.message });
   }
 });
+
+// ─── Reel Maker: Z1 bucket listing proxy ─────────────────────────────────────
+// Lists video files in a Z1 bucket — bypasses browser CORS issues on listing
+app.get('/api/reel/list', async (req, res) => {
+  const bucket = (req.query.bucket || '').replace(/[^a-zA-Z0-9_\-]/g, '');
+  const prefix = req.query.prefix || '';
+  if (!bucket) return res.status(400).json({ error: 'bucket required' });
+
+  const cmd = new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, MaxKeys: 1000 });
+
+  // Retry up to 3 times — Z1 occasionally drops the first connection
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const data = await s3.send(cmd, { abortSignal: AbortSignal.timeout(12000) });
+      const keys = (data.Contents || [])
+        .map(o => o.Key)
+        .filter(k => !k.endsWith('/') && /\.(mp4|mov|webm)$/i.test(k));
+      return res.json({ keys });
+    } catch (err) {
+      console.warn(`[reel/list] attempt ${attempt} failed: ${err.message}`);
+      if (attempt === 3) return res.status(500).json({ error: err.message });
+      await new Promise(r => setTimeout(r, 800 * attempt)); // 0.8s, 1.6s back-off
+    }
+  }
+});
+
+// ─── Reel Maker: Z1 video stream proxy ───────────────────────────────────────
+// Streams a video from Z1 to the browser with proper range-request support
+// so <video> elements can scrub/seek without ERR_HTTP2_PROTOCOL_ERROR
+app.get('/api/reel/video', async (req, res) => {
+  try {
+    const bucket = (req.query.bucket || '').replace(/[^a-zA-Z0-9_\-]/g, '');
+    const key    = req.query.key || '';
+    if (!bucket || !key) return res.status(400).send('bucket and key required');
+
+    // Fetch object metadata first to get Content-Length
+    const headCmd = new GetObjectCommand({ Bucket: bucket, Key: key });
+    const head    = await s3.send(headCmd);
+    const totalSize = head.ContentLength;
+    const mimeType  = head.ContentType || 'video/mp4';
+
+    const rangeHeader = req.headers.range;
+    if (rangeHeader) {
+      const parts = rangeHeader.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end   = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+      const chunkSize = end - start + 1;
+
+      const rangeCmd = new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Range: `bytes=${start}-${end}`
+      });
+      const rangeObj = await s3.send(rangeCmd);
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${totalSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': mimeType
+      });
+      rangeObj.Body.pipe(res);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': totalSize,
+        'Content-Type': mimeType,
+        'Accept-Ranges': 'bytes'
+      });
+      head.Body.pipe(res);
+    }
+  } catch (err) {
+    console.error('Video proxy error:', err.message);
+    res.status(500).send(err.message);
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
