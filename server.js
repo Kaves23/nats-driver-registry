@@ -7982,7 +7982,7 @@ app.get('/api/championship-standings/:season/:class', async (req, res) => {
       throw new Error('Season and class required');
     }
 
-    // Get standings with driver info
+    // Get standings with driver info (exclude test/admin entries)
     const result = await pool.query(
       `SELECT d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name,
               SUM(p.total_points) as total_points,
@@ -7992,6 +7992,7 @@ app.get('/api/championship-standings/:season/:class', async (req, res) => {
        JOIN drivers d ON p.driver_id = d.driver_id
        WHERE p.season = $1 AND p.class = $2
          AND COALESCE(p.championship_type, 'Northern Regions') = $3
+         AND (p.notes IS NULL OR p.notes NOT LIKE '%TEST ENTRY%')
        GROUP BY d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name
        ORDER BY total_points DESC, races_completed DESC`,
       [season, raceClass, champType]
@@ -11684,59 +11685,205 @@ function shareBoardCSS(accentBg = '#0f172a') {
 
 app.get('/share/engine-draw', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT pe.draw_number, pe.engine_serial, pe.seal_number,
-             pe.carb_number, pe.airbox_number, pe.exhaust_number,
-             pe.class, pe.notes, pe.active,
-             d.first_name || ' ' || d.last_name AS assigned_driver_name,
-             d.race_number                        AS assigned_race_number
-      FROM pool_engines pe
-      LEFT JOIN race_entries re
-             ON UPPER(re.engine_serial) = UPPER(pe.engine_serial)
-            AND re.engine_returned IS NOT TRUE
-            AND re.engine_serial IS NOT NULL
-            AND pe.engine_serial IS NOT NULL
-            AND pe.engine_serial <> ''
-      LEFT JOIN drivers d ON re.driver_id = d.driver_id
-      WHERE pe.deleted_at IS NULL AND pe.active = true
-      ORDER BY pe.class,
-        NULLIF(regexp_replace(pe.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
-        pe.draw_number
-    `);
+    const selectedEventId = req.query.event_id || 'live';
+    const isLive = selectedEventId === 'live';
 
-    // Use most recent event for branding
-    const latestEvt = await pool.query(`SELECT event_id FROM events ORDER BY event_date DESC NULLS LAST LIMIT 1`);
-    const branding = latestEvt.rows.length ? await getShareBranding(latestEvt.rows[0].event_id) : { header: null, footer: null };
+    // Always fetch event list for the selector
+    const eventsRes = await pool.query(
+      `SELECT event_id, event_name, event_date FROM events ORDER BY event_date DESC NULLS LAST`
+    );
+    const allEvents = eventsRes.rows;
 
-    const engines = result.rows;
-    const classes = [...new Set(engines.map(e => e.class || 'Unclassified'))];
+    // Branding: use selected event or latest
+    const brandingEventId = isLive
+      ? (allEvents.length ? allEvents[0].event_id : null)
+      : selectedEventId;
+    const branding = brandingEventId ? await getShareBranding(brandingEventId) : { header: null, footer: null };
+
     const generatedAt = new Date().toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' });
-    const assignedCount = engines.filter(e => e.assigned_driver_name).length;
 
-    const classGroupsHTML = classes.map(cls => {
-      const { bg, text } = shareClassColor(cls);
-      const clsEngines = engines.filter(e => (e.class || 'Unclassified') === cls);
-      const rows = clsEngines.map(e => {
-        const assigned = !!e.assigned_driver_name;
-        return `<tr class="${assigned ? 'assigned' : 'unassigned'}">
-          <td><span class="draw-num" style="background:${bg};color:${text};">${e.draw_number}</span></td>
-          <td>${assigned ? `<span class="driver-name">${e.assigned_driver_name}</span>` : '<span class="empty">—</span>'}</td>
-          <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
-          <td class="mono">${e.engine_serial || '—'}</td>
-          <td class="mono">${e.seal_number || '—'}</td>
-          <td>${assigned ? '<span class="badge-green">Assigned</span>' : '<span class="badge-red">Available</span>'}</td>
-        </tr>`;
-      }).join('');
-      const assignedInClass = clsEngines.filter(e => e.assigned_driver_name).length;
-      return `<div class="class-group">
-        <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
-        <div class="table-scroll">
-        <table>
-          <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Seal #</th><th>Status</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table></div>
-      </div>`;
+    let engines = [];
+    let pageTitle = 'Engine Draw Board — Live';
+    let eventLabel = 'Live Pool';
+    let isHistorical = false;
+
+    if (isLive) {
+      // ── Live: current pool with current assignments ─────────────────────
+      const result = await pool.query(`
+        SELECT pe.draw_number, pe.engine_serial, pe.seal_number,
+               pe.carb_number, pe.airbox_number, pe.exhaust_number,
+               pe.class, pe.notes, pe.active,
+               d.first_name || ' ' || d.last_name AS assigned_driver_name,
+               d.race_number                        AS assigned_race_number
+        FROM pool_engines pe
+        LEFT JOIN race_entries re
+               ON UPPER(re.engine_serial) = UPPER(pe.engine_serial)
+              AND re.engine_returned IS NOT TRUE
+              AND re.engine_serial IS NOT NULL
+              AND pe.engine_serial IS NOT NULL
+              AND pe.engine_serial <> ''
+        LEFT JOIN drivers d ON re.driver_id = d.driver_id
+        WHERE pe.deleted_at IS NULL AND pe.active = true
+        ORDER BY pe.class,
+          NULLIF(regexp_replace(pe.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
+          pe.draw_number
+      `);
+      engines = result.rows.map(e => ({
+        draw_number:          e.draw_number,
+        engine_serial:        e.engine_serial,
+        seal_number:          e.seal_number,
+        class:                e.class,
+        assigned_driver_name: e.assigned_driver_name,
+        assigned_race_number: e.assigned_race_number,
+        returned:             false
+      }));
+    } else {
+      // ── Historical: draws from entry_engine_draws for this event ────────
+      isHistorical = true;
+      const evt = allEvents.find(e => e.event_id === selectedEventId);
+      if (evt) {
+        eventLabel = `${evt.event_name} — ${new Date(evt.event_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+        pageTitle  = `Engine Draw Board — ${evt.event_name}`;
+      }
+
+      const result = await pool.query(`
+        SELECT
+          eed.draw_number,
+          eed.engine_serial,
+          COALESCE(eed.day_label, TO_CHAR(eed.assigned_at AT TIME ZONE 'Africa/Johannesburg', 'FMDay DD Mon YYYY')) AS day_label,
+          eed.assigned_at,
+          eed.returned,
+          eed.returned_at,
+          d.first_name || ' ' || d.last_name AS assigned_driver_name,
+          d.race_number                        AS assigned_race_number,
+          COALESCE(pe.class, re.race_class)    AS class,
+          pe.seal_number
+        FROM entry_engine_draws eed
+        JOIN race_entries re ON eed.entry_id = re.entry_id
+        JOIN drivers d       ON re.driver_id = d.driver_id
+        LEFT JOIN pool_engines pe
+               ON UPPER(pe.engine_serial) = UPPER(eed.engine_serial)
+              AND pe.deleted_at IS NULL
+        WHERE re.event_id = $1
+        ORDER BY eed.assigned_at,
+          COALESCE(pe.class, re.race_class),
+          NULLIF(regexp_replace(eed.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
+          eed.draw_number
+      `, [selectedEventId]);
+      engines = result.rows;
+    }
+
+    const assignedCount = engines.filter(e => e.assigned_driver_name && !e.returned).length;
+
+    const eventOptions = allEvents.map(e => {
+      const d = new Date(e.event_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+      const sel = e.event_id === selectedEventId ? ' selected' : '';
+      return `<option value="${e.event_id}"${sel}>${e.event_name} — ${d}</option>`;
     }).join('');
+
+    // ── Build content HTML ──────────────────────────────────────────────────
+    let classGroupsHTML = '';
+
+    if (engines.length === 0) {
+      classGroupsHTML = `<div style="text-align:center;padding:60px 20px;color:#64748b;font-family:sans-serif;">
+           <div style="font-size:40px;margin-bottom:12px;">&#128237;</div>
+           <div style="font-size:16px;font-weight:600;">No engine draw records found</div>
+           <div style="font-size:13px;margin-top:6px;">No draws were recorded for this event, or the event has no entries yet.</div>
+         </div>`;
+    } else if (isHistorical) {
+      // Historical: group by day → then by class within each day
+      const days = [...new Set(engines.map(e => e.day_label || 'Unknown'))];
+      // Sort days by the earliest assigned_at in each group
+      const dayOrder = {};
+      engines.forEach(e => {
+        const d = e.day_label || 'Unknown';
+        if (!dayOrder[d] || new Date(e.assigned_at) < new Date(dayOrder[d])) dayOrder[d] = e.assigned_at;
+      });
+      days.sort((a, b) => new Date(dayOrder[a]) - new Date(dayOrder[b]));
+
+      classGroupsHTML = days.map((day, dayIdx) => {
+        const dayEngines = engines.filter(e => (e.day_label || 'Unknown') === day);
+        const classes = [...new Set(dayEngines.map(e => e.class || 'Unclassified'))];
+        const isLastDay = dayIdx === days.length - 1;
+
+        const classSections = classes.map(cls => {
+          const { bg, text } = shareClassColor(cls);
+          const clsEngines = dayEngines.filter(e => (e.class || 'Unclassified') === cls);
+          const rows = clsEngines.map(e => {
+            const returned = !!e.returned;
+            const assignedAt = e.assigned_at ? new Date(e.assigned_at).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }) : '';
+            return `<tr class="${returned ? 'unassigned' : 'assigned'}">
+              <td><span class="draw-num" style="background:${bg};color:${text};">${e.draw_number || '—'}</span></td>
+              <td><span class="driver-name">${e.assigned_driver_name || '—'}</span></td>
+              <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
+              <td class="mono">${e.engine_serial || '—'}</td>
+              <td class="mono">${e.seal_number || '—'}</td>
+              <td class="mono" style="font-size:11px;color:#64748b;">${assignedAt}</td>
+              <td>${returned ? '<span class="badge-red">Returned</span>' : '<span class="badge-green">Assigned</span>'}</td>
+            </tr>`;
+          }).join('');
+          const assignedInClass = clsEngines.filter(e => !e.returned).length;
+          return `<div class="class-group">
+            <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Seal #</th><th>Time</th><th>Status</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table></div>
+          </div>`;
+        }).join('');
+
+        const dayTotal   = dayEngines.length;
+        const dayAssigned = dayEngines.filter(e => !e.returned).length;
+        return `<div class="day-section${isLastDay ? ' last-day' : ''}">
+          <div class="day-header">
+            <span class="day-title">${day}</span>
+            <span class="day-stats">${dayAssigned}/${dayTotal} assignments</span>
+          </div>
+          ${classSections}
+        </div>`;
+      }).join('');
+    } else {
+      // Live: group by class
+      const classes = [...new Set(engines.map(e => e.class || 'Unclassified'))];
+      classGroupsHTML = classes.map(cls => {
+        const { bg, text } = shareClassColor(cls);
+        const clsEngines = engines.filter(e => (e.class || 'Unclassified') === cls);
+        const rows = clsEngines.map(e => {
+          return `<tr class="${e.assigned_driver_name ? 'assigned' : 'unassigned'}">
+            <td><span class="draw-num" style="background:${bg};color:${text};">${e.draw_number || '—'}</span></td>
+            <td>${e.assigned_driver_name ? `<span class="driver-name">${e.assigned_driver_name}</span>` : '<span class="empty">—</span>'}</td>
+            <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
+            <td class="mono">${e.engine_serial || '—'}</td>
+            <td class="mono">${e.seal_number || '—'}</td>
+            <td>${e.assigned_driver_name ? '<span class="badge-green">Assigned</span>' : '<span class="badge-red">Available</span>'}</td>
+          </tr>`;
+        }).join('');
+        const assignedInClass = clsEngines.filter(e => e.assigned_driver_name).length;
+        return `<div class="class-group">
+          <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
+          <div class="table-scroll"><table>
+            <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Seal #</th><th>Status</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table></div>
+        </div>`;
+      }).join('');
+    }
+
+    // Build event selector bar CSS + HTML
+    const selectorBarHTML = `
+      <div class="event-selector-bar no-print">
+        <form method="get" action="/share/engine-draw" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <label style="font-size:12px;font-weight:700;color:#1e293b;white-space:nowrap;">View draw for:</label>
+          <select name="event_id" onchange="this.form.submit()" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:white;cursor:pointer;min-width:260px;">
+            <option value="live"${isLive ? ' selected' : ''}>&#9679; Live Pool (current)</option>
+            <optgroup label="Past Events">
+              ${eventOptions}
+            </optgroup>
+          </select>
+          <span style="font-size:12px;color:#64748b;">${isLive ? 'Showing current engine assignments' : `Historical draw: ${eventLabel}`}</span>
+        </form>
+        <button onclick="window.print()" style="padding:7px 18px;background:#1e3a5f;color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128438; Print / Save PDF</button>
+      </div>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(`<!DOCTYPE html>
@@ -11744,23 +11891,50 @@ app.get('/share/engine-draw', async (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NATS Engine Draw Board</title>
+  <title>${pageTitle}</title>
   <link rel="icon" type="image/png" href="/rok-cup-favicon.png">
-  <style>${shareBoardCSS()}</style>
+  <style>
+    ${shareBoardCSS()}
+    .event-selector-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 10px 16px; background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0; flex-wrap: wrap;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      .content { padding: 0 !important; max-width: 100% !important; }
+      .day-section { page-break-after: always; break-after: page; margin-bottom: 0 !important; }
+      .day-section.last-day { page-break-after: avoid; break-after: avoid; }
+      .class-group { page-break-inside: avoid; break-inside: avoid; }
+      table { box-shadow: none !important; }
+      .summary-bar { display: none !important; }
+    }
+    .day-section { margin-bottom: 32px; }
+    .day-header {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #0f172a; color: #f8fafc;
+      padding: 10px 18px; margin-bottom: 12px;
+      font-size: 15px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .day-stats { font-size: 12px; font-weight: 500; opacity: 0.65; text-transform: none; letter-spacing: 0; }
+  </style>
 </head>
 <body>
+  ${selectorBarHTML}
   ${branding.header ? `<div class="branding-header"><img src="${branding.header}" alt="Event Header"></div>` : ''}
   <div class="page-header">
     <div>
-      <h1>🔧 Engine Draw Board</h1>
-      <div class="sub">Generated: ${generatedAt}</div>
+      <h1>&#128295; Engine Draw Board</h1>
+      <div class="sub">${isLive ? 'Live Pool' : eventLabel} &bull; Generated: ${generatedAt}</div>
     </div>
-    <div class="header-right">
-      <a href="/share/engine-draw" class="refresh-btn">🔄 Refresh</a>
+    <div class="header-right no-print">
+      ${isLive ? `<a href="/share/engine-draw" class="refresh-btn">&#128260; Refresh</a>` : ''}
     </div>
   </div>
   <div class="summary-bar">
     <strong>${assignedCount}</strong> of <strong>${engines.length}</strong> engines assigned
+    ${isHistorical ? ' <span style="margin-left:12px;font-size:11px;opacity:0.75;">(historical record)</span>' : ''}
   </div>
   <div class="content">${classGroupsHTML}</div>
   ${branding.footer ? `<div class="branding-footer"><img src="${branding.footer}" alt="Event Footer"></div>` : ''}

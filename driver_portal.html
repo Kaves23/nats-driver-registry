@@ -4440,8 +4440,28 @@
           return;
         }
         
+        // Fetch NATS championship standings to determine driver's current position
+        const natsRankMap = {};
+        try {
+          const natsClasses = [...new Set(
+            (data.points || []).filter(p => p.championship_type === 'ROK NATS').map(p => p.class)
+          )];
+          await Promise.all(natsClasses.map(async cls => {
+            try {
+              const sr = await fetch(`/api/championship-standings/2026/${encodeURIComponent(cls)}?championship_type=ROK%20NATS`);
+              if (!sr.ok) return;
+              const sd = await sr.json();
+              if (sd.success && Array.isArray(sd.standings)) {
+                const idx = sd.standings.findIndex(s => s.driver_id === driverId);
+                if (idx >= 0) natsRankMap[cls] = idx + 1;
+              }
+            } catch(e) { /* ignore per-class failure */ }
+          }));
+        } catch(e) { /* ignore standings fetch failure gracefully */ }
+
         // Helper: build a points results table for a given championship type
-        function buildChampSection(champType, points, totals, isRegional) {
+        function buildChampSection(champType, points, totals, isRegional, rankMap) {
+          rankMap = rankMap || {};
           const accentColor  = isRegional ? '#0ea5e9' : '#f59e0b';
           const accentLight  = isRegional ? '#e0f2fe' : '#fef3c7';
           const accentDark   = isRegional ? '#0c4a6e' : '#92400e';
@@ -4456,6 +4476,21 @@
 
           const summaryCards = filteredTotals.map(s => {
             const avg = s.races_completed > 0 ? (s.total_points / s.races_completed).toFixed(1) : '0.0';
+            const champPos = !isRegional ? (rankMap[s.class] || null) : null;
+            const posOrdinal = champPos ? (champPos + (
+              (champPos % 100 >= 11 && champPos % 100 <= 13) ? 'th'
+              : ['th','st','nd','rd'][champPos % 10] || 'th'
+            )) : null;
+            const posBlock = champPos ? `
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid ${accentColor}40;display:flex;align-items:center;gap:10px;">
+                <div style="width:38px;height:38px;border-radius:50%;background:${accentDark};border:2px solid ${accentBorder};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <span style="font-size:16px;font-weight:900;color:${accentBorder};">${champPos}</span>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:800;color:${accentDark};">${posOrdinal} in Championship</div>
+                  <div style="font-size:10px;color:${accentDark};opacity:0.75;">National standings · ${escapeHtml(s.class)}</div>
+                </div>
+              </div>` : '';
             return `
               <div style="flex:1;min-width:0;max-width:340px;padding:18px;background:${cardGrad};border-radius:8px;border:2px solid ${accentBorder};box-shadow:0 4px 12px ${accentColor}30;">
                 <div style="font-size:28px;font-weight:800;color:${accentDark};margin-bottom:4px;">${escapeHtml(s.total_points||0)}</div>
@@ -4471,6 +4506,7 @@
                   </div>
                 </div>
                 <div style="margin-top:8px;font-size:12px;font-weight:600;color:${accentDark};">${escapeHtml(s.season)} · ${escapeHtml(s.class)}</div>
+                ${posBlock}
               </div>`;
           }).join('');
 
@@ -4540,8 +4576,8 @@
             </div>`;
         }
 
-        const nrSection   = buildChampSection('Northern Regions', data.points, data.seasonTotals, true);
-        const natsSection = buildChampSection('ROK NATS',         data.points, data.seasonTotals, false);
+        const nrSection   = buildChampSection('Northern Regions', data.points, data.seasonTotals, true,  {});
+        const natsSection = buildChampSection('ROK NATS',         data.points, data.seasonTotals, false, natsRankMap);
 
         container.innerHTML = `<div style="margin-bottom:8px;">${nrSection}${natsSection}</div>`;
         

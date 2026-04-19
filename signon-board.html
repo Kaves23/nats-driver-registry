@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign-On Board — NATS</title>
+  <style>
+    :root {
+      --bg:       #0a0e14;
+      --surface:  #111820;
+      --card:     #161d27;
+      --border:   #1f2d3d;
+      --accent:   #f97316;
+      --blue:     #3b82f6;
+      --green:    #22c55e;
+      --muted:    #5a7a9a;
+      --text:     #e2eaf4;
+      --dim:      #3a5068;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── TOP BAR ──────────────────────────────────────── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-left { display: flex; flex-direction: column; gap: 2px; }
+
+    .event-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+    }
+
+    .event-name {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      line-height: 1.1;
+    }
+
+    .event-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .topbar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+    .refresh-badge {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.75); }
+    }
+
+    /* ── PROGRESS ─────────────────────────────────────── */
+    .progress-bar-wrap {
+      padding: 12px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 10px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), #16a34a);
+      border-radius: 99px;
+      transition: width 0.8s ease;
+    }
+
+    .progress-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      white-space: nowrap;
+      color: var(--green);
+      min-width: 110px;
+      text-align: right;
+    }
+
+    /* ── EVENT PICKER ─────────────────────────────────── */
+    .picker-bar {
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .picker-bar label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .picker-bar select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      flex: 1;
+      max-width: 360px;
+    }
+
+    .picker-bar select:focus { outline: 1px solid var(--accent); }
+
+    .demo-tag {
+      background: rgba(249,115,22,0.15);
+      border: 1px solid rgba(249,115,22,0.4);
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    /* ── CONTENT ──────────────────────────────────────── */
+    .board {
+      padding: 20px 20px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .class-section { margin-bottom: 28px; }
+
+    .class-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .class-name-badge {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+
+    .class-count {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--green);
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+
+    .driver-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 8px;
+    }
+
+    /* ── DRIVER CARD ──────────────────────────────────── */
+    .driver-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 12px 10px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      transition: border-color 0.3s, background 0.3s;
+      min-height: 68px;
+    }
+
+    .driver-card.signed-on {
+      border-color: rgba(34,197,94,0.5);
+      background: rgba(34,197,94,0.04);
+    }
+
+    .driver-card.not-signed-on {
+      opacity: 0.55;
+    }
+
+    .num-badge {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      background: rgba(90,122,154,0.12);
+      color: var(--dim);
+      border: 1px solid transparent;
+    }
+
+    .driver-card.not-signed-on .num-badge {
+      background: rgba(90,122,154,0.08);
+      color: var(--dim);
+      border-color: transparent;
+    }
+
+    .driver-info { flex: 1; min-width: 0; }
+
+    .driver-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .driver-card.not-signed-on .driver-name { color: var(--muted); }
+
+    .driver-time {
+      font-size: 0.67rem;
+      color: var(--green);
+      margin-top: 2px;
+    }
+
+    .driver-card.not-signed-on .driver-time {
+      color: var(--dim);
+    }
+
+    .signed-on-icon {
+      flex-shrink: 0;
+      font-size: 1.1rem;
+    }
+
+    /* ── EMPTY STATE ──────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .big-icon { font-size: 4rem; margin-bottom: 16px; }
+    .empty-state h2 { font-size: 1.2rem; margin-bottom: 6px; }
+    .empty-state p  { font-size: 0.85rem; }
+
+    /* ── LOADING ──────────────────────────────────────── */
+    .loader {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @media (max-width: 600px) {
+      .event-name { font-size: 1.1rem; }
+      .driver-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="event-label">ROK Cup South Africa — Sign-On Board</div>
+    <div class="event-name" id="eventName">Loading…</div>
+    <div class="event-meta" id="eventMeta"></div>
+  </div>
+  <div class="topbar-right">
+    <div class="refresh-badge">
+      <div class="dot" id="liveDot"></div>
+      <span id="refreshLabel">Live</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar-wrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">— / — signed on</div>
+</div>
+
+<!-- EVENT PICKER + DEMO TAG -->
+<div class="picker-bar">
+  <label>Event:</label>
+  <select id="eventSelect" onchange="onEventChange()">
+    <option value="">— select event —</option>
+  </select>
+  <span class="demo-tag" id="demoTag" style="display:none">DEMO</span>
+</div>
+
+<!-- BOARD CONTENT -->
+<div class="board" id="board">
+  <div class="loader"><div class="spinner"></div>Loading…</div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────
+const REFRESH_INTERVAL = 20; // seconds
+
+// ─── CLASS COLOURS (matches admin.html exactly) ────────────────────
+// Key = exact race_class string from DB, value = { bg, text }
+const CLASS_COLORS = {
+  'CADET':          { bg: '#e74c3c', text: '#fff'     },
+  'MINI ROK U/10':  { bg: '#f39c12', text: '#fff'     },
+  'MINI ROK':       { bg: '#f1c40f', text: '#2c3e50'  },
+  'OK-J':           { bg: '#27ae60', text: '#fff'     },
+  'OK-N':           { bg: '#3498db', text: '#fff'     },
+  'KZ2':            { bg: '#9b59b6', text: '#fff'     },
+};
+
+// ─── DEMO DATA — SUMMER NATS 2026 ──────────────────────────────────
+// Real event and real drivers from the database.
+// ONLY check-in time/status is simulated for demonstration.
+const DEMO_EVENT = {
+  event_id:   'event_1772122621383',
+  event_name: 'SUMMER NATS 2026',
+  event_date: '2026-03-20',
+  start_date: '2026-03-20',
+  end_date:   '2026-03-21',
+  location:   'Zwartkops Raceway, Pretoria'
+};
+
+const DEMO_ENTRIES = [
+  // ── CADET ────────────────────────────────────────────────────────
+  { race_number:null, race_class:'CADET', first_name:'Grayson',     last_name:'Venter',    signed_on:true,  signed_on_at:'2026-03-20T07:04:00Z' },
+  { race_number:null, race_class:'CADET', first_name:'Christopher', last_name:'Grimmick',  signed_on:true,  signed_on_at:'2026-03-20T07:11:00Z' },
+  { race_number:null, race_class:'CADET', first_name:'Yerhu',       last_name:'Malabie',   signed_on:false, signed_on_at:null },
+  { race_number:null, race_class:'CADET', first_name:'William',     last_name:'Grant',     signed_on:true,  signed_on_at:'2026-03-20T07:19:00Z' },
+  { race_number:null, race_class:'CADET', first_name:'Ewan',        last_name:'Wentink',   signed_on:false, signed_on_at:null },
+
+  // ── MINI ROK ─────────────────────────────────────────────────────
+  { race_number:null, race_class:'MINI ROK', first_name:'Omolemo Aqhamile', last_name:'Mfana',          signed_on:true,  signed_on_at:'2026-03-20T07:08:00Z' },
+  { race_number:null, race_class:'MINI ROK', first_name:'Kayde',            last_name:'Cornofsky',      signed_on:true,  signed_on_at:'2026-03-20T07:13:00Z' },
+  { race_number:null, race_class:'MINI ROK', first_name:'Parker',           last_name:'van der Molen',  signed_on:true,  signed_on_at:'2026-03-20T07:21:00Z' },
+  { race_number:null, race_class:'MINI ROK', first_name:'Egor',             last_name:'Grishin',        signed_on:false, signed_on_at:null },
+  { race_number:null, race_class:'MINI ROK', first_name:'Noah',             last_name:'Cronje',         signed_on:true,  signed_on_at:'2026-03-20T07:28:00Z' },
+  { race_number:null, race_class:'MINI ROK', first_name:'Riley',            last_name:'van Staden',     signed_on:false, signed_on_at:null },
+  { race_number:null, race_class:'MINI ROK', first_name:'Zac',              last_name:'Boshoff',        signed_on:true,  signed_on_at:'2026-03-20T07:34:00Z' },
+  { race_number:null, race_class:'MINI ROK', first_name:'John',             last_name:'Duvill',         signed_on:true,  signed_on_at:'2026-03-20T07:39:00Z' },
+
+  // ── MINI ROK U/10 ────────────────────────────────────────────────
+  { race_number:null, race_class:'MINI ROK U/10', first_name:'Ronald', last_name:'Venter', signed_on:true, signed_on_at:'2026-03-20T07:16:00Z' },
+
+  // ── OK-J ─────────────────────────────────────────────────────────
+  { race_number:null, race_class:'OK-J', first_name:'Retlotleng',  last_name:'Thekiso',   signed_on:true,  signed_on_at:'2026-03-20T07:06:00Z' },
+  { race_number:null, race_class:'OK-J', first_name:'Jordan',      last_name:'Klaasen',   signed_on:true,  signed_on_at:'2026-03-20T07:12:00Z' },
+  { race_number:null, race_class:'OK-J', first_name:'Max',         last_name:'Boshoff',   signed_on:false, signed_on_at:null },
+  { race_number:null, race_class:'OK-J', first_name:'Logan',       last_name:'Billau',    signed_on:true,  signed_on_at:'2026-03-20T07:22:00Z' },
+  { race_number:null, race_class:'OK-J', first_name:'Aleksandar',  last_name:'Praizovic', signed_on:true,  signed_on_at:'2026-03-20T07:30:00Z' },
+  { race_number:null, race_class:'OK-J', first_name:'Kiyaan',      last_name:'Reddi',     signed_on:false, signed_on_at:null },
+  { race_number:null, race_class:'OK-J', first_name:'Mattao',      last_name:'Mason',     signed_on:true,  signed_on_at:'2026-03-20T07:42:00Z' },
+
+  // ── OK-N ─────────────────────────────────────────────────────────
+  { race_number:null, race_class:'OK-N', first_name:'Jack',   last_name:'Moore',           signed_on:true,  signed_on_at:'2026-03-20T07:03:00Z' },
+  { race_number:null, race_class:'OK-N', first_name:'Ashaan', last_name:'Reddi',           signed_on:true,  signed_on_at:'2026-03-20T07:09:00Z' },
+  { race_number:null, race_class:'OK-N', first_name:'Chase',  last_name:'Haskins',         signed_on:false, signed_on_at:null },
+  { race_number:null, race_class:'OK-N', first_name:'Emile',  last_name:'van der wateren', signed_on:true,  signed_on_at:'2026-03-20T07:24:00Z' },
+];
+
+// ─── STATE ────────────────────────────────────────────────────────
+let currentEventId = null;
+let autoRefreshTimer = null;
+let countdown = REFRESH_INTERVAL;
+let isDemoMode = false;
+
+// ─── URL PARAMS ───────────────────────────────────────────────────
+function getParams() {
+  return new URLSearchParams(window.location.search);
+}
+
+// ─── FORMAT TIME ──────────────────────────────────────────────────
+function fmtTime(isoStr) {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// ─── LOAD EVENTS LIST ─────────────────────────────────────────────
+async function loadEventsList() {
+  try {
+    const r = await fetch('/api/public/events');
+    const json = await r.json();
+    const sel = document.getElementById('eventSelect');
+
+    if (json.success && json.events.length) {
+      json.events.forEach(ev => {
+        const opt = document.createElement('option');
+        opt.value = ev.event_id;
+        opt.textContent = ev.event_name + (ev.event_date ? ' — ' + fmtDate(ev.event_date) : '');
+        sel.appendChild(opt);
+      });
+    }
+
+    // Add demo option always
+    const demoOpt = document.createElement('option');
+    demoOpt.value = 'demo';
+    demoOpt.textContent = '⭐ Summer Nats 2026 (DEMO)';
+    sel.appendChild(demoOpt);
+
+    // Auto-select from URL or default to demo
+    const params = getParams();
+    const preselect = params.get('event_id') || 'demo';
+    sel.value = preselect;
+    onEventChange();
+
+  } catch (e) {
+    // Server may not be reachable — still show demo
+    const sel = document.getElementById('eventSelect');
+    const demoOpt = document.createElement('option');
+    demoOpt.value = 'demo';
+    demoOpt.textContent = '⭐ Summer Nats 2026 (DEMO)';
+    sel.appendChild(demoOpt);
+    sel.value = 'demo';
+    onEventChange();
+  }
+}
+
+// ─── EVENT CHANGE ─────────────────────────────────────────────────
+function onEventChange() {
+  const sel = document.getElementById('eventSelect');
+  currentEventId = sel.value;
+  isDemoMode = (currentEventId === 'demo');
+  document.getElementById('demoTag').style.display = isDemoMode ? 'inline-block' : 'none';
+
+  clearInterval(autoRefreshTimer);
+  countdown = REFRESH_INTERVAL;
+  fetchAndRender();
+  startCountdown();
+}
+
+// ─── FETCH & RENDER ───────────────────────────────────────────────
+async function fetchAndRender() {
+  if (!currentEventId) return;
+
+  if (isDemoMode) {
+    renderBoard(DEMO_EVENT, DEMO_ENTRIES);
+    return;
+  }
+
+  try {
+    const r = await fetch(`/api/public/signon/${encodeURIComponent(currentEventId)}`);
+    const json = await r.json();
+    if (!json.success) {
+      renderError(json.error || 'Failed to load data');
+      return;
+    }
+    renderBoard(json.event, json.entries);
+  } catch (e) {
+    renderError('Could not reach server — ' + e.message);
+  }
+}
+
+// ─── RENDER BOARD ─────────────────────────────────────────────────
+function renderBoard(event, entries) {
+  // Update header
+  document.getElementById('eventName').textContent = event.event_name;
+  const dateStr = event.start_date || event.event_date;
+  const locStr  = event.location || '';
+  document.getElementById('eventMeta').textContent =
+    [fmtDate(dateStr), locStr].filter(Boolean).join(' · ');
+
+  // Progress
+  const total    = entries.length;
+  const signedOn = entries.filter(e => e.signed_on).length;
+  const pct      = total ? Math.round((signedOn / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent =
+    `${signedOn} / ${total} signed on`;
+
+  if (!total) {
+    document.getElementById('board').innerHTML = `
+      <div class="empty-state">
+        <div class="big-icon">📋</div>
+        <h2>No entries yet</h2>
+        <p>No confirmed entries found for this event.</p>
+      </div>`;
+    return;
+  }
+
+  // Group by class
+  const classes = {};
+  entries.forEach(e => {
+    const cls = e.race_class || 'Unclassified';
+    if (!classes[cls]) classes[cls] = [];
+    classes[cls].push(e);
+  });
+
+  let html = '';
+  Object.keys(classes).sort().forEach(cls => {
+    const drivers = classes[cls];
+    const clsSignedOn = drivers.filter(d => d.signed_on).length;
+    const clsTotal    = drivers.length;
+    const clsColor    = CLASS_COLORS[cls] || { bg: '#64748b', text: '#fff' };
+
+    html += `
+    <div class="class-section">
+      <div class="class-header">
+        <div class="class-name-badge" style="background:${clsColor.bg};color:${clsColor.text}">${cls}</div>
+        <div class="class-count">${clsSignedOn} / ${clsTotal}</div>
+      </div>
+      <div class="driver-grid">`;
+
+    drivers.forEach(d => {
+      const stateClass = d.signed_on ? 'signed-on' : 'not-signed-on';
+      const timeStr    = d.signed_on ? '✓ Signed on ' + fmtTime(d.signed_on_at) : 'Not signed on';
+      const icon       = d.signed_on ? '✅' : '';
+      const name       = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—';
+      const numDisplay = d.race_number || '—';
+      // Use class colour for signed-on badge, muted for not signed on
+      const badgeBg    = d.signed_on ? clsColor.bg : undefined;
+      const badgeText  = d.signed_on ? clsColor.text : undefined;
+      const badgeStyle = badgeBg ? `style="background:${badgeBg}22;color:${badgeBg};border:1px solid ${badgeBg}55"` : '';
+
+      html += `
+        <div class="driver-card ${stateClass}">
+          <div class="num-badge" ${badgeStyle}>${esc(numDisplay)}</div>
+          <div class="driver-info">
+            <div class="driver-name">${esc(name)}</div>
+            <div class="driver-time">${timeStr}</div>
+          </div>
+          ${icon ? `<div class="signed-on-icon">${icon}</div>` : ''}
+        </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  document.getElementById('board').innerHTML = html;
+}
+
+// ─── RENDER ERROR ─────────────────────────────────────────────────
+function renderError(msg) {
+  document.getElementById('board').innerHTML = `
+    <div class="empty-state">
+      <div class="big-icon">⚠️</div>
+      <h2>Error</h2>
+      <p>${esc(msg)}</p>
+    </div>`;
+}
+
+// ─── AUTO-REFRESH ─────────────────────────────────────────────────
+function startCountdown() {
+  clearInterval(autoRefreshTimer);
+  countdown = REFRESH_INTERVAL;
+  autoRefreshTimer = setInterval(() => {
+    countdown--;
+    document.getElementById('refreshLabel').textContent =
+      countdown > 0 ? `Refreshes in ${countdown}s` : 'Refreshing…';
+    if (countdown <= 0) {
+      countdown = REFRESH_INTERVAL;
+      fetchAndRender();
+    }
+  }, 1000);
+}
+
+// ─── ESCAPE HTML ──────────────────────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────
+loadEventsList();
+</script>
+</body>
+</html>

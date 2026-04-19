@@ -47,6 +47,204 @@
       align-items: center;
       gap: 8px;
     }
+
+    /* Apex Timing sync badge */
+    .apex-sync-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .apex-sync-badge:hover { background: rgba(0,0,0,0.4); }
+    .apex-sync-badge.connected {
+      border-color: #22c55e;
+      color: #bbf7d0;
+    }
+    .apex-sync-badge.connecting {
+      border-color: #f59e0b;
+      color: #fde68a;
+    }
+    .apex-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6b7280;
+      transition: background 0.3s;
+    }
+    .apex-sync-badge.connected .apex-dot { background: #22c55e; animation: pulse 2s infinite; }
+    .apex-sync-badge.connecting .apex-dot { background: #f59e0b; animation: pulse 1s infinite; }
+
+    /* Apex Terminal Panel */
+    .flags-apex-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      align-items: stretch;
+    }
+    .flags-apex-row .flag-grid {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin-bottom: 0;
+    }
+    .flags-apex-row.has-terminal .flag-grid {
+      flex: 0 0 auto;
+      min-width: 160px;
+    }
+    .flags-apex-row.has-terminal .flag-btn {
+      padding: 16px 8px;
+    }
+    .flags-apex-row.has-terminal .flag-btn .flag-icon {
+      font-size: 28px;
+    }
+    .flags-apex-row.has-terminal .flag-btn .flag-label {
+      font-size: 11px;
+    }
+    .apex-terminal {
+      flex: 1 1 0;
+      min-width: 0;
+      background: #020a18;
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 200px;
+    }
+    .apex-term-head {
+      background: #061224;
+      border-bottom: 1px solid #1e3a5f;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .apex-term-title {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #334155;
+    }
+    .apex-term-session {
+      font-size: 12px;
+      font-weight: 700;
+      color: #38bdf8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .apex-term-flag-pill {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #475569;
+      transition: background 0.3s, color 0.3s;
+    }
+    .apex-term-scroll {
+      flex: 1 1 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 6px 8px;
+      scrollbar-width: thin;
+      scrollbar-color: #1e3a5f transparent;
+    }
+    .apex-term-scroll::-webkit-scrollbar { width: 4px; }
+    .apex-term-scroll::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
+    .apex-tline {
+      font-size: 10.5px;
+      line-height: 1.7;
+      color: #22d3ee;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .apex-ttime { color: #334155; }
+    .apex-tline-green  { color: #4ade80; }
+    .apex-tline-yellow { color: #facc15; }
+    .apex-tline-red    { color: #f87171; }
+    .apex-tline-check  { color: #e2e8f0; }
+    .apex-tline-blue   { color: #93c5fd; }
+    .apex-tline-white  { color: #e2e8f0; }
+    .apex-tline-dim    { color: #475569; }
+    .apex-tline-info   { color: #38bdf8; }
+    .apex-tline-warn   { color: #fb923c; }
+    @media (max-width: 420px) {
+      .flags-apex-row.has-terminal { flex-direction: column; }
+      .flags-apex-row.has-terminal .flag-grid { flex: 0 0 auto; }
+      .apex-terminal { min-height: 140px; }
+    }
+
+    /* Test Mode Banner */
+    .test-mode-bar {
+      background: #78350f;
+      border-bottom: 2px solid #f59e0b;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fde68a;
+    }
+    .test-mode-bar.live {
+      background: #14532d;
+      border-bottom-color: #22c55e;
+      color: #bbf7d0;
+    }
+    .test-mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .test-mode-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+    }
+    .test-mode-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .test-mode-switch-track {
+      position: absolute;
+      inset: 0;
+      background: #22c55e;
+      border-radius: 22px;
+      transition: background 0.2s;
+    }
+    .test-mode-switch input:checked + .test-mode-switch-track {
+      background: #f59e0b;
+    }
+    .test-mode-switch-track::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .test-mode-switch input:checked + .test-mode-switch-track::before {
+      transform: translateX(18px);
+    }
     
     .status-dot {
       width: 10px;
@@ -134,6 +332,28 @@
     
     .flag-btn:active {
       transform: scale(0.96);
+    }
+
+    .flag-btn.apex-active {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.9),
+                  0 0 0 6px rgba(255,255,255,0.2),
+                  0 4px 28px rgba(255,255,255,0.35);
+      z-index: 1;
+    }
+
+    .flag-btn.apex-active::after {
+      content: 'AUTO';
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 9px;
+      font-weight: 800;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      border-radius: 4px;
+      padding: 1px 4px;
+      letter-spacing: 0.5px;
     }
     
     .flag-btn .flag-icon {
@@ -624,6 +844,24 @@
     </div>
   </div>
 
+  <!-- Test Mode Banner -->
+  <div class="test-mode-bar" id="testModeBanner">
+    <span id="testModeLabel">⚠️ TEST MODE — Notifications will NOT be sent</span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="apex-sync-badge" id="apexBadge" title="Apex Timing auto-flag sync" onclick="toggleApexSync()">
+        <span class="apex-dot" id="apexDot"></span>
+        <span id="apexBadgeLabel">APEX SYNC OFF</span>
+      </div>
+      <label class="test-mode-toggle" title="Toggle live/test mode">
+        <label class="test-mode-switch">
+          <input type="checkbox" id="testModeToggle" checked onchange="toggleTestMode(this.checked)">
+          <span class="test-mode-switch-track"></span>
+        </label>
+        <span id="testModeSwitchLabel">Test Mode</span>
+      </label>
+    </div>
+  </div>
+
   <div class="main-content">
     <!-- Quick Picker -->
     <div class="section-title">Target Audience</div>
@@ -640,31 +878,45 @@
 
     <!-- Race Flags -->
     <div class="section-title">Race Flags</div>
-    <div class="flag-grid">
-      <button class="flag-btn flag-red" onclick="sendFlag('red')">
-        <span class="flag-icon">🔴</span>
-        <span class="flag-label">RED FLAG</span>
-      </button>
-      <button class="flag-btn flag-yellow" onclick="sendFlag('yellow')">
-        <span class="flag-icon">🟡</span>
-        <span class="flag-label">YELLOW FLAG</span>
-      </button>
-      <button class="flag-btn flag-green" onclick="sendFlag('green')">
-        <span class="flag-icon">🟢</span>
-        <span class="flag-label">GREEN FLAG</span>
-      </button>
-      <button class="flag-btn flag-checkered" onclick="sendFlag('checkered')">
-        <span class="flag-icon">🏁</span>
-        <span class="flag-label">CHECKERED</span>
-      </button>
-      <button class="flag-btn flag-blue" onclick="sendFlag('blue')">
-        <span class="flag-icon">🔵</span>
-        <span class="flag-label">BLUE FLAG</span>
-      </button>
-      <button class="flag-btn flag-white" onclick="sendFlag('white')">
-        <span class="flag-icon">⚪</span>
-        <span class="flag-label">WHITE FLAG</span>
-      </button>
+    <div class="flags-apex-row" id="flagsApexRow">
+      <div class="flag-grid">
+        <button class="flag-btn flag-red" data-flag="red" onclick="sendFlag('red')">
+          <span class="flag-icon">🔴</span>
+          <span class="flag-label">RED FLAG</span>
+        </button>
+        <button class="flag-btn flag-yellow" data-flag="yellow" onclick="sendFlag('yellow')">
+          <span class="flag-icon">🟡</span>
+          <span class="flag-label">YELLOW FLAG</span>
+        </button>
+        <button class="flag-btn flag-green" data-flag="green" onclick="sendFlag('green')">
+          <span class="flag-icon">🟢</span>
+          <span class="flag-label">GREEN FLAG</span>
+        </button>
+        <button class="flag-btn flag-checkered" data-flag="checkered" onclick="sendFlag('checkered')">
+          <span class="flag-icon">🏁</span>
+          <span class="flag-label">CHECKERED</span>
+        </button>
+        <button class="flag-btn flag-blue" data-flag="blue" onclick="sendFlag('blue')">
+          <span class="flag-icon">🔵</span>
+          <span class="flag-label">BLUE FLAG</span>
+        </button>
+        <button class="flag-btn flag-white" data-flag="white" onclick="sendFlag('white')">
+          <span class="flag-icon">⚪</span>
+          <span class="flag-label">WHITE FLAG</span>
+        </button>
+      </div>
+
+      <!-- Apex Timing Terminal -->
+      <div class="apex-terminal" id="apexTerminal">
+        <div class="apex-term-head">
+          <div class="apex-term-title">◈ APEX TIMING LIVE</div>
+          <div class="apex-term-session" id="apexTermSession">Connecting…</div>
+          <div class="apex-term-flag-pill" id="apexTermFlagPill">— no flag</div>
+        </div>
+        <div class="apex-term-scroll" id="apexTermScroll">
+          <div class="apex-tline apex-tline-dim">Waiting for data…</div>
+        </div>
+      </div>
     </div>
 
     <!-- Quick Actions -->
@@ -1134,6 +1386,345 @@
       pendingNotification = null;
     }
 
+    // ── APEX TIMING SYNC ────────────────────────────────────────────────────
+    // Terminal state
+    var apexTermLog = [];
+    var apexLastMsgTs = 0;
+    var apexSession1 = '';
+    var apexSession2 = '';
+    var apexWasConnected = null; // null=never seen, true=was connected, false=was disconnected
+
+    var APEX_FLAG_PILL = {
+      green:     { bg: '#14532d', color: '#4ade80', text: '🟢 GREEN'    },
+      yellow:    { bg: '#713f12', color: '#facc15', text: '🟡 YELLOW'   },
+      red:       { bg: '#7f1d1d', color: '#f87171', text: '🔴 RED'      },
+      checkered: { bg: '#374151', color: '#e2e8f0', text: '🏁 FINISH'   },
+      blue:      { bg: '#1e3a8a', color: '#93c5fd', text: '🔵 BLUE'     },
+      white:     { bg: '#cbd5e1', color: '#111827', text: '⚪ WHITE'    },
+      none:      { bg: '#1e293b', color: '#475569', text: '— no flag'   },
+    };
+
+    var APEX_LIGHT_MAP = {
+      // Confirmed live class names on the 'light' data-id
+      lg:        { text: '🟢 GREEN FLAG',      cls: 'green'  },
+      ly:        { text: '🟡 YELLOW FLAG',     cls: 'yellow' },
+      lr:        { text: '🔴 RED FLAG',        cls: 'red'    },
+      lc:        { text: '🏁 CHEQUERED FLAG',  cls: 'check'  },
+      lo:        { text: '⚫ FLAG CLEARED',    cls: 'dim'    },
+      ls:        { text: '⚫ FLAG CLEARED',    cls: 'dim'    },
+      // Alternative / legacy class names Apex may send for checkered/finish
+      ch:        { text: '🏁 CHEQUERED FLAG',  cls: 'check'  },
+      chequered: { text: '🏁 CHEQUERED FLAG',  cls: 'check'  },
+      checkered: { text: '🏁 CHEQUERED FLAG',  cls: 'check'  },
+      // Alternative flag names
+      gr:        { text: '🟢 GREEN FLAG',      cls: 'green'  },
+      yf:        { text: '🟡 YELLOW FLAG',     cls: 'yellow' },
+      rf:        { text: '🔴 RED FLAG',        cls: 'red'    },
+    };
+
+    // Maps APEX_LIGHT_MAP css class → flagDefinitions key (for auto-flag)
+    var APEX_CLS_TO_FLAG = { green: 'green', yellow: 'yellow', red: 'red', check: 'checkered' };
+
+    var apexCurrentFlagName = null;  // which flag button is highlighted by Apex
+    var apexLastPushedFlag  = null;  // last flag we sent a push for (dup guard)
+
+    function apexHighlightFlag(name) {
+      var btns = document.querySelectorAll('.flag-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.remove('apex-active');
+      if (name && name !== 'none') {
+        var btn = document.querySelector('.flag-btn[data-flag="' + name + '"]');
+        if (btn) btn.classList.add('apex-active');
+      }
+      apexCurrentFlagName = (name && name !== 'none') ? name : null;
+    }
+
+    function apexAutoFlag(flagName) {
+      // Always update the visual highlight
+      apexHighlightFlag(flagName);
+
+      // If flag cleared, reset push guard
+      if (!flagName || flagName === 'none') { apexLastPushedFlag = null; return; }
+
+      // Dup guard — don't push the same flag twice in a row
+      if (flagName === apexLastPushedFlag) return;
+      apexLastPushedFlag = flagName;
+
+      var flag = flagDefinitions[flagName];
+      if (!flag) return;
+
+      var targetClass = document.getElementById('targetClass').value;
+      var notification = {
+        type: 'flag', flagType: flagName,
+        title: flag.title, body: flag.message,
+        targetClass: targetClass
+      };
+
+      addToLog(notification);
+
+      // TEST MODE — toast only, no push sent
+      if (document.getElementById('testModeToggle').checked) {
+        showToast('[APEX AUTO] ' + flag.icon + ' ' + flag.title + ' (test — not sent)');
+        return;
+      }
+
+      // LIVE MODE — send push without confirmation modal
+      var payload = { title: notification.title, body: notification.body };
+      if (targetClass && targetClass !== 'all') payload.raceClass = targetClass;
+
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        if (result.success) {
+          showToast('[APEX AUTO] ' + flag.icon + ' ' + flag.title + ' → ' + (result.sent || 0) + ' device(s)');
+        } else {
+          showToast('[APEX AUTO] Push failed: ' + (result.error || 'unknown error'), true);
+        }
+      })
+      .catch(function() { showToast('[APEX AUTO] Error sending push', true); });
+    }
+
+    function apexPushLine(text, cls) {
+      var now = new Date();
+      var time = ('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2)+':'+('0'+now.getSeconds()).slice(-2);
+      apexTermLog.push({ time: time, text: text, cls: cls || '' });
+      if (apexTermLog.length > 150) apexTermLog.shift();
+    }
+
+    function renderApexTerm() {
+      var scroll = document.getElementById('apexTermScroll');
+      if (!scroll) return;
+      var entries = apexTermLog.slice(-60);
+      if (!entries.length) {
+        scroll.innerHTML = '<div class="apex-tline apex-tline-dim">No events yet</div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < entries.length; i++) {
+        var e = entries[i];
+        html += '<div class="apex-tline' + (e.cls ? ' apex-tline-' + e.cls : '') + '">'
+              + '<span class="apex-ttime">' + e.time + '</span> '
+              + e.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
+      }
+      scroll.innerHTML = html;
+      scroll.scrollTop = scroll.scrollHeight;
+    }
+
+    function updateApexTermHeader() {
+      var el = document.getElementById('apexTermSession');
+      if (!el) return;
+      var sess = [apexSession1, apexSession2].filter(Boolean).join(' — ');
+      el.textContent = sess || 'Apex Timing';
+    }
+
+    function updateApexTermFlagPill(flag) {
+      var pill = document.getElementById('apexTermFlagPill');
+      if (!pill) return;
+      var cfg = APEX_FLAG_PILL[flag] || APEX_FLAG_PILL['none'];
+      pill.textContent = cfg.text;
+      pill.style.background = cfg.bg;
+      pill.style.color = cfg.color;
+    }
+
+    function processApexMessages(messages) {
+      var newTs = apexLastMsgTs;
+      var dirty = false;
+      for (var i = 0; i < messages.length; i++) {
+        var m = messages[i];
+        if (m.ts <= apexLastMsgTs) continue;
+        if (m.ts > newTs) newTs = m.ts;
+
+        var parts = m.line.split('|');
+        var id = parts[0], mcls = parts[1], val = (parts[2] || '').trim();
+
+        if (id === 'title1') {
+          apexSession1 = val; dirty = true;
+        } else if (id === 'title2') {
+          apexSession2 = val; dirty = true;
+        } else if (id === 'light' && APEX_LIGHT_MAP[mcls]) {
+          var lm = APEX_LIGHT_MAP[mcls];
+          apexPushLine(lm.text, lm.cls);
+          apexAutoFlag(APEX_CLS_TO_FLAG[lm.cls] || 'none');
+          dirty = true;
+        } else if (id === 'init') {
+          if (mcls === 'r') {
+            apexPushLine('▶ RACE SESSION STARTED', 'info');
+            // Clear any stale checkered highlight when a new race starts
+            apexLastPushedFlag = null;
+            apexHighlightFlag('none');
+            dirty = true;
+          } else if (mcls === 'n') {
+            apexPushLine('🏁 SESSION ENDED', 'check');
+            apexAutoFlag('checkered');
+            dirty = true;
+          }
+        } else if (id === 'msg' && val) {
+          // Strip HTML tags and truncate
+          var clean = val.replace(/<[^>]*>/g, '').substring(0, 55);
+          if (clean) { apexPushLine('💬 ' + clean, ''); dirty = true; }
+        } else if (id === 'track' && val) {
+          var trackClean = val.replace(/<[^>]*>/g, '').substring(0, 55);
+          if (trackClean) { apexPushLine('📍 ' + trackClean, 'dim'); dirty = true; }
+        }
+      }
+      apexLastMsgTs = newTs;
+      if (dirty) { updateApexTermHeader(); renderApexTerm(); }
+    }
+
+    var apexEnabled = false;
+    var apexPollTimer = null;
+
+    function toggleApexSync() {
+      if (apexEnabled) {
+        disableApexSync();
+      } else {
+        enableApexSync();
+      }
+    }
+
+    function enableApexSync() {
+      // Reset terminal state for fresh connection
+      apexLastMsgTs = 0;
+      apexSession1 = '';
+      apexSession2 = '';
+      apexWasConnected = null;
+      apexPushLine('⚡ CONNECTING TO APEX TIMING…', 'info');
+      renderApexTerm();
+      updateApexTermHeader();
+      updateApexTermFlagPill('none');
+      // Show the terminal
+      var term = document.getElementById('apexTerminal');
+      var row = document.getElementById('flagsApexRow');
+      if (term) term.style.display = 'flex';
+      if (row) row.classList.add('has-terminal');
+
+      fetch('/api/apex/enable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.success) {
+            apexEnabled = true;
+            var badge = document.getElementById('apexBadge');
+            badge.className = 'apex-sync-badge connecting';
+            document.getElementById('apexBadgeLabel').textContent = 'APEX CONNECTING\u2026';
+            showToast('Apex Timing sync enabled \u2014 connecting\u2026');
+            startApexStatusPoll();
+          }
+        })
+        .catch(function() { showToast('Could not enable Apex sync'); });
+    }
+
+    function disableApexSync() {
+      fetch('/api/apex/disable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          apexEnabled = false;
+          apexWasConnected = null;
+          stopApexStatusPoll();
+          var badge = document.getElementById('apexBadge');
+          badge.className = 'apex-sync-badge';
+          document.getElementById('apexBadgeLabel').textContent = 'APEX SYNC OFF';
+          // Hide the terminal
+          var term = document.getElementById('apexTerminal');
+          var row = document.getElementById('flagsApexRow');
+          if (term) term.style.display = 'none';
+          if (row) row.classList.remove('has-terminal');
+          showToast('Apex Timing sync disabled');
+        })
+        .catch(function() { showToast('Could not disable Apex sync'); });
+    }
+
+    function startApexStatusPoll() {
+      stopApexStatusPoll();
+      apexPollTimer = setInterval(pollApexStatus, 3000);
+      pollApexStatus();
+    }
+
+    function stopApexStatusPoll() {
+      if (apexPollTimer) { clearInterval(apexPollTimer); apexPollTimer = null; }
+    }
+
+    function pollApexStatus() {
+      fetch('/api/apex/status')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          apexEnabled = d.enabled;
+          var badge = document.getElementById('apexBadge');
+          var label = document.getElementById('apexBadgeLabel');
+          var term  = document.getElementById('apexTerminal');
+          var row   = document.getElementById('flagsApexRow');
+
+          if (!d.enabled) {
+            badge.className = 'apex-sync-badge';
+            label.textContent = 'APEX SYNC OFF';
+            if (term) term.style.display = 'none';
+            if (row) row.classList.remove('has-terminal');
+            stopApexStatusPoll();
+            return;
+          }
+
+          // Show terminal panel while enabled
+          if (term) term.style.display = 'flex';
+          if (row) row.classList.add('has-terminal');
+
+          if (d.connected) {
+            badge.className = 'apex-sync-badge connected';
+            label.textContent = 'APEX LIVE \u2713';
+            if (apexWasConnected === false || apexWasConnected === null) {
+              apexPushLine('\u26a1 CONNECTED \u2014 ' + d.config.host, 'info');
+              renderApexTerm();
+            }
+            apexWasConnected = true;
+          } else {
+            badge.className = 'apex-sync-badge connecting';
+            label.textContent = 'APEX CONNECTING\u2026';
+            if (apexWasConnected === true) {
+              apexPushLine('\u2716 DISCONNECTED \u2014 retrying\u2026', 'warn');
+              renderApexTerm();
+            }
+            apexWasConnected = false;
+          }
+
+          // Update flag pill and button highlight from server state (visual only, no push)
+          updateApexTermFlagPill(d.currentFlag || 'none');
+          apexHighlightFlag(d.currentFlag || 'none');
+
+          // Feed new messages into the terminal log
+          if (d.recentMessages && d.recentMessages.length) {
+            processApexMessages(d.recentMessages);
+          }
+        })
+        .catch(function() {});
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    function toggleTestMode(isTest) {
+      const banner = document.getElementById('testModeBanner');
+      const label = document.getElementById('testModeLabel');
+      const switchLabel = document.getElementById('testModeSwitchLabel');
+      if (isTest) {
+        banner.classList.remove('live');
+        label.textContent = '⚠️ TEST MODE — Notifications will NOT be sent';
+        switchLabel.textContent = 'Test Mode';
+      } else {
+        banner.classList.add('live');
+        label.textContent = '🟢 LIVE MODE — Notifications WILL be sent to subscribers';
+        switchLabel.textContent = 'Live Mode';
+      }
+    }
+
+    // Broadcast the flag type to flag.html display screens (always fires, test or live)
+    function broadcastFlagDisplay(notification) {
+      if (notification.type !== 'flag') return;
+      fetch('/api/flag/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flag: notification.flagType })
+      }).catch(() => {});
+    }
+
     async function confirmSend() {
       if (!pendingNotification) return;
       
@@ -1141,6 +1732,18 @@
       const notification = { ...pendingNotification };
       
       closeModal();
+
+      // ── TEST MODE: skip the real API call ──────────────────────────────────
+      if (document.getElementById('testModeToggle').checked) {
+        addToLog(notification);
+        broadcastFlagDisplay(notification);
+        const target = (notification.type === 'individual' && notification.targetDriver)
+          ? notification.targetDriver.name
+          : (notification.targetClass === 'all' ? 'All Drivers' : notification.targetClass);
+        showToast(`[TEST] "${notification.title}" → ${target} (not sent)`);
+        return;
+      }
+      // ────────────────────────────────────────────────────────────────────────
       
       try {
         const payload = {
@@ -1165,6 +1768,7 @@
         const result = await response.json();
         
         if (result.success) {
+          broadcastFlagDisplay(notification);
           if (notification.type === 'individual' && notification.targetDriver) {
             showToast(`Sent to ${notification.targetDriver.name}!`);
           } else {

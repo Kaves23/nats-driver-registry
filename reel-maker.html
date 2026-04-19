@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎬 ROK Reel Maker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #111;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    /* ── PANELS ── */
+    #config-panel {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 10px;
+    }
+
+    h1.page-title {
+      text-align: center;
+      font-size: 2.2rem;
+      color: #ff4444;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #777;
+      font-size: 0.88rem;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      background: #1a1a1a;
+      border: 1px solid #2e2e2e;
+      border-radius: 10px;
+      padding: 22px 24px;
+      margin-bottom: 14px;
+    }
+
+    .section h2 {
+      color: #ff4444;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 18px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: #999;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 7px;
+    }
+
+    .form-group input[type="number"],
+    .form-group input[type="text"],
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0e0e0e;
+      border: 1px solid #3a3a3a;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #ff4444;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .range-row input[type="range"] {
+      flex: 1;
+      accent-color: #ff4444;
+    }
+
+    .range-row span {
+      min-width: 38px;
+      text-align: center;
+      font-weight: 700;
+      color: #ff4444;
+      font-size: 1.05rem;
+    }
+
+    /* pacing */
+    .pacing-group { display: flex; gap: 6px; }
+
+    .pacing-btn {
+      flex: 1;
+      padding: 9px;
+      border: 1px solid #3a3a3a;
+      background: #0e0e0e;
+      color: #888;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.18s;
+    }
+
+    .pacing-btn.active, .pacing-btn:hover {
+      border-color: #ff4444;
+      color: #fff;
+      background: rgba(255,68,68,0.12);
+    }
+
+    /* audio mode */
+    .audio-mode-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .audio-mode-btn {
+      flex: 1;
+      min-width: 110px;
+      padding: 9px;
+      border: 1px solid #3a3a3a;
+      background: #0e0e0e;
+      color: #888;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.18s;
+    }
+
+    .audio-mode-btn.active {
+      border-color: #ff4444;
+      color: #fff;
+      background: rgba(255,68,68,0.12);
+    }
+
+    #audio-upload-wrap {
+      margin-top: 12px;
+      display: none;
+    }
+
+    #audio-upload-wrap.visible { display: block; }
+
+    #audio-file {
+      background: #0e0e0e;
+      border: 1px dashed #555;
+      border-radius: 6px;
+      color: #ccc;
+      padding: 10px;
+      width: 100%;
+      cursor: pointer;
+      font-size: 0.88rem;
+    }
+
+    /* toggles */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: #ff4444;
+      cursor: pointer;
+    }
+
+    .toggle-row span { font-size: 0.9rem; color: #ccc; cursor: pointer; }
+
+    /* corner picker */
+    .corner-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      max-width: 220px;
+    }
+
+    .corner-picker label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #ccc;
+      padding: 6px 10px;
+      border: 1px solid #3a3a3a;
+      border-radius: 5px;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+
+    .corner-picker input[type="radio"] { accent-color: #ff4444; flex-shrink: 0; }
+    .corner-picker label:has(input:checked) { border-color: #ff4444; background: rgba(255,68,68,0.1); }
+
+    /* timing preview */
+    #timing-preview {
+      text-align: center;
+      font-size: 0.81rem;
+      color: #ff8888;
+      min-height: 20px;
+      margin-top: 8px;
+    }
+
+    /* buttons */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      max-width: 400px;
+      margin: 22px auto 0;
+      padding: 15px;
+      background: linear-gradient(135deg, #ff4444, #cc0000);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-align: center;
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,68,68,0.4); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-secondary {
+      padding: 9px 18px;
+      background: #222;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.87rem;
+      font-weight: 600;
+      transition: all 0.18s;
+    }
+
+    .btn-secondary:hover { background: #333; border-color: #666; color: #fff; }
+
+    /* status */
+    #fetch-status {
+      text-align: center;
+      padding: 8px 0 0;
+      font-size: 0.87rem;
+      color: #888;
+      min-height: 28px;
+    }
+
+    .s-error { color: #ff6666 !important; }
+    .s-ok { color: #44ff99 !important; }
+
+    /* VIDEO SELECTOR */
+    #video-selector {
+      max-width: 860px;
+      margin: 0 auto 16px;
+      padding: 0 20px;
+      display: none;
+    }
+
+    #video-selector.visible { display: block; }
+
+    .selector-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .selector-controls span { font-size: 0.82rem; color: #777; }
+
+    .video-list {
+      max-height: 280px;
+      overflow-y: auto;
+      background: #0e0e0e;
+      border: 1px solid #2e2e2e;
+      border-radius: 8px;
+      padding: 6px;
+    }
+
+    .video-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .video-item:hover { background: #1c1c1c; }
+
+    .video-item input[type="checkbox"] {
+      flex-shrink: 0;
+      width: 15px; height: 15px;
+      accent-color: #ff4444;
+      cursor: pointer;
+    }
+
+    .vid-name {
+      flex: 1;
+      font-size: 0.85rem;
+      color: #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* REEL PANEL */
+    #reel-panel {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      min-height: 100vh;
+    }
+
+    #reel-panel.visible { display: flex; }
+
+    #reel-wrap {
+      position: relative;
+      width: 360px;
+      height: 640px;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 50px rgba(255,68,68,0.25), 0 0 0 1px rgba(255,68,68,0.15);
+      flex-shrink: 0;
+    }
+
+    #reel-canvas { width: 360px; height: 640px; display: block; }
+
+    #reel-progress {
+      width: 360px;
+      height: 3px;
+      background: #222;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    #reel-progress-fill {
+      height: 100%;
+      background: #ff4444;
+      width: 0%;
+      transition: width 0.08s linear;
+    }
+
+    #reel-controls {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    #reel-status {
+      font-size: 0.83rem;
+      color: #777;
+      text-align: center;
+    }
+
+    .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    .btn-play {
+      padding: 13px 26px;
+      background: linear-gradient(135deg, #ff4444, #cc0000);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-play:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,68,68,0.4); }
+    .btn-play:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-record {
+      padding: 13px 26px;
+      background: linear-gradient(135deg, #dd0000, #880000);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-record:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(200,0,0,0.5); }
+    .btn-record:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .record-note {
+      font-size: 0.76rem;
+      color: #555;
+      text-align: center;
+      max-width: 360px;
+      line-height: 1.5;
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 20;
+    }
+
+    #loading-overlay.hidden { display: none; }
+
+    .spinner {
+      width: 38px; height: 38px;
+      border: 3px solid #2a2a2a;
+      border-top-color: #ff4444;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading-text { font-size: 0.85rem; color: #aaa; }
+
+    /* Download progress list inside loading overlay */
+    #dl-progress-list {
+      width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .dl-item { display: flex; flex-direction: column; gap: 3px; }
+    .dl-item-name { font-size: 0.72rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dl-bar-wrap { background: #1a1a1a; border-radius: 4px; height: 6px; overflow: hidden; }
+    .dl-bar { height: 100%; background: #ff4444; border-radius: 4px; transition: width 0.1s; width: 0%; }
+    .dl-bar.done { background: #44cc77; }
+
+    /* Clip swap row */
+    #clip-swap-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      max-width: 600px;
+      padding: 12px 0 4px;
+    }
+    .clip-card {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .clip-card-num { font-size: 0.7rem; color: #555; flex-shrink: 0; }
+    .clip-card-name { font-size: 0.75rem; color: #ccc; max-width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .clip-swap-btn {
+      flex-shrink: 0;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #aaa;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .clip-swap-btn:hover { border-color: #ff4444; color: #ff4444; }
+
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      h1.page-title { font-size: 1.6rem; }
+      #reel-wrap, #reel-canvas { width: 300px; height: 533px; }
+      #reel-progress { width: 300px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════ CONFIG PANEL ══════════════════════ -->
+<div id="config-panel">
+  <h1 class="page-title">🎬 ROK Reel Maker</h1>
+  <p class="subtitle">Auto-cut portrait reels · beat-synced cuts · 90s colour grade · kart tracking</p>
+
+  <!-- Bucket -->
+  <div class="section">
+    <h2>☁️ Bucket Settings</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Z1 Bucket name</label>
+        <input type="text" id="bucket-name" value="kaykes-digital">
+      </div>
+      <div class="form-group">
+        <label>Folder prefix (empty = root)</label>
+        <input type="text" id="bucket-prefix" placeholder="e.g. summer-nats/ or leave empty">
+      </div>
+    </div>
+    <button class="btn-primary" id="fetch-btn" onclick="fetchBucket()">🔍 Fetch Videos from Bucket</button>
+    <div id="fetch-status"></div>
+  </div>
+
+  <!-- Reel settings -->
+  <div class="section">
+    <h2>⚙️ Reel Settings</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Number of clips</label>
+        <div class="range-row">
+          <input type="range" id="clip-count" min="4" max="20" value="8"
+                 oninput="syncRange('clip-count','clip-count-val');updateTimingPreview()">
+          <span id="clip-count-val">8</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Reel duration (seconds)</label>
+        <div class="range-row">
+          <input type="range" id="reel-duration" min="10" max="60" value="15"
+                 oninput="syncRange('reel-duration','reel-duration-val');updateTimingPreview()">
+          <span id="reel-duration-val">15</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>BPM — for beat-sync cuts</label>
+        <input type="number" id="bpm" value="120" min="60" max="220"
+               oninput="updateTimingPreview()">
+      </div>
+      <div class="form-group">
+        <label>Pacing</label>
+        <div class="pacing-group">
+          <div class="pacing-btn" onclick="setPacing('fast',this)">⚡ Fast</div>
+          <div class="pacing-btn active" onclick="setPacing('medium',this)">🔥 Medium</div>
+          <div class="pacing-btn" onclick="setPacing('slow',this)">🌊 Slow</div>
+        </div>
+      </div>
+    </div>
+    <div id="timing-preview"></div>
+    <div class="toggle-row" style="margin-top:12px;">
+      <input type="checkbox" id="smart-scan">
+      <span onclick="document.getElementById('smart-scan').click()">Smart moment selection — scans each clip for peak action (adds ~5s loading per clip)</span>
+    </div>
+  </div>
+
+  <!-- Audio -->
+  <div class="section">
+    <h2>🎵 Audio</h2>
+    <p style="color:#666;font-size:0.8rem;margin-bottom:12px;">
+      BPM controls cut timing only. Choose your song on Instagram or TikTok after saving.
+    </p>
+    <div class="audio-mode-group">
+      <div class="audio-mode-btn active" onclick="setAudioMode('muted',this)">🔇 Muted</div>
+      <div class="audio-mode-btn" onclick="setAudioMode('upload',this)">📁 Upload Track</div>
+    </div>
+    <div id="audio-upload-wrap">
+      <input type="file" id="audio-file" accept="audio/*">
+    </div>
+  </div>
+
+  <!-- Branding -->
+  <div class="section">
+    <h2>🏁 Branding</h2>
+    <div class="toggle-row" style="margin-bottom:14px;">
+      <input type="checkbox" id="show-logo" checked onchange="toggleLogoOptions(this)">
+      <span onclick="document.getElementById('show-logo').click()">Show ROK logo watermark</span>
+    </div>
+    <div id="logo-options">
+      <div class="form-group">
+        <label>Logo position</label>
+        <div class="corner-picker">
+          <label><input type="radio" name="logo-corner" value="tl"> Top Left</label>
+          <label><input type="radio" name="logo-corner" value="tr"> Top Right</label>
+          <label><input type="radio" name="logo-corner" value="bl"> Bottom Left</label>
+          <label><input type="radio" name="logo-corner" value="br" checked> Bottom Right</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Logo opacity</label>
+        <div class="range-row">
+          <input type="range" id="logo-opacity" min="20" max="100" value="75"
+                 oninput="syncRange('logo-opacity','logo-opacity-val')">
+          <span id="logo-opacity-val">75</span>%
+        </div>
+      </div>
+    </div>
+
+    <div class="toggle-row" style="margin-top:14px;">
+      <input type="checkbox" id="show-landscape" checked>
+      <span onclick="document.getElementById('show-landscape').click()">
+        Use landscape clips (auto-zoomed &amp; kart-tracked)
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ VIDEO SELECTOR ══════════════════════ -->
+<div id="video-selector">
+  <div class="section">
+    <h2>📹 Select Videos</h2>
+    <div class="selector-controls">
+      <span id="video-count">0 videos found</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary" onclick="selectAll(true)">✓ All</button>
+        <button class="btn-secondary" onclick="selectAll(false)">✗ None</button>
+      </div>
+    </div>
+    <div class="video-list" id="video-list"></div>
+  </div>
+  <button class="btn-primary" id="generate-btn" onclick="generateReel()">🎬 Generate Reel</button>
+</div>
+
+<!-- ══════════════════════ REEL PANEL ══════════════════════ -->
+<div id="reel-panel">
+  <div id="reel-wrap">
+    <canvas id="reel-canvas" width="1080" height="1920"></canvas>
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <div id="loading-text">Loading clips…</div>
+      <div id="dl-progress-list"></div>
+    </div>
+  </div>
+  <div id="reel-progress"><div id="reel-progress-fill"></div></div>
+  <div id="reel-controls">
+    <div id="reel-status">Ready</div>
+    <div class="btn-row">
+      <button class="btn-play"   id="btn-play"   onclick="startPlay(false)" disabled>▶ Play Only</button>
+      <button class="btn-record" id="btn-record" onclick="startPlay(true)"  disabled>⏺ Record &amp; Download</button>
+      <button class="btn-secondary" onclick="backToConfig()">← Back</button>
+    </div>
+    <div class="record-note">
+      Saves as .webm · rename to .mp4 for Instagram · then add your song in the app
+    </div>
+  </div>
+  <!-- Per-clip swap row — shown after clips are loaded -->
+  <div id="clip-swap-row"></div>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const CANVAS_W       = 1080;
+const CANVAS_H       = 1920;
+const GRAIN_W        = 270;    // 1/4 resolution grain
+const GRAIN_H        = 480;
+const GRAIN_FRAMES   = 14;
+const GRAIN_OPACITY  = 0.13;
+const LETTERBOX_H    = 38;     // top & bottom bar px
+const LOGO_H         = 115;    // logo height in canvas px
+const LOGO_MARGIN    = 56;
+const TRACK_EASE     = 0.058;  // kart tracking easing
+const MOTION_COLS    = 16;
+const ANA_W          = 96;
+const ANA_H          = 54;     // 16:9 analysis canvas
+const FLASH_MS       = 90;     // white flash duration at cut
+const COLOR_GRADE    = 'brightness(1.15) contrast(1.1) saturate(1.5) sepia(0.08) hue-rotate(3deg)';
+const MIN_BEATS      = { fast: 1, medium: 2, slow: 4 };
+
+// Per-clip colour grade flavours — cycles through clips for visual variety
+const GRADE_FLAVOURS = [
+  'brightness(1.18) contrast(1.12) saturate(1.65) sepia(0.06) hue-rotate(2deg)',   // warm punchy
+  'brightness(1.06) contrast(1.20) saturate(1.28) sepia(0.00) hue-rotate(-10deg)', // cool crisp teal
+  'brightness(1.22) contrast(1.04) saturate(1.75) sepia(0.18) hue-rotate(8deg)',   // golden warm
+  'brightness(0.98) contrast(1.28) saturate(1.18) sepia(0.00) hue-rotate(195deg)', // moody teal-purple
+  'brightness(1.14) contrast(1.16) saturate(0.98) sepia(0.30) hue-rotate(0deg)',   // cinematic desaturated
+];
+
+// Transition type per incoming clip (weighted toward zoom-glitch)
+const TRANS_TYPES    = ['zoom-glitch','zoom-flash','zoom-glitch','wipe-l','zoom-glitch','zoom-flash','zoom-glitch','wipe-r'];
+
+// Zoom punch ramp + post-cut transition durations (seconds)
+const ZOOM_RAMP_DUR  = 0.22;  // pre-cut: outgoing clip scales up over this window
+const TRANSITION_DUR = 0.17;  // post-cut: incoming clip plays its transition effect
+
+// ============================================================
+// STATE
+// ============================================================
+let bucketFiles    = [];
+let selected       = {};        // key → bool
+let rotations      = {};        // key → rotation degrees (0 / 90 / 180 / 270)
+let blobPool       = {};        // key → { blobUrl, duration } — all downloaded blobs
+let loadedClips    = [];        // { key, url, video, isLandscape, duration, ts: {currentX,targetX,prevData} }
+let grainFrames    = [];
+let vigGrad        = null;
+let rokLogo        = new Image();
+let audioCtx       = null;
+let audioBuffer    = null;
+let audioSrcNode   = null;
+let audioRecDest   = null;
+let mediaRecorder  = null;
+let recordedChunks = [];
+
+let pacing         = 'medium';
+let audioMode      = 'muted';
+let isPlaying      = false;
+let isRecording    = false;
+let animFrame      = null;
+let reelStartTs    = 0;
+let currentIdx     = -1;
+let clipDurSec     = 0;
+let reelDurSec     = 0;
+let frameCount     = 0;
+let mainCtx        = null;
+
+// ============================================================
+// STARTUP
+// ============================================================
+window.addEventListener('load', () => {
+  rokLogo.crossOrigin = 'anonymous';
+  rokLogo.src = '/images/rok-logo.png';
+  buildGrainFrames();
+  updateTimingPreview();
+});
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function syncRange(id, valId) {
+  document.getElementById(valId).textContent = document.getElementById(id).value;
+}
+
+function setPacing(p, el) {
+  pacing = p;
+  document.querySelectorAll('.pacing-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  updateTimingPreview();
+}
+
+function setAudioMode(mode, el) {
+  audioMode = mode;
+  document.querySelectorAll('.audio-mode-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('audio-upload-wrap').classList.toggle('visible', mode === 'upload');
+}
+
+function toggleLogoOptions(cb) {
+  document.getElementById('logo-options').style.display = cb.checked ? '' : 'none';
+}
+
+function setFetchStatus(msg, type) {
+  const el = document.getElementById('fetch-status');
+  el.textContent = msg;
+  el.className = type ? `s-${type}` : '';
+}
+
+function setReelStatus(msg) { document.getElementById('reel-status').textContent = msg; }
+
+function updateTimingPreview() {
+  const clipCount  = parseInt(document.getElementById('clip-count').value)   || 8;
+  const reelDur    = parseInt(document.getElementById('reel-duration').value) || 15;
+  const bpm        = parseInt(document.getElementById('bpm').value)           || 120;
+  const beatDur    = 60 / bpm;
+  const minBeats   = MIN_BEATS[pacing] || 2;
+  const desired    = reelDur / clipCount;
+  const bpc        = Math.max(minBeats, Math.round(desired / beatDur));
+  const actualClip = (bpc * beatDur).toFixed(2);
+  const actualReel = (bpc * beatDur * clipCount).toFixed(1);
+  document.getElementById('timing-preview').textContent =
+    `${actualClip}s per clip (${bpc} beat${bpc !== 1 ? 's' : ''}) · total reel ≈ ${actualReel}s`;
+}
+
+// ============================================================
+// GRAIN SETUP
+// ============================================================
+function buildGrainFrames() {
+  grainFrames = [];
+  for (let f = 0; f < GRAIN_FRAMES; f++) {
+    const gc   = document.createElement('canvas');
+    gc.width   = GRAIN_W;
+    gc.height  = GRAIN_H;
+    const gctx = gc.getContext('2d');
+    const imgd = gctx.createImageData(GRAIN_W, GRAIN_H);
+    for (let i = 0; i < imgd.data.length; i += 4) {
+      const v = (Math.random() * 210) | 0;
+      imgd.data[i] = imgd.data[i+1] = imgd.data[i+2] = v;
+      imgd.data[i+3] = (Math.random() * 36) | 0;  // 0–36 alpha ≈ subtle grain
+    }
+    gctx.putImageData(imgd, 0, 0);
+    grainFrames.push(gc);
+  }
+}
+
+// ============================================================
+// VIGNETTE SETUP (called once canvas ctx is available)
+// ============================================================
+function setupVignette(ctx) {
+  vigGrad = ctx.createRadialGradient(
+    CANVAS_W / 2, CANVAS_H / 2, CANVAS_H * 0.18,
+    CANVAS_W / 2, CANVAS_H / 2, CANVAS_H * 0.88
+  );
+  vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  vigGrad.addColorStop(1, 'rgba(0,0,0,0.68)');
+}
+
+// ============================================================
+// BUCKET FETCH
+// ============================================================
+async function fetchBucket() {
+  const bucket = (document.getElementById('bucket-name').value.trim()) || 'kaykes-digital';
+  const prefix = document.getElementById('bucket-prefix').value.trim();
+
+  setFetchStatus('Fetching video list…');
+  document.getElementById('fetch-btn').disabled = true;
+  document.getElementById('video-selector').classList.remove('visible');
+
+  try {
+    let url = `/api/reel/list?bucket=${encodeURIComponent(bucket)}`;
+    if (prefix) url += `&prefix=${encodeURIComponent(prefix)}`;
+
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const keys = data.keys || [];
+
+    if (keys.length === 0) {
+      setFetchStatus('No .mp4/.mov/.webm files found. Check bucket name and prefix.', 'error');
+      document.getElementById('fetch-btn').disabled = false;
+      return;
+    }
+
+    bucketFiles = keys;
+    selected    = {};
+    keys.forEach(k => { selected[k] = true; });
+
+    renderVideoList();
+    setFetchStatus(`Found ${keys.length} video${keys.length !== 1 ? 's' : ''}`, 'ok');
+    document.getElementById('video-selector').classList.add('visible');
+
+  } catch (err) {
+    setFetchStatus(`Error: ${err.message}`, 'error');
+  }
+
+  document.getElementById('fetch-btn').disabled = false;
+}
+
+// ============================================================
+// VIDEO LIST
+// ============================================================
+function renderVideoList() {
+  const list = document.getElementById('video-list');
+  list.innerHTML = '';
+
+  bucketFiles.forEach(key => {
+    const item = document.createElement('div');
+    item.className = 'video-item';
+
+    const cb   = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.checked = selected[key] !== false;
+    cb.addEventListener('change', e => { selected[key] = e.target.checked; refreshCount(); });
+
+    const name       = document.createElement('span');
+    name.className   = 'vid-name';
+    name.textContent = key.split('/').pop();
+    name.title       = key;
+
+    // Per-clip rotation button — cycles 0 → 90 → 180 → 270 → 0
+    const rotBtn          = document.createElement('button');
+    rotBtn.type           = 'button';
+    rotBtn.title          = 'Rotate clip (0 → 90 → 180 → 270)';
+    const updateRotBtn = () => {
+      const deg = rotations[key] || 0;
+      rotBtn.textContent    = deg ? `↻${deg}°` : '↻';
+      rotBtn.style.cssText  =
+        `flex-shrink:0;background:#1a1a1a;border:1px solid ${deg ? '#ff8844' : '#333'};`+
+        `color:${deg ? '#ff8844' : '#888'};font-size:0.72rem;padding:2px 7px;`+
+        `border-radius:4px;cursor:pointer;transition:all 0.15s;`;
+    };
+    updateRotBtn();
+    rotBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      rotations[key] = ((rotations[key] || 0) + 90) % 360;
+      updateRotBtn();
+    });
+
+    item.appendChild(cb);
+    item.appendChild(name);
+    item.appendChild(rotBtn);
+    list.appendChild(item);
+
+    item.addEventListener('click', e => { if (e.target !== cb && e.target !== rotBtn) cb.click(); });
+  });
+
+  refreshCount();
+}
+
+function refreshCount() {
+  const n = Object.values(selected).filter(Boolean).length;
+  document.getElementById('video-count').textContent = `${n} of ${bucketFiles.length} selected`;
+}
+
+function selectAll(val) {
+  bucketFiles.forEach(k => { selected[k] = val; });
+  renderVideoList();
+}
+
+// ============================================================
+// GENERATE REEL — DOWNLOAD THEN BUILD
+// ============================================================
+async function generateReel() {
+  const clipCount    = parseInt(document.getElementById('clip-count').value);
+  const reelDur      = parseInt(document.getElementById('reel-duration').value);
+  const bpm          = parseInt(document.getElementById('bpm').value) || 120;
+  const useLandscape = document.getElementById('show-landscape').checked;
+  const bucket       = (document.getElementById('bucket-name').value.trim()) || 'kaykes-digital';
+  const MAX_DUR_SEC  = 10;  // only use clips ≤ 10 seconds
+
+  const selectedKeys = bucketFiles.filter(k => selected[k]);
+  if (selectedKeys.length === 0) { alert('No videos selected.'); return; }
+
+  // Beat-synced clip duration
+  const beatDur   = 60 / bpm;
+  const minBeats  = MIN_BEATS[pacing] || 2;
+  const desired   = reelDur / clipCount;
+  const bpc       = Math.max(minBeats, Math.round(desired / beatDur));
+  clipDurSec      = bpc * beatDur;
+  reelDurSec      = clipDurSec * clipCount;
+
+  // Switch to reel panel
+  document.getElementById('config-panel').style.display      = 'none';
+  document.getElementById('video-selector').classList.remove('visible');
+  document.getElementById('reel-panel').classList.add('visible');
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  document.getElementById('btn-play').disabled               = true;
+  document.getElementById('btn-record').disabled             = true;
+  document.getElementById('clip-swap-row').innerHTML         = '';
+
+  // Flush old video elements + revoke old blob URLs
+  const pool = document.getElementById('video-pool');
+  pool.innerHTML = '';
+  Object.values(blobPool).forEach(b => { try { URL.revokeObjectURL(b.blobUrl); } catch(_){} });
+  blobPool    = {};
+  loadedClips = [];
+
+  // ── Download-and-filter: shuffle all keys, download one at a time,
+  //    check duration from blob, keep if ≤ MAX_DUR_SEC, stop once we have clipCount ──
+  const dlList      = document.getElementById('dl-progress-list');
+  dlList.innerHTML  = '';
+
+  const shuffled = [...selectedKeys].sort(() => Math.random() - 0.5);
+  const kept     = [];   // { key, blobUrl, duration, isLandscape }
+
+  for (let i = 0; i < shuffled.length && kept.length < clipCount; i++) {
+    const key        = shuffled[i];
+    const shortName  = key.split('/').pop();
+
+    // Progress bar for this candidate
+    const wrap    = document.createElement('div');  wrap.className = 'dl-item';
+    const nameEl  = document.createElement('div');  nameEl.className = 'dl-item-name';
+    nameEl.textContent = `Checking ${i + 1}/${shuffled.length}: ${shortName}`;
+    const barWrap = document.createElement('div'); barWrap.className = 'dl-bar-wrap';
+    const bar     = document.createElement('div'); bar.className = 'dl-bar';
+    barWrap.appendChild(bar);
+    wrap.appendChild(nameEl);
+    wrap.appendChild(barWrap);
+    dlList.appendChild(wrap);
+    dlList.scrollTop = dlList.scrollHeight;
+
+    document.getElementById('loading-text').textContent =
+      `Found ${kept.length}/${clipCount} short clips… (checking ${i + 1} of ${shuffled.length})`;
+
+    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+    const url        = `/api/reel/video?bucket=${encodeURIComponent(bucket)}&key=${encodedKey}`;
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const contentLength = parseInt(resp.headers.get('content-length') || '0');
+      const reader        = resp.body.getReader();
+      const chunks        = [];
+      let received        = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (contentLength > 0) bar.style.width = Math.round((received / contentLength) * 100) + '%';
+      }
+
+      const blob    = new Blob(chunks);
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Check duration from blob — instant since data is local
+      const dur = await getBlobDuration(blobUrl);
+
+      if (isFinite(dur) && dur > 0 && dur <= MAX_DUR_SEC) {
+        // Check orientation
+        const isLS = await getBlobOrientation(blobUrl);
+        if (!useLandscape && isLS) {
+          // Landscape clip rejected — user doesn't want them
+          URL.revokeObjectURL(blobUrl);
+          bar.style.background = '#555';
+          nameEl.textContent   = `⊘ landscape: ${shortName}`;
+        } else {
+          bar.style.width = '100%';
+          bar.classList.add('done');
+          nameEl.textContent = `✓ ${shortName} (${dur.toFixed(1)}s)`;
+          kept.push({ key, blobUrl, duration: dur, isLandscape: isLS });
+          blobPool[key] = { blobUrl, duration: dur, isLandscape: isLS };
+        }
+      } else {
+        // Too long — discard blob
+        URL.revokeObjectURL(blobUrl);
+        bar.style.background = '#555';
+        nameEl.textContent   = `⊘ too long (${isFinite(dur) ? dur.toFixed(1) + 's' : '?'}): ${shortName}`;
+      }
+    } catch (err) {
+      console.warn(`[download] ${key}: ${err.message}`);
+      bar.style.background = '#884444';
+      nameEl.textContent   = `✗ error: ${shortName}`;
+    }
+  }
+
+  if (kept.length === 0) {
+    document.getElementById('loading-text').textContent =
+      `No clips ≤ ${MAX_DUR_SEC}s found after checking all selected videos.`;
+    return;
+  }
+
+  if (kept.length < clipCount) {
+    document.getElementById('loading-text').textContent =
+      `Only ${kept.length} short clips found. Proceeding with ${kept.length}.`;
+    await new Promise(r => setTimeout(r, 1000));
+  }
+
+  // ── Build clip objects ──
+  loadedClips = kept.slice(0, clipCount).map((entry, i) => {
+    const video       = document.createElement('video');
+    video.muted       = true;
+    video.loop        = false;
+    video.playsInline = true;
+    video.preload     = 'auto';
+    video.src         = entry.blobUrl;
+    pool.appendChild(video);
+
+    return {
+      key:        entry.key,
+      blobUrl:    entry.blobUrl,
+      video,
+      isLandscape: entry.isLandscape,
+      rotation:   rotations[entry.key] || 0,
+      duration:   entry.duration,
+      grade:      GRADE_FLAVOURS[i % GRADE_FLAVOURS.length],
+      transType:  TRANS_TYPES[i % TRANS_TYPES.length],
+      ts:         { currentX: 0.5, targetX: 0.5, smoothedTarget: 0.5, prevData: null }
+    };
+  });
+
+  reelDurSec = clipDurSec * loadedClips.length;
+
+  // Wait for all video elements to be ready (blob src loads instantly from memory)
+  document.getElementById('loading-text').textContent = 'Preparing playback…';
+  await Promise.all(loadedClips.map(clip => new Promise(res => {
+    if (clip.video.readyState >= 3) { res(); return; }
+    clip.video.addEventListener('canplaythrough', res, { once: true });
+    clip.video.addEventListener('error', res, { once: true });
+    setTimeout(res, 5000);
+  })));
+
+  // Init canvas
+  const canvas = document.getElementById('reel-canvas');
+  mainCtx      = canvas.getContext('2d');
+  mainCtx.imageSmoothingEnabled = true;
+  mainCtx.imageSmoothingQuality = 'high';
+  setupVignette(mainCtx);
+
+  // Setup audio
+  if (audioMode === 'upload') {
+    const f = document.getElementById('audio-file').files[0];
+    if (f) await loadAudio(f);
+  }
+
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('btn-play').disabled   = false;
+  document.getElementById('btn-record').disabled = false;
+
+  const land = loadedClips.filter(c => c.isLandscape).length;
+  const port = loadedClips.length - land;
+  setReelStatus(
+    `${loadedClips.length} clips · ${land} landscape · ${port} portrait · ${reelDurSec.toFixed(1)}s`
+  );
+
+  renderClipSwapRow(bucket);
+}
+
+// ── Get duration from a blob URL (data is already local — resolves instantly) ──
+function getBlobDuration(blobUrl) {
+  return new Promise(resolve => {
+    const v   = document.createElement('video');
+    v.muted   = true;
+    v.preload = 'metadata';
+    v.src     = blobUrl;
+    v.addEventListener('loadedmetadata', () => { const d = v.duration; v.src = ''; resolve(d); }, { once: true });
+    v.addEventListener('error', () => { v.src = ''; resolve(NaN); }, { once: true });
+    setTimeout(() => { v.src = ''; resolve(NaN); }, 4000);
+  });
+}
+
+// ── Get orientation from a blob URL ──
+function getBlobOrientation(blobUrl) {
+  return new Promise(resolve => {
+    const v   = document.createElement('video');
+    v.muted   = true;
+    v.preload = 'metadata';
+    v.src     = blobUrl;
+    v.addEventListener('loadedmetadata', () => {
+      const isLS = v.videoWidth > 0 ? (v.videoWidth / v.videoHeight) > (CANVAS_W / CANVAS_H) : false;
+      v.src = '';
+      resolve(isLS);
+    }, { once: true });
+    v.addEventListener('error', () => { v.src = ''; resolve(false); }, { once: true });
+    setTimeout(() => { v.src = ''; resolve(false); }, 4000);
+  });
+}
+
+// ── Render swap controls under the canvas ──
+function renderClipSwapRow(bucket) {
+  const row = document.getElementById('clip-swap-row');
+  row.innerHTML = '';
+
+  // Keys in blobPool that aren't currently used
+  const usedKeys = new Set(loadedClips.map(c => c.key));
+  const spare    = Object.keys(blobPool).filter(k => !usedKeys.has(k));
+
+  loadedClips.forEach((clip, idx) => {
+    const card   = document.createElement('div');  card.className = 'clip-card';
+    const num    = document.createElement('span'); num.className = 'clip-card-num'; num.textContent = `#${idx + 1}`;
+    const name   = document.createElement('span'); name.className = 'clip-card-name';
+    name.textContent = clip.key.split('/').pop();
+    name.title       = clip.key;
+
+    const btn        = document.createElement('button');
+    btn.className    = 'clip-swap-btn';
+    btn.textContent  = '🔀 Swap';
+    btn.title        = spare.length > 0 ? 'Replace with a random unused clip' : 'No spare clips available';
+    btn.disabled     = spare.length === 0;
+
+    btn.addEventListener('click', () => swapClip(idx, bucket));
+
+    card.appendChild(num);
+    card.appendChild(name);
+    card.appendChild(btn);
+    row.appendChild(card);
+  });
+}
+
+// ── Swap one clip with a random spare from blobPool ──
+async function swapClip(idx, bucket) {
+  const usedKeys = new Set(loadedClips.map(c => c.key));
+  const spareKeys = Object.keys(blobPool).filter(k => !usedKeys.has(k));
+
+  if (spareKeys.length === 0) {
+    // Try to add a new random unused bucket file ≤ 10s
+    const unusedFiles = bucketFiles.filter(k => !blobPool[k] && selected[k]);
+    if (unusedFiles.length === 0) { setReelStatus('No more spare clips available.'); return; }
+
+    setReelStatus('Downloading spare clip…');
+    const candidate = unusedFiles[Math.floor(Math.random() * unusedFiles.length)];
+    const meta      = await getVideoMeta(candidate, bucket);
+
+    if (!meta || !isFinite(meta.duration) || meta.duration > 10) {
+      setReelStatus('Could not load a short enough replacement. Try again.'); return;
+    }
+
+    const enc  = candidate.split('/').map(encodeURIComponent).join('/');
+    const url  = `/api/reel/video?bucket=${encodeURIComponent(bucket)}&key=${enc}`;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob    = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      blobPool[candidate] = { blobUrl, duration: meta.duration, isLandscape: meta.isLandscape };
+    } catch (err) {
+      setReelStatus(`Download failed: ${err.message}`); return;
+    }
+    spareKeys.push(candidate);
+  }
+
+  const newKey   = spareKeys[Math.floor(Math.random() * spareKeys.length)];
+  const entry    = blobPool[newKey];
+  const oldClip  = loadedClips[idx];
+
+  // Pause + revoke old clip if it won't be reused
+  oldClip.video.pause();
+
+  const video       = document.createElement('video');
+  video.muted       = true;
+  video.loop        = false;
+  video.playsInline = true;
+  video.preload     = 'auto';
+  video.src         = entry.blobUrl;
+  document.getElementById('video-pool').appendChild(video);
+
+  await new Promise(res => {
+    video.addEventListener('canplaythrough', res, { once: true });
+    video.addEventListener('error', res, { once: true });
+    setTimeout(res, 4000);
+  });
+
+  loadedClips[idx] = {
+    key:        newKey,
+    blobUrl:    entry.blobUrl,
+    video,
+    isLandscape: entry.isLandscape,
+    rotation:   rotations[newKey] || 0,
+    duration:   entry.duration,
+    grade:      GRADE_FLAVOURS[idx % GRADE_FLAVOURS.length],
+    transType:  TRANS_TYPES[idx % TRANS_TYPES.length],
+    ts:         { currentX: 0.5, targetX: 0.5, smoothedTarget: 0.5, prevData: null }
+  };
+
+  setReelStatus(`Clip ${idx + 1} replaced with ${newKey.split('/').pop()}`);
+  renderClipSwapRow(bucket);
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+async function loadAudio(file) {
+  try {
+    audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+    const buf  = await file.arrayBuffer();
+    audioBuffer = await audioCtx.decodeAudioData(buf);
+  } catch (e) {
+    console.warn('Audio load failed:', e);
+    audioBuffer = null;
+  }
+}
+
+// ============================================================
+// PLAY / RECORD
+// ============================================================
+function startPlay(record) {
+  if (isPlaying || loadedClips.length === 0) return;
+
+  isPlaying      = true;
+  isRecording    = record;
+  recordedChunks = [];
+  currentIdx     = -1;
+  frameCount     = 0;
+
+  document.getElementById('btn-play').disabled   = true;
+  document.getElementById('btn-record').disabled = true;
+
+  const canvas = document.getElementById('reel-canvas');
+
+  if (record) {
+    let stream = canvas.captureStream(30);
+
+    if (audioMode === 'upload' && audioCtx && audioBuffer) {
+      audioRecDest = audioCtx.createMediaStreamDestination();
+      stream       = new MediaStream([
+        ...stream.getVideoTracks(),
+        ...audioRecDest.stream.getAudioTracks()
+      ]);
+    }
+
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9'
+      : 'video/webm';
+
+    mediaRecorder                  = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8000000 });
+    mediaRecorder.ondataavailable  = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop           = downloadReel;
+    mediaRecorder.start(100);
+  }
+
+  // Start audio playback
+  if (audioMode === 'upload' && audioCtx && audioBuffer) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    audioSrcNode        = audioCtx.createBufferSource();
+    audioSrcNode.buffer = audioBuffer;
+    const gain          = audioCtx.createGain();
+    gain.gain.value     = 0.92;
+    audioSrcNode.connect(gain);
+    gain.connect(audioCtx.destination);
+    if (audioRecDest) gain.connect(audioRecDest);
+    audioSrcNode.start(0);
+  }
+
+  reelStartTs = performance.now();
+  switchClip(0);
+  animFrame   = requestAnimationFrame(drawFrame);
+}
+
+// ============================================================
+// CLIP SWITCHING
+// ============================================================
+function switchClip(idx) {
+  if (idx < 0 || idx >= loadedClips.length) return;
+
+  // Pause previous
+  if (currentIdx >= 0 && currentIdx < loadedClips.length) {
+    loadedClips[currentIdx].video.pause();
+    loadedClips[currentIdx].video.currentTime = 0;
+  }
+
+  currentIdx = idx;
+  const clip = loadedClips[idx];
+
+  // Reset tracking
+  clip.ts.currentX       = 0.5;
+  clip.ts.targetX        = 0.5;
+  clip.ts.smoothedTarget = 0.5;
+  clip.ts.prevData       = null;
+
+  // Blob src is fully in memory — play starts immediately
+  clip.video.currentTime = 0;
+  clip.video.play().catch(() => {});
+}
+
+// ============================================================
+// ANALYSIS CANVAS (motion tracking)
+// ============================================================
+const anaCanvas = document.createElement('canvas');
+anaCanvas.width  = ANA_W;
+anaCanvas.height = ANA_H;
+const anaCtx     = anaCanvas.getContext('2d', { willReadFrequently: true });
+
+function analyzeMotion(video, ts) {
+  anaCtx.drawImage(video, 0, 0, ANA_W, ANA_H);
+  const frame = anaCtx.getImageData(0, 0, ANA_W, ANA_H).data;
+
+  if (!ts.prevData) {
+    ts.prevData = new Uint8ClampedArray(frame);
+    return ts.smoothedTarget;
+  }
+
+  const colMotion = new Float32Array(MOTION_COLS);
+  const colW      = ANA_W / MOTION_COLS;
+
+  for (let i = 0; i < frame.length; i += 4) {
+    const px   = i >> 2;
+    const col  = Math.min(MOTION_COLS - 1, (px % ANA_W) / colW | 0);
+    colMotion[col] +=
+      Math.abs(frame[i]   - ts.prevData[i])   +
+      Math.abs(frame[i+1] - ts.prevData[i+1]) +
+      Math.abs(frame[i+2] - ts.prevData[i+2]);
+  }
+
+  ts.prevData = new Uint8ClampedArray(frame);
+
+  // Weighted centroid across ALL columns — far more stable than jump-to-peak.
+  // On low total motion don't change the target at all (avoids snapping to centre).
+  let totalMotion = 0;
+  let weightedPos = 0;
+  for (let c = 0; c < MOTION_COLS; c++) {
+    totalMotion += colMotion[c];
+    weightedPos += colMotion[c] * c;
+  }
+
+  const motionThreshold = 400 * ANA_W * ANA_H / MOTION_COLS;
+  if (totalMotion < motionThreshold) return ts.smoothedTarget;  // hold current — no snap
+
+  return (weightedPos / totalMotion + 0.5) / MOTION_COLS;
+}
+
+// ============================================================
+// DRAW HELPER — render current video frame to canvas at optional offset
+// ============================================================
+function drawClipFrame(ctx, clip, offsetX = 0, offsetY = 0) {
+  const rot = clip.rotation || 0;
+
+  if (rot === 0) {
+    // ── No rotation: standard landscape-track or portrait-center ──
+    if (clip.isLandscape) {
+      const scale   = CANVAS_H / clip.video.videoHeight;
+      const scaledW = clip.video.videoWidth * scale;
+      const maxOff  = Math.max(0, scaledW - CANVAS_W);
+      ctx.drawImage(clip.video, -clip.ts.currentX * maxOff + offsetX, offsetY, scaledW, CANVAS_H);
+    } else {
+      const scale   = CANVAS_W / clip.video.videoWidth;
+      const scaledH = clip.video.videoHeight * scale;
+      ctx.drawImage(clip.video, offsetX, -(Math.max(0, (scaledH - CANVAS_H) / 2)) + offsetY, CANVAS_W, scaledH);
+    }
+    return;
+  }
+
+  // ── Rotation needed (90 / 180 / 270) ──
+  // After 90°/270°, raw videoWidth and videoHeight are visually swapped.
+  // Scale the raw frame so that the visual result cover-fills CANVAS_W × CANVAS_H.
+  const vW  = clip.video.videoWidth;
+  const vH  = clip.video.videoHeight;
+  const rad = rot * Math.PI / 180;
+  const ortho = (rot === 90 || rot === 270);  // 90° or 270°: dimensions swap visually
+  const visW  = ortho ? vH : vW;              // visual width after rotation
+  const visH  = ortho ? vW : vH;              // visual height after rotation
+  // Cover-fill: pick the larger of the two fill scales
+  const scale = Math.max(CANVAS_W / visW, CANVAS_H / visH);
+  const scW   = vW * scale;   // raw draw width  (in video pixel space)
+  const scH   = vH * scale;   // raw draw height (in video pixel space)
+
+  ctx.save();
+  ctx.translate(CANVAS_W / 2 + offsetX, CANVAS_H / 2 + offsetY);
+  ctx.rotate(rad);
+  ctx.drawImage(clip.video, -scW / 2, -scH / 2, scW, scH);
+  ctx.restore();
+}
+
+// ============================================================
+// SMART MOMENT SCAN
+// ============================================================
+function seekTo(video, time) {
+  return new Promise(resolve => {
+    const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+    video.addEventListener('seeked', onSeeked);
+    video.currentTime = time;
+    setTimeout(resolve, 900);  // network fallback
+  });
+}
+
+async function scanForBestMoment(clip) {
+  const SAMPLES  = 7;
+  const vid      = clip.video;
+  const dur      = (isFinite(clip.duration) && clip.duration > 0) ? clip.duration : 0;
+  if (dur <= clipDurSec + 0.5) { clip.bestMoment = 0; return; }
+
+  const step     = dur / SAMPLES;
+  let bestScore  = -1;
+  let bestTime   = 0;
+  let prevData   = null;
+
+  for (let i = 0; i < SAMPLES; i++) {
+    await seekTo(vid, i * step);
+    anaCtx.drawImage(vid, 0, 0, ANA_W, ANA_H);
+    const frame = anaCtx.getImageData(0, 0, ANA_W, ANA_H).data;
+
+    if (prevData) {
+      let score = 0;
+      for (let j = 0; j < frame.length; j += 4) {
+        score += Math.abs(frame[j]   - prevData[j])   +
+                 Math.abs(frame[j+1] - prevData[j+1]) +
+                 Math.abs(frame[j+2] - prevData[j+2]);
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestTime  = Math.max(0, i * step - step * 0.4);  // rewind slightly to include lead-up
+      }
+    }
+    prevData = new Uint8ClampedArray(frame);
+  }
+
+  clip.bestMoment = Math.min(bestTime, Math.max(0, dur - clipDurSec - 0.3));
+}
+
+// ============================================================
+// MAIN RENDER LOOP
+// ============================================================
+function drawFrame(ts) {
+  if (!isPlaying) return;
+  animFrame = requestAnimationFrame(drawFrame);
+  frameCount++;
+
+  const elapsed = (ts - reelStartTs) / 1000;
+
+  // Progress bar
+  document.getElementById('reel-progress-fill').style.width =
+    Math.min(100, (elapsed / reelDurSec) * 100) + '%';
+
+  // Reel end
+  if (elapsed >= reelDurSec + 0.05) { endReel(); return; }
+
+  // Clip switch
+  const needIdx = Math.min(Math.floor(elapsed / clipDurSec), loadedClips.length - 1);
+  if (needIdx !== currentIdx) {
+    switchClip(needIdx);
+  }
+
+  const ctx         = mainCtx;
+  const clip        = loadedClips[currentIdx];
+  const clipElapsed = elapsed - currentIdx * clipDurSec;
+
+  // ── Draw video frame with per-clip colour grade + pre-cut zoom punch ──
+  // Only clear to black when we have a decoded frame ready — otherwise hold last frame
+  // (avoids black flash while the next clip's range-request is still in-flight)
+  if (clip && clip.video.readyState >= 2) {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Motion tracking every 3rd frame (landscape only).
+    // Two-stage smoothing: raw detection → smoothedTarget (filters noise),
+    // then smoothedTarget → currentX (controls actual camera pan speed).
+    // This prevents single-frame spikes in pixel-diff from jerking the view.
+    if (clip.isLandscape && frameCount % 3 === 0) {
+      const rawTarget = analyzeMotion(clip.video, clip.ts);
+      clip.ts.smoothedTarget += (rawTarget - clip.ts.smoothedTarget) * 0.10;
+    }
+    if (clip.isLandscape) {
+      clip.ts.currentX += (clip.ts.smoothedTarget - clip.ts.currentX) * TRACK_EASE;
+    }
+
+    // Pre-cut zoom punch: scale outgoing clip up over last ZOOM_RAMP_DUR seconds
+    const isLastClip   = (currentIdx === loadedClips.length - 1);
+    const timeUntilCut = clipDurSec - clipElapsed;
+    const zoomPunching = !isLastClip && timeUntilCut < ZOOM_RAMP_DUR;
+    const zoomScale    = zoomPunching ? (1 + (1 - timeUntilCut / ZOOM_RAMP_DUR) * 0.16) : 1;
+
+    ctx.filter = clip.grade || COLOR_GRADE;
+
+    if (zoomPunching) {
+      ctx.save();
+      ctx.translate(CANVAS_W * 0.5, CANVAS_H * 0.5);
+      ctx.scale(zoomScale, zoomScale);
+      ctx.translate(-CANVAS_W * 0.5, -CANVAS_H * 0.5);
+    }
+
+    drawClipFrame(ctx, clip);
+
+    if (zoomPunching) ctx.restore();
+    ctx.filter = 'none';
+
+    // ── Post-cut transition overlay (first TRANSITION_DUR seconds of each clip) ──
+    if (currentIdx > 0 && clipElapsed < TRANSITION_DUR) {
+      const t = clipElapsed / TRANSITION_DUR;           // 0 → 1
+      const transType = clip.transType || 'zoom-flash';
+
+      if (transType === 'zoom-glitch') {
+        // RGB chromatic aberration split: shifted red + cyan screen-blended copies
+        const shift = (1 - t) * 30;
+        const alpha = (1 - t) * 0.38;
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = alpha;
+        ctx.filter = 'sepia(1) saturate(10) hue-rotate(-18deg)';  // red channel
+        drawClipFrame(ctx, clip, shift, 0);
+        ctx.filter = 'sepia(1) saturate(10) hue-rotate(162deg)';  // cyan channel
+        drawClipFrame(ctx, clip, -shift, 0);
+        ctx.filter = 'none';
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        // Brief white spike at moment of cut
+        if (t < 0.14) {
+          ctx.fillStyle = `rgba(255,255,255,${((0.14 - t) / 0.14) * 0.5})`;
+          ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+        }
+
+      } else if (transType === 'zoom-flash') {
+        const intensity = Math.pow(1 - t, 2.0) * 0.75;
+        ctx.fillStyle = `rgba(255,255,255,${intensity})`;
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+      } else if (transType === 'wipe-l') {
+        // Black curtain wipes away left to right
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, CANVAS_W * (1 - t), CANVAS_H);
+
+      } else if (transType === 'wipe-r') {
+        // Black curtain wipes away right to left
+        const coverW = CANVAS_W * (1 - t);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(CANVAS_W - coverW, 0, coverW, CANVAS_H);
+      }
+    }
+  }
+
+  // ── Film grain overlay ──
+  const gf = grainFrames[Math.floor((Date.now() / 85) % GRAIN_FRAMES) | 0];
+  ctx.globalAlpha = GRAIN_OPACITY;
+  ctx.drawImage(gf, 0, 0, CANVAS_W, CANVAS_H);
+  ctx.globalAlpha = 1;
+
+  // ── Vignette ──
+  if (vigGrad) {
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  }
+
+  // ── Letterbox bars ──
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, CANVAS_W, LETTERBOX_H);
+  ctx.fillRect(0, CANVAS_H - LETTERBOX_H, CANVAS_W, LETTERBOX_H);
+
+  // ── ROK logo ──
+  if (document.getElementById('show-logo').checked &&
+      rokLogo.complete && rokLogo.naturalWidth > 0) {
+    const opacity    = parseInt(document.getElementById('logo-opacity').value) / 100;
+    const corner     = (document.querySelector('input[name="logo-corner"]:checked') || {}).value || 'br';
+    const logoW      = rokLogo.naturalWidth * (LOGO_H / rokLogo.naturalHeight);
+    let lx, ly;
+    switch (corner) {
+      case 'tl': lx = LOGO_MARGIN;               ly = LETTERBOX_H + LOGO_MARGIN; break;
+      case 'tr': lx = CANVAS_W - logoW - LOGO_MARGIN; ly = LETTERBOX_H + LOGO_MARGIN; break;
+      case 'bl': lx = LOGO_MARGIN;               ly = CANVAS_H - LETTERBOX_H - LOGO_H - LOGO_MARGIN; break;
+      default:   lx = CANVAS_W - logoW - LOGO_MARGIN; ly = CANVAS_H - LETTERBOX_H - LOGO_H - LOGO_MARGIN;
+    }
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(rokLogo, lx, ly, logoW, LOGO_H);
+    ctx.globalAlpha = 1;
+  }
+
+}
+
+// ============================================================
+// END REEL
+// ============================================================
+function endReel() {
+  isPlaying = false;
+  cancelAnimationFrame(animFrame);
+  loadedClips.forEach(c => c.video.pause());
+
+  if (audioSrcNode) { try { audioSrcNode.stop(); } catch (e) {} audioSrcNode = null; }
+
+  document.getElementById('reel-progress-fill').style.width = '100%';
+
+  if (isRecording) {
+    setReelStatus('Saving reel…');
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    isRecording = false;
+  } else {
+    setReelStatus('Done! Hit Record & Download to save a copy.');
+    document.getElementById('btn-play').disabled   = false;
+    document.getElementById('btn-record').disabled = false;
+  }
+}
+
+// ============================================================
+// DOWNLOAD
+// ============================================================
+function downloadReel() {
+  if (!recordedChunks.length) {
+    setReelStatus('No recording data — try again.');
+    document.getElementById('btn-play').disabled   = false;
+    document.getElementById('btn-record').disabled = false;
+    return;
+  }
+  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `rok-reel-${Date.now()}.webm`;
+  a.click();
+  URL.revokeObjectURL(url);
+  setReelStatus(`✅ Saved! (${(blob.size / (1024 * 1024)).toFixed(1)} MB) · Add your song on Instagram / TikTok`);
+  document.getElementById('btn-play').disabled   = false;
+  document.getElementById('btn-record').disabled = false;
+}
+
+// ============================================================
+// BACK TO CONFIG
+// ============================================================
+function backToConfig() {
+  isPlaying   = false;
+  isRecording = false;
+  cancelAnimationFrame(animFrame);
+  loadedClips.forEach(c => c.video.pause());
+  if (audioSrcNode) { try { audioSrcNode.stop(); } catch (e) {} audioSrcNode = null; }
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+
+  document.getElementById('reel-progress-fill').style.width = '0%';
+  document.getElementById('reel-panel').classList.remove('visible');
+  document.getElementById('config-panel').style.display     = '';
+  if (bucketFiles.length > 0) document.getElementById('video-selector').classList.add('visible');
+}
+</script>
+<!-- Hidden video pool: keeps video elements in DOM so Chrome schedules decoding properly -->
+<div id="video-pool" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;"></div>
+</body>
+</html>

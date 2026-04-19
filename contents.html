@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NATS Site Contents</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #f97316;
+      --accent2: #3b82f6;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #22c55e;
+      --red: #ef4444;
+      --card-bg: #1c2128;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    header h1 span {
+      color: var(--accent);
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+
+    /* Search */
+    .search-bar {
+      display: flex;
+      max-width: 500px;
+      margin: 0 auto 32px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-bar input:focus { border-color: var(--accent); }
+    .search-bar input::placeholder { color: var(--muted); }
+
+    /* Environment toggle */
+    .env-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .env-btn {
+      padding: 8px 22px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .env-btn.active-local {
+      border-color: var(--green);
+      color: var(--green);
+      background: rgba(34,197,94,0.08);
+    }
+
+    .env-btn.active-live {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(249,115,22,0.08);
+    }
+
+    /* Sections */
+    .section {
+      max-width: 1200px;
+      margin: 0 auto 36px;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      transition: border-color 0.2s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .card.hidden { display: none; }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .card-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .card-info { flex: 1; }
+
+    .card-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .card-file {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+      margin-top: 2px;
+    }
+
+    .card-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .card-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .link-btn {
+      flex: 1;
+      text-align: center;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    .link-btn:hover { opacity: 0.82; }
+
+    .link-local {
+      background: rgba(34,197,94,0.15);
+      border: 1px solid rgba(34,197,94,0.4);
+      color: var(--green);
+    }
+
+    .link-live {
+      background: rgba(249,115,22,0.12);
+      border: 1px solid rgba(249,115,22,0.4);
+      color: var(--accent);
+    }
+
+    /* Show single env */
+    body.show-local .link-live { display: none; }
+    body.show-local .link-local { flex: 1; }
+    body.show-live .link-local { display: none; }
+    body.show-live .link-link { flex: 1; }
+
+    /* Footer note */
+    .update-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .update-note code {
+      color: var(--accent2);
+      font-family: 'Courier New', monospace;
+    }
+
+    @media (max-width: 600px) {
+      .cards { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>NATS <span>Site</span> Contents</h1>
+  <p>All pages — click a card to open. Use the toggles to switch environments.</p>
+</header>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search pages..." oninput="filterCards()">
+</div>
+
+<div class="env-toggle">
+  <button class="env-btn active-local" onclick="setEnv('both')" id="btn-both">Both</button>
+  <button class="env-btn" onclick="setEnv('local')" id="btn-local">🟢 Localhost Only</button>
+  <button class="env-btn" onclick="setEnv('live')"  id="btn-live">🔴 Live Only</button>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ADMIN & MANAGEMENT
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Admin &amp; Management</div>
+  <div class="cards">
+
+    <div class="card" data-search="admin nats admin portal">
+      <div class="card-header">
+        <div class="card-icon">🛠️</div>
+        <div class="card-info">
+          <div class="card-name">NATS Admin Portal</div>
+          <div class="card-file">admin.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Main admin dashboard — entries, results, payments, draws.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/admin.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/admin.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="super admin superadmin">
+      <div class="card-header">
+        <div class="card-icon">👑</div>
+        <div class="card-info">
+          <div class="card-name">NATS Super Admin</div>
+          <div class="card-file">superadmin.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Super admin panel with elevated permissions and SA badge.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/superadmin.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/superadmin.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="audit log database">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div class="card-info">
+          <div class="card-name">Admin Audit Log &amp; Database</div>
+          <div class="card-file">admin_audit_log.html</div>
+        </div>
+      </div>
+      <div class="card-desc">View audit trails and raw database records.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/admin_audit_log.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/admin_audit_log.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="diagnostics admin portal">
+      <div class="card-header">
+        <div class="card-icon">🔍</div>
+        <div class="card-info">
+          <div class="card-name">Admin Diagnostics</div>
+          <div class="card-file">admin_diagnostics.html</div>
+        </div>
+      </div>
+      <div class="card-desc">System health checks and diagnostics for the admin portal.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/admin_diagnostics.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/admin_diagnostics.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     RACE DAY OPERATIONS
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Race Day Operations</div>
+  <div class="cards">
+
+    <div class="card" data-search="race control clerk">
+      <div class="card-header">
+        <div class="card-icon">🏁</div>
+        <div class="card-info">
+          <div class="card-name">Race Control</div>
+          <div class="card-file">clerk.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Clerk of the course — start lights, race management, penalties.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/clerk.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/clerk.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="check-in event checkin">
+      <div class="card-header">
+        <div class="card-icon">✅</div>
+        <div class="card-info">
+          <div class="card-name">Event Check-In</div>
+          <div class="card-file">checkin.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Sign drivers in for the event day.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/checkin.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/checkin.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="checkpoint scanner">
+      <div class="card-header">
+        <div class="card-icon">📍</div>
+        <div class="card-info">
+          <div class="card-name">Checkpoint Scanner</div>
+          <div class="card-file">checkpoint.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Scan drivers at checkpoints around the venue.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/checkpoint.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/checkpoint.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="tablet scanner nats scanner">
+      <div class="card-header">
+        <div class="card-icon">📱</div>
+        <div class="card-info">
+          <div class="card-name">NATS Tablet Scanner</div>
+          <div class="card-file">tablet-scanner.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Tablet-optimised barcode scanner for race day scanning.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/tablet-scanner.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/tablet-scanner.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="paddock check">
+      <div class="card-header">
+        <div class="card-icon">🔎</div>
+        <div class="card-info">
+          <div class="card-name">Paddock Check</div>
+          <div class="card-file">check.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Quick paddock compliance check tool.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/check.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/check.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="sign on board signed on signon drivers check in">
+      <div class="card-header">
+        <div class="card-icon">📋</div>
+        <div class="card-info">
+          <div class="card-name">Sign-On Board</div>
+          <div class="card-file">signon-board.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Public shareable board showing who has signed on per class — auto-refreshes every 20s.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/signon-board.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/signon-board.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="live activity monitor">
+      <div class="card-header">
+        <div class="card-icon">📡</div>
+        <div class="card-info">
+          <div class="card-name">Live Activity Monitor</div>
+          <div class="card-file">monitor.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Real-time event activity feed and monitoring dashboard.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/monitor.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/monitor.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="tyre station">
+      <div class="card-header">
+        <div class="card-icon">🔴</div>
+        <div class="card-info">
+          <div class="card-name">Tyre Station</div>
+          <div class="card-file">tyre-station.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Tyre marking and allocation management at scrutineering.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/tyre-station.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/tyre-station.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="officials portal">
+      <div class="card-header">
+        <div class="card-icon">🦺</div>
+        <div class="card-info">
+          <div class="card-name">Officials Portal</div>
+          <div class="card-file">officials.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Portal for race officials to view entries and assignments.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/officials.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/officials.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ENGINE MANAGEMENT
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Engine Management</div>
+  <div class="cards">
+
+    <div class="card" data-search="engine management">
+      <div class="card-header">
+        <div class="card-icon">⚙️</div>
+        <div class="card-info">
+          <div class="card-name">Engine Management</div>
+          <div class="card-file">engine-management.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Full engine registry — assign, track, and manage engines.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/engine-management.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/engine-management.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="engine draw">
+      <div class="card-header">
+        <div class="card-icon">🎲</div>
+        <div class="card-info">
+          <div class="card-name">Engine Draw</div>
+          <div class="card-file">engine-draw.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Randomised engine draw for sealed-engine classes.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/engine-draw.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/engine-draw.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="engine inspection derick portal dir">
+      <div class="card-header">
+        <div class="card-icon">🔬</div>
+        <div class="card-info">
+          <div class="card-name">DIR Engine Inspection</div>
+          <div class="card-file">derick-portal.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Engine inspection portal for the Director of Inspection (Derick).</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/derick-portal.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/derick-portal.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     CHAMPIONSHIP STANDINGS
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Championship Standings</div>
+  <div class="cards">
+
+    <div class="card" data-search="sa national championship standings points rok nats 2026">
+      <div class="card-header">
+        <div class="card-icon">🏆</div>
+        <div class="card-info">
+          <div class="card-name">SA National Championship Standings</div>
+          <div class="card-file">sa-nationals-standings.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Public-facing 2026 ROK NATS championship standings by class — live points table with podium cards.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/sa-nationals-standings.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/sa-nationals-standings.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="engine draw board share print historical">
+      <div class="card-header">
+        <div class="card-icon">🎲</div>
+        <div class="card-info">
+          <div class="card-name">Engine Draw Board (Share / Print)</div>
+          <div class="card-file">/share/engine-draw</div>
+        </div>
+      </div>
+      <div class="card-desc">Shareable engine draw results — view live pool or any past event by day. Printable per day.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/share/engine-draw" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/share/engine-draw"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DRIVER & ENTRY
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Driver &amp; Entry</div>
+  <div class="cards">
+
+    <div class="card" data-search="index entry rok cup south africa home">
+      <div class="card-header">
+        <div class="card-icon">🏠</div>
+        <div class="card-info">
+          <div class="card-name">ROK Cup SA — Home / Entry</div>
+          <div class="card-file">index.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Public-facing homepage and driver entry form for the 2026 series.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="driver portal registry">
+      <div class="card-header">
+        <div class="card-icon">🧾</div>
+        <div class="card-info">
+          <div class="card-name">Driver Portal / Registry</div>
+          <div class="card-file">driver_portal.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Driver self-service portal — documents, entries, payment history.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/driver_portal.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/driver_portal.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="payment success">
+      <div class="card-header">
+        <div class="card-icon">💳</div>
+        <div class="card-info">
+          <div class="card-name">Payment Success</div>
+          <div class="card-file">payment-success.html</div>
+        </div>
+      </div>
+      <div class="card-desc">PayFast return page shown after a successful payment.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/payment-success.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/payment-success.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="payment cancelled cancel">
+      <div class="card-header">
+        <div class="card-icon">❌</div>
+        <div class="card-info">
+          <div class="card-name">Payment Cancelled</div>
+          <div class="card-file">payment-cancel.html</div>
+        </div>
+      </div>
+      <div class="card-desc">PayFast return page shown after a cancelled payment.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/payment-cancel.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/payment-cancel.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="reset password">
+      <div class="card-header">
+        <div class="card-icon">🔑</div>
+        <div class="card-info">
+          <div class="card-name">Reset Password</div>
+          <div class="card-file">reset-password.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Password reset flow for driver accounts.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/reset-password.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/reset-password.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TITAN COMMAND
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Titan Command</div>
+  <div class="cards">
+
+    <div class="card" data-search="titan command">
+      <div class="card-header">
+        <div class="card-icon">🚀</div>
+        <div class="card-info">
+          <div class="card-name">Titan Command</div>
+          <div class="card-file">titan_command.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Master control panel — server commands, bulk actions, system control.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/titan_command.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/titan_command.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SOCIAL & MEDIA
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Social &amp; Media</div>
+  <div class="cards">
+
+    <div class="card" data-search="social slideshow media">
+      <div class="card-header">
+        <div class="card-icon">📸</div>
+        <div class="card-info">
+          <div class="card-name">Social Media Slideshow</div>
+          <div class="card-file">social-slideshow.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Generate and display slideshows for social media screens.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/social-slideshow.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/social-slideshow.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="reel video maker portrait kart kaykes">
+      <div class="card-header">
+        <div class="card-icon">🎬</div>
+        <div class="card-info">
+          <div class="card-name">ROK Reel Maker</div>
+          <div class="card-file">reel-maker.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Auto-cut beat-synced portrait reels from Z1 bucket videos with kart tracking and 90s colour grade.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/reel-maker.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/reel-maker.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DEVELOPMENT & TESTING
+════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">Development &amp; Testing</div>
+  <div class="cards">
+
+    <div class="card" data-search="email tester template">
+      <div class="card-header">
+        <div class="card-icon">📧</div>
+        <div class="card-info">
+          <div class="card-name">Email Template Tester</div>
+          <div class="card-file">email-tester.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Preview and test email templates before sending.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/email-tester.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/email-tester.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="barcode test scanner">
+      <div class="card-header">
+        <div class="card-icon">📦</div>
+        <div class="card-info">
+          <div class="card-name">Barcode Scanner Test</div>
+          <div class="card-file">barcode-test.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Camera barcode / QR scanner test page.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/barcode-test.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/barcode-test.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="entry offline test race">
+      <div class="card-header">
+        <div class="card-icon">📵</div>
+        <div class="card-info">
+          <div class="card-name">Race Entry — Offline Test</div>
+          <div class="card-file">entry-offline-test.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Test the offline entry flow without a network connection.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/entry-offline-test.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/entry-offline-test.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="offline fallback pwa">
+      <div class="card-header">
+        <div class="card-icon">📶</div>
+        <div class="card-info">
+          <div class="card-name">Offline Fallback</div>
+          <div class="card-file">offline.html</div>
+        </div>
+      </div>
+      <div class="card-desc">PWA offline fallback page shown when no network is available.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/offline.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/offline.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+    <div class="card" data-search="titan terminal archive">
+      <div class="card-header">
+        <div class="card-icon">🗃️</div>
+        <div class="card-info">
+          <div class="card-name">Titan Terminal (Archive)</div>
+          <div class="card-file">archive/titan_command_terminal.html</div>
+        </div>
+      </div>
+      <div class="card-desc">Archived terminal version of Titan Command.</div>
+      <div class="card-links">
+        <a class="link-btn link-local" href="http://localhost:3000/archive/titan_command_terminal.html" target="_blank">Localhost</a>
+        <a class="link-btn link-live"  href="https://livenats.co.za/archive/titan_command_terminal.html"  target="_blank">Live</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     FOOTER
+════════════════════════════════════════ -->
+<div class="update-note">
+  <strong>Keeping this page up to date:</strong> whenever a new <code>.html</code> page is added,
+  add a new <code>&lt;div class="card"&gt;</code> block inside the relevant section in
+  <code>contents.html</code>. Copy any existing card as a template and update the name, file,
+  description, and href links.
+</div>
+
+<script>
+  function filterCards() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    document.querySelectorAll('.card').forEach(card => {
+      const text = (card.dataset.search || '') + ' ' + card.innerText.toLowerCase();
+      card.classList.toggle('hidden', q.length > 0 && !text.includes(q));
+    });
+  }
+
+  function setEnv(mode) {
+    document.body.classList.remove('show-local', 'show-live');
+    document.getElementById('btn-both').classList.remove('active-local', 'active-live');
+    document.getElementById('btn-local').classList.remove('active-local', 'active-live');
+    document.getElementById('btn-live').classList.remove('active-local', 'active-live');
+
+    if (mode === 'local') {
+      document.body.classList.add('show-local');
+      document.getElementById('btn-local').classList.add('active-local');
+    } else if (mode === 'live') {
+      document.body.classList.add('show-live');
+      document.getElementById('btn-live').classList.add('active-live');
+    } else {
+      document.getElementById('btn-both').classList.add('active-local');
+    }
+  }
+</script>
+
+</body>
+</html>

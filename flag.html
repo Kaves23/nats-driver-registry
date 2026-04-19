@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flag Display</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Canvas fills full screen for checkered flag */
+    #canvas {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 1;
+    }
+
+    /* Label sits above canvas */
+    #label {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-orient: vertical;
+      -webkit-box-direction: normal;
+      -webkit-flex-direction: column;
+              flex-direction: column;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+              align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+              justify-content: center;
+      pointer-events: none;
+      z-index: 10;
+      -webkit-user-select: none;
+              user-select: none;
+    }
+
+    #flagIcon {
+      font-size: 18vw;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    #flagText {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 8vw;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+    }
+
+    /* Status dot */
+    #status {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #333;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas for checkered flag -->
+  <canvas id="canvas"></canvas>
+
+  <!-- Flag label -->
+  <div id="label">
+    <div id="flagIcon"></div>
+    <div id="flagText"></div>
+  </div>
+
+  <!-- Connection indicator -->
+  <div id="status"></div>
+
+  <script>
+    var iconEl    = document.getElementById('flagIcon');
+    var textEl    = document.getElementById('flagText');
+    var statusDot = document.getElementById('status');
+    var canvas    = document.getElementById('canvas');
+    var ctx       = canvas.getContext('2d');
+
+    // Flag definitions: main colour, flash colour, text colour
+    var FLAGS = {
+      red:       { main: '#ff0000', flash: '#ff9999', textCol: '#ffffff', icon: '\uD83D\uDD34', text: 'RED FLAG'    },
+      yellow:    { main: '#ffe000', flash: '#ffffff', textCol: '#111111', icon: '\uD83D\uDFE1', text: 'YELLOW FLAG' },
+      green:     { main: '#00dd00', flash: '#aaffaa', textCol: '#ffffff', icon: '\uD83D\uDFE2', text: 'GREEN FLAG'  },
+      blue:      { main: '#0077ff', flash: '#99ccff', textCol: '#ffffff', icon: '\uD83D\uDFE6', text: 'BLUE FLAG'   },
+      white:     { main: '#ffffff', flash: '#aaaaaa', textCol: '#111111', icon: '\u26AA',       text: 'WHITE FLAG'  },
+      checkered: { main: null,      flash: null,      textCol: '#ffffff', icon: '\uD83C\uDFC1', text: 'CHEQUERED'   },
+      none:      { main: '#000000', flash: null,      textCol: '#ffffff', icon: '',              text: ''            }
+    };
+
+    var pulseTimer    = null;  // setInterval handle for colour pulsing
+    var checkerTimer  = null;  // setInterval handle for checkered flipping
+    var checkerPhase  = 0;     // 0 or 1, flips the checker pattern
+
+    // ── Canvas helpers ────────────────────────────────────────────
+    function resizeCanvas() {
+      canvas.width  = window.innerWidth  || document.documentElement.clientWidth;
+      canvas.height = window.innerHeight || document.documentElement.clientHeight;
+    }
+
+    function drawChecker(inverted) {
+      resizeCanvas();
+      var cols = 8, rows = 8;
+      var cw = canvas.width  / cols;
+      var ch = canvas.height / rows;
+      for (var r = 0; r < rows; r++) {
+        for (var c = 0; c < cols; c++) {
+          var isWhite = (r + c + (inverted ? 1 : 0)) % 2 === 0;
+          ctx.fillStyle = isWhite ? '#ffffff' : '#000000';
+          ctx.fillRect(c * cw, r * ch, Math.ceil(cw), Math.ceil(ch));
+        }
+      }
+    }
+
+    // ── Stop all running animations ───────────────────────────────
+    function stopAll() {
+      if (pulseTimer)   { clearInterval(pulseTimer);  pulseTimer   = null; }
+      if (checkerTimer) { clearInterval(checkerTimer); checkerTimer = null; }
+      canvas.style.display = 'none';
+      document.body.style.background = '#000000';
+    }
+
+    // ── Apply a flag ──────────────────────────────────────────────
+    function applyFlag(flagType) {
+      stopAll();
+
+      var def = FLAGS[flagType] || FLAGS.none;
+
+      // Update icon and text
+      iconEl.textContent = def.icon;
+      textEl.textContent = def.text;
+      textEl.style.color = def.textCol;
+      iconEl.style.display  = def.text ? '' : 'none';
+      textEl.style.display  = def.text ? '' : 'none';
+
+      if (flagType === 'none') {
+        document.body.style.background = '#000000';
+        return;
+      }
+
+      if (flagType === 'checkered') {
+        canvas.style.display = 'block';
+        checkerPhase = 0;
+        drawChecker(false);
+        checkerTimer = setInterval(function() {
+          checkerPhase = 1 - checkerPhase;
+          drawChecker(checkerPhase === 1);
+        }, 350);
+        return;
+      }
+
+      // Colour flags: pulse 3 times then hold solid
+      var pulseCount = 0;
+      var maxPulses  = 6;  // 3 full on/off cycles
+      var isFlash    = true;
+      document.body.style.background = '#ffffff'; // start with white burst
+
+      pulseTimer = setInterval(function() {
+        pulseCount++;
+        if (pulseCount > maxPulses) {
+          clearInterval(pulseTimer);
+          pulseTimer = null;
+          document.body.style.background = def.main;
+          return;
+        }
+        isFlash = !isFlash;
+        document.body.style.background = isFlash ? def.flash : def.main;
+      }, 150);
+    }
+
+    // Resize canvas on orientation change
+    window.onresize = function() {
+      if (checkerTimer) { drawChecker(checkerPhase === 1); }
+    };
+
+    // ── SSE connection with reconnect ─────────────────────────────
+    var retryDelay = 1000;
+
+    function connect() {
+      var es = new EventSource('/api/flag/events');
+
+      es.addEventListener('message', function(e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (data.flag) applyFlag(data.flag);
+        } catch(ex) {}
+        retryDelay = 1000;
+      });
+
+      es.addEventListener('open', function() {
+        statusDot.style.background = '#22c55e';
+      });
+
+      es.addEventListener('error', function() {
+        statusDot.style.background = '#ef4444';
+        es.close();
+        setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30000);
+      });
+    }
+
+    connect();
+  </script>
+</body>
+</html>
