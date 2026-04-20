@@ -48,7 +48,7 @@ const { validateBody, loginSchema, registerDriverSchema, raceEntrySchema } = req
 const ExcelJS = require('exceljs');
 const QRCode  = require('qrcode');
 // ─── Z1 / S3-compatible storage ───────────────────────────────────────────────
-const { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const s3 = new S3Client({
   endpoint: process.env.Z1_ENDPOINT || 'https://s3.z1storage.com',
   region: 'us-east-1',           // z1storage ignores region but SDK requires a value
@@ -13542,10 +13542,10 @@ app.get('/api/reel/list', async (req, res) => {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const data = await s3.send(cmd, { abortSignal: AbortSignal.timeout(12000) });
-      const keys = (data.Contents || [])
-        .map(o => o.Key)
-        .filter(k => !k.endsWith('/') && /\.(mp4|mov|webm)$/i.test(k));
-      return res.json({ keys });
+      const files = (data.Contents || [])
+        .filter(o => !o.Key.endsWith('/') && /\.(mp4|mov|webm)$/i.test(o.Key))
+        .map(o => ({ key: o.Key, size: o.Size || 0 }));
+      return res.json({ files, keys: files.map(f => f.key) }); // keys kept for backward compat
     } catch (err) {
       console.warn(`[reel/list] attempt ${attempt} failed: ${err.message}`);
       if (attempt === 3) return res.status(500).json({ error: err.message });
@@ -13563,11 +13563,10 @@ app.get('/api/reel/video', async (req, res) => {
     const key    = req.query.key || '';
     if (!bucket || !key) return res.status(400).send('bucket and key required');
 
-    // Fetch object metadata first to get Content-Length
-    const headCmd = new GetObjectCommand({ Bucket: bucket, Key: key });
-    const head    = await s3.send(headCmd);
-    const totalSize = head.ContentLength;
-    const mimeType  = head.ContentType || 'video/mp4';
+    // Use HeadObjectCommand for metadata ONLY — avoids opening a body stream we might not use
+    const headMeta = await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    const totalSize = headMeta.ContentLength;
+    const mimeType  = headMeta.ContentType || 'video/mp4';
 
     const rangeHeader = req.headers.range;
     if (rangeHeader) {
@@ -13576,12 +13575,11 @@ app.get('/api/reel/video', async (req, res) => {
       const end   = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
       const chunkSize = end - start + 1;
 
-      const rangeCmd = new GetObjectCommand({
+      const rangeObj = await s3.send(new GetObjectCommand({
         Bucket: bucket,
         Key: key,
         Range: `bytes=${start}-${end}`
-      });
-      const rangeObj = await s3.send(rangeCmd);
+      }));
 
       res.writeHead(206, {
         'Content-Range': `bytes ${start}-${end}/${totalSize}`,
@@ -13591,16 +13589,18 @@ app.get('/api/reel/video', async (req, res) => {
       });
       rangeObj.Body.pipe(res);
     } else {
+      // Full file — stream directly
+      const fullObj = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
       res.writeHead(200, {
         'Content-Length': totalSize,
         'Content-Type': mimeType,
         'Accept-Ranges': 'bytes'
       });
-      head.Body.pipe(res);
+      fullObj.Body.pipe(res);
     }
   } catch (err) {
     console.error('Video proxy error:', err.message);
-    res.status(500).send(err.message);
+    if (!res.headersSent) res.status(500).send(err.message);
   }
 });
 // ─────────────────────────────────────────────────────────────────────────────
