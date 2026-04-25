@@ -826,14 +826,14 @@
   <div class="batch-btn-row">
     <button class="btn-primary" id="batch-get-more-btn"
       style="margin:0;width:auto;padding:13px 22px;"
-      onclick="saveKeptAndGetMore()" disabled>💾 Save Kept &amp; Get 10 More</button>
+      onclick="saveKeptAndGetMore()" disabled>� Get First 10 Clips</button>
     <button class="btn-secondary" id="batch-save-now-btn"
       style="padding:13px 18px;font-size:0.9rem;"
       onclick="saveKeptClips(false)">💾 Save Kept Now</button>
     <button class="btn-secondary" onclick="backToSelector()">← Back to Videos</button>
   </div>
   <p style="font-size:0.72rem;color:#444;margin-top:8px;">
-    Tip: hover a clip to preview it · click ✕ to discard · kept clips are saved before the next batch loads
+    Pick your save folder → click <b style="color:#888">Get First 10 Clips</b> → hover to preview · click ✕ to discard · then <b style="color:#888">Save Kept &amp; Get 10 More</b>
   </p>
 </div>
 
@@ -2156,7 +2156,12 @@ async function saveKeptClips(thenGetMore = false) {
 }
 
 async function saveKeptAndGetMore() {
-  await saveKeptClips(true);
+  // If nothing downloaded yet (first run), just fetch — nothing to save
+  if (batchClips.length === 0) {
+    await downloadNextBatch();
+  } else {
+    await saveKeptClips(true);
+  }
 }
 
 function renderBatchGrid() {
@@ -2210,9 +2215,15 @@ function updateBatchStats() {
   const remaining = Math.max(0, batchQueue.length - batchQueueIdx);
   document.getElementById('stat-kept').textContent  = batchClips.length;
   document.getElementById('stat-saved').textContent = totalSavedCount;
-  document.getElementById('stat-queue').textContent = batchPrepared ? remaining : '—';
-  document.getElementById('batch-get-more-btn').disabled =
-    !batchPrepared || batchQueueIdx >= batchQueue.length;
+  document.getElementById('stat-queue').textContent = batchPrepared ? remaining : 'Scanning…';
+  const btn = document.getElementById('batch-get-more-btn');
+  btn.disabled = !batchPrepared || batchQueueIdx >= batchQueue.length;
+  // Change label depending on whether any clips have been downloaded yet
+  if (batchClips.length === 0) {
+    btn.textContent = '📥 Get First 10 Clips';
+  } else {
+    btn.innerHTML = '💾 Save Kept &amp; Get 10 More';
+  }
 }
 
 function discardBatchClip(key) {
