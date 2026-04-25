@@ -220,3 +220,168 @@ async function exportRaceEntriesPDF() {
     showToast('Error generating PDF: ' + err.message, 'error');
   }
 }
+
+async function exportTyreCollectionList() {
+  const race = document.getElementById('filterRace').value;
+  if (!race) { showToast('Please select a race first', 'info'); return; }
+
+  showToast('Building tyre collection list...', 'info');
+
+  try {
+    const response = await fetch('/api/getRaceEntries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+      body: JSON.stringify({ eventId: race })
+    });
+    if (!response.ok) throw new Error('Failed to load race entries');
+    const result = await response.json();
+    const allEntries = result.data?.entries || result.data || [];
+
+    // Filter out cancelled / incomplete entries
+    const entries = allEntries.filter(e => {
+      const st = (e.status || '').toLowerCase();
+      return st !== 'cancelled' && st !== 'incomplete' && st !== 'pending_payment';
+    });
+
+    if (entries.length === 0) { showToast('No active entries found for this race', 'info'); return; }
+
+    // Parse each entry's tyre purchases
+    const parsed = entries.map(e => {
+      const raw = e.entry_items;
+      let items = [];
+      try { items = Array.isArray(raw) ? raw : JSON.parse(raw || '[]'); } catch(_) { items = []; }
+      const ic = txt => items.some(i => (typeof i === 'string' ? i : (i.name || '')).toLowerCase().includes(txt.toLowerCase()));
+      const hasRaceTyres = ic('race tyre') || ic('tyre') && !ic('practice') && !ic('wet');
+      const hasWets = ic('wet');
+      const hasPrac = ic('practice');
+      let pracQty = 1;
+      if (hasPrac) {
+        const pracItem = items.find(i => (typeof i === 'string' ? i : (i.name || '')).toLowerCase().includes('practice'));
+        const pracStr = typeof pracItem === 'string' ? pracItem : (pracItem ? pracItem.name || '' : '');
+        const m = pracStr.match(/[×x](\d+)/i);
+        if (m) pracQty = parseInt(m[1], 10);
+      }
+      const cls = (e.race_class || e.driver_class || '').toUpperCase().trim();
+      const raceNum = parseInt(e.race_number, 10) || 9999;
+      return { e, cls, raceNum, hasRaceTyres, hasWets, hasPrac, pracQty };
+    });
+
+    // Group by class category
+    const mini = parsed.filter(r => r.cls.includes('MINI'));
+    const cadet = parsed.filter(r => r.cls.includes('CADET'));
+    const senior = parsed.filter(r => !r.cls.includes('MINI') && !r.cls.includes('CADET'));
+
+    const sortGroup = arr => arr.sort((a, b) => a.cls.localeCompare(b.cls) || a.raceNum - b.raceNum);
+    sortGroup(mini); sortGroup(cadet); sortGroup(senior);
+
+    const CB = `<span style="display:inline-block;width:15px;height:15px;border:1.5px solid #000;vertical-align:middle;margin:0 1px;"></span>`;
+    const DASH = `<span style="color:#bbb;">—</span>`;
+
+    const buildRows = (arr) => arr.map((r, idx) => {
+      const driverName = `${r.e.driver_first_name || ''} ${r.e.driver_last_name || ''}`.trim() || r.e.driver_name || '—';
+      const ticketRef = r.e.ticket_tyres_ref || '<span style="color:#ccc;font-size:9px;">—</span>';
+      const wets = r.hasWets ? CB : DASH;
+      const prac = r.hasPrac ? `${CB} <span style="font-size:9px;">&times;${r.pracQty}</span>` : DASH;
+      const bg = idx % 2 === 0 ? '#fff' : '#f7f7f7';
+      return `<tr style="background:${bg};">
+        <td style="${TD}text-align:center;width:28px;">${idx + 1}</td>
+        <td style="${TD}text-align:center;font-weight:700;width:44px;">${r.e.race_number || '?'}</td>
+        <td style="${TD}font-weight:600;">${driverName}</td>
+        <td style="${TD}text-align:center;font-size:9px;">${r.e.race_class || r.e.driver_class || '—'}</td>
+        <td style="${TD}text-align:center;font-family:monospace;font-size:9px;">${ticketRef}</td>
+        <td style="${TD}text-align:center;">${r.hasRaceTyres ? CB : DASH}</td>
+        <td style="${TD}text-align:center;">${r.hasRaceTyres ? CB : DASH}</td>
+        <td style="${TD}text-align:center;">${wets}</td>
+        <td style="${TD}text-align:center;">${prac}</td>
+      </tr>`;
+    }).join('');
+
+    const THEAD_TH = `border:1px solid #000;padding:5px 6px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;`;
+    const TD = `border:1px solid #ccc;padding:5px 6px;font-size:10px;`;
+    const GRP_HDR = (label, count) => `<tr>
+      <td colspan="9" style="background:#000;color:#fff;font-weight:800;font-size:11px;letter-spacing:1px;padding:6px 10px;text-transform:uppercase;border:1px solid #000;">
+        ${label} &nbsp;<span style="font-weight:400;font-size:9px;opacity:0.7;">(${count} ${count === 1 ? 'entry' : 'entries'})</span>
+      </td></tr>`;
+
+    const tableHead = `<thead><tr style="background:#1e293b;color:#fff;">
+      <th style="${THEAD_TH}width:28px;">#</th>
+      <th style="${THEAD_TH}width:44px;">Race No</th>
+      <th style="${THEAD_TH}">Driver Name</th>
+      <th style="${THEAD_TH}width:90px;">Class</th>
+      <th style="${THEAD_TH}width:90px;">Tyre Ticket</th>
+      <th style="${THEAD_TH}width:62px;">Race Tyres SAT</th>
+      <th style="${THEAD_TH}width:62px;">Race Tyres SUN</th>
+      <th style="${THEAD_TH}width:54px;">Wet Tyres</th>
+      <th style="${THEAD_TH}width:72px;">Practice Tyres</th>
+    </tr></thead>`;
+
+    let tbody = '<tbody>';
+    if (mini.length)   { tbody += GRP_HDR('Mini ROK Classes', mini.length)   + buildRows(mini); }
+    if (cadet.length)  { tbody += GRP_HDR('Cadet Classes', cadet.length)  + buildRows(cadet); }
+    if (senior.length) { tbody += GRP_HDR('Senior / OK Classes', senior.length) + buildRows(senior); }
+    tbody += '</tbody>';
+
+    const dateStr = new Date().toLocaleDateString('en-ZA', {weekday:'short',year:'numeric',month:'long',day:'numeric'});
+    const timeStr = new Date().toLocaleTimeString('en-ZA', {hour:'2-digit',minute:'2-digit'});
+    const totalActive = entries.length;
+
+    const html = `<!DOCTYPE html><html lang="en"><head>
+      <meta charset="UTF-8">
+      <title>Tyre Collection List — ${race}</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; color: #000; background: #fff; padding: 16px 20px; }
+        @page { size: A4 portrait; margin: 14mm 12mm 14mm 12mm; }
+        @media print {
+          body { padding: 0; }
+          .no-print { display: none !important; }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; }
+        }
+        table { width: 100%; border-collapse: collapse; }
+        .print-btn { position:fixed; bottom:20px; right:20px; padding:10px 22px;
+          background:#1e293b; color:#fff; border:none; border-radius:4px;
+          font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+        .print-btn:hover { background:#334155; }
+      </style>
+    </head><body>
+      <!-- HEADER -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #000;padding-bottom:10px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <img src="/icons/rok-logo-original.png" alt="ROK" style="height:56px;object-fit:contain;" onerror="this.style.display='none'">
+          <div>
+            <div style="font-size:20px;font-weight:900;letter-spacing:1px;text-transform:uppercase;">Tyre Collection List</div>
+            <div style="font-size:11px;font-weight:600;margin-top:2px;color:#444;">${race}</div>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:9px;color:#555;line-height:1.6;">
+          <div><strong>Generated:</strong> ${dateStr} ${timeStr}</div>
+          <div><strong>Total Entries:</strong> ${totalActive}</div>
+          <div style="margin-top:4px;font-size:8px;border:1px solid #999;padding:2px 6px;border-radius:2px;">OFFICIAL USE ONLY</div>
+        </div>
+      </div>
+      <!-- INSTRUCTION -->
+      <div style="font-size:9px;border:1px solid #000;padding:5px 10px;margin-bottom:10px;background:#f5f5f5;">
+        <strong>TYRE MARSHAL:</strong> Tick each box as tyres are handed out. Driver must present tyre ticket ref before collection. Race Tyres: 2 sets (Saturday + Sunday). Wet Tyres &amp; Practice Tyres: collected at entry.
+      </div>
+      <!-- TABLE -->
+      <table>${tableHead}${tbody}</table>
+      <!-- FOOTER -->
+      <div style="margin-top:14px;border-top:1.5px solid #000;padding-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:8px;color:#555;">
+        <div>ROK Cup NATS &bull; www.rokthenats.co.za &bull; Tyre Marshal Sign-Off Sheet</div>
+        <div>&#9632; = item purchased &nbsp;&nbsp; &mdash; = not purchased</div>
+      </div>
+      <button class="print-btn no-print" onclick="window.print()">&#128424; Print</button>
+    </body></html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 800);
+    showToast('Tyre collection list opened', 'success');
+  } catch (err) {
+    console.error('exportTyreCollectionList error:', err);
+    showToast('Error building tyre list: ' + err.message, 'error');
+  }
+}
