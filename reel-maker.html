@@ -500,11 +500,124 @@
     }
     .clip-swap-btn:hover { border-color: #ff4444; color: #ff4444; }
 
+    /* ─── BATCH / SORTER PANEL ─── */
+    #batch-panel {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+      display: none;
+    }
+    #batch-panel.visible { display: block; }
+
+    .sorter-header {
+      text-align: center;
+      padding: 30px 0 4px;
+    }
+    .sorter-header h1 { font-size: 2rem; color: #ff4444; margin-bottom: 4px; }
+    .sorter-header p  { font-size: 0.85rem; color: #666; }
+
+    /* folder picker row */
+    #folder-row {
+      display: flex; align-items: center; gap: 12px;
+      background: #111; border: 1px solid #2a2a2a; border-radius: 8px;
+      padding: 12px 16px; margin: 14px 0 10px;
+    }
+    #folder-label {
+      flex: 1; font-size: 0.82rem; color: #777;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #folder-label.chosen { color: #44cc77; }
+    #btn-pick-folder {
+      padding: 8px 16px; background: #1a1a1a; border: 1px solid #444;
+      color: #ccc; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+      font-weight: 600; white-space: nowrap; transition: all 0.15s;
+    }
+    #btn-pick-folder:hover { border-color: #ff4444; color: #fff; }
+    #btn-pick-folder.chosen { border-color: #44cc77; color: #44cc77; }
+
+    /* stats bar */
+    #batch-stats {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      padding: 8px 0 4px; font-size: 0.8rem; color: #555;
+    }
+    #batch-stats span b { color: #ccc; }
+
+    /* grid */
+    .batch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 12px 0 6px;
+      min-height: 60px;
+    }
+    .batch-card {
+      background: #0e0e0e;
+      border: 2px solid #2a2a2a;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+    .batch-card.saved-card { border-color: #1a6636; }
+    .batch-card-vwrap {
+      position: relative;
+      aspect-ratio: 9 / 16;
+      background: #000;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .batch-card video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .batch-card-play {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; pointer-events: none; transition: opacity 0.15s;
+      background: rgba(0,0,0,0.25);
+    }
+    .batch-card-vwrap:hover .batch-card-play { opacity: 0; }
+    /* DELETE — always visible, prominent */
+    .batch-card-del {
+      position: absolute; top: 6px; right: 6px;
+      background: rgba(200,0,0,0.92); color: #fff;
+      border: none; border-radius: 50%;
+      width: 28px; height: 28px; line-height: 28px;
+      font-size: 0.88rem; font-weight: 700; text-align: center;
+      cursor: pointer; z-index: 5;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      transition: background 0.12s, transform 0.12s;
+    }
+    .batch-card-del:hover { background: #ff0000; transform: scale(1.15); }
+    .batch-card-saved-badge {
+      position: absolute; top: 6px; left: 6px;
+      background: rgba(30,150,70,0.92); color: #fff;
+      border-radius: 4px; font-size: 0.62rem; font-weight: 700;
+      padding: 2px 6px; pointer-events: none; z-index: 5;
+    }
+    .batch-card-name {
+      padding: 5px 7px 1px; font-size: 0.68rem; color: #888;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .batch-card-meta { padding: 1px 7px 6px; font-size: 0.63rem; color: #555; }
+
+    #batch-dl-area {
+      background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: 7px;
+      padding: 12px 14px; margin-bottom: 10px;
+    }
+    #batch-status-text { font-size: 0.8rem; color: #888; margin-bottom: 8px; }
+    #batch-dl-list {
+      display: flex; flex-direction: column; gap: 6px;
+      max-height: 160px; overflow-y: auto;
+    }
+    .batch-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    #batch-save-status {
+      font-size: 0.78rem; color: #44cc77; min-height: 20px; padding: 4px 0;
+    }
+
     @media (max-width: 600px) {
       .form-row { grid-template-columns: 1fr; }
       h1.page-title { font-size: 1.6rem; }
       #reel-wrap, #reel-canvas { width: 300px; height: 533px; }
       #reel-progress { width: 300px; }
+      .batch-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
     }
   </style>
 </head>
@@ -526,6 +639,11 @@
       <div class="form-group">
         <label>Folder prefix (empty = root)</label>
         <input type="text" id="bucket-prefix" placeholder="e.g. summer-nats/ or leave empty">
+      </div>
+      <div class="form-group">
+        <label>Skip files larger than (MB)</label>
+        <input type="number" id="max-file-mb" value="200" min="10" max="2000" style="width:100px;">
+        <span style="color:#888;font-size:0.78rem;margin-left:6px;">clips &gt;200MB are usually &gt;10s</span>
       </div>
     </div>
     <button class="btn-primary" id="fetch-btn" onclick="fetchBucket()">🔍 Fetch Videos from Bucket</button>
@@ -640,6 +758,9 @@
     <div class="video-list" id="video-list"></div>
   </div>
   <button class="btn-primary" id="generate-btn" onclick="generateReel()">🎬 Generate Reel</button>
+  <div class="batch-btn-row" style="justify-content:center;margin-top:10px;">
+    <button class="btn-secondary" style="padding:10px 20px;font-size:0.92rem;" onclick="startBatchMode()">� Sort &amp; Save Clips</button>
+  </div>
 </div>
 
 <!-- ══════════════════════ REEL PANEL ══════════════════════ -->
@@ -658,7 +779,8 @@
     <div class="btn-row">
       <button class="btn-play"   id="btn-play"   onclick="startPlay(false)" disabled>▶ Play Only</button>
       <button class="btn-record" id="btn-record" onclick="startPlay(true)"  disabled>⏺ Record &amp; Download</button>
-      <button class="btn-secondary" onclick="backToConfig()">← Back</button>
+      <button class="btn-secondary" id="btn-back-batch" style="display:none;" onclick="backToBatch()">← Batch</button>
+      <button class="btn-secondary" onclick="backToConfig()">← Config</button>
     </div>
     <div class="record-note">
       Saves as .webm · rename to .mp4 for Instagram · then add your song in the app
@@ -666,6 +788,53 @@
   </div>
   <!-- Per-clip swap row — shown after clips are loaded -->
   <div id="clip-swap-row"></div>
+</div>
+
+<!-- ══════════════════════ BATCH / SORTER PANEL ══════════════════════ -->
+<div id="batch-panel">
+  <div class="sorter-header">
+    <h1>📂 Clip Sorter</h1>
+    <p>Download 10 clips at a time · delete the ones you don't want · save the rest to your hard drive</p>
+  </div>
+
+  <!-- Save folder -->
+  <div id="folder-row">
+    <span id="folder-label">No save folder chosen</span>
+    <button id="btn-pick-folder" onclick="pickSaveFolder()">📁 Choose Save Folder</button>
+  </div>
+
+  <!-- Stats -->
+  <div id="batch-stats">
+    <span>Kept: <b id="stat-kept">0</b></span>
+    <span>Saved to disk: <b id="stat-saved">0</b></span>
+    <span>Queue remaining: <b id="stat-queue">—</b></span>
+  </div>
+
+  <!-- Download progress -->
+  <div id="batch-dl-area" style="display:none;">
+    <div id="batch-status-text"></div>
+    <div id="batch-dl-list"></div>
+  </div>
+
+  <!-- Save status line -->
+  <div id="batch-save-status"></div>
+
+  <!-- Clip grid -->
+  <div id="batch-grid" class="batch-grid"></div>
+
+  <!-- Actions -->
+  <div class="batch-btn-row">
+    <button class="btn-primary" id="batch-get-more-btn"
+      style="margin:0;width:auto;padding:13px 22px;"
+      onclick="saveKeptAndGetMore()" disabled>💾 Save Kept &amp; Get 10 More</button>
+    <button class="btn-secondary" id="batch-save-now-btn"
+      style="padding:13px 18px;font-size:0.9rem;"
+      onclick="saveKeptClips(false)">💾 Save Kept Now</button>
+    <button class="btn-secondary" onclick="backToSelector()">← Back to Videos</button>
+  </div>
+  <p style="font-size:0.72rem;color:#444;margin-top:8px;">
+    Tip: hover a clip to preview it · click ✕ to discard · kept clips are saved before the next batch loads
+  </p>
 </div>
 
 <script>
@@ -709,6 +878,7 @@ const TRANSITION_DUR = 0.17;  // post-cut: incoming clip plays its transition ef
 // STATE
 // ============================================================
 let bucketFiles    = [];
+let fileSizes      = {};        // key → size in bytes
 let selected       = {};        // key → bool
 let rotations      = {};        // key → rotation degrees (0 / 90 / 180 / 270)
 let blobPool       = {};        // key → { blobUrl, duration } — all downloaded blobs
@@ -734,6 +904,15 @@ let clipDurSec     = 0;
 let reelDurSec     = 0;
 let frameCount     = 0;
 let mainCtx        = null;
+
+// ── Batch / Sorter mode state ──
+let batchClips    = [];   // { key, blobUrl, duration, isLandscape, saved }
+let batchQueue    = [];   // ordered download queue (post-probe)
+let batchQueueIdx = 0;    // next position in batchQueue
+let batchPrepared = false;
+let saveDirHandle = null; // FileSystemDirectoryHandle (File System Access API)
+let totalSavedCount = 0;
+const BATCH_SIZE  = 10;
 
 // ============================================================
 // STARTUP
@@ -844,20 +1023,29 @@ async function fetchBucket() {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
-    const keys = data.keys || [];
+    const files = data.files || (data.keys || []).map(k => ({ key: k, size: 0 }));
 
-    if (keys.length === 0) {
+    if (files.length === 0) {
       setFetchStatus('No .mp4/.mov/.webm files found. Check bucket name and prefix.', 'error');
       document.getElementById('fetch-btn').disabled = false;
       return;
     }
 
-    bucketFiles = keys;
+    bucketFiles = files.map(f => f.key);
+    fileSizes   = {};
+    files.forEach(f => { fileSizes[f.key] = f.size || 0; });
     selected    = {};
-    keys.forEach(k => { selected[k] = true; });
+    bucketFiles.forEach(k => { selected[k] = true; });
+
+    // Reset batch mode — new file list invalidates old queue
+    batchPrepared = false;
+    batchClips    = [];
+    batchQueue    = [];
+    batchQueueIdx = 0;
+    totalSavedCount = 0;
 
     renderVideoList();
-    setFetchStatus(`Found ${keys.length} video${keys.length !== 1 ? 's' : ''}`, 'ok');
+    setFetchStatus(`Found ${bucketFiles.length} video${bucketFiles.length !== 1 ? 's' : ''}`, 'ok');
     document.getElementById('video-selector').classList.add('visible');
 
   } catch (err) {
@@ -888,6 +1076,12 @@ function renderVideoList() {
     name.textContent = key.split('/').pop();
     name.title       = key;
 
+    // File size badge
+    const sz = fileSizes[key] || 0;
+    const sizeBadge = document.createElement('span');
+    sizeBadge.style.cssText = 'flex-shrink:0;font-size:0.68rem;color:#555;margin-left:auto;padding-right:4px;';
+    sizeBadge.textContent = sz > 0 ? (sz >= 1048576 ? (sz/1048576).toFixed(0)+'MB' : (sz/1024).toFixed(0)+'KB') : '';
+
     // Per-clip rotation button — cycles 0 → 90 → 180 → 270 → 0
     const rotBtn          = document.createElement('button');
     rotBtn.type           = 'button';
@@ -909,6 +1103,7 @@ function renderVideoList() {
 
     item.appendChild(cb);
     item.appendChild(name);
+    item.appendChild(sizeBadge);
     item.appendChild(rotBtn);
     list.appendChild(item);
 
@@ -955,6 +1150,7 @@ async function generateReel() {
   document.getElementById('video-selector').classList.remove('visible');
   document.getElementById('reel-panel').classList.add('visible');
   document.getElementById('loading-overlay').classList.remove('hidden');
+  document.getElementById('btn-back-batch').style.display    = 'none';
   document.getElementById('btn-play').disabled               = true;
   document.getElementById('btn-record').disabled             = true;
   document.getElementById('clip-swap-row').innerHTML         = '';
@@ -966,85 +1162,131 @@ async function generateReel() {
   blobPool    = {};
   loadedClips = [];
 
-  // ── Download-and-filter: shuffle all keys, download one at a time,
-  //    check duration from blob, keep if ≤ MAX_DUR_SEC, stop once we have clipCount ──
-  const dlList      = document.getElementById('dl-progress-list');
-  dlList.innerHTML  = '';
+  // ── Two-phase download: probe 1MB first, full download only for short clips ──
+  const maxFileMB    = parseInt(document.getElementById('max-file-mb').value) || 200;
+  const maxFileBytes = maxFileMB * 1048576;
 
-  const shuffled = [...selectedKeys].sort(() => Math.random() - 0.5);
-  const kept     = [];   // { key, blobUrl, duration, isLandscape }
+  const dlList = document.getElementById('dl-progress-list');
+  dlList.innerHTML = '';
 
-  for (let i = 0; i < shuffled.length && kept.length < clipCount; i++) {
-    const key        = shuffled[i];
-    const shortName  = key.split('/').pop();
+  // Pre-filter by size, sort small-first (small files are likely short clips)
+  const shuffled     = [...selectedKeys].sort(() => Math.random() - 0.5);
+  const candidates   = shuffled.filter(k => !fileSizes[k] || fileSizes[k] <= maxFileBytes);
+  candidates.sort((a, b) => (fileSizes[a] || 0) - (fileSizes[b] || 0));
+  const skippedCount = shuffled.length - candidates.length;
+  if (skippedCount > 0) {
+    const msg = document.createElement('div');
+    msg.className = 'dl-item'; msg.style.color = '#aaa';
+    msg.textContent = `⊘ Skipped ${skippedCount} file${skippedCount !== 1 ? 's' : ''} over ${maxFileMB}MB`;
+    dlList.appendChild(msg);
+  }
 
-    // Progress bar for this candidate
-    const wrap    = document.createElement('div');  wrap.className = 'dl-item';
-    const nameEl  = document.createElement('div');  nameEl.className = 'dl-item-name';
-    nameEl.textContent = `Checking ${i + 1}/${shuffled.length}: ${shortName}`;
-    const barWrap = document.createElement('div'); barWrap.className = 'dl-bar-wrap';
-    const bar     = document.createElement('div'); bar.className = 'dl-bar';
-    barWrap.appendChild(bar);
-    wrap.appendChild(nameEl);
-    wrap.appendChild(barWrap);
-    dlList.appendChild(wrap);
-    dlList.scrollTop = dlList.scrollHeight;
+  // ── Phase 1: Probe first 1MB of each candidate in parallel batches ──
+  document.getElementById('loading-text').textContent =
+    `Phase 1/2: Probing ${candidates.length} files (1MB check)…`;
 
+  const probeResults = new Map(); // key → 'short' | 'long' | 'unknown'
+  const PROBE_BATCH  = 8;
+
+  for (let i = 0; i < candidates.length; i += PROBE_BATCH) {
+    const batch = candidates.slice(i, Math.min(i + PROBE_BATCH, candidates.length));
+    await Promise.all(batch.map(async k => {
+      const dur = await probeVideoDuration(bucket, k);
+      if      (!isFinite(dur) || isNaN(dur)) probeResults.set(k, 'unknown');
+      else if (dur <= MAX_DUR_SEC)            probeResults.set(k, 'short');
+      else                                    probeResults.set(k, 'long');
+    }));
+    const done     = Math.min(i + PROBE_BATCH, candidates.length);
+    const nShort   = [...probeResults.values()].filter(v => v === 'short').length;
+    const nUnknown = [...probeResults.values()].filter(v => v === 'unknown').length;
     document.getElementById('loading-text').textContent =
-      `Found ${kept.length}/${clipCount} short clips… (checking ${i + 1} of ${shuffled.length})`;
+      `Phase 1/2: Probed ${done}/${candidates.length} — ${nShort} short, ${nUnknown} unknown`;
+  }
 
-    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
-    const url        = `/api/reel/video?bucket=${encodeURIComponent(bucket)}&key=${encodedKey}`;
+  const shortKeys   = candidates.filter(k => probeResults.get(k) === 'short');
+  const unknownKeys = candidates.filter(k => probeResults.get(k) === 'unknown');
+  const longCount   = candidates.filter(k => probeResults.get(k) === 'long').length;
+  { const msg = document.createElement('div');
+    msg.className = 'dl-item'; msg.style.color = '#aaa';
+    msg.textContent = `Probe done: ${shortKeys.length} confirmed short · ${unknownKeys.length} unknown · ${longCount} long (skipped)`;
+    dlList.appendChild(msg); }
 
-    try {
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  // ── Phase 2: Full download — confirmed-short first, then unknowns if needed ──
+  const downloadQueue = [...shortKeys, ...unknownKeys];
+  const kept          = [];
+  const DL_BATCH      = 3;
+  let   dlIdx         = 0;
 
-      const contentLength = parseInt(resp.headers.get('content-length') || '0');
-      const reader        = resp.body.getReader();
-      const chunks        = [];
-      let received        = 0;
+  while (kept.length < clipCount && dlIdx < downloadQueue.length) {
+    const batchKeys = downloadQueue.slice(dlIdx, Math.min(dlIdx + DL_BATCH, downloadQueue.length));
+    dlIdx += batchKeys.length;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        received += value.length;
-        if (contentLength > 0) bar.style.width = Math.round((received / contentLength) * 100) + '%';
-      }
+    await Promise.all(batchKeys.map(async key => {
+      if (kept.length >= clipCount) return;
+      const shortName = key.split('/').pop();
 
-      const blob    = new Blob(chunks);
-      const blobUrl = URL.createObjectURL(blob);
+      const wrap    = document.createElement('div');  wrap.className = 'dl-item';
+      const nameEl  = document.createElement('div');  nameEl.className = 'dl-item-name';
+      nameEl.textContent = shortName;
+      const barWrap = document.createElement('div'); barWrap.className = 'dl-bar-wrap';
+      const bar     = document.createElement('div'); bar.className = 'dl-bar';
+      barWrap.appendChild(bar);
+      wrap.appendChild(nameEl);
+      wrap.appendChild(barWrap);
+      dlList.appendChild(wrap);
+      dlList.scrollTop = dlList.scrollHeight;
 
-      // Check duration from blob — instant since data is local
-      const dur = await getBlobDuration(blobUrl);
+      document.getElementById('loading-text').textContent =
+        `Phase 2/2: ${kept.length}/${clipCount} short clips found…`;
 
-      if (isFinite(dur) && dur > 0 && dur <= MAX_DUR_SEC) {
-        // Check orientation
-        const isLS = await getBlobOrientation(blobUrl);
-        if (!useLandscape && isLS) {
-          // Landscape clip rejected — user doesn't want them
+      const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+      const url        = `/api/reel/video?bucket=${encodeURIComponent(bucket)}&key=${encodedKey}`;
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const contentLength = parseInt(resp.headers.get('content-length') || '0');
+        const reader        = resp.body.getReader();
+        const chunks        = [];
+        let received        = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (contentLength > 0) bar.style.width = Math.round((received / contentLength) * 100) + '%';
+        }
+
+        const blob    = new Blob(chunks);
+        const blobUrl = URL.createObjectURL(blob);
+        const dur     = await getBlobDuration(blobUrl);
+
+        if (isFinite(dur) && dur > 0 && dur <= MAX_DUR_SEC) {
+          const isLS = await getBlobOrientation(blobUrl);
+          if (!useLandscape && isLS) {
+            URL.revokeObjectURL(blobUrl);
+            bar.style.background = '#555';
+            nameEl.textContent   = `⊘ landscape: ${shortName}`;
+          } else {
+            bar.style.width = '100%';
+            bar.classList.add('done');
+            nameEl.textContent = `✓ ${shortName} (${dur.toFixed(1)}s)`;
+            kept.push({ key, blobUrl, duration: dur, isLandscape: isLS });
+            blobPool[key] = { blobUrl, duration: dur, isLandscape: isLS };
+          }
+        } else {
           URL.revokeObjectURL(blobUrl);
           bar.style.background = '#555';
-          nameEl.textContent   = `⊘ landscape: ${shortName}`;
-        } else {
-          bar.style.width = '100%';
-          bar.classList.add('done');
-          nameEl.textContent = `✓ ${shortName} (${dur.toFixed(1)}s)`;
-          kept.push({ key, blobUrl, duration: dur, isLandscape: isLS });
-          blobPool[key] = { blobUrl, duration: dur, isLandscape: isLS };
+          nameEl.textContent   = `⊘ too long (${isFinite(dur) ? dur.toFixed(1) + 's' : '?'}): ${shortName}`;
         }
-      } else {
-        // Too long — discard blob
-        URL.revokeObjectURL(blobUrl);
-        bar.style.background = '#555';
-        nameEl.textContent   = `⊘ too long (${isFinite(dur) ? dur.toFixed(1) + 's' : '?'}): ${shortName}`;
+      } catch (err) {
+        console.warn(`[download] ${key}: ${err.message}`);
+        bar.style.background = '#884444';
+        nameEl.textContent   = `✗ error: ${shortName}`;
       }
-    } catch (err) {
-      console.warn(`[download] ${key}: ${err.message}`);
-      bar.style.background = '#884444';
-      nameEl.textContent   = `✗ error: ${shortName}`;
-    }
+    }));
   }
 
   if (kept.length === 0) {
@@ -1130,6 +1372,31 @@ function getBlobDuration(blobUrl) {
     v.addEventListener('error', () => { v.src = ''; resolve(NaN); }, { once: true });
     setTimeout(() => { v.src = ''; resolve(NaN); }, 4000);
   });
+}
+
+// ── Fast duration probe: fetches only the first 1MB of the file via range request.
+//    Returns duration in seconds if the moov atom was in that range (fast-start MP4),
+//    or NaN if the atom was not found (moov-at-end files like raw GoPro).
+async function probeVideoDuration(bucket, key) {
+  const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+  const url = `/api/reel/video?bucket=${encodeURIComponent(bucket)}&key=${encodedKey}`;
+  try {
+    const resp = await fetch(url, {
+      headers: { Range: 'bytes=0-1048575' },
+      signal: AbortSignal.timeout(20000)
+    });
+    if (!resp.ok && resp.status !== 206) return NaN;
+    const buf  = await resp.arrayBuffer();
+    const ext  = key.split('.').pop().toLowerCase();
+    const mime = ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4';
+    const blob = new Blob([buf], { type: mime });
+    const blobUrl = URL.createObjectURL(blob);
+    const dur  = await getBlobDuration(blobUrl);
+    URL.revokeObjectURL(blobUrl);
+    return dur;
+  } catch (_) {
+    return NaN;
+  }
 }
 
 // ── Get orientation from a blob URL ──
@@ -1669,6 +1936,384 @@ function downloadReel() {
   setReelStatus(`✅ Saved! (${(blob.size / (1024 * 1024)).toFixed(1)} MB) · Add your song on Instagram / TikTok`);
   document.getElementById('btn-play').disabled   = false;
   document.getElementById('btn-record').disabled = false;
+}
+
+// ============================================================
+// BATCH / SORTER MODE
+// ============================================================
+
+async function pickSaveFolder() {
+  if (!window.showDirectoryPicker) {
+    alert('Your browser does not support the Folder Picker API.\nFiles will be downloaded one by one instead.');
+    return;
+  }
+  try {
+    saveDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    document.getElementById('folder-label').textContent = `📁 ${saveDirHandle.name}`;
+    document.getElementById('folder-label').classList.add('chosen');
+    document.getElementById('btn-pick-folder').classList.add('chosen');
+    document.getElementById('btn-pick-folder').textContent = `✓ ${saveDirHandle.name}`;
+  } catch (e) {
+    if (e.name !== 'AbortError') console.warn('Folder pick error:', e);
+  }
+}
+
+async function startBatchMode() {
+  const bucket       = (document.getElementById('bucket-name').value.trim()) || 'kaykes-digital';
+  const maxFileBytes = (parseInt(document.getElementById('max-file-mb').value) || 200) * 1048576;
+  const selectedKeys = bucketFiles.filter(k => selected[k]);
+  if (selectedKeys.length === 0) { alert('No videos selected.'); return; }
+
+  document.getElementById('config-panel').style.display = 'none';
+  document.getElementById('video-selector').classList.remove('visible');
+  document.getElementById('batch-panel').classList.add('visible');
+
+  if (!batchPrepared) {
+    document.getElementById('batch-dl-area').style.display   = 'block';
+    document.getElementById('batch-dl-list').innerHTML       = '';
+    document.getElementById('batch-status-text').textContent = 'Scanning files for short clips…';
+    document.getElementById('batch-get-more-btn').disabled   = true;
+
+    const shuffled   = [...selectedKeys].sort(() => Math.random() - 0.5);
+    const candidates = shuffled
+      .filter(k => !fileSizes[k] || fileSizes[k] <= maxFileBytes)
+      .sort((a, b) => (fileSizes[a] || 0) - (fileSizes[b] || 0));
+
+    const probeResults = new Map();
+    const PROBE_BATCH  = 8;
+    for (let i = 0; i < candidates.length; i += PROBE_BATCH) {
+      const batch = candidates.slice(i, Math.min(i + PROBE_BATCH, candidates.length));
+      await Promise.all(batch.map(async k => {
+        const dur = await probeVideoDuration(bucket, k);
+        probeResults.set(k, (!isFinite(dur) || isNaN(dur)) ? 'unknown' : dur <= 10 ? 'short' : 'long');
+      }));
+      const done = Math.min(i + PROBE_BATCH, candidates.length);
+      document.getElementById('batch-status-text').textContent =
+        `Scanning ${done}/${candidates.length} files…`;
+    }
+
+    const shortKeys   = candidates.filter(k => probeResults.get(k) === 'short');
+    const unknownKeys = candidates.filter(k => probeResults.get(k) === 'unknown');
+    batchQueue    = [...shortKeys, ...unknownKeys];
+    batchQueueIdx = 0;
+    batchPrepared = true;
+
+    document.getElementById('batch-status-text').textContent =
+      `Found ${shortKeys.length} confirmed short · ${batchQueue.length} total to browse`;
+  }
+
+  if (batchClips.length > 0) renderBatchGrid();
+  updateBatchStats();
+
+  if (batchQueueIdx < batchQueue.length) {
+    await downloadNextBatch();
+  } else {
+    document.getElementById('batch-dl-area').style.display = 'none';
+    updateBatchStats();
+  }
+}
+
+async function downloadNextBatch() {
+  const bucket      = (document.getElementById('bucket-name').value.trim()) || 'kaykes-digital';
+  const useLandscape = document.getElementById('show-landscape').checked;
+
+  if (batchQueueIdx >= batchQueue.length) {
+    document.getElementById('batch-status-text').textContent = 'All clips in queue have been processed.';
+    document.getElementById('batch-dl-area').style.display  = 'block';
+    document.getElementById('batch-get-more-btn').disabled  = true;
+    updateBatchStats();
+    return;
+  }
+
+  document.getElementById('batch-dl-area').style.display   = 'block';
+  document.getElementById('batch-dl-list').innerHTML       = '';
+  document.getElementById('batch-get-more-btn').disabled   = true;
+
+  let downloaded = 0;
+
+  while (downloaded < BATCH_SIZE && batchQueueIdx < batchQueue.length) {
+    const key       = batchQueue[batchQueueIdx++];
+    if (batchClips.find(c => c.key === key)) continue;
+
+    const shortName = key.split('/').pop();
+    document.getElementById('batch-status-text').textContent =
+      `Downloading ${downloaded + 1} of ${BATCH_SIZE}…`;
+
+    const wrap    = document.createElement('div');  wrap.className = 'dl-item';
+    const nameEl  = document.createElement('div');  nameEl.className = 'dl-item-name';
+    nameEl.textContent = shortName;
+    const barWrap = document.createElement('div'); barWrap.className = 'dl-bar-wrap';
+    const bar     = document.createElement('div'); bar.className = 'dl-bar';
+    barWrap.appendChild(bar);
+    wrap.appendChild(nameEl); wrap.appendChild(barWrap);
+    document.getElementById('batch-dl-list').appendChild(wrap);
+    document.getElementById('batch-dl-list').scrollTop = 9999;
+
+    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+    const url        = `/api/reel/video?bucket=${encodeURIComponent(bucket)}&key=${encodedKey}`;
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const contentLength = parseInt(resp.headers.get('content-length') || '0');
+      const reader = resp.body.getReader();
+      const chunks = []; let received = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); received += value.length;
+        if (contentLength > 0) bar.style.width = Math.round((received / contentLength) * 100) + '%';
+      }
+
+      const blob    = new Blob(chunks);
+      const blobUrl = URL.createObjectURL(blob);
+      const dur     = await getBlobDuration(blobUrl);
+
+      if (isFinite(dur) && dur > 0 && dur <= 10) {
+        const isLS = await getBlobOrientation(blobUrl);
+        if (!useLandscape && isLS) {
+          URL.revokeObjectURL(blobUrl);
+          bar.style.background = '#555';
+          nameEl.textContent   = `⊘ landscape: ${shortName}`;
+        } else {
+          bar.style.width = '100%'; bar.classList.add('done');
+          nameEl.textContent = `✓ ${shortName} (${dur.toFixed(1)}s)`;
+          batchClips.push({ key, blobUrl, duration: dur, isLandscape: isLS, saved: false, blob });
+          blobPool[key] = { blobUrl, duration: dur, isLandscape: isLS };
+          downloaded++;
+        }
+      } else {
+        URL.revokeObjectURL(blobUrl);
+        bar.style.background = '#555';
+        nameEl.textContent   = `⊘ too long (${isFinite(dur) ? dur.toFixed(1) + 's' : '?'}): ${shortName}`;
+      }
+    } catch (err) {
+      bar.style.background = '#884444';
+      nameEl.textContent   = `✗ error: ${shortName}`;
+    }
+  }
+
+  const remaining = Math.max(0, batchQueue.length - batchQueueIdx);
+  document.getElementById('batch-status-text').textContent =
+    downloaded > 0
+      ? `Downloaded ${downloaded} clip${downloaded !== 1 ? 's' : ''} · ${remaining} more in queue`
+      : `No usable clips in this batch · ${remaining} more in queue`;
+
+  renderBatchGrid();
+  updateBatchStats();
+}
+
+// ── Save kept clips to disk (non-deleted ones), then optionally get next batch ──
+async function saveKeptClips(thenGetMore = false) {
+  const unsaved = batchClips.filter(c => !c.saved);
+  if (unsaved.length === 0) {
+    if (thenGetMore) await downloadNextBatch();
+    return;
+  }
+
+  const statusEl = document.getElementById('batch-save-status');
+  statusEl.textContent = '';
+
+  if (saveDirHandle) {
+    // File System Access API — write straight to the chosen folder
+    let ok = 0;
+    for (const clip of unsaved) {
+      const fname = clip.key.split('/').pop();
+      statusEl.textContent = `Saving ${fname}…`;
+      try {
+        const fh  = await saveDirHandle.getFileHandle(fname, { create: true });
+        const wr  = await fh.createWritable();
+        await wr.write(clip.blob);
+        await wr.close();
+        clip.saved = true;
+        ok++;
+        totalSavedCount++;
+      } catch (e) {
+        console.warn('Save error:', fname, e);
+      }
+    }
+    statusEl.textContent = `✅ Saved ${ok} file${ok !== 1 ? 's' : ''} to "${saveDirHandle.name}"`;
+  } else {
+    // Fallback — trigger browser download for each kept clip
+    for (const clip of unsaved) {
+      const fname = clip.key.split('/').pop();
+      const a     = document.createElement('a');
+      a.href      = clip.blobUrl;
+      a.download  = fname;
+      a.click();
+      await new Promise(r => setTimeout(r, 300));
+      clip.saved = true;
+      totalSavedCount++;
+    }
+    statusEl.textContent = `✅ Triggered download for ${unsaved.length} file${unsaved.length !== 1 ? 's' : ''}`;
+  }
+
+  renderBatchGrid();
+  updateBatchStats();
+
+  if (thenGetMore) await downloadNextBatch();
+}
+
+async function saveKeptAndGetMore() {
+  await saveKeptClips(true);
+}
+
+function renderBatchGrid() {
+  const grid = document.getElementById('batch-grid');
+  grid.innerHTML = '';
+
+  batchClips.forEach(clip => {
+    const card  = document.createElement('div');   card.className = 'batch-card';
+    if (clip.saved) card.classList.add('saved-card');
+
+    const vwrap = document.createElement('div');   vwrap.className = 'batch-card-vwrap';
+
+    const video       = document.createElement('video');
+    video.muted       = true; video.loop = true;
+    video.playsInline = true; video.preload = 'metadata';
+    video.src         = clip.blobUrl;
+    vwrap.addEventListener('mouseenter', () => video.play().catch(() => {}));
+    vwrap.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
+
+    const playIcon = document.createElement('div'); playIcon.className = 'batch-card-play';
+    playIcon.textContent = '▶';
+    vwrap.appendChild(video); vwrap.appendChild(playIcon);
+
+    const nameEl = document.createElement('div'); nameEl.className = 'batch-card-name';
+    nameEl.textContent = clip.key.split('/').pop(); nameEl.title = clip.key;
+
+    const meta = document.createElement('div'); meta.className = 'batch-card-meta';
+    meta.textContent = `${clip.duration.toFixed(1)}s · ${clip.isLandscape ? '🏞' : '📱'}`;
+
+    const del   = document.createElement('button'); del.className = 'batch-card-del';
+    del.textContent = '✕'; del.title = 'Discard this clip';
+    del.addEventListener('click', e => { e.stopPropagation(); discardBatchClip(clip.key); });
+
+    if (clip.saved) {
+      const badge = document.createElement('div'); badge.className = 'batch-card-saved-badge';
+      badge.textContent = '✓ saved';
+      card.appendChild(badge);
+    }
+
+    card.appendChild(vwrap);
+    card.appendChild(nameEl);
+    card.appendChild(meta);
+    card.appendChild(del);
+    grid.appendChild(card);
+  });
+
+  updateBatchStats();
+}
+
+function updateBatchStats() {
+  const remaining = Math.max(0, batchQueue.length - batchQueueIdx);
+  document.getElementById('stat-kept').textContent  = batchClips.length;
+  document.getElementById('stat-saved').textContent = totalSavedCount;
+  document.getElementById('stat-queue').textContent = batchPrepared ? remaining : '—';
+  document.getElementById('batch-get-more-btn').disabled =
+    !batchPrepared || batchQueueIdx >= batchQueue.length;
+}
+
+function discardBatchClip(key) {
+  const idx = batchClips.findIndex(c => c.key === key);
+  if (idx === -1) return;
+  const [removed] = batchClips.splice(idx, 1);
+  // Free the blob URL from memory
+  try { URL.revokeObjectURL(removed.blobUrl); } catch (_) {}
+  delete blobPool[key];
+  renderBatchGrid();
+}
+
+function backToSelector() {
+  document.getElementById('batch-panel').classList.remove('visible');
+  document.getElementById('config-panel').style.display = '';
+  if (bucketFiles.length > 0) document.getElementById('video-selector').classList.add('visible');
+}
+
+// ── Keep buildReelFromBatch for optional reel-maker integration ──
+async function buildReelFromBatch() {
+  if (batchClips.length === 0) { alert('No clips in batch.'); return; }
+
+  const clipCount = parseInt(document.getElementById('clip-count').value);
+  const reelDur   = parseInt(document.getElementById('reel-duration').value);
+  const bpm       = parseInt(document.getElementById('bpm').value) || 120;
+  const beatDur   = 60 / bpm;
+  const minBeats  = MIN_BEATS[pacing] || 2;
+  const bpc       = Math.max(minBeats, Math.round((reelDur / clipCount) / beatDur));
+  clipDurSec      = bpc * beatDur;
+
+  document.getElementById('batch-panel').classList.remove('visible');
+  document.getElementById('reel-panel').classList.add('visible');
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  document.getElementById('loading-text').textContent = 'Preparing clips…';
+  document.getElementById('dl-progress-list').innerHTML = '';
+  document.getElementById('btn-play').disabled    = true;
+  document.getElementById('btn-record').disabled  = true;
+  document.getElementById('btn-back-batch').style.display = '';
+  document.getElementById('clip-swap-row').innerHTML = '';
+
+  const pool = document.getElementById('video-pool');
+  pool.innerHTML = '';
+  loadedClips = [];
+
+  const picks = [...batchClips].sort(() => Math.random() - 0.5).slice(0, clipCount);
+  loadedClips = picks.map((entry, i) => {
+    const video = document.createElement('video');
+    video.muted = true; video.loop = false;
+    video.playsInline = true; video.preload = 'auto';
+    video.src = entry.blobUrl;
+    pool.appendChild(video);
+    return {
+      key: entry.key, blobUrl: entry.blobUrl, video,
+      isLandscape: entry.isLandscape,
+      rotation:    rotations[entry.key] || 0,
+      duration:    entry.duration,
+      grade:       GRADE_FLAVOURS[i % GRADE_FLAVOURS.length],
+      transType:   TRANS_TYPES[i % TRANS_TYPES.length],
+      ts: { currentX: 0.5, targetX: 0.5, smoothedTarget: 0.5, prevData: null }
+    };
+  });
+
+  reelDurSec = clipDurSec * loadedClips.length;
+
+  await Promise.all(loadedClips.map(clip => new Promise(res => {
+    if (clip.video.readyState >= 3) { res(); return; }
+    clip.video.addEventListener('canplaythrough', res, { once: true });
+    clip.video.addEventListener('error',          res, { once: true });
+    setTimeout(res, 5000);
+  })));
+
+  const canvas = document.getElementById('reel-canvas');
+  mainCtx = canvas.getContext('2d');
+  mainCtx.imageSmoothingEnabled = true;
+  mainCtx.imageSmoothingQuality = 'high';
+  setupVignette(mainCtx);
+
+  if (audioMode === 'upload') {
+    const f = document.getElementById('audio-file').files[0];
+    if (f) await loadAudio(f);
+  }
+
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('btn-play').disabled   = false;
+  document.getElementById('btn-record').disabled = false;
+
+  const land = loadedClips.filter(c => c.isLandscape).length;
+  setReelStatus(`${loadedClips.length} clips · ${land} landscape · ${loadedClips.length - land} portrait · ${reelDurSec.toFixed(1)}s`);
+  renderClipSwapRow((document.getElementById('bucket-name').value.trim()) || 'kaykes-digital');
+}
+
+function backToBatch() {
+  isPlaying = false; isRecording = false;
+  cancelAnimationFrame(animFrame);
+  loadedClips.forEach(c => c.video.pause());
+  if (audioSrcNode) { try { audioSrcNode.stop(); } catch (e) {} audioSrcNode = null; }
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  document.getElementById('reel-progress-fill').style.width = '0%';
+  document.getElementById('reel-panel').classList.remove('visible');
+  document.getElementById('batch-panel').classList.add('visible');
+  renderBatchGrid();
 }
 
 // ============================================================
