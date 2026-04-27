@@ -1,5 +1,5 @@
 // ROK Cup South Africa PWA Service Worker
-const CACHE_NAME = 'rok-cup-v9';
+const CACHE_NAME = 'rok-cup-v10';
 const OFFLINE_URL = '/offline.html';
 const DRIVER_PORTAL_URL = '/driver_portal.html';
 
