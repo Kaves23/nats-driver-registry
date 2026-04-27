@@ -2006,6 +2006,33 @@
       }
     }
 
+    /* Desktop logged-in: hide login/session panels, tabs move to top */
+    @media (min-width: 981px) {
+      body.logged-in .tabs {
+        display: none !important;
+      }
+      body.logged-in #modeGate {
+        display: none !important;
+      }
+      body.logged-in #tab-portal > .grid {
+        display: none !important;
+      }
+      #portalTabs {
+        margin-top: 0 !important;
+      }
+      #portalSections {
+        margin-top: 14px !important;
+      }
+    }
+
+    /* Show Enter a Race banner when logged in */
+    body.logged-in #enterRaceBanner {
+      display: block !important;
+    }
+    @keyframes slideInDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+    #btnQuickEntry:hover{background:linear-gradient(135deg,#fde047,#facc15) !important;box-shadow:0 0 32px rgba(250,204,21,0.7) !important;transform:translateY(-2px);}
+    #btnQuickEntry:active{transform:translateY(0);}
+
     /* Mobile logged-in enhancements */
     @media (max-width: 980px) {
       /* Hide login/register tabs when logged in */
@@ -2043,6 +2070,18 @@
       body.logged-in #portalSections {
         order: 2 !important;
         margin-top: 14px !important;
+      }
+      
+      /* Enter a Race banner - first item after tabs */
+      body.logged-in #enterRaceBanner {
+        order: 0 !important;
+        margin-bottom: 14px !important;
+      }
+      
+      /* Portal tabs first */
+      body.logged-in #portalTabs,
+      body.logged-in #portalTabsCarousel {
+        order: 1 !important;
       }
       
       /* Portal status at the very bottom */
@@ -2269,16 +2308,13 @@
   
   <nav class="portal-sidebar" aria-label="Driver portal navigation">
     <button class="portal-sidebar-item" data-ptab="driver" data-accent="summer" type="button">Driver Profile</button>
-    <button class="portal-sidebar-item" data-ptab="contacts" data-accent="autumn" type="button">Entrant Details</button>
-    <button class="portal-sidebar-item" data-ptab="medical" data-accent="winter" type="button">Medical & Consent</button>
+    <button class="portal-sidebar-item" data-ptab="card" data-accent="spring" type="button">Driver Card</button>
     <button class="portal-sidebar-item" data-ptab="events" data-accent="spring" type="button">My Events</button>
-    <button class="portal-sidebar-item" data-ptab="points" data-accent="summer" type="button">Points</button>
-    <button class="portal-sidebar-item active" data-ptab="payments" data-accent="autumn" type="button">Entries & Rentals</button>
+    <button class="portal-sidebar-item active" data-ptab="points" data-accent="summer" type="button">Points</button>
     <button class="portal-sidebar-item" data-ptab="msa" data-accent="winter" type="button">MSA License</button>
     <button class="portal-sidebar-item" data-ptab="notifications" data-accent="spring" type="button">Notifications</button>
-    <button class="portal-sidebar-item" data-ptab="requests" data-accent="summer" type="button">Contact Admin</button>
     <button class="portal-sidebar-item portal-sidebar-action" data-accent="autumn" onclick="document.getElementById('btnLogout').click()" type="button">Logout</button>
-    <button class="portal-sidebar-item portal-sidebar-action" data-accent="winter" onclick="window.location.href='index.html'" type="button">Home</button>
+
   </nav>
 
   <div class="wrap">
@@ -2374,27 +2410,44 @@
               </div>
             </div>
 
+            <!-- Enter a Race banner - shown when logged in, above all tabs -->
+            <div id="enterRaceBanner" style="display:none; margin-bottom:14px;">
+              <div style="background:linear-gradient(135deg,#0a0a0a 0%,#111827 100%);border:2px solid #facc15;border-radius:8px;box-shadow:0 0 32px rgba(250,204,21,0.18);overflow:hidden;">
+                <div style="height:4px;background:linear-gradient(90deg,#facc15,#f97316,#facc15);background-size:200% 100%;animation:shimmer 2.5s linear infinite;"></div>
+                <div style="padding:20px 24px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                    <div>
+                      <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#facc15;margin-bottom:6px;">Ready to Compete?</div>
+                      <div style="font-size:22px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.04em;line-height:1.1;">Enter a Race</div>
+                      <div style="font-size:13px;color:#9ca3af;margin-top:6px;">Register for the next event, add engine rental &amp; more</div>
+                      <div id="bannerCountdown" style="font-size:12px;font-weight:600;margin-top:5px;"></div>
+                    </div>
+                    <button id="btnQuickEntry" type="button" style="flex-shrink:0;padding:14px 32px;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#000000;border-radius:6px;cursor:pointer;transition:all 0.25s ease;box-shadow:0 0 20px rgba(250,204,21,0.45);">
+                      Enter Now →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Portal tabs -->
-            <div id="portalTabs" class="portalTabs" style="display:none; margin-top:14px;">
+            <div id="portalTabs" class="portalTabs" style="display:none; margin-top:0;">
               <button class="ptab" data-ptab="driver" data-accent="summer" type="button"><span class="tabBar"></span>Driver</button>
-              <button class="ptab" data-ptab="contacts" data-accent="autumn" type="button"><span class="tabBar"></span>Entrant Details</button>
-              <button class="ptab" data-ptab="medical" data-accent="winter" type="button"><span class="tabBar"></span>Medical & Consent</button>
+              <button class="ptab" data-ptab="card" data-accent="spring" type="button"><span class="tabBar"></span>Driver Card</button>
               <button class="ptab" data-ptab="events" data-accent="spring" type="button"><span class="tabBar"></span>My Events</button>
-              <button class="ptab" data-ptab="points" data-accent="summer" type="button"><span class="tabBar"></span>Points</button>
-              <button class="ptab active" data-ptab="payments" data-accent="autumn" type="button"><span class="tabBar"></span>Entries & Rentals</button>
+              <button class="ptab active" data-ptab="points" data-accent="summer" type="button"><span class="tabBar"></span>Points</button>
               <button class="ptab" data-ptab="msa" data-accent="winter" type="button"><span class="tabBar"></span>MSA License</button>
               <button class="ptab" data-ptab="notifications" data-accent="spring" type="button"><span class="tabBar"></span>Notifications</button>
-              <button class="ptab" data-ptab="requests" data-accent="summer" type="button"><span class="tabBar"></span>Contact Admin</button>
               <!-- Logout and Home at end of portal tabs -->
               <button class="ptab ptab-action" data-accent="autumn" onclick="document.getElementById('btnLogout').click()" type="button"><span class="tabBar"></span>Logout</button>
-              <button class="ptab ptab-action" data-accent="winter" onclick="window.location.href='index.html'" type="button"><span class="tabBar"></span>Home</button>
+
             </div>
 
             <!-- Portal tabs - Mobile 3D carousel -->
             <div id="portalTabsCarousel" class="portalTabs-carousel-container" style="display:none;">
               <!-- Current tab display -->
               <div class="portalTab-current">
-                <span class="portalTab-current-label">Entries & Rentals</span>
+                <span class="portalTab-current-label">Points</span>
                 <button class="portalTab-fab" aria-label="Options">
                   <span class="portalTab-fab-icon">Options</span>
                 </button>
@@ -2407,20 +2460,14 @@
                   <button class="portalTab-option" data-ptab="driver">
                     <span class="portalTab-option-label">Driver Profile</span>
                   </button>
-                  <button class="portalTab-option" data-ptab="contacts">
-                    <span class="portalTab-option-label">Entrant Details</span>
-                  </button>
-                  <button class="portalTab-option" data-ptab="medical">
-                    <span class="portalTab-option-label">Medical & Consent</span>
+                  <button class="portalTab-option" data-ptab="card">
+                    <span class="portalTab-option-label">Driver Card</span>
                   </button>
                   <button class="portalTab-option" data-ptab="events">
                     <span class="portalTab-option-label">My Events</span>
                   </button>
-                  <button class="portalTab-option" data-ptab="points">
+                  <button class="portalTab-option active" data-ptab="points">
                     <span class="portalTab-option-label">Points</span>
-                  </button>
-                  <button class="portalTab-option active" data-ptab="payments">
-                    <span class="portalTab-option-label">Entries & Rentals</span>
                   </button>
                   <button class="portalTab-option" data-ptab="msa">
                     <span class="portalTab-option-label">MSA License</span>
@@ -2428,9 +2475,7 @@
                   <button class="portalTab-option" data-ptab="notifications">
                     <span class="portalTab-option-label">Notifications</span>
                   </button>
-                  <button class="portalTab-option" data-ptab="requests">
-                    <span class="portalTab-option-label">Contact Admin</span>
-                  </button>
+
                 </div>
               </div>
             </div>
@@ -2524,18 +2569,16 @@
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="portalSection" data-psection="contacts">
-                <div class="panel">
+                <!-- Entrant Details (merged into Driver tab) -->
+                <div class="panel" style="margin-top:14px;">
                   <div class="panelTitle"><span class="accentBar" style="background:var(--autumn)"></span>Entrant Details</div>
                   <div id="p_contactsTable" class="hint">No data loaded.</div>
                 </div>
-              </div>
 
-              <div class="portalSection" data-psection="medical">
-                <div class="panel">
-                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Medical & Consent</div>
+                <!-- Medical & Consent (merged into Driver tab) -->
+                <div class="panel" style="margin-top:14px;">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Medical &amp; Consent</div>
                   <div id="p_medicalBlock" class="hint">No data loaded.</div>
                 </div>
               </div>
@@ -2550,10 +2593,80 @@
                 </div>
               </div>
 
+              <!-- DRIVER CARD SECTION -->
+              <div class="portalSection" data-psection="card">
+                <div class="panel" style="padding:0;overflow:hidden;">
+                  <div style="padding:20px 22px 16px;">
+                    <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Driver Card</div>
+                    <div class="hint" style="margin-bottom:16px;">Your official series driver card. Share or print for track-day use.</div>
+                  </div>
+                  <!-- Card itself -->
+                  <div id="driverCardWrap" style="padding:0 22px 22px;">
+                    <div id="driverCard" style="position:relative;background:#ffffff;border:2px solid #0ea5e9;border-radius:10px;overflow:hidden;max-width:480px;box-shadow:0 4px 20px rgba(14,165,233,0.18);">
+                      <!-- Top blue bar -->
+                      <div style="height:6px;background:linear-gradient(90deg,#0ea5e9,#f97316,#0ea5e9);background-size:200% 100%;animation:shimmer 3s linear infinite;"></div>
+                      <div style="padding:20px 22px 18px;display:flex;gap:18px;align-items:center;">
+                        <!-- Race number badge -->
+                        <div id="cardNumberBadge" style="flex-shrink:0;width:72px;height:72px;background:#0ea5e9;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-direction:column;box-shadow:0 0 16px rgba(14,165,233,0.4);">
+                          <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:0.1em;text-transform:uppercase;line-height:1;">No.</div>
+                          <div id="cardNumber" style="font-size:28px;font-weight:900;color:#fff;line-height:1.1;">—</div>
+                        </div>
+                        <!-- Driver info -->
+                        <div style="flex:1;min-width:0;">
+                          <div style="font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#0ea5e9;margin-bottom:4px;">ROK Cup South Africa</div>
+                          <div id="cardName" style="font-size:20px;font-weight:800;color:#111827;text-transform:uppercase;letter-spacing:0.03em;line-height:1.15;margin-bottom:4px;">— —</div>
+                          <div id="cardClass" style="display:inline-block;padding:3px 10px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.4);border-radius:3px;font-size:12px;font-weight:700;color:#0369a1;letter-spacing:0.08em;text-transform:uppercase;">—</div>
+                        </div>
+                        <!-- ROK logo -->
+                        <div style="flex-shrink:0;display:flex;align-items:flex-start;">
+                          <img src="/icons/rok-logo-original.png" alt="ROK Cup" style="height:44px;width:auto;object-fit:contain;opacity:0.9;" />
+                        </div>
+                      </div>
+                      <!-- Details row -->
+                      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid #e5e7eb;">
+                        <div style="padding:10px 14px;border-right:1px solid #e5e7eb;">
+                          <div style="font-size:9px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">License</div>
+                          <div id="cardLicense" style="font-size:12px;color:#111827;font-weight:600;">—</div>
+                        </div>
+                        <div style="padding:10px 14px;border-right:1px solid #e5e7eb;">
+                          <div style="font-size:9px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Transponder</div>
+                          <div id="cardTransponder" style="font-size:12px;color:#111827;font-weight:600;">—</div>
+                        </div>
+                        <div style="padding:10px 14px;">
+                          <div style="font-size:9px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Team</div>
+                          <div id="cardTeam" style="font-size:12px;color:#111827;font-weight:600;">—</div>
+                        </div>
+                      </div>
+                      <!-- Season / QR row -->
+                      <div style="padding:12px 14px 14px;border-top:1px solid #e5e7eb;background:#f8fafc;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                        <div>
+                          <div style="font-size:9px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">2026 Season</div>
+                          <div id="cardChampBadge" style="font-size:11px;font-weight:700;color:#f97316;letter-spacing:0.08em;text-transform:uppercase;">—</div>
+                          <div style="font-size:9px;color:#9ca3af;margin-top:6px;">Scan to verify license</div>
+                        </div>
+                        <div id="cardQR" style="flex-shrink:0;width:64px;height:64px;background:#ffffff;border-radius:4px;border:1px solid #e5e7eb;overflow:hidden;display:flex;align-items:center;justify-content:center;"></div>
+                      </div>
+                    </div>
+                    <!-- Print button -->
+                    <div style="margin-top:14px;">
+                      <button type="button" onclick="printDriverCard()" style="padding:10px 22px;background:transparent;border:1px solid #0ea5e9;color:#0369a1;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:4px;">🖨 Print / Save as PDF</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- POINTS SECTION -->
               <div class="portalSection" data-psection="points">
                 <div class="panel">
                   <div class="panelTitle"><span class="accentBar" style="background:var(--spring)"></span>Points</div>
                   <div id="p_pointsTable" class="hint">No points loaded.</div>
+                </div>
+                <!-- Past Results Timeline -->
+                <div class="panel" style="margin-top:14px;">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--autumn)"></span>Past Results</div>
+                  <div class="hint" style="margin-bottom:12px;">Your race-by-race results history.</div>
+                  <div id="p_resultsTimeline"><div class="hint">Loading results…</div></div>
                 </div>
               </div>
 
@@ -2639,32 +2752,7 @@
                 </div>
               </div>
 
-              <div class="portalSection active" data-psection="payments">
-                <!-- ENTER A RACE CARD -->
-                <div class="panel" style="padding:0;overflow:hidden;">
-                  <div style="background:linear-gradient(135deg,#0a0a0a 0%,#111827 100%);border:2px solid #facc15;border-radius:8px;box-shadow:0 0 32px rgba(250,204,21,0.18);">
-                    <!-- Top accent bar -->
-                    <div style="height:4px;background:linear-gradient(90deg,#facc15,#f97316,#facc15);background-size:200% 100%;animation:shimmer 2.5s linear infinite;"></div>
-                    <style>@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}</style>
-                    <div style="padding:24px;">
-                      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-                        <div>
-                          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#facc15;margin-bottom:6px;">Ready to Compete?</div>
-                          <div style="font-size:22px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.04em;line-height:1.1;">Enter a Race</div>
-                          <div style="font-size:13px;color:#9ca3af;margin-top:6px;">Register for the next event, add engine rental &amp; more</div>
-                        </div>
-                        <button id="btnQuickEntry" type="button" style="flex-shrink:0;padding:14px 32px;font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#000000;border-radius:6px;cursor:pointer;transition:all 0.25s ease;box-shadow:0 0 20px rgba(250,204,21,0.45);animation:slideInDown 0.5s ease-out;">
-                          Enter Now →
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <style>
-                    @keyframes slideInDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
-                    #btnQuickEntry:hover{background:linear-gradient(135deg,#fde047,#facc15) !important;box-shadow:0 0 32px rgba(250,204,21,0.7) !important;transform:translateY(-2px);}
-                    #btnQuickEntry:active{transform:translateY(0);}
-                  </style>
-                </div>
+              <div class="portalSection active" data-psection="points">
 
                 <!-- NEXT RACE DETAILS SECTION -->
                 <div class="panel">
@@ -3729,6 +3817,7 @@
       if(currentLabel) {
         const labels = {
           'driver': 'Driver',
+          'card': 'Driver Card',
           'contacts': 'Entrant',
           'medical': 'Medical',
           'events': 'Events',
@@ -3973,8 +4062,8 @@
       const inlineBtns = document.getElementById("statusInlineButtons");
       if (inlineBtns) inlineBtns.style.display = "flex";
       
-      // Set the payments (Entries & Rentals) tab active by default
-      setPortalTab("payments");
+      // Set the points tab active by default
+      setPortalTab("points");
       
       // Load notification history when logged in
       loadNotificationHistory();
@@ -4158,6 +4247,14 @@
       
       // Update the Next Race status box
       updateNextRaceBox(d);
+
+      // Populate Driver Card
+      populateDriverCard(d);
+
+      // Render Past Results Timeline (from login profile points if available)
+      if (profile.points && profile.points.length > 0) {
+        renderResultsTimeline(profile.points);
+      }
     }
 
     // Function to save medical data
@@ -4579,7 +4676,66 @@
         const nrSection   = buildChampSection('Northern Regions', data.points, data.seasonTotals, true,  {});
         const natsSection = buildChampSection('ROK NATS',         data.points, data.seasonTotals, false, natsRankMap);
 
-        container.innerHTML = `<div style="margin-bottom:8px;">${nrSection}${natsSection}</div>`;
+        // ── Championship Gap Visualiser ──────────────────────────────────────
+        let gapHtml = '';
+        try {
+          const natsClasses2 = [...new Set(
+            (data.points || []).filter(p => p.championship_type === 'ROK NATS').map(p => p.class)
+          )];
+          const gapBlocks = await Promise.all(natsClasses2.map(async cls => {
+            try {
+              const sr = await fetch(`/api/championship-standings/2026/${encodeURIComponent(cls)}?championship_type=ROK%20NATS`);
+              if (!sr.ok) return null;
+              const sd = await sr.json();
+              if (!sd.success || !Array.isArray(sd.standings) || sd.standings.length === 0) return null;
+              const idx = sd.standings.findIndex(s => s.driver_id === driverId);
+              if (idx < 0) return null;
+              const myPts  = parseInt(sd.standings[idx].total_points || 0);
+              const pos    = idx + 1;
+              const leader = parseInt(sd.standings[0].total_points || 0);
+              const above  = idx > 0 ? parseInt(sd.standings[idx - 1].total_points || 0) : null;
+              const below  = idx < sd.standings.length - 1 ? parseInt(sd.standings[idx + 1].total_points || 0) : null;
+              const gapToLead = leader - myPts;
+              const gapToNext = above !== null ? above - myPts : 0;
+              const gapAhead  = below !== null ? myPts - below : null;
+              const pct = leader > 0 ? Math.round((myPts / leader) * 100) : 0;
+              const posOrd = pos + ([,'st','nd','rd'][pos % 10] || 'th');
+              const tip = pos === 1
+                ? `You lead by ${gapAhead !== null ? gapAhead : '?'} pts`
+                : gapToNext === 0
+                  ? `Level on points with P${pos - 1}`
+                  : `${gapToNext} point${gapToNext !== 1 ? 's' : ''} behind P${pos - 1} — one strong race closes the gap`;
+              return `<div style="padding:14px 16px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-left:4px solid #f59e0b;border-radius:0 6px 6px 0;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                  <div>
+                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:2px;">${cls} · Championship Standings</div>
+                    <div style="font-size:20px;font-weight:900;color:#ffffff;">${posOrd} <span style="font-size:13px;font-weight:500;color:#9ca3af;">of ${sd.standings.length}</span></div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;">My Points</div>
+                    <div style="font-size:22px;font-weight:900;color:#facc15;">${myPts}</div>
+                  </div>
+                </div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden;margin-bottom:8px;">
+                  <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#facc15,#f97316);border-radius:4px;transition:width 1s ease;"></div>
+                </div>
+                <div style="font-size:12px;color:#9ca3af;">${tip}${gapToLead > 0 ? ` · <span style="color:#6b7280;">${gapToLead} pts off the lead</span>` : ''}</div>
+              </div>`;
+            } catch(e) { return null; }
+          }));
+          const validBlocks = gapBlocks.filter(Boolean);
+          if (validBlocks.length > 0) {
+            gapHtml = `<div style="margin-bottom:24px;">
+              <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">🏎 Championship Standing</div>
+              ${validBlocks.join('')}
+            </div>`;
+          }
+        } catch(e) { /* gap visualiser is non-critical */ }
+
+        container.innerHTML = `<div style="margin-bottom:8px;">${gapHtml}${natsSection}${nrSection}</div>`;
+
+        // Also render the results timeline from the same data
+        renderResultsTimeline(data.points);
         
       } catch (error) {
         console.error('Error loading driver points:', error);
@@ -4894,9 +5050,136 @@
         dateDiv.style.color = '#16a34a';
         dateDiv.style.fontWeight = '600';
       }
+
+      // ── Entry Deadline Countdown on the banner ──────────────────────────
+      const countdownEl = document.getElementById('bannerCountdown');
+      if (countdownEl && nextEvent && nextEvent.registration_deadline) {
+        function updateCountdown() {
+          const now = Date.now();
+          const deadline = new Date(nextEvent.registration_deadline).getTime();
+          const diff = deadline - now;
+          if (diff <= 0) {
+            countdownEl.textContent = 'Entry closed';
+            countdownEl.style.color = '#ef4444';
+            return;
+          }
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          countdownEl.textContent = d > 0
+            ? `Entry closes in ${d}d ${h}h ${m}m`
+            : h > 0 ? `Entry closes in ${h}h ${m}m`
+            : `Entry closes in ${m}m`;
+          countdownEl.style.color = d < 2 ? '#ef4444' : '#9ca3af';
+        }
+        updateCountdown();
+        clearInterval(window._countdownTimer);
+        window._countdownTimer = setInterval(updateCountdown, 60000);
+      } else if (countdownEl) {
+        countdownEl.textContent = '';
+      }
     }
 
-    // Load available events into View Entries dropdown
+    // ── Digital Driver Card population ──────────────────────────────────────
+    function populateDriverCard(d) {
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+      const name = `${(d.first_name||'').trim()} ${(d.last_name||'').trim()}`.trim();
+      set('cardName', name);
+      set('cardNumber', d.race_number || '—');
+      set('cardClass', d.class || '—');
+      set('cardLicense', d.license_number || '—');
+      set('cardTransponder', d.transponder_number || '—');
+      set('cardTeam', d.team_name || d.kart_brand || '—');
+      set('cardChampBadge', d.championship || 'ROK NATS');
+      // Colour the number badge by class (all on white text now)
+      const badge = document.getElementById('cardNumberBadge');
+      if (badge) {
+        const classColours = { 'CADET':'#16a34a','MINI ROK U/10':'#0ea5e9','MINI ROK':'#0ea5e9','OK-J':'#f97316','OK-N':'#f97316','KZ2':'#dc2626' };
+        badge.style.background = classColours[d.class] || '#0ea5e9';
+        badge.style.boxShadow = '0 0 16px rgba(14,165,233,0.3)';
+      }
+      // Generate QR code from license number
+      const qrContainer = document.getElementById('cardQR');
+      if (qrContainer) {
+        const qrText = d.license_number || String(d.driver_id || 'ROK-CUP-SA');
+        const generateQR = () => {
+          qrContainer.innerHTML = '';
+          new QRCode(qrContainer, { text: qrText, width: 64, height: 64, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+        };
+        if (typeof QRCode !== 'undefined') { generateQR(); }
+        else {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+          s.onload = generateQR;
+          document.head.appendChild(s);
+        }
+      }
+    }
+
+    // ── Print Driver Card ─────────────────────────────────────────────────────
+    function printDriverCard() {
+      const card = document.getElementById('driverCard');
+      if (!card) return;
+      let clonedHTML = card.outerHTML;
+      // Convert QR canvas to data URL so it renders in the print window
+      const qrCanvas = card.querySelector('canvas');
+      if (qrCanvas) {
+        const imgData = qrCanvas.toDataURL('image/png');
+        clonedHTML = clonedHTML.replace(/<canvas[\s\S]*?<\/canvas>/, '<img src="' + imgData + '" style="width:64px;height:64px;display:block;" />');
+      }
+      const win = window.open('', '_blank', 'width=720,height=520');
+      if (!win) return;
+      win.document.write(
+        '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ROK Cup SA \u2013 Driver Card</title><style>' +
+        '@keyframes shimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}' +
+        '*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif}' +
+        'body{background:#f1f5f9;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}' +
+        '@media print{@page{size:landscape;margin:8mm}}' +
+        '</style></head><body>' + clonedHTML + '</body></html>'
+      );
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 500);
+    }
+
+    // ── Past Results Timeline ────────────────────────────────────────────────
+    function renderResultsTimeline(points) {
+      const el = document.getElementById('p_resultsTimeline');
+      if (!el) return;
+      if (!points || points.length === 0) {
+        el.innerHTML = '<div class="hint">No results yet. Results appear after each race.</div>';
+        return;
+      }
+      // Sort newest first by season+round if numeric, else leave order
+      const sorted = [...points].sort((a, b) => {
+        if (a.season !== b.season) return (b.season || 0) - (a.season || 0);
+        return (b.round || 0) - (a.round || 0);
+      });
+      el.innerHTML = sorted.map(p => {
+        const pos = p.position ? `P${p.position}` : '—';
+        const posColour = p.position === 1 ? '#facc15' : p.position <= 3 ? '#f97316' : '#9ca3af';
+        const total = p.total_points != null ? `${p.total_points} pts` : '—';
+        const breakdown = [
+          p.heat1_points != null ? `H1 ${p.heat1_points}` : null,
+          p.heat2_points != null ? `H2 ${p.heat2_points}` : null,
+          p.final_points != null ? `F ${p.final_points}` : null,
+        ].filter(Boolean).join(' · ');
+        const isDsq = (p.notes || '').toUpperCase().includes('DSQ');
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-left:3px solid ${posColour};background:rgba(255,255,255,0.02);margin-bottom:6px;border-radius:0 4px 4px 0;">
+          <div style="flex-shrink:0;text-align:center;min-width:36px;">
+            <div style="font-size:18px;font-weight:900;color:${isDsq ? '#ef4444' : posColour};line-height:1;">${isDsq ? 'DSQ' : pos}</div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.event || 'Event'}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:2px;">${p.class || ''} · Round ${p.round || '?'} · ${p.championship_type || ''}</div>
+            ${breakdown ? `<div style="font-size:11px;color:#9ca3af;margin-top:2px;">${breakdown}</div>` : ''}
+          </div>
+          <div style="flex-shrink:0;text-align:right;">
+            <div style="font-size:14px;font-weight:700;color:#facc15;">${total}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
     function loadEntriesEventDropdown() {
       const dropdown = document.getElementById('entriesEventSelect');
       if (!dropdown) return;
