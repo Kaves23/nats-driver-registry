@@ -176,15 +176,24 @@
   <script>
     let allDrivers = [];
 
+    function getAdminToken() {
+      return sessionStorage.getItem('adminToken') || '';
+    }
+
     async function loadLabels() {
       const statusEl = document.getElementById('status');
+      const token = getAdminToken();
+      if (!token) {
+        statusEl.innerHTML = '⚠️ Not logged in as admin. <a href="/admin.html" style="color:#1d4ed8;">Open Admin Panel</a>, log in, then come back to this page.';
+        return;
+      }
       statusEl.textContent = 'Loading drivers…';
       document.getElementById('labelGrid').innerHTML = '';
 
       try {
         const res = await fetch('/api/getAllDrivers', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
           body: JSON.stringify({})
         });
         const data = await res.json();
