@@ -258,7 +258,11 @@
       const name = fullName(d);
       const cls  = d.class || 'Unknown Class';
       const num  = d.race_number ? `#${d.race_number}` : '';
-      const qrValue = `DRIVER:${d.driver_id}`;
+      const CLASS_PREFIX = {
+        'CADET': '1', 'MINI ROK U/10': '2', 'MINI ROK': '3', 'OK-J': '4', 'OK-N': '5'
+      };
+      const prefix = CLASS_PREFIX[(d.class || '').toUpperCase()] || '9';
+      const qrValue = d.race_number ? `${prefix}${d.race_number}` : `DRIVER:${d.driver_id}`;
 
       const wrap = document.createElement('div');
       wrap.className = 'label';

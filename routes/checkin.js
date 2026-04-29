@@ -55,39 +55,89 @@ module.exports = function checkinRoutes(pool, requireAdmin) {
 
       const qrNorm = String(qr_code).trim().toUpperCase();
 
-      // Build query — optionally scope to a specific event
-      const params = [qrNorm];
-      let eventFilter = '';
-      if (event_id) {
-        params.push(event_id);
-        eventFilter = `AND re.event_id = $2`;
-      }
+      // Class-prefix lookup: 1=CADET, 2=MINI ROK U/10, 3=MINI ROK, 4=OK-J, 5=OK-N
+      const CLASS_PREFIX_MAP = {
+        '1': 'CADET',
+        '2': 'MINI ROK U/10',
+        '3': 'MINI ROK',
+        '4': 'OK-J',
+        '5': 'OK-N'
+      };
+      const prefixMatch = qrNorm.match(/^([12345])(\d+)$/);
 
-      const r = await pool.query(
-        `SELECT
-            re.entry_id,
-            re.event_id,
-            re.payment_reference,
-            re.race_class,
-            re.race_number,
-            re.entry_status,
-            re.payment_status,
-            re.checked_in_at,
-            re.checked_in_by,
-            d.first_name,
-            d.last_name,
-            d.race_number   AS driver_race_number,
-            e.event_name,
-            e.event_date,
-            e.event_location
-           FROM race_entries re
-           LEFT JOIN drivers d ON re.driver_id = d.driver_id
-           LEFT JOIN events  e ON re.event_id  = e.event_id
-          WHERE UPPER(re.payment_reference) = $1
-            ${eventFilter}
-          LIMIT 1`,
-        params
-      );
+      let r;
+
+      if (prefixMatch) {
+        // New format: class-prefix + race number (e.g. 511 = OK-N race #11)
+        const raceClass = CLASS_PREFIX_MAP[prefixMatch[1]];
+        const raceNumber = prefixMatch[2];
+        const params = [raceClass, raceNumber];
+        let eventFilter = '';
+        if (event_id) {
+          params.push(event_id);
+          eventFilter = `AND re.event_id = $3`;
+        }
+        r = await pool.query(
+          `SELECT
+              re.entry_id,
+              re.event_id,
+              re.payment_reference,
+              re.race_class,
+              re.race_number,
+              re.entry_status,
+              re.payment_status,
+              re.checked_in_at,
+              re.checked_in_by,
+              d.first_name,
+              d.last_name,
+              d.race_number   AS driver_race_number,
+              e.event_name,
+              e.event_date,
+              e.event_location
+             FROM race_entries re
+             LEFT JOIN drivers d ON re.driver_id = d.driver_id
+             LEFT JOIN events  e ON re.event_id  = e.event_id
+            WHERE UPPER(re.race_class) = $1
+              AND re.race_number::text = $2
+              ${eventFilter}
+            ORDER BY re.created_at DESC
+            LIMIT 1`,
+          params
+        );
+      } else {
+        // Legacy format: payment_reference
+        const params = [qrNorm];
+        let eventFilter = '';
+        if (event_id) {
+          params.push(event_id);
+          eventFilter = `AND re.event_id = $2`;
+        }
+        r = await pool.query(
+          `SELECT
+              re.entry_id,
+              re.event_id,
+              re.payment_reference,
+              re.race_class,
+              re.race_number,
+              re.entry_status,
+              re.payment_status,
+              re.checked_in_at,
+              re.checked_in_by,
+              d.first_name,
+              d.last_name,
+              d.race_number   AS driver_race_number,
+              e.event_name,
+              e.event_date,
+              e.event_location
+             FROM race_entries re
+             LEFT JOIN drivers d ON re.driver_id = d.driver_id
+             LEFT JOIN events  e ON re.event_id  = e.event_id
+            WHERE UPPER(re.payment_reference) = $1
+              ${eventFilter}
+            LIMIT 1`,
+          params
+        );
+      }
 
       if (!r.rows.length) {
         return res.json({ success: false, error: 'No entry found for that QR code' });
