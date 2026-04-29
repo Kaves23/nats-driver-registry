@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROK Cup SA — Driver Labels</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    /* ── Screen UI ─────────────────────────────────────────────── */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 24px;
+      color: #111;
+    }
+    h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+    .sub { font-size: 13px; color: #6b7280; margin-bottom: 20px; }
+    .controls {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 16px 20px; margin-bottom: 20px;
+    }
+    .controls label { font-size: 13px; font-weight: 600; color: #374151; }
+    .controls select, .controls input {
+      padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 5px;
+      font-size: 13px; background: #fff;
+    }
+    #btnLoad {
+      padding: 8px 20px; background: #111; color: #fff; border: none;
+      border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    #btnLoad:hover { background: #333; }
+    #btnPrint {
+      padding: 8px 20px; background: #fff; color: #111;
+      border: 1px solid #d1d5db; border-radius: 5px;
+      font-size: 13px; font-weight: 600; cursor: pointer; margin-left: auto;
+    }
+    #btnPrint:hover { background: #f9fafb; }
+    #status { font-size: 13px; color: #6b7280; padding: 12px 0; }
+
+    /* ── Label grid (screen preview) ──────────────────────────── */
+    #labelGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      max-width: 860px;
+    }
+
+    /* ── Individual label ──────────────────────────────────────── */
+    .label {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 72px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .label-qr {
+      flex-shrink: 0;
+      width: 64px;
+      height: 64px;
+    }
+    .label-qr canvas, .label-qr img { display: block; width: 64px !important; height: 64px !important; }
+    .label-body { flex: 1; min-width: 0; }
+    .label-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #111;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .label-class {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+    .label-num {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      border-radius: 3px;
+      padding: 1px 6px;
+      margin-top: 4px;
+    }
+    .label-logo {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+    .label-logo img {
+      height: 36px;
+      width: auto;
+      opacity: 0.85;
+    }
+
+    /* ── Print styles ──────────────────────────────────────────── */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm 10mm 10mm 10mm;
+      }
+
+      body {
+        background: #fff;
+        padding: 0;
+        margin: 0;
+      }
+
+      h1, .sub, .controls, #status, #btnPrint, #btnLoad { display: none !important; }
+
+      #labelGrid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6mm;
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .label {
+        border: 0.5pt solid #888;
+        border-radius: 4px;
+        padding: 6px 8px;
+        min-height: 60px;
+        box-shadow: none;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .label-name  { font-size: 11pt; }
+      .label-class { font-size: 9pt; }
+      .label-num   { font-size: 8pt; }
+
+      .label-logo img { height: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ROK Cup SA — Driver Envelope Labels</h1>
+  <p class="sub">10 labels per A4 page · black &amp; white · QR encodes driver ID for scanner recognition</p>
+
+  <div class="controls">
+    <label for="filterClass">Class:</label>
+    <select id="filterClass">
+      <option value="">All Classes</option>
+    </select>
+
+    <label for="sortBy" style="margin-left:8px;">Sort:</label>
+    <select id="sortBy">
+      <option value="name">Name A–Z</option>
+      <option value="class">Class then Name</option>
+      <option value="number">Race Number</option>
+    </select>
+
+    <button id="btnLoad" onclick="loadLabels()">Load Drivers</button>
+    <button id="btnPrint" onclick="window.print()">🖨 Print / Save PDF</button>
+  </div>
+
+  <div id="status">Click "Load Drivers" to fetch from database.</div>
+  <div id="labelGrid"></div>
+
+  <script>
+    let allDrivers = [];
+
+    async function loadLabels() {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Loading drivers…';
+      document.getElementById('labelGrid').innerHTML = '';
+
+      try {
+        const res = await fetch('/api/getAllDrivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+
+        if (!data.success || !data.data) {
+          statusEl.textContent = 'Error: ' + (data.error || 'Failed to load drivers');
+          return;
+        }
+
+        allDrivers = data.data.drivers || [];
+
+        // Populate class filter
+        const classes = [...new Set(allDrivers.map(d => d.class).filter(Boolean))].sort();
+        const classSelect = document.getElementById('filterClass');
+        classSelect.innerHTML = '<option value="">All Classes</option>' +
+          classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+        renderLabels();
+      } catch (e) {
+        statusEl.textContent = 'Network error: ' + e.message;
+      }
+    }
+
+    function renderLabels() {
+      const statusEl  = document.getElementById('status');
+      const grid      = document.getElementById('labelGrid');
+      const classFilter = document.getElementById('filterClass').value;
+      const sortBy    = document.getElementById('sortBy').value;
+
+      let drivers = allDrivers.filter(d => !classFilter || d.class === classFilter);
+
+      if (sortBy === 'name') {
+        drivers.sort((a, b) => fullName(a).localeCompare(fullName(b)));
+      } else if (sortBy === 'class') {
+        drivers.sort((a, b) => (a.class || '').localeCompare(b.class || '') || fullName(a).localeCompare(fullName(b)));
+      } else if (sortBy === 'number') {
+        drivers.sort((a, b) => parseInt(a.race_number || 9999) - parseInt(b.race_number || 9999));
+      }
+
+      grid.innerHTML = '';
+      statusEl.textContent = `Rendering ${drivers.length} labels…`;
+
+      // Render in batches to avoid blocking UI during QR generation
+      let i = 0;
+      function renderBatch() {
+        const batch = drivers.slice(i, i + 20);
+        batch.forEach(d => {
+          const label = buildLabel(d);
+          grid.appendChild(label);
+        });
+        i += 20;
+        if (i < drivers.length) {
+          requestAnimationFrame(renderBatch);
+        } else {
+          statusEl.textContent = `${drivers.length} labels ready. Use "Print / Save PDF" to generate your sheet.`;
+        }
+      }
+      requestAnimationFrame(renderBatch);
+    }
+
+    function buildLabel(d) {
+      const name = fullName(d);
+      const cls  = d.class || 'Unknown Class';
+      const num  = d.race_number ? `#${d.race_number}` : '';
+      const qrValue = `DRIVER:${d.driver_id}`;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'label';
+
+      // QR
+      const qrDiv = document.createElement('div');
+      qrDiv.className = 'label-qr';
+      new QRCode(qrDiv, {
+        text: qrValue,
+        width: 64,
+        height: 64,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      // Text body
+      const body = document.createElement('div');
+      body.className = 'label-body';
+      body.innerHTML =
+        `<div class="label-name">${esc(name)}</div>` +
+        `<div class="label-class">${esc(cls)}</div>` +
+        (num ? `<div class="label-num">${esc(num)}</div>` : '');
+
+      // Logo
+      const logoWrap = document.createElement('div');
+      logoWrap.className = 'label-logo';
+      logoWrap.innerHTML = `<img src="/icons/rok-logo-original.png" alt="ROK Cup" />`;
+
+      wrap.appendChild(qrDiv);
+      wrap.appendChild(body);
+      wrap.appendChild(logoWrap);
+      return wrap;
+    }
+
+    // Re-render on filter/sort change
+    document.getElementById('filterClass').addEventListener('change', () => { if (allDrivers.length) renderLabels(); });
+    document.getElementById('sortBy').addEventListener('change', () => { if (allDrivers.length) renderLabels(); });
+
+    function fullName(d) {
+      return `${(d.first_name || '').trim()} ${(d.last_name || '').trim()}`.trim();
+    }
+
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
