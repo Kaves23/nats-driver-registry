@@ -73,9 +73,7 @@
       gap: 12px;
     }
     .brand { display: flex; align-items: center; gap: 14px; }
-    .brand-logo { display: flex; flex-direction: column; line-height: 1; }
-    .brand-logo-top { font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: 0.18em; text-transform: uppercase; color: var(--white); }
-    .brand-logo-sub { font-family: 'Montserrat', sans-serif; font-size: 8px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-top: 2px; }
+    .brand img { height: 44px; width: auto; filter: brightness(0) invert(1); display: block; }
     .brand-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); }
     .brand-info {}
     .brand-name {
@@ -504,10 +502,7 @@
   <header class="doc-header">
     <div class="header-top">
       <div class="brand">
-        <div class="brand-logo">
-          <span class="brand-logo-top">ROK</span>
-          <span class="brand-logo-sub">Cup SA</span>
-        </div>
+        <img src="/icons/rok-logo-original.png" alt="ROK Cup SA" />
         <div class="brand-divider"></div>
         <div class="brand-info">
           <div class="brand-name">ROK Cup South Africa</div>
@@ -536,7 +531,6 @@
       <a class="nav-link" href="#intro">Introduction</a>
       <a class="nav-link" href="#draw">Engine Draw</a>
       <a class="nav-link" href="#notes">Draw Notes</a>
-      <a class="nav-link" href="#sitemap">Site Map</a>
       <a class="nav-link" href="#tampering">Tampering</a>
       <a class="nav-link" href="#reporting">Reporting Issues</a>
       <a class="nav-link" href="#swaps">Engine Swaps</a>
@@ -553,7 +547,6 @@
         <li><a href="#intro">Introduction</a></li>
         <li><a href="#draw">How the Engine Draw Works</a></li>
         <li><a href="#notes">Engine Draw Notes</a></li>
-        <li><a href="#sitemap">Site Map</a></li>
         <li><a href="#tampering">Tampering Policy</a></li>
         <li><a href="#reporting">Reporting Engine Issues</a></li>
         <li><a href="#swaps">Note on Engine Swaps</a></li>
@@ -798,43 +791,10 @@
       </div>
     </section>
 
-    <!-- 4. SITE MAP -->
-    <section class="section" id="sitemap">
-      <div class="section-label">
-        <span class="section-num">04</span>
-        <span class="section-tag">Circuit Layout</span>
-      </div>
-      <h2 class="section-heading">Site Map</h2>
-
-      <p>The site map identifies the official engine collection and return flow for competitors. Follow the published layout and all instructions from officials at all times.</p>
-
-      <div class="sitemap-box">
-        <div class="ico">🗺️</div>
-        <p><strong>Site map will be published here prior to the event.</strong><br>Check the event programme or the official notice board for the final version.</p>
-      </div>
-
-      <p>The layout will clearly identify:</p>
-      <ul class="checklist">
-        <li><strong>Engine draw point</strong> — where competitors select their draw number</li>
-        <li><strong>Signing area</strong> — documentation completion and signature</li>
-        <li><strong>Engine collection point</strong> — where the issued engine is handed over</li>
-        <li><strong>Parc fermé / technical control area</strong></li>
-        <li><strong>Engine trailer</strong> — overnight storage location</li>
-        <li><strong>Queueing area</strong> — single file where required</li>
-        <li><strong>Scale area</strong> and <strong>fuel station</strong></li>
-        <li><strong>Engine fitting area</strong> — where engines may be fitted or checked</li>
-      </ul>
-
-      <div class="alert alert-orange" style="margin-top:20px;">
-        <div class="alert-title">Controlled Areas</div>
-        <p>Only authorised persons may enter controlled areas. Queueing must be orderly and in single file where instructed by an official.</p>
-      </div>
-    </section>
-
-    <!-- 5. TAMPERING -->
+    <!-- 4. TAMPERING -->
     <section class="section" id="tampering">
       <div class="section-label">
-        <span class="section-num">05</span>
+        <span class="section-num">04</span>
         <span class="section-tag">Integrity Policy</span>
       </div>
       <h2 class="section-heading">Tampering Policy</h2>
@@ -867,10 +827,10 @@
       </ul>
     </section>
 
-    <!-- 6. REPORTING -->
+    <!-- 5. REPORTING -->
     <section class="section" id="reporting">
       <div class="section-label">
-        <span class="section-num">06</span>
+        <span class="section-num">05</span>
         <span class="section-tag">Technical Issues</span>
       </div>
       <h2 class="section-heading">Reporting Engine Issues</h2>
@@ -931,10 +891,10 @@
       </ol>
     </section>
 
-    <!-- 7. ENGINE SWAPS -->
+    <!-- 6. ENGINE SWAPS -->
     <section class="section" id="swaps">
       <div class="section-label">
-        <span class="section-num">07</span>
+        <span class="section-num">06</span>
         <span class="section-tag">Changes</span>
       </div>
       <h2 class="section-heading">Note on Engine Swaps</h2>
