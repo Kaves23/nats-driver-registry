@@ -12124,6 +12124,24 @@ const STATIC_CLASS_DOCS = [
     category: 'mini',
     icon: '📄',
     isStatic: true
+  },
+  {
+    display_name: 'Race Day Instructions — Autumn Nats 2026',
+    document_type: 'OK Junior',
+    file_path: '/documents/raceday/RDOC003-ok-junior-autumn-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC003-ok-junior-autumn-nats-2026-race-day-instructions.html',
+    category: 'okj',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Race Day Instructions — Autumn Nats 2026',
+    document_type: 'OK National',
+    file_path: '/documents/raceday/RDOC004-ok-national-autumn-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC004-ok-national-autumn-nats-2026-race-day-instructions.html',
+    category: 'okn',
+    icon: '📄',
+    isStatic: true
   }
 ];
 
