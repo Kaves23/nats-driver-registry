@@ -12117,15 +12117,6 @@ app.use((err, req, res, next) => {
 // regardless of which event is loaded. Add new season docs here.
 const STATIC_CLASS_DOCS = [
   {
-    display_name: 'Race Day Engine Instructions (2025)',
-    document_type: 'Mini ROK',
-    file_path: '/documents/raceday/RDOC001-mini-rok-race-day-engine-instructions.html',
-    preview_url: '/documents/raceday/RDOC001-mini-rok-race-day-engine-instructions.html',
-    category: 'mini',
-    icon: '📄',
-    isStatic: true
-  },
-  {
     display_name: 'Race Day Instructions — Autumn Nats 2026',
     document_type: 'Mini ROK',
     file_path: '/documents/raceday/RDOC002-mini-rok-autumn-nats-2026-race-day-instructions.html',
