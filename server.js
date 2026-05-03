@@ -12142,6 +12142,24 @@ const STATIC_CLASS_DOCS = [
     category: 'okn',
     icon: '📄',
     isStatic: true
+  },
+  {
+    display_name: 'Tyre Collection Instructions — Autumn Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC005-tyre-collection-autumn-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC005-tyre-collection-autumn-nats-2026.html',
+    category: 'general',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Controlled Fuel Instructions — Autumn Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC006-controlled-fuel-autumn-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC006-controlled-fuel-autumn-nats-2026.html',
+    category: 'general',
+    icon: '📄',
+    isStatic: true
   }
 ];
 

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controlled Fuel Instructions · Autumn Nats 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --autumn:     #f97316;
+      --autumn-dk:  #ea580c;
+      --autumn-xdk: #9a3412;
+      --autumn-bg:  #fff7ed;
+      --autumn-bg2: #ffedd5;
+      --ink:        #1a1a1a;
+      --ink-2:      #374151;
+      --ink-3:      #6b7280;
+      --border:     #e5e7eb;
+      --border-dk:  #d1d5db;
+      --white:      #ffffff;
+      --page-bg:    #f3f4f6;
+    }
+
+    @page { margin: 0; size: A4; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: var(--white);
+    }
+    @media screen { .page { box-shadow: 0 4px 24px rgba(0,0,0,0.10); margin: 24px auto; } }
+
+    /* ── HEADER ── */
+    .doc-header {
+      background: var(--autumn);
+      padding: 32px 40px 26px;
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .doc-header::before {
+      content: '';
+      position: absolute;
+      top: 0; right: -30px;
+      width: 240px; height: 100%;
+      background: rgba(255,255,255,0.06);
+      transform: skewX(-12deg);
+      pointer-events: none;
+    }
+    .doc-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand img { height: 44px; width: auto; filter: brightness(0) invert(1); display: block; }
+    .brand-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); }
+    .brand-name {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .brand-season {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .header-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hbadge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.85);
+    }
+    .hbadge.filled {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.6);
+      color: var(--white);
+    }
+    .doc-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+    }
+    .doc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(26px, 5vw, 38px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+      margin-bottom: 8px;
+    }
+    .doc-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 20px;
+    }
+    .doc-meta-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta-pill {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+    }
+
+    /* ── STICKY NAV ── */
+    .nav-bar {
+      background: var(--autumn-xdk);
+      overflow-x: auto;
+      scrollbar-width: none;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .nav-bar::-webkit-scrollbar { display: none; }
+    .nav-inner { display: flex; padding: 0 32px; white-space: nowrap; }
+    .nav-link {
+      display: inline-block;
+      padding: 11px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-link:hover { color: var(--white); border-bottom-color: var(--autumn); }
+
+    /* ── CONTENT ── */
+    .doc-content { padding: 0 40px 64px; }
+
+    .section { padding-top: 44px; }
+    .section + .section { border-top: 2px solid var(--border); margin-top: 44px; }
+
+    .section-label { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .section-num {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: var(--white);
+      background: var(--autumn);
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+    .section-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-3);
+    }
+    .section-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--autumn-dk);
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+    .sub-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      margin: 28px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    p {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── ALERTS ── */
+    .alert {
+      border-radius: 4px;
+      padding: 18px 22px;
+      margin: 20px 0;
+      border-left: 4px solid;
+    }
+    .alert-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 8px;
+    }
+    .alert p { font-size: 13px; line-height: 1.75; color: var(--ink-2); margin-bottom: 0; }
+    .alert-orange { background: var(--autumn-bg); border-color: var(--autumn); }
+    .alert-orange .alert-title { color: var(--autumn-dk); }
+    .alert-critical { background: #fff1f2; border-color: #e11d48; }
+    .alert-critical .alert-title { color: #be123c; }
+    .alert-critical p { color: #3f1219; }
+
+    /* ── STEPS ── */
+    .steps { list-style: none; }
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 0 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--autumn);
+      line-height: 1.1;
+      padding-top: 2px;
+    }
+    .step-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .step-desc { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+
+    /* ── CHECKLIST ── */
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--ink-2);
+      line-height: 1.65;
+    }
+    .checklist li::before {
+      content: '→';
+      color: var(--autumn);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .checklist li strong { color: var(--ink); }
+
+    /* ── INFO BLOCKS ── */
+    .info-block {
+      background: var(--white);
+      border: 1px solid var(--border-dk);
+      border-top: 3px solid var(--autumn);
+      border-radius: 4px;
+      padding: 18px 22px;
+      margin-bottom: 14px;
+    }
+    .info-block:last-child { margin-bottom: 0; }
+    .info-block-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .info-block p { font-size: 13px; line-height: 1.75; margin-bottom: 0; }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--autumn-bg);
+      border: 1px solid var(--autumn-bg2);
+      border-left: 4px solid var(--autumn);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin: 24px 0 32px;
+    }
+    .toc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--autumn-dk);
+      margin-bottom: 12px;
+    }
+    .toc ol { padding-left: 18px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--autumn-dk);
+      text-decoration: none;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      background: var(--autumn);
+      color: var(--white);
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .footer-left { font-size: 11px; opacity: 0.85; }
+    .doc-ref {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .nav-bar { display: none; }
+      .page { width: 100%; box-shadow: none; margin: 0; }
+      .doc-content { padding: 0 28px 48px; }
+      .section { padding-top: 32px; }
+      p { orphans: 3; widows: 3; }
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      .page { width: 100%; margin: 0; box-shadow: none; }
+      .doc-header { padding: 22px 20px 18px; }
+      .header-top { flex-wrap: wrap; }
+      .header-badges { display: none; }
+      .nav-inner { padding: 0 16px; }
+      .doc-content { padding: 0 20px 48px; }
+      .doc-footer { padding: 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="doc-header">
+    <div class="header-top">
+      <div class="brand">
+        <img src="/icons/rok-logo-original.png" alt="ROK Cup SA" />
+        <div class="brand-divider"></div>
+        <div class="brand-info">
+          <div class="brand-name">ROK Cup South Africa</div>
+          <div class="brand-season">Autumn Nationals 2026</div>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="hbadge">Official Document</span>
+        <span class="hbadge filled">RDOC006</span>
+      </div>
+    </div>
+    <div class="doc-eyebrow">Race Weekend Instructions</div>
+    <div class="doc-title">Controlled Fuel</div>
+    <div class="doc-subtitle">Fuel collection, tank procedure, and compliance requirements — Autumn Nationals 2026</div>
+    <div class="doc-meta-pills">
+      <span class="meta-pill">All Classes Except Cadet</span>
+      <span class="meta-pill">Autumn Nats 2026</span>
+      <span class="meta-pill">Fuel Control</span>
+      <span class="meta-pill">Official Use</span>
+    </div>
+  </header>
+
+  <!-- STICKY NAV -->
+  <nav class="nav-bar" aria-label="Document sections">
+    <div class="nav-inner">
+      <a class="nav-link" href="#intro">Introduction</a>
+      <a class="nav-link" href="#procedure">Fuel Procedure</a>
+      <a class="nav-link" href="#compliance">Compliance</a>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="doc-content">
+
+    <!-- TOC -->
+    <div class="toc" role="navigation" aria-label="Table of contents">
+      <div class="toc-title">Contents</div>
+      <ol>
+        <li><a href="#intro">Introduction</a></li>
+        <li><a href="#procedure">Fuel Procedure</a></li>
+        <li><a href="#compliance">Compliance &amp; Penalties</a></li>
+      </ol>
+    </div>
+
+    <!-- 1. INTRODUCTION -->
+    <section class="section" id="intro">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <span class="section-tag">Welcome</span>
+      </div>
+      <h2 class="section-heading">Introduction</h2>
+
+      <p>Fuel is one of the key elements in making kart racing fair, competitive, and safe. To keep things equal across the board, a controlled fuel system is in place for the ROK Cup South Africa. The principle is straightforward: everyone uses the same fuel, from the same source, mixed the same way.</p>
+
+      <p>This is not just about levelling the playing field — it is about removing the guesswork and grey areas around performance. The racing must be decided by the driver and the kart setup, not by what is in the tank.</p>
+
+      <div class="alert alert-orange">
+        <div class="alert-title">Applies To</div>
+        <p>Controlled fuel applies to <strong>all classes except Cadet</strong>. Controlled fuel will be used for the full race weekend, from the first practice session through to the final. All teams and drivers in applicable classes must follow this procedure without exception.</p>
+      </div>
+
+      <p>Everything you need to know about how and where to collect the fuel, what the mix needs to be, and how compliance will be checked is set out in this document. Not following it could lead to penalties or disqualification. Please read it carefully and ensure your whole team is across the requirements.</p>
+    </section>
+
+    <!-- 2. FUEL PROCEDURE -->
+    <section class="section" id="procedure">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <span class="section-tag">Step-by-Step</span>
+      </div>
+      <h2 class="section-heading">Fuel Procedure</h2>
+
+      <p>Please follow the steps below carefully for every session throughout the event weekend.</p>
+
+      <ol class="steps">
+
+        <li class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Fuel Tank Drop-Off</div>
+            <div class="step-desc">
+              All fuel tanks must be dropped at the fuel station — a clearly marked and signed area on circuit. Before drop-off, ensure your tank has your <strong>name, race number, and required fuel level clearly written</strong> on it using a marker. Remove any old markings from previous events first.
+            </div>
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Collect Your Tank</div>
+            <div class="step-desc">
+              Collect your tank with enough time to prepare for your upcoming session. <strong>Do not fit or remove tanks at the fuel station</strong> — collect your tank and move to your designated pit area before carrying out any work on your kart.
+            </div>
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Fit the Tank</div>
+            <div class="step-desc">
+              Fit the tank to your kart in your own pit area. Ensure all connections are secure and no fuel is spilling or leaking. The tank must be fitted correctly and safely before you take to the circuit.
+            </div>
+          </div>
+        </li>
+
+        <li class="step">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-title">After Your Session — Return Immediately</div>
+            <div class="step-desc">
+              Return your tank <strong>immediately after each track session</strong>. Late returns may lead to penalties. Your tank must be handed back to the fuel station promptly after you come off the circuit.
+            </div>
+          </div>
+        </li>
+
+      </ol>
+
+      <div class="alert alert-critical">
+        <div class="alert-title">Do Not Leave Parc Fermé With Your Tank Attached</div>
+        <p>Under no circumstances may a competitor leave parc fermé with the fuel tank still attached to the kart after a session. <strong>This will lead to disqualification from the event.</strong> Remove the tank and return it to the fuel station before leaving the controlled area.</p>
+      </div>
+    </section>
+
+    <!-- 3. COMPLIANCE -->
+    <section class="section" id="compliance">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <span class="section-tag">Rules &amp; Penalties</span>
+      </div>
+      <h2 class="section-heading">Compliance &amp; Penalties</h2>
+
+      <p>The controlled fuel system relies on every team following the procedure correctly and consistently. Officials will monitor and enforce compliance throughout the event weekend.</p>
+
+      <h3 class="sub-heading">Key Compliance Requirements</h3>
+      <ul class="checklist">
+        <li>Only the <strong>official controlled fuel</strong> may be used — no private fuel from any source.</li>
+        <li>Fuel tanks must be <strong>clearly labelled</strong> with name, race number, and fuel level before drop-off.</li>
+        <li>Tanks must be <strong>collected and returned</strong> at the designated fuel station only.</li>
+        <li><strong>Do not tamper with</strong> or modify the fuel or fuel tank in any way.</li>
+        <li>The tank must be <strong>returned immediately</strong> after every session — no exceptions.</li>
+        <li>Karts must <strong>not leave parc fermé</strong> with the tank still attached after a session.</li>
+      </ul>
+
+      <h3 class="sub-heading">Fuel Checks</h3>
+      <p>Officials reserve the right to conduct fuel checks at any time during the event weekend. Samples may be taken at the fuel station, in parc fermé, or at any point during the event. Competitors must cooperate fully with any official fuel inspection request.</p>
+
+      <div class="alert alert-critical">
+        <div class="alert-title">Penalties for Non-Compliance</div>
+        <p>Failure to follow the controlled fuel procedure — including use of unauthorised fuel, late tank returns, or leaving parc fermé with the tank fitted — may result in <strong>time penalties, exclusion from a session, or disqualification from the event</strong>. The decision of the stewards is final.</p>
+      </div>
+
+      <p>Thank you for your cooperation and commitment to the ROK Cup South Africa standards. Following this procedure ensures the racing remains fair for everyone involved. If you are unsure about any aspect of the fuel procedure, please speak to an official at the fuel station before your session.</p>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="doc-footer">
+    <div class="footer-left">ROK Cup South Africa · Autumn Nationals 2026 · Official Document</div>
+    <span class="doc-ref">RDOC006</span>
+  </footer>
+
+</div>
+</body>
+</html>

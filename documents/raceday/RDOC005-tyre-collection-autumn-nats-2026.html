@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tyre Collection Instructions · Autumn Nats 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --autumn:     #f97316;
+      --autumn-dk:  #ea580c;
+      --autumn-xdk: #9a3412;
+      --autumn-bg:  #fff7ed;
+      --autumn-bg2: #ffedd5;
+      --ink:        #1a1a1a;
+      --ink-2:      #374151;
+      --ink-3:      #6b7280;
+      --border:     #e5e7eb;
+      --border-dk:  #d1d5db;
+      --white:      #ffffff;
+      --page-bg:    #f3f4f6;
+    }
+
+    @page { margin: 0; size: A4; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: var(--white);
+    }
+    @media screen { .page { box-shadow: 0 4px 24px rgba(0,0,0,0.10); margin: 24px auto; } }
+
+    /* ── HEADER ── */
+    .doc-header {
+      background: var(--autumn);
+      padding: 32px 40px 26px;
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .doc-header::before {
+      content: '';
+      position: absolute;
+      top: 0; right: -30px;
+      width: 240px; height: 100%;
+      background: rgba(255,255,255,0.06);
+      transform: skewX(-12deg);
+      pointer-events: none;
+    }
+    .doc-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand img { height: 44px; width: auto; filter: brightness(0) invert(1); display: block; }
+    .brand-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); }
+    .brand-name {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .brand-season {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .header-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hbadge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.85);
+    }
+    .hbadge.filled {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.6);
+      color: var(--white);
+    }
+    .doc-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+    }
+    .doc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(26px, 5vw, 38px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+      margin-bottom: 8px;
+    }
+    .doc-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 20px;
+    }
+    .doc-meta-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta-pill {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+    }
+
+    /* ── STICKY NAV ── */
+    .nav-bar {
+      background: var(--autumn-xdk);
+      overflow-x: auto;
+      scrollbar-width: none;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .nav-bar::-webkit-scrollbar { display: none; }
+    .nav-inner { display: flex; padding: 0 32px; white-space: nowrap; }
+    .nav-link {
+      display: inline-block;
+      padding: 11px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-link:hover { color: var(--white); border-bottom-color: var(--autumn); }
+
+    /* ── CONTENT ── */
+    .doc-content { padding: 0 40px 64px; }
+
+    .section { padding-top: 44px; }
+    .section + .section { border-top: 2px solid var(--border); margin-top: 44px; }
+
+    .section-label { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .section-num {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: var(--white);
+      background: var(--autumn);
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+    .section-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-3);
+    }
+    .section-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--autumn-dk);
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+    .sub-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      margin: 28px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    p {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── TYRE TABLE ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .data-table thead th {
+      background: var(--autumn);
+      color: var(--white);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding: 12px 16px;
+      text-align: left;
+    }
+    .data-table tbody td {
+      padding: 11px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-2);
+    }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:nth-child(even) td { background: var(--autumn-bg); }
+    .data-table tbody td:first-child { font-weight: 700; color: var(--ink); }
+    .data-table tbody td.na { color: var(--ink-3); font-style: italic; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card:last-child { margin-bottom: 0; }
+    .card-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--autumn-dk);
+      margin-bottom: 10px;
+    }
+    .card-orange { background: var(--autumn-bg); border-color: var(--autumn); border-left: 4px solid var(--autumn); }
+
+    /* ── ALERTS ── */
+    .alert {
+      border-radius: 4px;
+      padding: 18px 22px;
+      margin: 20px 0;
+      border-left: 4px solid;
+    }
+    .alert-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 8px;
+    }
+    .alert p { font-size: 13px; line-height: 1.75; color: var(--ink-2); margin-bottom: 0; }
+    .alert-orange { background: var(--autumn-bg); border-color: var(--autumn); }
+    .alert-orange .alert-title { color: var(--autumn-dk); }
+    .alert-critical { background: #fff1f2; border-color: #e11d48; }
+    .alert-critical .alert-title { color: #be123c; }
+    .alert-critical p { color: #3f1219; }
+
+    /* ── CHECKLIST ── */
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--ink-2);
+      line-height: 1.65;
+    }
+    .checklist li::before {
+      content: '→';
+      color: var(--autumn);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .checklist li strong { color: var(--ink); }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--autumn-bg);
+      border: 1px solid var(--autumn-bg2);
+      border-left: 4px solid var(--autumn);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin: 24px 0 32px;
+    }
+    .toc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--autumn-dk);
+      margin-bottom: 12px;
+    }
+    .toc ol { padding-left: 18px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--autumn-dk);
+      text-decoration: none;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── INFO BLOCKS ── */
+    .info-block {
+      background: var(--white);
+      border: 1px solid var(--border-dk);
+      border-top: 3px solid var(--autumn);
+      border-radius: 4px;
+      padding: 18px 22px;
+      margin-bottom: 14px;
+    }
+    .info-block:last-child { margin-bottom: 0; }
+    .info-block-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .info-block p { font-size: 13px; line-height: 1.75; margin-bottom: 0; }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      background: var(--autumn);
+      color: var(--white);
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .footer-left { font-size: 11px; opacity: 0.85; }
+    .doc-ref {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .nav-bar { display: none; }
+      .page { width: 100%; box-shadow: none; margin: 0; }
+      .doc-content { padding: 0 28px 48px; }
+      .section { padding-top: 32px; }
+      p { orphans: 3; widows: 3; }
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      .page { width: 100%; margin: 0; box-shadow: none; }
+      .doc-header { padding: 22px 20px 18px; }
+      .header-top { flex-wrap: wrap; }
+      .header-badges { display: none; }
+      .nav-inner { padding: 0 16px; }
+      .doc-content { padding: 0 20px 48px; }
+      .doc-footer { padding: 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="doc-header">
+    <div class="header-top">
+      <div class="brand">
+        <img src="/icons/rok-logo-original.png" alt="ROK Cup SA" />
+        <div class="brand-divider"></div>
+        <div class="brand-info">
+          <div class="brand-name">ROK Cup South Africa</div>
+          <div class="brand-season">Autumn Nationals 2026</div>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="hbadge">Official Document</span>
+        <span class="hbadge filled">RDOC005</span>
+      </div>
+    </div>
+    <div class="doc-eyebrow">Race Weekend Instructions</div>
+    <div class="doc-title">Tyre Collection</div>
+    <div class="doc-subtitle">Approved tyres, collection procedure, tyre control and usage rules — Autumn Nationals 2026</div>
+    <div class="doc-meta-pills">
+      <span class="meta-pill">All Classes</span>
+      <span class="meta-pill">Autumn Nats 2026</span>
+      <span class="meta-pill">Tyre Control</span>
+      <span class="meta-pill">Official Use</span>
+    </div>
+  </header>
+
+  <!-- STICKY NAV -->
+  <nav class="nav-bar" aria-label="Document sections">
+    <div class="nav-inner">
+      <a class="nav-link" href="#intro">Introduction</a>
+      <a class="nav-link" href="#details">Tyre Details</a>
+      <a class="nav-link" href="#collection">Collection</a>
+      <a class="nav-link" href="#usage">Tyre Usage</a>
+      <a class="nav-link" href="#times">Collection Times</a>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="doc-content">
+
+    <!-- TOC -->
+    <div class="toc" role="navigation" aria-label="Table of contents">
+      <div class="toc-title">Contents</div>
+      <ol>
+        <li><a href="#intro">Introduction</a></li>
+        <li><a href="#details">Tyre Details</a></li>
+        <li><a href="#collection">Race Tyre Collection</a></li>
+        <li><a href="#usage">Tyre Usage</a></li>
+        <li><a href="#times">Collection Times</a></li>
+      </ol>
+    </div>
+
+    <!-- 1. INTRODUCTION -->
+    <section class="section" id="intro">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <span class="section-tag">Welcome</span>
+      </div>
+      <h2 class="section-heading">Introduction</h2>
+
+      <p>Welcome to the ROK Cup South Africa Autumn Nationals 2026. This document covers everything you need to know about tyre collection — what tyres to use, when to use them, and how to collect them for race day.</p>
+
+      <p>Using the correct tyres is essential to keeping the competition fair. It ensures every driver competes on equal footing. This guide will walk you through the approved tyre specifications, when they come into play over the race weekend, and the exact process for collecting your allocated race tyres.</p>
+
+      <div class="alert alert-orange">
+        <div class="alert-title">Equal Competition</div>
+        <p>By following these guidelines, you help maintain the integrity of the series and give yourself the best chance to perform at your peak. Read through the details carefully, make sure you are set, and get ready to race with confidence.</p>
+      </div>
+    </section>
+
+    <!-- 2. TYRE DETAILS -->
+    <section class="section" id="details">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <span class="section-tag">Specifications</span>
+      </div>
+      <h2 class="section-heading">Tyre Details</h2>
+
+      <p>The table below lists the approved tyre specification for each class. Only the listed tyres may be used during the event. No substitutions are permitted.</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Slick</th>
+            <th>Wet</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Cadet</td>
+            <td>MAXXIS</td>
+            <td class="na">N/A</td>
+          </tr>
+          <tr>
+            <td>Mini ROK U/10</td>
+            <td>LEVANTO KRT MINI</td>
+            <td>LEVANTO MRT MINI</td>
+          </tr>
+          <tr>
+            <td>Mini ROK</td>
+            <td>LEVANTO KRT MINI</td>
+            <td>LEVANTO MRT MINI</td>
+          </tr>
+          <tr>
+            <td>OK Junior</td>
+            <td>LEVANTO KRT SNR</td>
+            <td>LEVANTO MRT SNR</td>
+          </tr>
+          <tr>
+            <td>OK National</td>
+            <td>LEVANTO KRT SNR</td>
+            <td>LEVANTO MRT SNR</td>
+          </tr>
+          <tr>
+            <td>KZ2</td>
+            <td>LEVANTO KRT SNR</td>
+            <td>LEVANTO MRT SNR</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-critical">
+        <div class="alert-title">No Substitutions</div>
+        <p>Only the tyres listed for your class may be used. Any competitor found using an unapproved tyre specification will be referred to the technical stewards and is subject to exclusion.</p>
+      </div>
+    </section>
+
+    <!-- 3. RACE TYRE COLLECTION -->
+    <section class="section" id="collection">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <span class="section-tag">Procedure</span>
+      </div>
+      <h2 class="section-heading">Race Tyre Collection</h2>
+
+      <h3 class="sub-heading">Collecting Your Tyres</h3>
+      <p>Tyre collection will open at the times listed on the official schedule. You will need to present your race number and may be asked for proof of entry. Ensure you arrive at the tyre collection point on time and ready to receive your allocation.</p>
+
+      <h3 class="sub-heading">Tyre Control</h3>
+      <ul class="checklist">
+        <li>All tyres will be <strong>recorded at collection</strong>.</li>
+        <li>Do <strong>not remove or tamper with the markings</strong> — this will be treated as a technical infringement.</li>
+        <li>Tyres must be <strong>fitted before your first timed session</strong>. No changes are allowed unless approved by a scrutineer.</li>
+      </ul>
+
+      <h3 class="sub-heading">Lost or Damaged Tyres</h3>
+      <div class="info-block">
+        <div class="info-block-title">Lost Tyres</div>
+        <p>Lost tyres will not be replaced unless specifically authorised by the Clerk of the Course.</p>
+      </div>
+      <div class="info-block">
+        <div class="info-block-title">Damaged Tyres</div>
+        <p>Tyres damaged in transit or before fitting must be reported immediately at the tyre desk. Do not attempt to use a tyre you believe may be defective.</p>
+      </div>
+
+      <h3 class="sub-heading">Missed Collection Slot</h3>
+      <div class="alert alert-critical">
+        <div class="alert-title">Do Not Miss Your Collection Time</div>
+        <p>If you miss your designated collection time, you may not be able to receive your race tyres. Without the correct tyres, you will <strong>not be permitted to take part in qualifying or any subsequent racing</strong>. It is your responsibility to ensure timely collection. No exceptions will be made.</p>
+      </div>
+    </section>
+
+    <!-- 4. TYRE USAGE -->
+    <section class="section" id="usage">
+      <div class="section-label">
+        <span class="section-num">04</span>
+        <span class="section-tag">Rules</span>
+      </div>
+      <h2 class="section-heading">Tyre Usage</h2>
+
+      <h3 class="sub-heading">Qualifying &amp; Heat Tyre Rules</h3>
+      <p>The race tyres issued to you must be used from qualifying onwards, and must remain on your kart for all heats.</p>
+
+      <ul class="checklist">
+        <li><strong>National entries</strong> must enter parc fermé for qualifying with brand-new tyres.</li>
+        <li>This ensures a fair and level playing field across all competitors.</li>
+        <li><strong>Regional-only drivers</strong> at National events may use a used set, but these tyres must be presented and scanned before qualifying.</li>
+      </ul>
+
+      <h3 class="sub-heading">Post-Session Scanning</h3>
+      <p>After each session — qualifying and all heats — your tyres will be scanned by officials. This confirms that the tyres on your kart match the ones issued to you.</p>
+
+      <div class="alert alert-critical">
+        <div class="alert-title">Incorrect Tyres = Exclusion</div>
+        <p>Incorrect tyres found at scanning will result in <strong>exclusion from that session or heat</strong>. There are no exceptions to this rule. It is your responsibility to ensure the correct tyres are fitted at all times.</p>
+      </div>
+    </section>
+
+    <!-- 5. COLLECTION TIMES -->
+    <section class="section" id="times">
+      <div class="section-label">
+        <span class="section-num">05</span>
+        <span class="section-tag">Schedule</span>
+      </div>
+      <h2 class="section-heading">Collection Times</h2>
+
+      <p>All competitors are required to consult the official event timetable and ensure they are present at the designated tyre distribution point at their scheduled time. Racing slicks will be issued strictly according to this timetable, and it is essential that these tyres are fitted to your kart prior to the start of qualifying.</p>
+
+      <p>As per regulations, all competitors must begin qualifying on new slicks. Missing your allocated collection window may result in tyres not being issued to you, and without the correct tyres you will not be permitted to take part in qualifying or any subsequent racing.</p>
+
+      <div class="alert alert-orange">
+        <div class="alert-title">Your Responsibility</div>
+        <p>There will be <strong>no exceptions or alternative collection times</strong>. Please take responsibility for knowing your slot, arriving on time, and being prepared. Check the official event programme for your class-specific collection window.</p>
+      </div>
+
+      <ul class="checklist">
+        <li>Check the official event timetable for your <strong>class-specific collection slot</strong>.</li>
+        <li>Arrive at the tyre collection point <strong>ready to receive your allocation</strong>.</li>
+        <li>Have your <strong>race number and proof of entry</strong> available if requested.</li>
+        <li>Fit your tyres and <strong>present your kart to scrutineering</strong> before your first session.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="doc-footer">
+    <div class="footer-left">ROK Cup South Africa · Autumn Nationals 2026 · Official Document</div>
+    <span class="doc-ref">RDOC005</span>
+  </footer>
+
+</div>
+</body>
+</html>
