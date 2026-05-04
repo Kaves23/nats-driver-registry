@@ -12160,6 +12160,24 @@ const STATIC_CLASS_DOCS = [
     category: 'general',
     icon: '📄',
     isStatic: true
+  },
+  {
+    display_name: 'Self-Declaration Scrutineering Form — Autumn Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC007-self-declaration-scrutineering-autumn-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC007-self-declaration-scrutineering-autumn-nats-2026.html',
+    category: 'general',
+    icon: '📋',
+    isStatic: true
+  },
+  {
+    display_name: 'Sticker Placement for Scrutineering — Autumn Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC008-sticker-placement-scrutineering-autumn-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC008-sticker-placement-scrutineering-autumn-nats-2026.html',
+    category: 'general',
+    icon: '🏷️',
+    isStatic: true
   }
 ];
 
