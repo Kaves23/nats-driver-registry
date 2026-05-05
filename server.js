@@ -13222,7 +13222,7 @@ app.get('/api/lookupDriverByNumber', async (req, res) => {
         OR UPPER(re.ticket_tyres_ref) = $1
         OR UPPER(re.ticket_transponder_ref) = $1
       )
-        AND re.payment_status IN ('Completed','completed','Confirmed','confirmed','paid','pending_payment','Pending','pending')
+        AND re.payment_status IN ('Completed','completed','Confirmed','confirmed','paid','pending_payment','Pending','pending','free','Free')
         AND re.entry_status NOT IN ('cancelled','canceled')
       ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
     `, [normNum]);

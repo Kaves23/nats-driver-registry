@@ -1178,7 +1178,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
           OR UPPER(re.ticket_transponder_ref) = $1
         )
           ${event_id ? 'AND re.event_id = $2' : ''}
-          AND LOWER(re.payment_status) IN ('completed','confirmed','paid','pending','pending_payment')
+          AND LOWER(re.payment_status) IN ('completed','confirmed','paid','pending','pending_payment','free')
           AND re.entry_status NOT IN ('cancelled','canceled')
         ORDER BY e.event_date DESC NULLS LAST, re.created_at DESC
       `, params);
