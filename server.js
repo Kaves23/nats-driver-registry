@@ -7813,6 +7813,7 @@ app.get('/api/getAvailableEvents', async (req, res) => {
       `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open, national_only
        FROM events
        WHERE registration_deadline >= CURRENT_DATE
+         AND LOWER(event_name) NOT LIKE 'test%'
        ORDER BY event_date ASC`
     );
 
