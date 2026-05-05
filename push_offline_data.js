@@ -45,7 +45,9 @@ async function main() {
   // ── 1. entry_engine_draws ─────────────────────────────────────────────
   const { rows: draws } = await localPool.query(
     `SELECT entry_id, engine_serial, draw_number, day_label, assigned_at,
-            returned, returned_at, engine_issue, replaced_by, notes
+            returned, returned_at, engine_issue, replaced_by, notes,
+            overnight_seal, overnight_seal_verified_at,
+            carb_returned_separately, carb_overnight_seal, carb_overnight_seal_verified_at
      FROM entry_engine_draws ORDER BY assigned_at`
   );
   console.log(`Found ${draws.length} draw records in local DB...`);
@@ -55,8 +57,10 @@ async function main() {
     const ins = await cloudPool.query(
       `INSERT INTO entry_engine_draws
          (entry_id, engine_serial, draw_number, day_label, assigned_at,
-          returned, returned_at, engine_issue, replaced_by, notes)
-       SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+          returned, returned_at, engine_issue, replaced_by, notes,
+          overnight_seal, overnight_seal_verified_at,
+          carb_returned_separately, carb_overnight_seal, carb_overnight_seal_verified_at)
+       SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
        WHERE NOT EXISTS (
          SELECT 1 FROM entry_engine_draws
          WHERE entry_id = $1
@@ -68,19 +72,33 @@ async function main() {
        )`,
       [row.entry_id, row.engine_serial, row.draw_number, row.day_label,
        row.assigned_at, row.returned, row.returned_at, row.engine_issue,
-       row.replaced_by, row.notes]
+       row.replaced_by, row.notes,
+       row.overnight_seal || null, row.overnight_seal_verified_at || null,
+       row.carb_returned_separately || null, row.carb_overnight_seal || null,
+       row.carb_overnight_seal_verified_at || null]
     );
     if (ins.rowCount > 0) {
       pushed++;
       console.log(`  ↑ NEW   ${row.day_label || 'today'} | ${row.engine_serial.padEnd(10)} | ${row.entry_id}`);
-    } else if (row.returned) {
+    } else if (row.returned || row.overnight_seal || row.overnight_seal_verified_at || row.carb_overnight_seal || row.carb_overnight_seal_verified_at) {
       const upd = await cloudPool.query(
         `UPDATE entry_engine_draws
-         SET returned=$3, returned_at=$4, engine_issue=$5
-         WHERE entry_id=$1 AND UPPER(engine_serial)=UPPER($2) AND returned=false`,
-        [row.entry_id, row.engine_serial, row.returned, row.returned_at, row.engine_issue]
+         SET returned=COALESCE($3, returned), returned_at=COALESCE($4, returned_at),
+             engine_issue=COALESCE($5, engine_issue),
+             overnight_seal=COALESCE($6, overnight_seal),
+             overnight_seal_verified_at=COALESCE($7, overnight_seal_verified_at),
+             carb_returned_separately=COALESCE($8, carb_returned_separately),
+             carb_overnight_seal=COALESCE($9, carb_overnight_seal),
+             carb_overnight_seal_verified_at=COALESCE($10, carb_overnight_seal_verified_at)
+         WHERE entry_id=$1 AND UPPER(engine_serial)=UPPER($2)
+           AND (returned=false OR overnight_seal_verified_at IS NULL OR carb_overnight_seal_verified_at IS NULL)`,
+        [row.entry_id, row.engine_serial,
+         row.returned || null, row.returned_at || null, row.engine_issue || null,
+         row.overnight_seal || null, row.overnight_seal_verified_at || null,
+         row.carb_returned_separately || null, row.carb_overnight_seal || null,
+         row.carb_overnight_seal_verified_at || null]
       );
-      if (upd.rowCount > 0) { updated++; console.log(`  ↺ UPDT  ${row.engine_serial.padEnd(10)} returned`); }
+      if (upd.rowCount > 0) { updated++; console.log(`  ↺ UPDT  ${row.engine_serial.padEnd(10)} updated`); }
       else skipped++;
     } else {
       skipped++;

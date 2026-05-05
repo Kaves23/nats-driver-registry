@@ -370,6 +370,12 @@ button{touch-action:manipulation}
   <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 1')">🏁 ROUND 1</button>
   <button class="day-btn day-btn-r2" onclick="selectDay('ROUND 2')">🏆 ROUND 2</button>
   <button class="day-btn day-btn-single" onclick="selectDay('RACE DAY')" style="margin-top:6px">📅 SINGLE DAY EVENT</button>
+  <div style="height:1px;background:rgba(255,255,255,0.1);margin:10px 0"></div>
+  <div style="font-size:18px;letter-spacing:2px;color:var(--dim);text-align:center;margin-bottom:4px">── 3-DAY NATS ──</div>
+  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE')">🔧 PRACTICE</button>
+  <button class="day-btn" style="background:linear-gradient(135deg,#b7791f,#d69e2e)" onclick="selectDay('ROUND 3 — COLLECT')">🌅 ROUND 3 — COLLECT</button>
+  <button class="day-btn" style="background:linear-gradient(135deg,#c05621,#dd6b20)" onclick="selectDay('ROUND 3 — RETURN')">↩ ROUND 3 — RETURN</button>
+  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 4')">🏁 ROUND 4</button>
   <div class="day-picker-hint">Tap a day to continue</div>
 </div>
 
@@ -530,6 +536,85 @@ button{touch-action:manipulation}
   <button class="next-btn" onclick="nextDriver()">NEXT DRIVER →</button>
 </div>
 
+<!-- ── COLLECT SCREEN (Saturday morning — ROUND 3 COLLECT) ─────────── -->
+<div id="s-collect" class="screen">
+  <div class="driver-bar">
+    <div class="driver-num" id="colDriverNum">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="colDriverName">—</div>
+      <div class="driver-class" id="colDriverClass">—</div>
+    </div>
+    <button class="back-btn" onclick="goScan()">← BACK</button>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:14px;padding:0 8px">
+    <div style="text-align:center">
+      <div style="font-size:20px;letter-spacing:3px;color:var(--dim);margin-bottom:4px">SATURDAY MORNING</div>
+      <div style="font-size:38px;font-weight:900">COLLECT ENGINE</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim)">ENGINE ASSIGNED</div>
+      <div id="colEngineSerial" style="font-size:44px;font-weight:900;color:var(--blue)">—</div>
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-top:6px">OVERNIGHT SEAL</div>
+      <div id="colOvernightSeal" style="font-size:36px;font-weight:700;color:var(--amber)">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+      <span style="font-size:20px;letter-spacing:1px;color:var(--dim)">SCAN OR TYPE SEAL</span>
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+    </div>
+    <input id="colSealInput" type="text" class="big-input" placeholder="overnight seal" autocapitalize="characters" autocomplete="off" style="font-size:44px" onkeydown="if(event.key==='Enter')submitCollectSeal()">
+    <button class="go-btn" onclick="submitCollectSeal()">CONFIRM COLLECTION &#x2192;</button>
+    <div id="colErr" style="text-align:center;font-size:26px;min-height:18px;letter-spacing:.5px;"></div>
+  </div>
+</div>
+
+<!-- ── COLLECT DONE SCREEN ────────────────────────── -->
+<div id="s-collect-done" class="screen">
+  <div class="done-icon">&#x2705;</div>
+  <div class="done-card">
+    <div class="done-sub">ENGINE COLLECTED</div>
+    <div class="done-driver" id="colDoneDriver">—</div>
+    <div class="done-detail" id="colDoneClass">—</div>
+    <div class="done-engine" id="colDoneSerial">—</div>
+    <div class="done-detail" id="colDoneSeal" style="color:var(--green)"></div>
+  </div>
+  <button class="next-btn" onclick="nextDriver()">NEXT DRIVER &#x2192;</button>
+</div>
+
+<!-- ── CARB VERIFY SCREEN (Sunday morning — ROUND 4) ─────────────────── -->
+<div id="s-carb-verify" class="screen">
+  <div class="driver-bar">
+    <div class="driver-num" id="cvDriverNum">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="cvDriverName">—</div>
+      <div class="driver-class" id="cvDriverClass">—</div>
+    </div>
+    <button class="back-btn" onclick="showScreen('s-draw')">← BACK</button>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:14px;padding:0 8px">
+    <div style="text-align:center">
+      <div style="font-size:20px;letter-spacing:3px;color:var(--dim);margin-bottom:4px">SUNDAY MORNING — ROUND 4</div>
+      <div style="font-size:38px;font-weight:900">VERIFY CARB SEAL</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim)">CARB FROM ROUND 3</div>
+      <div id="cvCarbNumber" style="font-size:40px;font-weight:900;color:var(--blue)">—</div>
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-top:6px">CARB OVERNIGHT SEAL</div>
+      <div id="cvCarbSeal" style="font-size:36px;font-weight:700;color:var(--amber)">—</div>
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-top:6px">NEW ENGINE SELECTED</div>
+      <div id="cvNewEngine" style="font-size:36px;font-weight:700;color:var(--green)">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+      <span style="font-size:20px;letter-spacing:1px;color:var(--dim)">SCAN OR TYPE CARB SEAL</span>
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+    </div>
+    <input id="cvSealInput" type="text" class="big-input" placeholder="carb overnight seal" autocapitalize="characters" autocomplete="off" style="font-size:44px" onkeydown="if(event.key==='Enter')submitCarbVerify()">
+    <button class="go-btn" onclick="submitCarbVerify()">VERIFY &amp; CONTINUE &#x2192;</button>
+    <div id="cvErr" style="text-align:center;font-size:26px;min-height:18px;letter-spacing:.5px;"></div>
+  </div>
+</div>
+
 <script>
 // ─────────────────────────────────────────────────
 // STATE
@@ -540,6 +625,25 @@ let currentDriver  = null; // { driver_id, entry_id, first_name, last_name, race
 let allEngines     = [];   // all pool engines from API (incl. assigned_driver_name)
 let classEngines   = [];   // engines for current driver's class
 let selectedEngine = null; // the pool engine record the driver picked
+
+// 3-Day Nats session modes
+// 'draw'          — normal draw (PRACTICE, ROUND 1, ROUND 2, RACE DAY, ROUND 4 engine selection)
+// 'collect'       — Saturday morning: verify overnight seal, confirm collection
+// 'return-carb'   — Saturday evening: return engine + separate carb + apply carb overnight seal
+// 'draw-with-carb'— Sunday morning: draw new engine + verify carb overnight seal before confirm
+let currentSessionMode = 'draw';
+
+// Carb verify state (ROUND 4)
+let _carbVerifyRecord   = null; // { carb_number, carb_overnight_seal, ... } from ROUND 3 draw record
+let _carbSealVerified   = false; // true once carb seal is confirmed on s-carb-verify
+
+function getSessionMode(dayLabel) {
+  if (!dayLabel) return 'draw';
+  if (dayLabel === 'ROUND 3 — COLLECT') return 'collect';
+  if (dayLabel === 'ROUND 3 — RETURN')  return 'return-carb';
+  if (dayLabel === 'ROUND 4')           return 'draw-with-carb';
+  return 'draw';
+}
 
 // ZXing / BarcodeDetector
 let _nativeDet  = null;
@@ -575,6 +679,12 @@ function showScreen(id) {
   }
   if (id === 's-seal') {
     setTimeout(() => { const el = document.getElementById('sealManualInput'); if (el) el.focus(); }, 80);
+  }
+  if (id === 's-collect') {
+    setTimeout(() => { const el = document.getElementById('colSealInput'); if (el) { el.value = ''; el.focus(); } }, 80);
+  }
+  if (id === 's-carb-verify') {
+    setTimeout(() => { const el = document.getElementById('cvSealInput'); if (el) { el.value = ''; el.focus(); } }, 80);
   }
 }
 
@@ -725,6 +835,7 @@ function selectDay(label) {
   document.getElementById('dayPickerOverlay').classList.remove('active');
   if (currentEvent) {
     currentEvent.day_label = label;
+    currentSessionMode = getSessionMode(label);
     updateStationBadge();
   }
 }
@@ -1211,6 +1322,12 @@ async function doLookup() {
 // DRAW SCREEN
 // ─────────────────────────────────────────────────
 function openDraw() {
+  // COLLECT MODE — show the overnight seal verification screen instead of the draw grid
+  if (currentSessionMode === 'collect') {
+    openCollectScreen();
+    return;
+  }
+
   const d = currentDriver;
   document.getElementById('drawDriverNum').textContent  = '#' + d.race_number;
   document.getElementById('drawDriverName').textContent = d.first_name + ' ' + d.last_name;
@@ -1288,7 +1405,11 @@ function selectDraw(engineId) {
   if (!engine) return;
   selectedEngine = engine;
   renderDrawGrid(); // re-render to show selected state
-  showSealScreen();
+  if (currentSessionMode === 'draw-with-carb') {
+    openCarbVerify();
+  } else {
+    showSealScreen();
+  }
 }
 
 
@@ -1304,9 +1425,14 @@ function showConfirm() {
   document.getElementById('cfClass').textContent    = d.race_class || '—';
   document.getElementById('cfSerial').textContent   = e.engine_serial || '(no serial)';
   document.getElementById('cfSeal').textContent     = e.seal_number   || '—';
-  document.getElementById('cfCarb').textContent     = e.carb_number   || '—';
-  document.getElementById('cfAirbox').textContent   = e.airbox_number || '—';
-  document.getElementById('cfExhaust').textContent  = e.exhaust_number|| '—';
+
+  // ROUND 4: show carb from overnight record instead of pool engine carb
+  const carbForDisplay = (currentSessionMode === 'draw-with-carb' && _carbVerifyRecord)
+    ? (_carbVerifyRecord.carb_number || e.carb_number || '—')
+    : (e.carb_number || '—');
+  document.getElementById('cfCarb').textContent    = carbForDisplay;
+  document.getElementById('cfAirbox').textContent  = e.airbox_number || '—';
+  document.getElementById('cfExhaust').textContent = e.exhaust_number|| '—';
 
   // Hide rows with no data
   ['cfSealRow','cfCarbRow','cfAirboxRow','cfExhaustRow'].forEach(id => {
@@ -1314,6 +1440,14 @@ function showConfirm() {
     const val = row.querySelector('.val').textContent;
     row.style.display = (val && val !== '—') ? 'flex' : 'none';
   });
+
+  // ROUND 4: add carb overnight seal row
+  const cfCarbRow = document.getElementById('cfCarbRow');
+  if (currentSessionMode === 'draw-with-carb' && _carbVerifyRecord?.carb_overnight_seal) {
+    cfCarbRow.style.display = 'flex';
+    document.getElementById('cfCarb').textContent =
+      `${carbForDisplay}  ·  SEAL ✅ ${_carbVerifyRecord.carb_overnight_seal}`;
+  }
 
   document.getElementById('cfErr').textContent = '';
   document.getElementById('cfConfirmBtn').disabled = false;
@@ -1341,7 +1475,8 @@ async function confirmDraw() {
       entryId:       d.entry_id,
       ticketBarcode: null,
       drawNumber:    e.draw_number || null,
-      dayLabel:      currentEvent?.day_label || null
+      dayLabel:      currentEvent?.day_label || null,
+      carb_overnight_seal_verified: _carbSealVerified || false
     };
     const r = await fetch('/api/assignEngine', {
       method: 'POST',
@@ -1397,6 +1532,8 @@ function nextDriver() {
   selectedEngine = null;
   currentDriver  = null;
   _numPadVal = '';
+  _carbVerifyRecord = null;
+  _carbSealVerified = false;
   const directEl = document.getElementById('raceNumInput');
   if (directEl) directEl.value = '';
   document.getElementById('lookupErr').textContent = '';
@@ -1425,6 +1562,8 @@ let _returnEngine   = null;  // pool engine record matching driver's serial
 let _periState      = {};    // { seal_number: 'pending'|'ok'|'fail', ... }
 let _periScanTarget = null;  // which peripheral is being camera-scanned
 let _sigCanvas = null, _sigCtx = null, _sigDrawing = false, _sigHasMark = false;
+let _overnightSealVal  = ''; // filled on PRACTICE return — Friday night
+let _carbOvernightSeal = ''; // filled on ROUND 3 RETURN — Saturday night
 
 const PERI_DEFS = [
   { key: 'seal_number',    label: 'SEAL #',    icon: '🔒' },
@@ -1445,6 +1584,8 @@ function showReturnScreen() {
   _periState      = {};
   _periScanTarget = null;
   _sigHasMark     = false;
+  _overnightSealVal  = '';
+  _carbOvernightSeal = '';
 
   document.getElementById('retDriverNum').textContent   = '#' + d.race_number;
   document.getElementById('retDriverName').textContent  = d.first_name + ' ' + d.last_name;
@@ -1491,6 +1632,31 @@ function renderRetBody() {
   html += `<div class="ret-section">DRIVER FEEDBACK <span style="font-size:0.6em;font-weight:400;opacity:0.6;">(optional)</span></div>
   <textarea id="retFeedback" placeholder="Any comments about this engine? (noise, issues, performance…)" style="width:100%;box-sizing:border-box;background:#1a2332;color:#e2e8f0;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;font-size:28px;min-height:110px;resize:vertical;margin-bottom:4px;"></textarea>`;
 
+  // PRACTICE return — apply overnight seal before signature
+  if (currentEvent?.day_label === 'PRACTICE') {
+    const sealSet = !!_overnightSealVal;
+    html += `<div class="ret-section" style="color:var(--amber)">🔒 OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="retOvernightSeal" type="text" class="big-input" placeholder="scan or enter seal barcode" autocapitalize="characters" autocomplete="off" style="font-size:36px;flex:1;${sealSet ? 'border-color:var(--green);color:var(--green)' : ''}" oninput="onOvernightSealInput(this.value)">
+    </div>
+    ${sealSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px">✅ SEAL APPLIED: ${_overnightSealVal}</div>` : ''}`;
+  }
+
+  // ROUND 3 RETURN — carb returned separately + carb overnight seal
+  if (currentEvent?.day_label === 'ROUND 3 — RETURN') {
+    const carbSet = !!_carbOvernightSeal;
+    html += `<div class="ret-section" style="color:var(--amber)">⚙️ CARB RETURN &amp; OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
+      <input type="checkbox" id="retCarbReturned" style="width:28px;height:28px;cursor:pointer" onchange="renderRetBody();setTimeout(initSigCanvas,50)">
+      <label for="retCarbReturned" style="font-size:26px;cursor:pointer">CARB RETURNED SEPARATELY</label>
+    </div>
+    <div id="retCarbSealWrap" style="${e.carb_number ? '' : 'opacity:0.5'}">
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-bottom:4px">CARB # ${e.carb_number || '—'}</div>
+      <input id="retCarbOvernightSeal" type="text" class="big-input" placeholder="scan or enter carb seal barcode" autocapitalize="characters" autocomplete="off" style="font-size:36px;width:100%;box-sizing:border-box;${carbSet ? 'border-color:var(--green);color:var(--green)' : ''}" oninput="onCarbSealInput(this.value)">
+      ${carbSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px;margin-top:4px">✅ CARB SEAL: ${_carbOvernightSeal}</div>` : ''}
+    </div>`
+  }
+
   html += `<div class="ret-section">DRIVER SIGNATURE</div>
   <div class="sig-wrap" id="sigWrap">
     <canvas id="sigCanvas" height="160"></canvas>
@@ -1525,6 +1691,14 @@ function onPeriScanned(raw) {
     ? 'ok' : 'fail';
   renderRetBody();
   setTimeout(initSigCanvas, 50);
+}
+
+function onOvernightSealInput(val) {
+  _overnightSealVal = val.trim().toUpperCase();
+}
+
+function onCarbSealInput(val) {
+  _carbOvernightSeal = val.trim().toUpperCase();
 }
 
 // ── Signature canvas ─────────────────────────
@@ -1580,6 +1754,30 @@ async function confirmReturn() {
     return;
   }
 
+  // PRACTICE: overnight seal is required
+  const dayLabel = currentEvent?.day_label || '';
+  const liveOvernightSeal = (document.getElementById('retOvernightSeal')?.value || '').trim().toUpperCase() || _overnightSealVal;
+  if (dayLabel === 'PRACTICE' && !liveOvernightSeal) {
+    document.getElementById('retErr').textContent = '🔒 Apply overnight seal before confirming';
+    document.getElementById('retOvernightSeal')?.focus();
+    return;
+  }
+
+  // ROUND 3 RETURN: carb returned checkbox + carb seal required
+  const liveCarbSeal = (document.getElementById('retCarbOvernightSeal')?.value || '').trim().toUpperCase() || _carbOvernightSeal;
+  const carbReturnedChecked = document.getElementById('retCarbReturned')?.checked;
+  if (dayLabel === 'ROUND 3 — RETURN') {
+    if (!carbReturnedChecked) {
+      document.getElementById('retErr').textContent = '⚙️ Confirm carb has been returned separately';
+      return;
+    }
+    if (!liveCarbSeal) {
+      document.getElementById('retErr').textContent = '🔒 Apply carb overnight seal before confirming';
+      document.getElementById('retCarbOvernightSeal')?.focus();
+      return;
+    }
+  }
+
   const btn = document.getElementById('retConfirmBtn');
   btn.disabled = true;
   btn.textContent = 'PROCESSING…';
@@ -1601,7 +1799,10 @@ async function confirmReturn() {
       peripheralsChecked: _periState,
       signatureData:      signatureData,
       scannedBy:          currentScanner?.name || currentScanner?.scanner_name || 'Return Station',
-      notes: [feedbackVal ? `Driver feedback: ${feedbackVal}` : null, `Draw #${e.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`].filter(Boolean).join(' | ')
+      notes: [feedbackVal ? `Driver feedback: ${feedbackVal}` : null, `Draw #${e.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`].filter(Boolean).join(' | '),
+      overnight_seal:         liveOvernightSeal || undefined,
+      carb_returned_separately: carbReturnedChecked || undefined,
+      carb_overnight_seal:      liveCarbSeal || undefined
     };
     const r    = await fetch('/api/returnEngine', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1632,7 +1833,174 @@ function showReturnDone(engine, driver) {
   document.getElementById('rdoneClass').textContent  = driver.race_class || '';
   document.getElementById('rdoneSerial').textContent = engine.engine_serial || '—';
   document.getElementById('rdoneDraw').textContent   = engine.draw_number !== '?' ? `Draw #${engine.draw_number}` : '';
+  if (currentEvent?.day_label === 'PRACTICE') {
+    document.getElementById('rdoneSerial').textContent += ` · SEAL: ${_overnightSealVal || '—'}`;
+  }
+  if (currentEvent?.day_label === 'ROUND 3 — RETURN') {
+    document.getElementById('rdoneSerial').textContent += ` · CARB SEAL: ${_carbOvernightSeal || '—'}`;
+  }
   showScreen('s-return-done');
+}
+
+// ─────────────────────────────────────────────────
+// COLLECT FLOW (Saturday morning — ROUND 3 COLLECT)
+// ─────────────────────────────────────────────────
+let _collectRecord = null; // draw record fetched from server for this driver
+
+async function openCollectScreen() {
+  const d = currentDriver;
+  document.getElementById('colDriverNum').textContent   = '#' + d.race_number;
+  document.getElementById('colDriverName').textContent  = d.first_name + ' ' + d.last_name;
+  document.getElementById('colDriverClass').textContent = d.race_class || '—';
+  document.getElementById('colEngineSerial').textContent = '…';
+  document.getElementById('colOvernightSeal').textContent = '…';
+  document.getElementById('colErr').textContent = '';
+  _collectRecord = null;
+  showScreen('s-collect');
+
+  try {
+    const r = await fetch(`/api/driverDrawRecord?entryId=${encodeURIComponent(d.entry_id)}&dayLabel=PRACTICE`);
+    const data = await r.json();
+    if (data.success && data.record) {
+      _collectRecord = data.record;
+      document.getElementById('colEngineSerial').textContent = data.record.engine_serial || '—';
+      document.getElementById('colOvernightSeal').textContent = data.record.overnight_seal || '(no seal on record)';
+      if (!data.record.overnight_seal) {
+        document.getElementById('colErr').textContent = '⚠️ No overnight seal recorded for this driver — contact admin';
+      }
+    } else {
+      document.getElementById('colEngineSerial').textContent = d.engine_serial || '—';
+      document.getElementById('colOvernightSeal').textContent = '(no PRACTICE draw found)';
+      document.getElementById('colErr').textContent = data.error || 'No PRACTICE draw record found';
+    }
+  } catch(e) {
+    document.getElementById('colEngineSerial').textContent = d.engine_serial || '—';
+    document.getElementById('colOvernightSeal').textContent = '(error loading record)';
+    document.getElementById('colErr').textContent = 'Could not load draw record — check server';
+  }
+}
+
+async function submitCollectSeal() {
+  const val = (document.getElementById('colSealInput').value || '').trim().toUpperCase();
+  const errEl = document.getElementById('colErr');
+  if (!val) { errEl.style.color = 'var(--red)'; errEl.textContent = 'Enter the overnight seal barcode'; return; }
+
+  if (!_collectRecord) {
+    errEl.style.color = 'var(--red)'; errEl.textContent = 'Draw record not loaded — cannot verify'; return;
+  }
+  if (!_collectRecord.overnight_seal) {
+    errEl.style.color = 'var(--amber)'; errEl.textContent = '⚠️ No overnight seal on record — cannot verify. Contact admin.'; return;
+  }
+  if (val !== _collectRecord.overnight_seal.toUpperCase().trim()) {
+    _snd('err');
+    errEl.style.color = 'var(--red)';
+    errEl.textContent = `❌ Seal mismatch — expected ${_collectRecord.overnight_seal}`;
+    return;
+  }
+
+  // Seal matches — confirm collection via API
+  errEl.style.color = 'var(--dim)'; errEl.textContent = 'Confirming…';
+  try {
+    const d = currentDriver;
+    const r = await fetch('/api/collectEngine', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entryId:       d.entry_id,
+        engineSerial:  _collectRecord.engine_serial,
+        sealScanned:   val,
+        scannedBy:     currentScanner?.name || 'Collect Station',
+        eventId:       currentEvent?.event_id || null
+      })
+    });
+    const resp = await r.json();
+    if (resp.success) {
+      _snd('confirm');
+      document.getElementById('colDoneDriver').textContent = `#${d.race_number} ${d.first_name} ${d.last_name}`;
+      document.getElementById('colDoneClass').textContent  = d.race_class || '';
+      document.getElementById('colDoneSerial').textContent = _collectRecord.engine_serial || '—';
+      document.getElementById('colDoneSeal').textContent   = `✅ SEAL ${val} VERIFIED`;
+      showScreen('s-collect-done');
+    } else {
+      _snd('err');
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = resp.error || 'Confirmation failed — try again';
+    }
+  } catch(e) {
+    _snd('err');
+    errEl.style.color = 'var(--red)';
+    errEl.textContent = 'Server error — try again';
+  }
+}
+
+// ─────────────────────────────────────────────────
+// CARB VERIFY FLOW (Sunday morning — ROUND 4)
+// ─────────────────────────────────────────────────
+async function openCarbVerify() {
+  const d = currentDriver;
+  const e = selectedEngine;
+  document.getElementById('cvDriverNum').textContent   = '#' + d.race_number;
+  document.getElementById('cvDriverName').textContent  = d.first_name + ' ' + d.last_name;
+  document.getElementById('cvDriverClass').textContent = d.race_class || '—';
+  document.getElementById('cvNewEngine').textContent   = e.engine_serial || `Draw #${e.draw_number}`;
+  document.getElementById('cvCarbNumber').textContent  = '…';
+  document.getElementById('cvCarbSeal').textContent    = '…';
+  document.getElementById('cvErr').textContent = '';
+  _carbVerifyRecord = null;
+  _carbSealVerified = false;
+  showScreen('s-carb-verify');
+
+  try {
+    const r = await fetch(`/api/driverDrawRecord?entryId=${encodeURIComponent(d.entry_id)}&dayLabel=ROUND 3 — RETURN`);
+    const data = await r.json();
+    if (data.success && data.record) {
+      _carbVerifyRecord = data.record;
+      // carb_number comes from pool_engines, stored in engine data
+      const carbNum = data.record.carb_number || e.carb_number || '—';
+      document.getElementById('cvCarbNumber').textContent = carbNum;
+      document.getElementById('cvCarbSeal').textContent   = data.record.carb_overnight_seal || '(no seal recorded)';
+      if (!data.record.carb_overnight_seal) {
+        document.getElementById('cvErr').textContent = '⚠️ No carb overnight seal on record — contact admin';
+      }
+    } else {
+      document.getElementById('cvCarbNumber').textContent = e.carb_number || '—';
+      document.getElementById('cvCarbSeal').textContent   = '(no ROUND 3 RETURN record found)';
+      document.getElementById('cvErr').textContent = data.error || 'No ROUND 3 return record found';
+    }
+  } catch(e2) {
+    document.getElementById('cvCarbNumber').textContent = '—';
+    document.getElementById('cvCarbSeal').textContent   = '(error)';
+    document.getElementById('cvErr').textContent = 'Could not load carb record — check server';
+  }
+}
+
+function submitCarbVerify() {
+  const val = (document.getElementById('cvSealInput').value || '').trim().toUpperCase();
+  const errEl = document.getElementById('cvErr');
+  if (!val) { errEl.style.color = 'var(--red)'; errEl.textContent = 'Enter the carb overnight seal barcode'; return; }
+
+  if (!_carbVerifyRecord) {
+    errEl.style.color = 'var(--red)'; errEl.textContent = 'Carb record not loaded — cannot verify'; return;
+  }
+  if (!_carbVerifyRecord.carb_overnight_seal) {
+    errEl.style.color = 'var(--amber)';
+    errEl.textContent = '⚠️ No carb seal on record — contact admin. Cannot proceed without verification.';
+    return;
+  }
+  if (val !== _carbVerifyRecord.carb_overnight_seal.toUpperCase().trim()) {
+    _snd('err');
+    errEl.style.color = 'var(--red)';
+    errEl.textContent = `❌ Seal mismatch — expected ${_carbVerifyRecord.carb_overnight_seal}`;
+    return;
+  }
+
+  _snd('ok');
+  _carbSealVerified = true;
+  errEl.style.color = 'var(--green)';
+  errEl.textContent = '✅ Carb seal verified!';
+  setTimeout(() => {
+    // Proceed to seal verify screen (step 2 of draw) then to confirm
+    showSealScreen();
+  }, 600);
 }
 </script>
 </body>

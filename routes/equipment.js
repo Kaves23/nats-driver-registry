@@ -14,6 +14,26 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
   const router = Router();
 
   // =============================================
+  // SCHEMA MIGRATION — 3-Day Nats overnight seal columns
+  // Runs once at startup; idempotent (IF NOT EXISTS / DO NOTHING).
+  // =============================================
+  (async () => {
+    try {
+      await pool.query(`
+        ALTER TABLE entry_engine_draws
+          ADD COLUMN IF NOT EXISTS overnight_seal               VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS overnight_seal_verified_at   TIMESTAMP,
+          ADD COLUMN IF NOT EXISTS carb_returned_separately     BOOLEAN DEFAULT false,
+          ADD COLUMN IF NOT EXISTS carb_overnight_seal          VARCHAR(100),
+          ADD COLUMN IF NOT EXISTS carb_overnight_seal_verified_at TIMESTAMP
+      `);
+      console.log('✅ entry_engine_draws overnight-seal columns OK');
+    } catch (e) {
+      console.warn('⚠️ overnight-seal migration warning (non-fatal):', e.message);
+    }
+  })();
+
+  // =============================================
   // ENGINE MANAGEMENT API ENDPOINTS
   // =============================================
 
@@ -182,7 +202,8 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
   router.post('/api/assignEngine', async (req, res) => {
     const client = await pool.connect();
     try {
-      const { ticketBarcode, engineSerial, driverId, entryId, drawNumber, dayLabel } = req.body;
+      const { ticketBarcode, engineSerial, driverId, entryId, drawNumber, dayLabel,
+              carb_overnight_seal_verified } = req.body;
 
       if (!engineSerial || !driverId || !entryId) {
         client.release();
@@ -244,6 +265,24 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         console.warn('⚠️ entry_engine_draws insert failed (non-fatal):', drawErr.message);
       }
 
+      // ROUND 4: if carb overnight seal was verified, stamp it on the previous ROUND 3 draw record
+      if (carb_overnight_seal_verified) {
+        try {
+          await pool.query(
+            `UPDATE entry_engine_draws
+             SET carb_overnight_seal_verified_at = NOW()
+             WHERE entry_id = $1
+               AND day_label = 'ROUND 3 — RETURN'
+               AND carb_overnight_seal IS NOT NULL
+               AND carb_overnight_seal_verified_at IS NULL
+             ORDER BY assigned_at DESC LIMIT 1`,
+            [entryId]
+          );
+        } catch (carbErr) {
+          console.warn('⚠️ carb seal verified_at update failed (non-fatal):', carbErr.message);
+        }
+      }
+
       await logEquipmentScan({
         scan_type: 'engine_assign',
         barcode_scanned: barcodeKey || 'NO-TICKET',
@@ -277,7 +316,10 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       const {
         engineSerial, entryId, driverId,
         peripheralsChecked, signatureData, scannedBy,
-        notes: clientNotes
+        notes: clientNotes,
+        overnight_seal,
+        carb_returned_separately,
+        carb_overnight_seal
       } = req.body;
 
       if (!engineSerial && !entryId) {
@@ -320,12 +362,17 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         WHERE entry_id = $1
       `, [row.entry_id]);
 
-      // Close the draw record in multi-draw history
+      // Close the draw record in multi-draw history, writing overnight/carb seal fields if provided
+      const overnightSealVal = overnight_seal ? overnight_seal.toUpperCase().trim() : null;
+      const carbSealVal = carb_overnight_seal ? carb_overnight_seal.toUpperCase().trim() : null;
       await client.query(
         `UPDATE entry_engine_draws
-         SET returned = true, returned_at = NOW()
+         SET returned = true, returned_at = NOW(),
+             overnight_seal = COALESCE($3, overnight_seal),
+             carb_returned_separately = COALESCE($4, carb_returned_separately),
+             carb_overnight_seal = COALESCE($5, carb_overnight_seal)
          WHERE entry_id = $1 AND UPPER(engine_serial) = $2 AND returned = false`,
-        [row.entry_id, theSerial]
+        [row.entry_id, theSerial, overnightSealVal, carb_returned_separately || null, carbSealVal]
       );
 
       await client.query('COMMIT');
@@ -376,6 +423,100 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       res.json({ success: false, error: err.message });
     } finally {
       client.release();
+    }
+  });
+
+  // ── Get a driver's latest draw record for a given day label ──────────────
+  // Used by engine-draw.html collect & carb-verify screens to pre-fill data
+  router.get('/api/driverDrawRecord', async (req, res) => {
+    try {
+      const { entryId, dayLabel } = req.query;
+      if (!entryId || !dayLabel) {
+        return res.json({ success: false, error: 'entryId and dayLabel required' });
+      }
+      const { rows } = await pool.query(
+        `SELECT draw_id, engine_serial, draw_number, day_label, assigned_at,
+                overnight_seal, overnight_seal_verified_at,
+                carb_returned_separately, carb_overnight_seal, carb_overnight_seal_verified_at
+         FROM entry_engine_draws
+         WHERE entry_id = $1 AND day_label = $2
+         ORDER BY assigned_at DESC LIMIT 1`,
+        [entryId, dayLabel]
+      );
+      if (rows.length === 0) {
+        return res.json({ success: false, error: 'No draw record found' });
+      }
+      res.json({ success: true, record: rows[0] });
+    } catch (err) {
+      console.error('driverDrawRecord error:', err);
+      res.json({ success: false, error: err.message });
+    }
+  });
+
+  // ── Saturday morning: confirm collection by verifying overnight seal ──────
+  router.post('/api/collectEngine', async (req, res) => {
+    try {
+      const { entryId, engineSerial, sealScanned, scannedBy, eventId } = req.body;
+      if (!entryId || !sealScanned) {
+        return res.json({ success: false, error: 'entryId and sealScanned are required' });
+      }
+
+      const upper = sealScanned.toUpperCase().trim();
+
+      // Find the matching PRACTICE draw record with an overnight seal that hasn't been verified yet
+      const { rows } = await pool.query(
+        `SELECT draw_id, overnight_seal, engine_serial, entry_id
+         FROM entry_engine_draws
+         WHERE entry_id = $1
+           AND day_label = 'PRACTICE'
+           AND overnight_seal IS NOT NULL
+           AND overnight_seal_verified_at IS NULL
+         ORDER BY assigned_at DESC
+         LIMIT 1`,
+        [entryId]
+      );
+
+      if (rows.length === 0) {
+        return res.json({ success: false, error: 'No PRACTICE draw with an unverified overnight seal found for this driver' });
+      }
+
+      const drawRow = rows[0];
+      if (drawRow.overnight_seal.toUpperCase().trim() !== upper) {
+        return res.json({ success: false, error: `Seal mismatch — expected ${drawRow.overnight_seal}` });
+      }
+
+      await pool.query(
+        `UPDATE entry_engine_draws SET overnight_seal_verified_at = NOW() WHERE draw_id = $1`,
+        [drawRow.draw_id]
+      );
+
+      // Log the collection scan
+      const entryInfo = await pool.query(
+        `SELECT re.entry_id, re.driver_id, re.race_class, re.event_id, d.first_name, d.last_name
+         FROM race_entries re JOIN drivers d ON re.driver_id = d.driver_id
+         WHERE re.entry_id = $1`,
+        [entryId]
+      );
+      const info = entryInfo.rows[0] || {};
+      await logEquipmentScan({
+        scan_type:        'engine_collect',
+        barcode_scanned:  upper,
+        entry_id:         entryId,
+        driver_id:        info.driver_id || null,
+        driver_name:      info.first_name ? `${info.first_name} ${info.last_name}` : 'Unknown',
+        equipment_serial: drawRow.engine_serial || engineSerial || null,
+        scanned_by:       scannedBy || 'Collect Station',
+        action_result:    'success',
+        notes:            `Overnight seal ${upper} verified — engine collected for ROUND 3`,
+        event_id:         eventId || info.event_id || null,
+        race_class:       info.race_class || null
+      });
+
+      console.log(`✅ Engine collected — entry ${entryId} seal ${upper} verified`);
+      res.json({ success: true, engine_serial: drawRow.engine_serial });
+    } catch (err) {
+      console.error('Error in collectEngine:', err);
+      res.json({ success: false, error: err.message });
     }
   });
 
