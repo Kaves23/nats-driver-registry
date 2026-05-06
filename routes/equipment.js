@@ -279,6 +279,14 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
             [entryId]
           );
           drawCarbNumber = rcRes.rows[0]?.carb_number || null;
+          if (!drawCarbNumber) {
+            // No RETURN_CARB record — fall back to carb currently on the engine in pool
+            const curCarb = await pool.query(
+              `SELECT carb_number FROM pool_engines WHERE UPPER(engine_serial) = $1 AND carb_number IS NOT NULL LIMIT 1`,
+              [engineSerial.toUpperCase()]
+            );
+            drawCarbNumber = curCarb.rows[0]?.carb_number || null;
+          }
           if (drawCarbNumber) {
             await client.query(
               `UPDATE pool_engines SET carb_number = $1 WHERE UPPER(engine_serial) = $2`,
@@ -662,7 +670,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         await pool.query(
           `INSERT INTO entry_engine_draws
              (entry_id, engine_serial, draw_number, day_label, session_type, assigned_at)
-           VALUES ($1, $2, $3, 'ROUND 3 — COLLECT', 'COLLECT', NOW())`,
+           VALUES ($1, $2, $3, NULL, 'COLLECT', NOW())`,
           [entryId, drawRow.engine_serial, drawRow.draw_number || null]
         );
       } catch (insertErr) {

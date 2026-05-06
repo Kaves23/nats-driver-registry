@@ -688,7 +688,7 @@ button{touch-action:manipulation}
   </div>
   <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:14px;padding:0 8px">
     <div style="text-align:center">
-      <div style="font-size:20px;letter-spacing:3px;color:var(--dim);margin-bottom:4px">SUNDAY MORNING — ROUND 4</div>
+      <div style="font-size:20px;letter-spacing:3px;color:var(--dim);margin-bottom:4px">DRAW + SEALED CARB</div>
       <div style="font-size:38px;font-weight:900">VERIFY CARB SEAL</div>
     </div>
     <div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px">
@@ -706,6 +706,7 @@ button{touch-action:manipulation}
     </div>
     <input id="cvSealInput" type="text" class="big-input" placeholder="carb overnight seal" autocapitalize="characters" autocomplete="off" style="font-size:44px" onkeydown="if(event.key==='Enter')submitCarbVerify()">
     <button class="go-btn" onclick="submitCarbVerify()">VERIFY &amp; CONTINUE &#x2192;</button>
+    <button id="cvOverrideBtn" onclick="overrideCarbVerify()" style="display:none;background:var(--amber);color:#000;border:none;border-radius:8px;padding:14px 20px;font-size:22px;font-weight:900;letter-spacing:2px;cursor:pointer;">&#9888; NO SEAL — ADMIN OVERRIDE</button>
     <div id="cvErr" style="text-align:center;font-size:26px;min-height:18px;letter-spacing:.5px;"></div>
   </div>
 </div>
@@ -1869,9 +1870,8 @@ async function confirmReturn() {
 
   // RETURN_CARB mode: carb returned checkbox + carb seal required
   const liveCarbSeal = (document.getElementById('retCarbOvernightSeal')?.value || '').trim().toUpperCase() || _carbOvernightSeal;
-  const carbReturnedChecked = document.getElementById('retCarbReturned')?.checked;
   if (currentSessionMode === 'RETURN_CARB') {
-    if (!carbReturnedChecked) {
+    if (!_carbReturnedChecked) {
       document.getElementById('retErr').textContent = 'Confirm carb has been returned separately';
       return;
     }
@@ -1905,7 +1905,7 @@ async function confirmReturn() {
       scannedBy:          currentScanner?.name || currentScanner?.scanner_name || 'Return Station',
       notes: [feedbackVal ? `Driver feedback: ${feedbackVal}` : null, `Draw #${e.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`].filter(Boolean).join(' | '),
       mode:                    currentSessionMode,
-      carb_returned_separately: carbReturnedChecked || undefined,
+      carb_returned_separately: _carbReturnedChecked || undefined,
       carb_overnight_seal:      liveCarbSeal || undefined
     };
     const r    = await fetch('/api/returnEngine', {
@@ -2017,8 +2017,8 @@ async function openCollectScreen() {
       }
     } else {
       document.getElementById('colEngineSerial').textContent = d.engine_serial || '—';
-      document.getElementById('colOvernightSeal').textContent = '(no PRACTICE draw found)';
-      document.getElementById('colErr').textContent = data.error || 'No PRACTICE draw record found';
+      document.getElementById('colOvernightSeal').textContent = '(no draw record with overnight seal found)';
+      document.getElementById('colErr').textContent = data.error || 'No draw record with overnight seal found';
     }
   } catch(e) {
     document.getElementById('colEngineSerial').textContent = d.engine_serial || '—';
@@ -2106,18 +2106,37 @@ async function openCarbVerify() {
       document.getElementById('cvCarbNumber').textContent = carbNum;
       document.getElementById('cvCarbSeal').textContent   = data.record.carb_overnight_seal || '(no seal recorded)';
       if (!data.record.carb_overnight_seal) {
-        document.getElementById('cvErr').textContent = 'No carb overnight seal on record — contact admin';
+        document.getElementById('cvErr').style.color = 'var(--amber)';
+        document.getElementById('cvErr').textContent = '⚠ No carb seal on record — contact admin or use override';
+        document.getElementById('cvOverrideBtn').style.display = '';
       }
     } else {
-      document.getElementById('cvCarbNumber').textContent = e.carb_number || '—';
-      document.getElementById('cvCarbSeal').textContent   = '(no RETURN+CARB record found)';
-      document.getElementById('cvErr').textContent = data.error || 'No RETURN+CARB record found';
+      const fallbackCarb = e.carb_number || null;
+      document.getElementById('cvCarbNumber').textContent = fallbackCarb || '—';
+      if (fallbackCarb) {
+        // No RETURN_CARB record but carb is on engine — allow admin override
+        _carbVerifyRecord = { carb_number: fallbackCarb, carb_overnight_seal: null };
+        document.getElementById('cvCarbSeal').textContent = '(no seal on record)';
+        document.getElementById('cvErr').style.color = 'var(--amber)';
+        document.getElementById('cvErr').textContent = '⚠ No RETURN+CARB record — carb seal cannot be verified';
+        document.getElementById('cvOverrideBtn').style.display = '';
+      } else {
+        document.getElementById('cvCarbSeal').textContent = '(no record found)';
+        document.getElementById('cvErr').style.color = 'var(--red)';
+        document.getElementById('cvErr').textContent = data.error || 'No RETURN+CARB record found';
+      }
     }
   } catch(e2) {
     document.getElementById('cvCarbNumber').textContent = '—';
     document.getElementById('cvCarbSeal').textContent   = '(error)';
     document.getElementById('cvErr').textContent = 'Could not load carb record — check server';
   }
+}
+
+function overrideCarbVerify() {
+  _snd('ok');
+  _carbSealVerified = false; // explicitly not verified
+  showSealScreen();
 }
 
 function submitCarbVerify() {
@@ -2129,8 +2148,10 @@ function submitCarbVerify() {
     errEl.style.color = 'var(--red)'; errEl.textContent = 'Carb record not loaded — cannot verify'; return;
   }
   if (!_carbVerifyRecord.carb_overnight_seal) {
+    // No seal on record — show the override button instead of blocking
     errEl.style.color = 'var(--amber)';
-    errEl.textContent = 'No carb seal on record — contact admin. Cannot proceed without verification.';
+    errEl.textContent = '⚠ No seal on record — use the ADMIN OVERRIDE button to proceed';
+    document.getElementById('cvOverrideBtn').style.display = '';
     return;
   }
   if (val !== _carbVerifyRecord.carb_overnight_seal.toUpperCase().trim()) {
