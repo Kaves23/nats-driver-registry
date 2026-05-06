@@ -409,24 +409,72 @@ button{touch-action:manipulation}
   <button class="cam-close" onclick="stopCam()">✕ CANCEL</button>
 </div>
 
-<!-- ── DAY PICKER OVERLAY ─────────────────── -->
+<!-- ── MODE PICKER OVERLAY ───────────────── -->
 <div class="day-picker-overlay" id="dayPickerOverlay">
-  <div class="day-picker-title">SELECT RACE DAY</div>
+  <div class="day-picker-title">SELECT OPERATION</div>
   <div class="day-picker-event" id="dayPickerEventName">— EVENT —</div>
-  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE DAY')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> PRACTICE DAY</button>
-  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 1')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="1" x2="3" y2="15"/><path d="M3 1h10l-3 5 3 4H3z"/><rect x="5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="9" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="7" y="4.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> ROUND 1</button>
-  <button class="day-btn day-btn-r2" onclick="selectDay('ROUND 2')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h8v5a4 4 0 0 1-8 0z"/><path d="M2 2a2 2 0 0 0 2 4"/><path d="M14 2a2 2 0 0 1-2 4"/><line x1="8" y1="11" x2="8" y2="13"/><line x1="5.5" y1="13" x2="10.5" y2="13"/><line x1="4" y1="15" x2="12" y2="15"/></svg> ROUND 2</button>
-  <button class="day-btn day-btn-single" onclick="selectDay('RACE DAY')" style="margin-top:6px"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3" width="13" height="11.5" rx="1.5"/><line x1="1.5" y1="7" x2="14.5" y2="7"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><circle cx="5" cy="10" r="0.8" fill="currentColor" stroke="none"/><circle cx="8" cy="10" r="0.8" fill="currentColor" stroke="none"/><circle cx="11" cy="10" r="0.8" fill="currentColor" stroke="none"/></svg> SINGLE DAY EVENT</button>
-  <div style="height:1px;background:rgba(255,255,255,0.1);margin:10px 0"></div>
-  <div style="font-size:18px;letter-spacing:2px;color:var(--dim);text-align:center;margin-bottom:4px">── 3-DAY NATS ──</div>
-  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> PRACTICE</button>
-  <button class="day-btn" style="background:linear-gradient(135deg,#b7791f,#d69e2e)" onclick="selectDay('ROUND 3 — COLLECT')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10a3 3 0 0 1 6 0"/><line x1="1.5" y1="12" x2="14.5" y2="12"/><line x1="8" y1="2" x2="8" y2="4"/><line x1="12.2" y1="3.8" x2="11" y2="5"/><line x1="3.8" y1="3.8" x2="5" y2="5"/><line x1="14" y1="8" x2="12" y2="8"/><line x1="2" y1="8" x2="4" y2="8"/></svg> ROUND 3 — COLLECT</button>
-  <button class="day-btn" style="background:linear-gradient(135deg,#c05621,#dd6b20)" onclick="selectDay('ROUND 3 — RETURN')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10h6a3 3 0 0 0 0-6H5"/><polyline points="7.5 7 5 10 7.5 13"/></svg> ROUND 3 — RETURN</button>
-  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 4')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="1" x2="3" y2="15"/><path d="M3 1h10l-3 5 3 4H3z"/><rect x="5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="9" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="7" y="4.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> ROUND 4</button>
-  <div class="day-picker-hint">Tap a day to continue</div>
+  <button class="day-btn day-btn-practice" onclick="selectMode('DRAW')">ENGINE DRAW</button>
+  <button class="day-btn day-btn-r2"       onclick="selectMode('RETURN')">ENGINE RETURN</button>
+  <button class="day-btn" style="border-color:var(--amber);color:var(--amber)" onclick="selectMode('OVERNIGHT')">OVERNIGHT SEAL</button>
+  <button class="day-btn day-btn-r1"       onclick="selectMode('COLLECT')">MORNING RELEASE</button>
+  <button class="day-btn" style="border-color:#f97316;color:#f97316" onclick="selectMode('RETURN_CARB')">RETURN + CARB SEAL</button>
+  <button class="day-btn" style="border-color:#22d3ee;color:#22d3ee" onclick="selectMode('DRAW_CARB')">DRAW + SEALED CARB</button>
+  <div style="height:1px;background:rgba(255,255,255,0.1);width:100%;max-width:340px;flex-shrink:0"></div>
+  <div style="font-size:16px;letter-spacing:2px;color:var(--dim);text-align:center;flex-shrink:0">DAY LABEL (for reports)</div>
+  <div class="day-label-row">
+    <button class="day-label-btn" id="dlBtnPractice" onclick="setDayLabel('Practice')">PRACTICE</button>
+    <button class="day-label-btn" id="dlBtnDay1"     onclick="setDayLabel('Day 1')">DAY 1</button>
+    <button class="day-label-btn" id="dlBtnDay2"     onclick="setDayLabel('Day 2')">DAY 2</button>
+  </div>
+  <div id="selectedModeDisplay" class="day-picker-hint">Tap a mode to continue</div>
 </div>
 
-<!-- ── DRAW SCREEN ───────────────────────── -->
+<!-- ── OVERNIGHT SCREEN ──────────────────── -->
+<div id="s-overnight" class="screen">
+  <div class="driver-bar">
+    <div class="driver-num" id="ovDriverNum">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="ovDriverName">—</div>
+      <div class="driver-class" id="ovDriverClass">—</div>
+    </div>
+    <button class="back-btn" onclick="goScan()">&#x2190; BACK</button>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:14px;padding:0 8px">
+    <div style="text-align:center">
+      <div style="font-size:20px;letter-spacing:3px;color:var(--dim);margin-bottom:4px">OVERNIGHT IMPOUND</div>
+      <div style="font-size:38px;font-weight:900">OVERNIGHT SEAL</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim)">ENGINE ASSIGNED</div>
+      <div id="ovEngineSerial" style="font-size:44px;font-weight:900;color:var(--blue)">—</div>
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-top:6px">DRAW #</div>
+      <div id="ovDrawNum" style="font-size:36px;font-weight:700;color:var(--text)">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+      <span style="font-size:20px;letter-spacing:1px;color:var(--dim)">SCAN OR TYPE SEAL</span>
+      <div style="flex:1;height:1px;background:var(--line)"></div>
+    </div>
+    <input id="ovSealInput" type="text" class="big-input" placeholder="overnight seal barcode" autocapitalize="characters" autocomplete="off" style="font-size:44px" onkeydown="if(event.key==='Enter')submitOvernightSeal()">
+    <button class="go-btn" onclick="submitOvernightSeal()">APPLY SEAL &#x2192;</button>
+    <div id="ovErr" style="text-align:center;font-size:26px;min-height:18px;letter-spacing:.5px;"></div>
+  </div>
+</div>
+
+<!-- ── OVERNIGHT DONE SCREEN ──────────────── -->
+<div id="s-overnight-done" class="screen">
+  <div class="done-icon" style="color:var(--amber)"><svg viewBox="0 0 16 16" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="10" height="7" rx="1.5"/><path d="M5 8V6a3 3 0 0 1 6 0v2"/></svg></div>
+  <div class="done-card">
+    <div class="done-sub" style="color:var(--amber)">ENGINE IMPOUNDED</div>
+    <div class="done-driver" id="ovDoneDriver">—</div>
+    <div class="done-detail" id="ovDoneClass">—</div>
+    <div class="done-engine" id="ovDoneSerial">—</div>
+    <div class="done-detail" id="ovDoneSeal" style="color:var(--amber)"></div>
+  </div>
+  <button class="next-btn" onclick="nextDriver()">NEXT DRIVER &#x2192;</button>
+</div>
+
+<!-- ── DRAW SCREEN ─────────────────────────── -->
 <div id="s-draw" class="screen">
   <div class="driver-bar">
     <div class="driver-num" id="drawDriverNum">—</div>
@@ -689,23 +737,18 @@ let classEngines   = [];   // engines for current driver's class
 let selectedEngine = null; // the pool engine record the driver picked
 
 // 3-Day Nats session modes
-// 'draw'          — normal draw (PRACTICE, ROUND 1, ROUND 2, RACE DAY, ROUND 4 engine selection)
-// 'collect'       — Saturday morning: verify overnight seal, confirm collection
-// 'return-carb'   — Saturday evening: return engine + separate carb + apply carb overnight seal
-// 'draw-with-carb'— Sunday morning: draw new engine + verify carb overnight seal before confirm
-let currentSessionMode = 'draw';
+// 'DRAW'        — normal engine draw
+// 'RETURN'      — return engine (no carb)
+// 'OVERNIGHT'   — impound engine + apply overnight seal
+// 'COLLECT'     — morning release: verify seal, confirm collection
+// 'RETURN_CARB' — return engine + carb returned separately + carb overnight seal
+// 'DRAW_CARB'   — draw engine + verify carb overnight seal before confirm
+let currentSessionMode = 'DRAW';
+let currentDayLabel    = null; // 'Practice', 'Day 1', 'Day 2' — for reports only
 
-// Carb verify state (ROUND 4)
-let _carbVerifyRecord   = null; // { carb_number, carb_overnight_seal, ... } from ROUND 3 draw record
+// Carb verify state (DRAW_CARB mode)
+let _carbVerifyRecord   = null; // { carb_number, carb_overnight_seal, ... } from RETURN_CARB record
 let _carbSealVerified   = false; // true once carb seal is confirmed on s-carb-verify
-
-function getSessionMode(dayLabel) {
-  if (!dayLabel) return 'draw';
-  if (dayLabel === 'ROUND 3 — COLLECT') return 'collect';
-  if (dayLabel === 'ROUND 3 — RETURN')  return 'return-carb';
-  if (dayLabel === 'ROUND 4')           return 'draw-with-carb';
-  return 'draw';
-}
 
 // ZXing / BarcodeDetector
 let _nativeDet  = null;
@@ -747,6 +790,9 @@ function showScreen(id) {
   }
   if (id === 's-carb-verify') {
     setTimeout(() => { const el = document.getElementById('cvSealInput'); if (el) { el.value = ''; el.focus(); } }, 80);
+  }
+  if (id === 's-overnight') {
+    setTimeout(() => { const el = document.getElementById('ovSealInput'); if (el) { el.value = ''; el.focus(); } }, 80);
   }
 }
 
@@ -892,20 +938,30 @@ function onEventChange() {
   }
 }
 
-function selectDay(label) {
+function selectMode(mode) {
   _snd('ok');
+  currentSessionMode = mode;
   document.getElementById('dayPickerOverlay').classList.remove('active');
-  if (currentEvent) {
-    currentEvent.day_label = label;
-    currentSessionMode = getSessionMode(label);
-    updateStationBadge();
-  }
+  updateStationBadge();
+}
+
+function setDayLabel(label) {
+  _snd('tap');
+  currentDayLabel = label;
+  ['dlBtnPractice','dlBtnDay1','dlBtnDay2'].forEach(id => {
+    document.getElementById(id)?.classList.remove('active');
+  });
+  const map = {'Practice':'dlBtnPractice','Day 1':'dlBtnDay1','Day 2':'dlBtnDay2'};
+  document.getElementById(map[label])?.classList.add('active');
+  document.getElementById('selectedModeDisplay').textContent = 'Day: ' + label;
 }
 
 function updateStationBadge() {
   const name = currentScanner?.name || 'DRAW STATION';
-  const day = currentEvent?.day_label ? ' · ' + currentEvent.day_label : '';
-  document.getElementById('stationBadge').innerHTML = `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none"/><line x1="8" y1="1" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="15"/><line x1="1" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="15" y2="8"/></svg> ${name}${day}`;
+  const day  = currentDayLabel ? ' · ' + currentDayLabel : '';
+  const modeLabels = {DRAW:'DRAW',RETURN:'RETURN',OVERNIGHT:'OVERNIGHT',COLLECT:'COLLECT',RETURN_CARB:'RETURN+CARB',DRAW_CARB:'DRAW+CARB'};
+  const modeStr = currentSessionMode ? ' [' + (modeLabels[currentSessionMode] || currentSessionMode) + ']' : '';
+  document.getElementById('stationBadge').innerHTML = `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none"/><line x1="8" y1="1" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="15"/><line x1="1" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="15" y2="8"/></svg> ${name}${modeStr}${day}`;
 }
 
 // ─────────────────────────────────────────────────
@@ -1384,11 +1440,10 @@ async function doLookup() {
 // DRAW SCREEN
 // ─────────────────────────────────────────────────
 function openDraw() {
-  // COLLECT MODE — show the overnight seal verification screen instead of the draw grid
-  if (currentSessionMode === 'collect') {
-    openCollectScreen();
-    return;
-  }
+  if (currentSessionMode === 'RETURN')      { showReturnScreen(); return; }
+  if (currentSessionMode === 'RETURN_CARB') { showReturnScreen(); return; }
+  if (currentSessionMode === 'OVERNIGHT')   { openOvernightScreen(); return; }
+  if (currentSessionMode === 'COLLECT')     { openCollectScreen(); return; }
 
   const d = currentDriver;
   document.getElementById('drawDriverNum').textContent  = '#' + d.race_number;
@@ -1467,7 +1522,7 @@ function selectDraw(engineId) {
   if (!engine) return;
   selectedEngine = engine;
   renderDrawGrid(); // re-render to show selected state
-  if (currentSessionMode === 'draw-with-carb') {
+  if (currentSessionMode === 'DRAW_CARB') {
     openCarbVerify();
   } else {
     showSealScreen();
@@ -1489,7 +1544,7 @@ function showConfirm() {
   document.getElementById('cfSeal').textContent     = e.seal_number   || '—';
 
   // ROUND 4: show carb from overnight record instead of pool engine carb
-  const carbForDisplay = (currentSessionMode === 'draw-with-carb' && _carbVerifyRecord)
+  const carbForDisplay = (currentSessionMode === 'DRAW_CARB' && _carbVerifyRecord)
     ? (_carbVerifyRecord.carb_number || e.carb_number || '—')
     : (e.carb_number || '—');
   document.getElementById('cfCarb').textContent    = carbForDisplay;
@@ -1505,7 +1560,7 @@ function showConfirm() {
 
   // ROUND 4: add carb overnight seal row
   const cfCarbRow = document.getElementById('cfCarbRow');
-  if (currentSessionMode === 'draw-with-carb' && _carbVerifyRecord?.carb_overnight_seal) {
+  if (currentSessionMode === 'DRAW_CARB' && _carbVerifyRecord?.carb_overnight_seal) {
     cfCarbRow.style.display = 'flex';
     document.getElementById('cfCarb').textContent =
       `${carbForDisplay}  ·  SEAL: ${_carbVerifyRecord.carb_overnight_seal}`;
@@ -1538,7 +1593,8 @@ async function confirmDraw() {
       entryId:       d.entry_id,
       ticketBarcode: null,
       drawNumber:    e.draw_number || null,
-      dayLabel:      currentEvent?.day_label || null,
+      dayLabel:      currentDayLabel || null,
+      mode:          currentSessionMode,
       carb_overnight_seal_verified: _carbSealVerified || false
     };
     const r = await fetch('/api/assignEngine', {
@@ -1597,6 +1653,7 @@ function nextDriver() {
   _numPadVal = '';
   _carbVerifyRecord = null;
   _carbSealVerified = false;
+  currentDayLabel = null;
   const directEl = document.getElementById('raceNumInput');
   if (directEl) directEl.value = '';
   document.getElementById('lookupErr').textContent = '';
@@ -1695,18 +1752,8 @@ function renderRetBody() {
   html += `<div class="ret-section">DRIVER FEEDBACK <span style="font-size:0.6em;font-weight:400;opacity:0.6;">(optional)</span></div>
   <textarea id="retFeedback" placeholder="Any comments about this engine? (noise, issues, performance…)" style="width:100%;box-sizing:border-box;background:#1a2332;color:#e2e8f0;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;font-size:28px;min-height:110px;resize:vertical;margin-bottom:4px;"></textarea>`;
 
-  // PRACTICE return — apply overnight seal before signature
-  if (currentEvent?.day_label === 'PRACTICE') {
-    const sealSet = !!_overnightSealVal;
-    html += `<div class="ret-section" style="color:var(--amber)">${ICON.lock} OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="retOvernightSeal" type="text" class="big-input" placeholder="scan or enter seal barcode" autocapitalize="characters" autocomplete="off" style="font-size:36px;flex:1;${sealSet ? 'border-color:var(--green);color:var(--green)' : ''}" oninput="onOvernightSealInput(this.value)">
-    </div>
-    ${sealSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px">${ICON.check} SEAL APPLIED: ${_overnightSealVal}</div>` : ''}`;    
-  }
-
-  // ROUND 3 RETURN — carb returned separately + carb overnight seal
-  if (currentEvent?.day_label === 'ROUND 3 — RETURN') {
+  // RETURN_CARB mode — carb returned separately + carb overnight seal
+  if (currentSessionMode === 'RETURN_CARB') {
     const carbSet = !!_carbOvernightSeal;
     html += `<div class="ret-section" style="color:var(--amber)">${ICON.cog} CARB RETURN &amp; OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
@@ -1817,19 +1864,10 @@ async function confirmReturn() {
     return;
   }
 
-  // PRACTICE: overnight seal is required
-  const dayLabel = currentEvent?.day_label || '';
-  const liveOvernightSeal = (document.getElementById('retOvernightSeal')?.value || '').trim().toUpperCase() || _overnightSealVal;
-  if (dayLabel === 'PRACTICE' && !liveOvernightSeal) {
-    document.getElementById('retErr').textContent = 'Apply overnight seal before confirming';
-    document.getElementById('retOvernightSeal')?.focus();
-    return;
-  }
-
-  // ROUND 3 RETURN: carb returned checkbox + carb seal required
+  // RETURN_CARB mode: carb returned checkbox + carb seal required
   const liveCarbSeal = (document.getElementById('retCarbOvernightSeal')?.value || '').trim().toUpperCase() || _carbOvernightSeal;
   const carbReturnedChecked = document.getElementById('retCarbReturned')?.checked;
-  if (dayLabel === 'ROUND 3 — RETURN') {
+  if (currentSessionMode === 'RETURN_CARB') {
     if (!carbReturnedChecked) {
       document.getElementById('retErr').textContent = 'Confirm carb has been returned separately';
       return;
@@ -1863,7 +1901,7 @@ async function confirmReturn() {
       signatureData:      signatureData,
       scannedBy:          currentScanner?.name || currentScanner?.scanner_name || 'Return Station',
       notes: [feedbackVal ? `Driver feedback: ${feedbackVal}` : null, `Draw #${e.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`].filter(Boolean).join(' | '),
-      overnight_seal:         liveOvernightSeal || undefined,
+      mode:                    currentSessionMode,
       carb_returned_separately: carbReturnedChecked || undefined,
       carb_overnight_seal:      liveCarbSeal || undefined
     };
@@ -1896,13 +1934,56 @@ function showReturnDone(engine, driver) {
   document.getElementById('rdoneClass').textContent  = driver.race_class || '';
   document.getElementById('rdoneSerial').textContent = engine.engine_serial || '—';
   document.getElementById('rdoneDraw').textContent   = engine.draw_number !== '?' ? `Draw #${engine.draw_number}` : '';
-  if (currentEvent?.day_label === 'PRACTICE') {
-    document.getElementById('rdoneSerial').textContent += ` · SEAL: ${_overnightSealVal || '—'}`;
-  }
-  if (currentEvent?.day_label === 'ROUND 3 — RETURN') {
+  if (currentSessionMode === 'RETURN_CARB') {
     document.getElementById('rdoneSerial').textContent += ` · CARB SEAL: ${_carbOvernightSeal || '—'}`;
   }
   showScreen('s-return-done');
+}
+
+// ─────────────────────────────────────────────────
+// OVERNIGHT SEAL FLOW
+// ─────────────────────────────────────────────────
+function openOvernightScreen() {
+  const d = currentDriver;
+  document.getElementById('ovDriverNum').textContent   = '#' + d.race_number;
+  document.getElementById('ovDriverName').textContent  = d.first_name + ' ' + d.last_name;
+  document.getElementById('ovDriverClass').textContent = d.race_class || '—';
+  document.getElementById('ovEngineSerial').textContent = d.engine_serial || '(no engine assigned)';
+  const eng = d.engine_serial ? allEngines.find(e => e.engine_serial?.toUpperCase() === d.engine_serial?.toUpperCase()) : null;
+  document.getElementById('ovDrawNum').textContent = eng ? eng.draw_number : '—';
+  document.getElementById('ovErr').textContent = '';
+  showScreen('s-overnight');
+}
+
+async function submitOvernightSeal() {
+  const val = (document.getElementById('ovSealInput').value || '').trim().toUpperCase();
+  const errEl = document.getElementById('ovErr');
+  if (!val) { errEl.style.color = 'var(--red)'; errEl.textContent = 'Enter the overnight seal barcode'; return; }
+  if (!currentDriver?.engine_serial) {
+    errEl.style.color = 'var(--red)'; errEl.textContent = 'No engine assigned to this driver'; return;
+  }
+  errEl.style.color = 'var(--dim)'; errEl.textContent = 'Applying seal…';
+  try {
+    const d = currentDriver;
+    const r = await fetch('/api/overnightSeal', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ entryId: d.entry_id, sealNumber: val,
+        scannedBy: currentScanner?.name || 'Overnight Station', eventId: currentEvent?.event_id || null })
+    });
+    const resp = await r.json();
+    if (resp.success) {
+      _snd('confirm');
+      document.getElementById('ovDoneDriver').textContent = `#${d.race_number} ${d.first_name} ${d.last_name}`;
+      document.getElementById('ovDoneClass').textContent  = d.race_class || '';
+      document.getElementById('ovDoneSerial').textContent = resp.engine_serial || d.engine_serial;
+      document.getElementById('ovDoneSeal').textContent   = `SEAL: ${val}`;
+      showScreen('s-overnight-done');
+    } else {
+      _snd('err'); errEl.style.color = 'var(--red)'; errEl.textContent = resp.error || 'Failed — try again';
+    }
+  } catch(e) {
+    _snd('err'); errEl.style.color = 'var(--red)'; errEl.textContent = 'Server error — try again';
+  }
 }
 
 // ─────────────────────────────────────────────────
@@ -1922,7 +2003,7 @@ async function openCollectScreen() {
   showScreen('s-collect');
 
   try {
-    const r = await fetch(`/api/driverDrawRecord?entryId=${encodeURIComponent(d.entry_id)}&dayLabel=PRACTICE`);
+    const r = await fetch(`/api/driverDrawRecord?entryId=${encodeURIComponent(d.entry_id)}&sessionType=COLLECT`);
     const data = await r.json();
     if (data.success && data.record) {
       _collectRecord = data.record;
@@ -2013,7 +2094,7 @@ async function openCarbVerify() {
   showScreen('s-carb-verify');
 
   try {
-    const r = await fetch(`/api/driverDrawRecord?entryId=${encodeURIComponent(d.entry_id)}&dayLabel=ROUND 3 — RETURN`);
+    const r = await fetch(`/api/driverDrawRecord?entryId=${encodeURIComponent(d.entry_id)}&sessionType=RETURN_CARB`);
     const data = await r.json();
     if (data.success && data.record) {
       _carbVerifyRecord = data.record;
@@ -2026,8 +2107,8 @@ async function openCarbVerify() {
       }
     } else {
       document.getElementById('cvCarbNumber').textContent = e.carb_number || '—';
-      document.getElementById('cvCarbSeal').textContent   = '(no ROUND 3 RETURN record found)';
-      document.getElementById('cvErr').textContent = data.error || 'No ROUND 3 return record found';
+      document.getElementById('cvCarbSeal').textContent   = '(no RETURN+CARB record found)';
+      document.getElementById('cvErr').textContent = data.error || 'No RETURN+CARB record found';
     }
   } catch(e2) {
     document.getElementById('cvCarbNumber').textContent = '—';

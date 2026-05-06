@@ -25,9 +25,19 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
           ADD COLUMN IF NOT EXISTS overnight_seal_verified_at   TIMESTAMP,
           ADD COLUMN IF NOT EXISTS carb_returned_separately     BOOLEAN DEFAULT false,
           ADD COLUMN IF NOT EXISTS carb_overnight_seal          VARCHAR(100),
-          ADD COLUMN IF NOT EXISTS carb_overnight_seal_verified_at TIMESTAMP
+          ADD COLUMN IF NOT EXISTS carb_overnight_seal_verified_at TIMESTAMP,
+          ADD COLUMN IF NOT EXISTS session_type                 VARCHAR(30),
+          ADD COLUMN IF NOT EXISTS carb_number                  VARCHAR(50)
       `);
-      console.log('✅ entry_engine_draws overnight-seal columns OK');
+      await pool.query(`
+        UPDATE entry_engine_draws SET session_type = CASE
+          WHEN day_label = 'ROUND 3 — COLLECT' THEN 'COLLECT'
+          WHEN day_label = 'ROUND 3 — RETURN'  THEN 'RETURN_CARB'
+          WHEN day_label = 'ROUND 4'            THEN 'DRAW_CARB'
+          ELSE 'DRAW'
+        END WHERE session_type IS NULL
+      `);
+      console.log('✅ entry_engine_draws columns OK (session_type backfilled)');
     } catch (e) {
       console.warn('⚠️ overnight-seal migration warning (non-fatal):', e.message);
     }
@@ -255,27 +265,57 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         ? `${driverInfo.rows[0].first_name} ${driverInfo.rows[0].last_name}`
         : 'Unknown';
 
+      const sessionType = (typeof req.body.mode === 'string' && req.body.mode.toUpperCase() === 'DRAW_CARB')
+        ? 'DRAW_CARB' : 'DRAW';
+
+      // DRAW_CARB: find driver's latest RETURN_CARB record, restore carb_number to the new engine
+      let drawCarbNumber = null;
+      if (sessionType === 'DRAW_CARB') {
+        try {
+          const rcRes = await client.query(
+            `SELECT carb_number FROM entry_engine_draws
+             WHERE entry_id = $1 AND session_type = 'RETURN_CARB' AND carb_number IS NOT NULL
+             ORDER BY assigned_at DESC LIMIT 1`,
+            [entryId]
+          );
+          drawCarbNumber = rcRes.rows[0]?.carb_number || null;
+          if (drawCarbNumber) {
+            await client.query(
+              `UPDATE pool_engines SET carb_number = $1 WHERE UPPER(engine_serial) = $2`,
+              [drawCarbNumber, engineSerial.toUpperCase()]
+            );
+          }
+        } catch (carbRestoreErr) {
+          console.warn('⚠️ assignEngine DRAW_CARB: carb restore failed (non-fatal):', carbRestoreErr.message);
+        }
+      }
+
       try {
-        await pool.query(
-          `INSERT INTO entry_engine_draws (entry_id, engine_serial, draw_number, day_label, assigned_at)
-           VALUES ($1, $2, $3, $4, NOW())`,
-          [entryId, engineSerial.toUpperCase(), drawNumber || null, dayLabel || null]
+        await client.query(
+          `INSERT INTO entry_engine_draws
+             (entry_id, engine_serial, draw_number, day_label, session_type, carb_number, assigned_at)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+          [entryId, engineSerial.toUpperCase(), drawNumber || null, dayLabel || null,
+           sessionType, drawCarbNumber]
         );
       } catch (drawErr) {
         console.warn('⚠️ entry_engine_draws insert failed (non-fatal):', drawErr.message);
       }
 
-      // ROUND 4: if carb overnight seal was verified, stamp it on the previous ROUND 3 draw record
-      if (carb_overnight_seal_verified) {
+      // DRAW_CARB: stamp carb_overnight_seal_verified_at on the latest RETURN_CARB record
+      if (carb_overnight_seal_verified || sessionType === 'DRAW_CARB') {
         try {
-          await pool.query(
+          await client.query(
             `UPDATE entry_engine_draws
              SET carb_overnight_seal_verified_at = NOW()
-             WHERE entry_id = $1
-               AND day_label = 'ROUND 3 — RETURN'
-               AND carb_overnight_seal IS NOT NULL
-               AND carb_overnight_seal_verified_at IS NULL
-             ORDER BY assigned_at DESC LIMIT 1`,
+             WHERE draw_id = (
+               SELECT draw_id FROM entry_engine_draws
+               WHERE entry_id = $1
+                 AND session_type = 'RETURN_CARB'
+                 AND carb_overnight_seal IS NOT NULL
+                 AND carb_overnight_seal_verified_at IS NULL
+               ORDER BY assigned_at DESC LIMIT 1
+             )`,
             [entryId]
           );
         } catch (carbErr) {
@@ -310,6 +350,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
   });
 
   // Return engine — full version with peripherals, signature & scannedBy
+  // mode: 'RETURN' (default) | 'RETURN_CARB' (carb seal applied, carb_number cleared from pool)
   router.post('/api/returnEngine', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -319,8 +360,10 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         notes: clientNotes,
         overnight_seal,
         carb_returned_separately,
-        carb_overnight_seal
+        carb_overnight_seal,
+        mode: returnMode
       } = req.body;
+      const sessionType = (returnMode === 'RETURN_CARB') ? 'RETURN_CARB' : 'RETURN';
 
       if (!engineSerial && !entryId) {
         client.release();
@@ -365,15 +408,45 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       // Close the draw record in multi-draw history, writing overnight/carb seal fields if provided
       const overnightSealVal = overnight_seal ? overnight_seal.toUpperCase().trim() : null;
       const carbSealVal = carb_overnight_seal ? carb_overnight_seal.toUpperCase().trim() : null;
+
+      // RETURN_CARB: snapshot carb_number from pool_engines before clearing it
+      let snapshotCarbNumber = null;
+      if (sessionType === 'RETURN_CARB') {
+        try {
+          const carbRes = await client.query(
+            `SELECT carb_number FROM pool_engines WHERE UPPER(engine_serial) = $1 LIMIT 1`,
+            [theSerial]
+          );
+          snapshotCarbNumber = carbRes.rows[0]?.carb_number || null;
+        } catch (carbLookupErr) {
+          console.warn('⚠️ returnEngine RETURN_CARB: carb lookup failed (non-fatal):', carbLookupErr.message);
+        }
+      }
+
       await client.query(
         `UPDATE entry_engine_draws
          SET returned = true, returned_at = NOW(),
+             session_type = $6,
+             carb_number = COALESCE($7, carb_number),
              overnight_seal = COALESCE($3, overnight_seal),
              carb_returned_separately = COALESCE($4, carb_returned_separately),
              carb_overnight_seal = COALESCE($5, carb_overnight_seal)
          WHERE entry_id = $1 AND UPPER(engine_serial) = $2 AND returned = false`,
-        [row.entry_id, theSerial, overnightSealVal, carb_returned_separately || null, carbSealVal]
+        [row.entry_id, theSerial, overnightSealVal, carb_returned_separately || null, carbSealVal,
+         sessionType, snapshotCarbNumber]
       );
+
+      // RETURN_CARB: clear carb_number from pool_engines
+      if (sessionType === 'RETURN_CARB') {
+        try {
+          await client.query(
+            `UPDATE pool_engines SET carb_number = NULL WHERE UPPER(engine_serial) = $1`,
+            [theSerial]
+          );
+        } catch (carbClearErr) {
+          console.warn('⚠️ returnEngine RETURN_CARB: pool carb clear failed (non-fatal):', carbClearErr.message);
+        }
+      }
 
       await client.query('COMMIT');
 
@@ -426,24 +499,47 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     }
   });
 
-  // ── Get a driver's latest draw record for a given day label ──────────────
-  // Used by engine-draw.html collect & carb-verify screens to pre-fill data
+  // ── Get a driver's latest draw record ──────────────────────────────────────
+  // Supports sessionType (preferred) or dayLabel (legacy)
   router.get('/api/driverDrawRecord', async (req, res) => {
     try {
-      const { entryId, dayLabel } = req.query;
-      if (!entryId || !dayLabel) {
-        return res.json({ success: false, error: 'entryId and dayLabel required' });
+      const { entryId, dayLabel, sessionType } = req.query;
+      if (!entryId || (!dayLabel && !sessionType)) {
+        return res.json({ success: false, error: 'entryId and dayLabel or sessionType required' });
       }
-      const { rows } = await pool.query(
-        `SELECT draw_id, engine_serial, draw_number, day_label, assigned_at,
-                overnight_seal, overnight_seal_verified_at,
-                carb_returned_separately, carb_overnight_seal, carb_overnight_seal_verified_at
-         FROM entry_engine_draws
-         WHERE entry_id = $1 AND day_label = $2
-         ORDER BY assigned_at DESC LIMIT 1`,
-        [entryId, dayLabel]
-      );
-      if (rows.length === 0) {
+      const SELECT = `SELECT draw_id, engine_serial, draw_number, day_label, session_type,
+                assigned_at, overnight_seal, overnight_seal_verified_at,
+                carb_returned_separately, carb_overnight_seal, carb_overnight_seal_verified_at,
+                carb_number`;
+
+      let rows;
+      if (sessionType === 'COLLECT') {
+        // Find the DRAW record that has an overnight seal applied
+        ({ rows } = await pool.query(
+          `${SELECT} FROM entry_engine_draws
+           WHERE entry_id = $1
+             AND (session_type = 'DRAW' OR session_type IS NULL)
+             AND overnight_seal IS NOT NULL
+           ORDER BY assigned_at DESC LIMIT 1`,
+          [entryId]
+        ));
+      } else if (sessionType) {
+        ({ rows } = await pool.query(
+          `${SELECT} FROM entry_engine_draws
+           WHERE entry_id = $1 AND session_type = $2
+           ORDER BY assigned_at DESC LIMIT 1`,
+          [entryId, sessionType]
+        ));
+      } else {
+        // Legacy dayLabel lookup
+        ({ rows } = await pool.query(
+          `${SELECT} FROM entry_engine_draws
+           WHERE entry_id = $1 AND day_label = $2
+           ORDER BY assigned_at DESC LIMIT 1`,
+          [entryId, dayLabel]
+        ));
+      }
+      if (!rows.length) {
         return res.json({ success: false, error: 'No draw record found' });
       }
       res.json({ success: true, record: rows[0] });
@@ -453,7 +549,77 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     }
   });
 
-  // ── Saturday morning: confirm collection by verifying overnight seal ──────
+  // ── Overnight seal: impound engine without returning it ─────────────────
+  router.post('/api/overnightSeal', async (req, res) => {
+    try {
+      const { entryId, sealNumber, scannedBy, eventId } = req.body;
+      if (!entryId || !sealNumber) {
+        return res.json({ success: false, error: 'entryId and sealNumber are required' });
+      }
+      const sealUpper = sealNumber.toUpperCase().trim();
+
+      // Find driver's current open draw record
+      const { rows: drawRows } = await pool.query(
+        `SELECT draw_id, engine_serial, draw_number, day_label
+         FROM entry_engine_draws
+         WHERE entry_id = $1 AND (returned = false OR returned IS NULL)
+         ORDER BY assigned_at DESC LIMIT 1`,
+        [entryId]
+      );
+      if (drawRows.length === 0) {
+        return res.json({ success: false, error: 'No active draw record found for this driver' });
+      }
+      const drawRow = drawRows[0];
+
+      // Stamp overnight_seal on the existing draw record
+      await pool.query(
+        `UPDATE entry_engine_draws SET overnight_seal = $1 WHERE draw_id = $2`,
+        [sealUpper, drawRow.draw_id]
+      );
+
+      // Insert an OVERNIGHT record (engine stays assigned — returned=false)
+      try {
+        await pool.query(
+          `INSERT INTO entry_engine_draws
+             (entry_id, engine_serial, draw_number, day_label, session_type, overnight_seal, returned, assigned_at)
+           VALUES ($1, $2, $3, $4, 'OVERNIGHT', $5, false, NOW())`,
+          [entryId, drawRow.engine_serial, drawRow.draw_number || null, drawRow.day_label || null, sealUpper]
+        );
+      } catch (insErr) {
+        console.warn('⚠️ overnightSeal: entry_engine_draws insert failed (non-fatal):', insErr.message);
+      }
+
+      // Log the scan
+      const entryInfo = await pool.query(
+        `SELECT re.driver_id, re.race_class, re.event_id, d.first_name, d.last_name
+         FROM race_entries re JOIN drivers d ON re.driver_id = d.driver_id
+         WHERE re.entry_id = $1`,
+        [entryId]
+      );
+      const info = entryInfo.rows[0] || {};
+      await logEquipmentScan({
+        scan_type:        'engine_overnight',
+        barcode_scanned:  sealUpper,
+        entry_id:         entryId,
+        driver_id:        info.driver_id || null,
+        driver_name:      info.first_name ? `${info.first_name} ${info.last_name}` : 'Unknown',
+        equipment_serial: drawRow.engine_serial || null,
+        scanned_by:       scannedBy || 'Overnight Station',
+        action_result:    'success',
+        notes:            `Overnight seal ${sealUpper} applied — engine ${drawRow.engine_serial} impounded`,
+        event_id:         eventId || info.event_id || null,
+        race_class:       info.race_class || null
+      });
+
+      console.log(`✅ Overnight seal ${sealUpper} applied to engine ${drawRow.engine_serial} (entry ${entryId})`);
+      res.json({ success: true, engine_serial: drawRow.engine_serial, seal: sealUpper });
+    } catch (err) {
+      console.error('Error in overnightSeal:', err);
+      res.json({ success: false, error: err.message });
+    }
+  });
+
+  // ── Morning release: confirm collection by verifying overnight seal ───────
   router.post('/api/collectEngine', async (req, res) => {
     try {
       const { entryId, engineSerial, sealScanned, scannedBy, eventId } = req.body;
@@ -463,12 +629,12 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       const upper = sealScanned.toUpperCase().trim();
 
-      // Find the matching PRACTICE draw record with an overnight seal that hasn't been verified yet
+      // Find any DRAW record with an overnight seal not yet verified
       const { rows } = await pool.query(
         `SELECT draw_id, overnight_seal, engine_serial, draw_number, entry_id
          FROM entry_engine_draws
          WHERE entry_id = $1
-           AND day_label = 'PRACTICE'
+           AND (session_type = 'DRAW' OR session_type IS NULL)
            AND overnight_seal IS NOT NULL
            AND overnight_seal_verified_at IS NULL
          ORDER BY assigned_at DESC
@@ -477,7 +643,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       );
 
       if (rows.length === 0) {
-        return res.json({ success: false, error: 'No PRACTICE draw with an unverified overnight seal found for this driver' });
+        return res.json({ success: false, error: 'No draw record with an unverified overnight seal found for this driver' });
       }
 
       const drawRow = rows[0];
@@ -491,11 +657,12 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         [drawRow.draw_id]
       );
 
-      // Create a ROUND 3 — COLLECT draw record so the report reflects the engine is booked out
+      // Create a COLLECT draw record so the report reflects the engine is booked out
       try {
         await pool.query(
-          `INSERT INTO entry_engine_draws (entry_id, engine_serial, draw_number, day_label, assigned_at)
-           VALUES ($1, $2, $3, 'ROUND 3 — COLLECT', NOW())`,
+          `INSERT INTO entry_engine_draws
+             (entry_id, engine_serial, draw_number, day_label, session_type, assigned_at)
+           VALUES ($1, $2, $3, 'ROUND 3 — COLLECT', 'COLLECT', NOW())`,
           [entryId, drawRow.engine_serial, drawRow.draw_number || null]
         );
       } catch (insertErr) {
@@ -531,7 +698,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         equipment_serial: drawRow.engine_serial || engineSerial || null,
         scanned_by:       scannedBy || 'Collect Station',
         action_result:    'success',
-        notes:            `Overnight seal ${upper} verified — engine collected for ROUND 3`,
+        notes:            `Overnight seal ${upper} verified — engine collected (MORNING RELEASE)`,
         event_id:         eventId || info.event_id || null,
         race_class:       info.race_class || null
       });

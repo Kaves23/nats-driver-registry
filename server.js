@@ -11803,6 +11803,7 @@ app.get('/share/engine-draw', async (req, res) => {
           eed.draw_number,
           eed.engine_serial,
           COALESCE(eed.day_label, TO_CHAR(eed.assigned_at AT TIME ZONE 'Africa/Johannesburg', 'FMDay DD Mon YYYY')) AS day_label,
+          eed.session_type,
           eed.assigned_at,
           eed.returned,
           eed.returned_at,
@@ -11973,6 +11974,7 @@ app.get('/share/engine-draw', async (req, res) => {
               <td class="mono">${e.engine_serial || '—'}</td>
               <td class="mono">${e.carb_number || '—'}</td>
               <td class="mono">${e.seal_number || '—'}</td>
+              <td style="font-size:11px;color:#475569;font-weight:600;">${e.session_type || '—'}</td>
               <td class="mono" style="font-size:11px;color:#64748b;">${assignedAt}</td>
               <td>${returned ? '<span class="badge-red">Returned</span>' : '<span class="badge-green">Assigned</span>'}</td>
             </tr>`;
@@ -11981,7 +11983,7 @@ app.get('/share/engine-draw', async (req, res) => {
           return `<div class="class-group">
             <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
             <div class="table-scroll"><table>
-              <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Carb #</th><th>Seal #</th><th>Time</th><th>Status</th></tr></thead>
+              <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Carb #</th><th>Seal #</th><th>Mode</th><th>Time</th><th>Status</th></tr></thead>
               <tbody>${rows}</tbody>
             </table></div>
           </div>`;
