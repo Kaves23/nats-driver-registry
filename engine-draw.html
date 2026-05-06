@@ -126,7 +126,7 @@ button{touch-action:manipulation}
 
 /* ── SUCCESS SCREEN ──────────────────────── */
 #s-done{justify-content:center;align-items:center;gap:24px}
-.done-icon{font-size:192px;animation:pop .4s ease}
+.done-icon{width:130px;height:130px;display:block;margin:0 auto;animation:pop .4s ease}
 @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 .done-card{width:100%;max-width:580px;background:var(--card);border:3px solid var(--green);border-radius:20px;padding:32px 28px;display:flex;flex-direction:column;gap:16px;text-align:center;box-shadow:0 0 30px rgba(34,197,94,.2)}
 .done-driver{font-size:68px;font-weight:900}
@@ -188,7 +188,7 @@ button{touch-action:manipulation}
 
 /* ── RETURN DONE ─────────────────────────── */
 #s-return-done{justify-content:center;align-items:center;gap:20px}
-.rdone-icon{font-size:128px;animation:pop .4s ease}
+.rdone-icon{width:100px;height:100px;display:block;margin:0 auto;animation:pop .4s ease}
 .rdone-card{width:100%;max-width:380px;background:var(--card);border:2px solid var(--amber);border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;gap:12px;text-align:center}
 .rdone-sub{font-size:32px;letter-spacing:2px;color:var(--amber)}
 .rdone-driver{font-size:52px;font-weight:900}
@@ -210,7 +210,7 @@ button{touch-action:manipulation}
   .draw-card{min-height:66px;padding:7px 4px}
   .draw-num{font-size:44px}
   .confirm-draw .num{font-size:104px}
-  .done-icon{font-size:104px}
+  .done-icon{width:90px!important;height:90px!important}
   .done-engine{font-size:44px}
 }
 @media(max-width:360px){
@@ -289,6 +289,8 @@ button{touch-action:manipulation}
 .day-btn-single{border-color:var(--dim);color:var(--dim)}
 .day-btn-single:active{background:var(--dim);color:#000}
 .day-picker-hint{font-size:20px;letter-spacing:1px;color:var(--dim);text-align:center;margin-top:4px}
+/* ── ICONS ─────────────────────────────────── */
+.icon{display:inline-block;width:1em;height:1em;vertical-align:-0.15em;overflow:visible;flex-shrink:0}
 
 </style>
 </head>
@@ -307,7 +309,7 @@ button{touch-action:manipulation}
   <div class="pin-brand">
     <div class="sup">POOL ENGINE</div>
     <div class="big">DRAW STATION</div>
-    <div class="sub">🎯 ENGINE DRAW</div>
+    <div class="sub"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none"/><line x1="8" y1="1" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="15"/><line x1="1" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="15" y2="8"/></svg> ENGINE DRAW</div>
   </div>
   <div class="pin-dots" id="pinDots">
     <div class="pin-dot" id="pd0"></div>
@@ -345,8 +347,8 @@ button{touch-action:manipulation}
 <!-- ── SCAN DRIVER SCREEN ─────────────────── -->
 <div id="s-scan" class="screen">
   <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap">
-    <div class="station-badge" id="stationBadge">🎯 DRAW STATION</div>
-    <button onclick="document.getElementById('dayPickerOverlay').classList.add('active')" style="padding:6px 14px;border-radius:8px;border:1px solid var(--dim);background:transparent;color:var(--dim);font-family:inherit;font-size:18px;cursor:pointer;letter-spacing:1px;white-space:nowrap">⟳ CHANGE DAY</button>
+    <div class="station-badge" id="stationBadge"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none"/><line x1="8" y1="1" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="15"/><line x1="1" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="15" y2="8"/></svg> DRAW STATION</div>
+    <button onclick="document.getElementById('dayPickerOverlay').classList.add('active')" style="padding:6px 14px;border-radius:8px;border:1px solid var(--dim);background:transparent;color:var(--dim);font-family:inherit;font-size:18px;cursor:pointer;letter-spacing:1px;white-space:nowrap"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> CHANGE DAY</button>
   </div>
   <div class="scan-form">
     <div class="section-label">SCAN BARCODE OR TYPE RACE / TICKET NUMBER</div>
@@ -397,7 +399,7 @@ button{touch-action:manipulation}
 <!-- ── CAMERA OVERLAY ─────────────────────── -->
 <div class="cam-overlay" id="camOverlay">
   <div class="cam-hint" id="camHintMain">SCANNING…</div>
-  <div class="cam-hint-sub" id="camHintSub">🔲 Looking for QR code</div>
+  <div class="cam-hint-sub" id="camHintSub"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="1" width="5" height="5" rx="0.5"/><rect x="10" y="1" width="5" height="5" rx="0.5"/><rect x="1" y="10" width="5" height="5" rx="0.5"/><rect x="2.5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="11.5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="2.5" y="11.5" width="2" height="2" fill="currentColor" stroke="none"/><line x1="10" y1="10" x2="15" y2="10"/><line x1="10" y1="12.5" x2="15" y2="12.5"/><line x1="10" y1="15" x2="15" y2="15"/></svg> Looking for QR code</div>
   <div id="camVideoWrap">
     <video id="camVideo" autoplay muted playsinline></video>
     <div class="scan-line"></div>
@@ -411,16 +413,16 @@ button{touch-action:manipulation}
 <div class="day-picker-overlay" id="dayPickerOverlay">
   <div class="day-picker-title">SELECT RACE DAY</div>
   <div class="day-picker-event" id="dayPickerEventName">— EVENT —</div>
-  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE DAY')">🔧 PRACTICE DAY</button>
-  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 1')">🏁 ROUND 1</button>
-  <button class="day-btn day-btn-r2" onclick="selectDay('ROUND 2')">🏆 ROUND 2</button>
-  <button class="day-btn day-btn-single" onclick="selectDay('RACE DAY')" style="margin-top:6px">📅 SINGLE DAY EVENT</button>
+  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE DAY')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> PRACTICE DAY</button>
+  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 1')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="1" x2="3" y2="15"/><path d="M3 1h10l-3 5 3 4H3z"/><rect x="5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="9" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="7" y="4.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> ROUND 1</button>
+  <button class="day-btn day-btn-r2" onclick="selectDay('ROUND 2')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h8v5a4 4 0 0 1-8 0z"/><path d="M2 2a2 2 0 0 0 2 4"/><path d="M14 2a2 2 0 0 1-2 4"/><line x1="8" y1="11" x2="8" y2="13"/><line x1="5.5" y1="13" x2="10.5" y2="13"/><line x1="4" y1="15" x2="12" y2="15"/></svg> ROUND 2</button>
+  <button class="day-btn day-btn-single" onclick="selectDay('RACE DAY')" style="margin-top:6px"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3" width="13" height="11.5" rx="1.5"/><line x1="1.5" y1="7" x2="14.5" y2="7"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><circle cx="5" cy="10" r="0.8" fill="currentColor" stroke="none"/><circle cx="8" cy="10" r="0.8" fill="currentColor" stroke="none"/><circle cx="11" cy="10" r="0.8" fill="currentColor" stroke="none"/></svg> SINGLE DAY EVENT</button>
   <div style="height:1px;background:rgba(255,255,255,0.1);margin:10px 0"></div>
   <div style="font-size:18px;letter-spacing:2px;color:var(--dim);text-align:center;margin-bottom:4px">── 3-DAY NATS ──</div>
-  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE')">🔧 PRACTICE</button>
-  <button class="day-btn" style="background:linear-gradient(135deg,#b7791f,#d69e2e)" onclick="selectDay('ROUND 3 — COLLECT')">🌅 ROUND 3 — COLLECT</button>
-  <button class="day-btn" style="background:linear-gradient(135deg,#c05621,#dd6b20)" onclick="selectDay('ROUND 3 — RETURN')">↩ ROUND 3 — RETURN</button>
-  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 4')">🏁 ROUND 4</button>
+  <button class="day-btn day-btn-practice" onclick="selectDay('PRACTICE')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> PRACTICE</button>
+  <button class="day-btn" style="background:linear-gradient(135deg,#b7791f,#d69e2e)" onclick="selectDay('ROUND 3 — COLLECT')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10a3 3 0 0 1 6 0"/><line x1="1.5" y1="12" x2="14.5" y2="12"/><line x1="8" y1="2" x2="8" y2="4"/><line x1="12.2" y1="3.8" x2="11" y2="5"/><line x1="3.8" y1="3.8" x2="5" y2="5"/><line x1="14" y1="8" x2="12" y2="8"/><line x1="2" y1="8" x2="4" y2="8"/></svg> ROUND 3 — COLLECT</button>
+  <button class="day-btn" style="background:linear-gradient(135deg,#c05621,#dd6b20)" onclick="selectDay('ROUND 3 — RETURN')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10h6a3 3 0 0 0 0-6H5"/><polyline points="7.5 7 5 10 7.5 13"/></svg> ROUND 3 — RETURN</button>
+  <button class="day-btn day-btn-r1" onclick="selectDay('ROUND 4')"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="1" x2="3" y2="15"/><path d="M3 1h10l-3 5 3 4H3z"/><rect x="5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="9" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="7" y="4.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> ROUND 4</button>
   <div class="day-picker-hint">Tap a day to continue</div>
 </div>
 
@@ -437,7 +439,7 @@ button{touch-action:manipulation}
   </div>
   <div class="draw-header">
     <div class="draw-title" id="drawClassLabel">SELECT DRAW NUMBER</div>
-    <button class="return-btn" id="returnBtn" onclick="showReturnScreen()">↩ RETURN ENGINE</button>
+    <button class="return-btn" id="returnBtn" onclick="showReturnScreen()"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10h6a3 3 0 0 0 0-6H5"/><polyline points="7.5 7 5 10 7.5 13"/></svg> RETURN ENGINE</button>
   </div>
   <div class="draw-scroll">
     <div class="draw-grid" id="drawGrid"></div>
@@ -523,13 +525,13 @@ button{touch-action:manipulation}
   <div id="cfErr" class="err-msg"></div>
   <div class="confirm-btns">
     <button class="cancel-btn" onclick="showScreen('s-seal')">← BACK</button>
-    <button class="confirm-btn" id="cfConfirmBtn" onclick="confirmDraw()">✅ CONFIRM DRAW</button>
+    <button class="confirm-btn" id="cfConfirmBtn" onclick="confirmDraw()"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><polyline points="5 8.5 7 11 11 5.5"/></svg> CONFIRM DRAW</button>
   </div>
 </div>
 
 <!-- ── DONE SCREEN ────────────────────────── -->
 <div id="s-done" class="screen">
-  <div class="done-icon">🏆</div>
+  <div class="done-icon" style="color:var(--amber)"><svg viewBox="0 0 16 16" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h8v5a4 4 0 0 1-8 0z"/><path d="M2 2a2 2 0 0 0 2 4"/><path d="M14 2a2 2 0 0 1-2 4"/><line x1="8" y1="11" x2="8" y2="13"/><line x1="5.5" y1="13" x2="10.5" y2="13"/><line x1="4" y1="15" x2="12" y2="15"/></svg></div>
   <div class="done-card">
     <div class="done-sub">ENGINE DRAWN</div>
     <div class="done-driver" id="doneDriver">—</div>
@@ -565,12 +567,12 @@ button{touch-action:manipulation}
   </div>
 
   <div id="retErr" class="err-msg" style="flex-shrink:0"></div>
-  <button id="retConfirmBtn" onclick="confirmReturn()">♻️ CONFIRM RETURN</button>
+  <button id="retConfirmBtn" onclick="confirmReturn()"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5a5.5 5.5 0 0 1 9.2-4"/><path d="M13.5 7.5a5.5 5.5 0 0 1-9.2 4"/><polyline points="11.7 2 11.7 5.5 8.2 5.5"/><polyline points="4.3 14 4.3 10.5 7.8 10.5"/></svg> CONFIRM RETURN</button>
 </div>
 
 <!-- ── RETURN DONE SCREEN ────────────────────── -->
 <div id="s-return-done" class="screen">
-  <div class="rdone-icon">♻️</div>
+  <div class="rdone-icon" style="color:var(--amber)"><svg viewBox="0 0 16 16" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5a5.5 5.5 0 0 1 9.2-4"/><path d="M13.5 7.5a5.5 5.5 0 0 1-9.2 4"/><polyline points="11.7 2 11.7 5.5 8.2 5.5"/><polyline points="4.3 14 4.3 10.5 7.8 10.5"/></svg></div>
   <div class="rdone-card">
     <div class="rdone-sub">ENGINE RETURNED</div>
     <div class="rdone-driver" id="rdoneDriver">—</div>
@@ -615,7 +617,7 @@ button{touch-action:manipulation}
 
 <!-- ── COLLECT DONE SCREEN ────────────────────────── -->
 <div id="s-collect-done" class="screen">
-  <div class="done-icon">&#x2705;</div>
+  <div class="done-icon" style="color:var(--green)"><svg viewBox="0 0 16 16" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><polyline points="5 8.5 7 11 11 5.5"/></svg></div>
   <div class="done-card">
     <div class="done-sub">ENGINE COLLECTED</div>
     <div class="done-driver" id="colDoneDriver">—</div>
@@ -661,6 +663,21 @@ button{touch-action:manipulation}
 </div>
 
 <script>
+// ─────────────────────────────────────────────────
+// SVG ICON STRINGS (used in innerHTML assignments)
+// ─────────────────────────────────────────────────
+const ICON = {
+  check:   `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="2.5 8 6.5 12 13.5 4"/></svg>`,
+  x:       `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>`,
+  warn:    `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2L14.5 13H1.5z"/><line x1="8" y1="6" x2="8" y2="9.5"/><circle cx="8" cy="12" r="0.6" fill="currentColor" stroke="none"/></svg>`,
+  lock:    `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="10" height="7" rx="1.5"/><path d="M5 8V6a3 3 0 0 1 6 0v2"/></svg>`,
+  cog:     `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>`,
+  wind:    `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h9a2 2 0 0 0 0-4 2 2 0 0 0-2 2"/><path d="M1 10h11a2 2 0 0 1 0 4 2 2 0 0 1-2-2"/></svg>`,
+  exhaust: `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="12" height="2.5" rx="1"/><path d="M4 4.5v3h8v-3"/><line x1="6" y1="7.5" x2="6" y2="11"/><line x1="10" y1="7.5" x2="10" y2="11"/><rect x="4" y="11" width="8" height="2.5" rx="1"/></svg>`,
+  camera:  `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 5a1.5 1.5 0 0 1 1.5-1.5H5l1.5-2h3L11 3.5h2.5A1.5 1.5 0 0 1 15 5v7.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5z"/><circle cx="8" cy="8.5" r="2.5"/></svg>`,
+  recycle: `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 6a6.5 6.5 0 0 1 11.2-2.7"/><path d="M14.5 10a6.5 6.5 0 0 1-11.2 2.7"/><polyline points="10.5 1 13 3.3 10.5 5.6"/><polyline points="5.5 15 3 12.7 5.5 10.4"/></svg>`,
+};
+
 // ─────────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────────
@@ -851,7 +868,7 @@ async function loadEventSelect() {
       const opt = document.createElement('option');
       opt.value = ev.event_id;
       opt.textContent = (ev.event_name || ev.event_id) + (dateLabel ? ' (' + dateLabel + ')' : '');
-      if (isToday) { opt.textContent = '🏁 ' + opt.textContent; autoSelect = opt; }
+      if (isToday) { opt.textContent = '▶ ' + opt.textContent; autoSelect = opt; }
       sel.appendChild(opt);
     });
     if (autoSelect) autoSelect.selected = true;
@@ -866,7 +883,7 @@ async function loadEventSelect() {
 function onEventChange() {
   const sel = document.getElementById('eventSelect');
   const val = sel.value;
-  const text = val ? sel.options[sel.selectedIndex].textContent.replace(/^🏁 /, '') : null;
+  const text = val ? sel.options[sel.selectedIndex].textContent.replace(/^▶ /, '') : null;
   currentEvent = val ? { event_id: val, event_name: text, day_label: null } : null;
   if (val) {
     document.getElementById('dayPickerEventName').textContent = text;
@@ -888,7 +905,7 @@ function selectDay(label) {
 function updateStationBadge() {
   const name = currentScanner?.name || 'DRAW STATION';
   const day = currentEvent?.day_label ? ' · ' + currentEvent.day_label : '';
-  document.getElementById('stationBadge').textContent = `🎯 ${name}${day}`;
+  document.getElementById('stationBadge').innerHTML = `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none"/><line x1="8" y1="1" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="15"/><line x1="1" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="15" y2="8"/></svg> ${name}${day}`;
 }
 
 // ─────────────────────────────────────────────────
@@ -1232,7 +1249,7 @@ function verifySealOrSerial(input) {
 
   if (!match) {
     errEl.style.color = 'var(--red)';
-    errEl.textContent = `❌ Not found: ${input} — try again`;
+    errEl.textContent = `NOT FOUND: ${input} — try again`;
     if (valEl) valEl.style.color = 'var(--red)';
     if (sealBtn) { sealBtn.style.borderColor = 'var(--red)'; sealBtn.style.color = 'var(--red)'; }
     return;
@@ -1240,7 +1257,7 @@ function verifySealOrSerial(input) {
 
   if (match.engine_id === selectedEngine.engine_id) {
     errEl.style.color = 'var(--green)';
-    errEl.textContent = '✅ Engine verified!';
+    errEl.textContent = 'ENGINE VERIFIED';
     if (valEl) valEl.style.color = 'var(--green)';
     if (resEl) resEl.style.borderColor = 'var(--green)';
     if (sealBtn) { sealBtn.style.borderColor = 'var(--green)'; sealBtn.style.color = 'var(--green)'; }
@@ -1248,7 +1265,7 @@ function verifySealOrSerial(input) {
   } else {
     // Scanned the wrong physical engine
     errEl.style.color = 'var(--amber)';
-    errEl.textContent = `⚠️ That's Draw #${match.draw_number} (${match.class}) — wrong engine!`;
+    errEl.textContent = `WRONG ENGINE — Draw #${match.draw_number} (${match.class})!`;
     if (valEl) valEl.style.color = 'var(--amber)';
     if (sealBtn) { sealBtn.style.borderColor = 'var(--amber)'; sealBtn.style.color = 'var(--amber)'; }
   }
@@ -1289,7 +1306,7 @@ function showEntryPicker(entries) {
       <div class="pe-class" style="color:${bg}">${e.race_class || '(No class)'}</div>
       <div class="pe-event" style="color:#e2e8f0;font-size:34px;font-weight:700;margin-top:4px">${e.first_name} ${e.last_name}</div>
       <div class="pe-event">${e.event_name || e.event_id || 'Event'}</div>
-      ${e.engine_serial ? `<div class="pe-engine">⚠️ Already drawn: ${e.engine_serial}</div>` : ''}
+      ${e.engine_serial ? `<div class="pe-engine">! Already drawn: ${e.engine_serial}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1380,7 +1397,7 @@ function openDraw() {
 
   const engEl = document.getElementById('drawDriverEngine');
   if (d.engine_serial) {
-    engEl.textContent = '⚠️ Already drawn: ' + d.engine_serial;
+    engEl.textContent = '! Already drawn: ' + d.engine_serial;
     engEl.style.display = 'block';
   } else {
     engEl.style.display = 'none';
@@ -1491,11 +1508,12 @@ function showConfirm() {
   if (currentSessionMode === 'draw-with-carb' && _carbVerifyRecord?.carb_overnight_seal) {
     cfCarbRow.style.display = 'flex';
     document.getElementById('cfCarb').textContent =
-      `${carbForDisplay}  ·  SEAL ✅ ${_carbVerifyRecord.carb_overnight_seal}`;
+      `${carbForDisplay}  ·  SEAL: ${_carbVerifyRecord.carb_overnight_seal}`;
   }
 
   document.getElementById('cfErr').textContent = '';
   document.getElementById('cfConfirmBtn').disabled = false;
+  document.getElementById('cfConfirmBtn').innerHTML = ICON.check + ' CONFIRM DRAW';
   showScreen('s-confirm');
 }
 
@@ -1505,7 +1523,7 @@ async function confirmDraw() {
 
   if (!e.engine_serial) {
     document.getElementById('cfErr').textContent =
-      '⚠️ Engine Draw #' + e.draw_number + ' has no serial number configured — an admin must add the serial in Engine Management before it can be drawn.';
+      'Engine Draw #' + e.draw_number + ' has no serial number — an admin must add it in Engine Management before it can be drawn.';
     return;
   }
 
@@ -1542,12 +1560,12 @@ async function confirmDraw() {
     } else {
       document.getElementById('cfErr').textContent = resp.error || 'Assignment failed';
       document.getElementById('cfConfirmBtn').disabled = false;
-      document.getElementById('cfConfirmBtn').textContent = '✅ CONFIRM DRAW';
+      document.getElementById('cfConfirmBtn').innerHTML = ICON.check + ' CONFIRM DRAW';
     }
   } catch(err) {
     document.getElementById('cfErr').textContent = 'Server error — try again';
     document.getElementById('cfConfirmBtn').disabled = false;
-    document.getElementById('cfConfirmBtn').textContent = '✅ CONFIRM DRAW';
+    document.getElementById('cfConfirmBtn').innerHTML = ICON.check + ' CONFIRM DRAW';
   }
 }
 
@@ -1586,7 +1604,7 @@ function nextDriver() {
   document.getElementById('warnBanner').classList.remove('show');
   document.getElementById('doneWarn').textContent = '';
   document.getElementById('doneWarn').classList.remove('show');
-  document.getElementById('cfConfirmBtn').textContent = '✅ CONFIRM DRAW';
+  document.getElementById('cfConfirmBtn').innerHTML = ICON.check + ' CONFIRM DRAW';
   showScreen('s-scan');
 }
 
@@ -1611,10 +1629,10 @@ let _overnightSealVal  = ''; // filled on PRACTICE return — Friday night
 let _carbOvernightSeal = ''; // filled on ROUND 3 RETURN — Saturday night
 
 const PERI_DEFS = [
-  { key: 'seal_number',    label: 'SEAL #',    icon: '🔒' },
-  { key: 'carb_number',    label: 'CARB #',    icon: '⚙️' },
-  { key: 'airbox_number',  label: 'AIRBOX #',  icon: '💨' },
-  { key: 'exhaust_number', label: 'EXHAUST #', icon: '🔩' },
+  { key: 'seal_number',    label: 'SEAL #',    icon: () => ICON.lock },
+  { key: 'carb_number',    label: 'CARB #',    icon: () => ICON.cog },
+  { key: 'airbox_number',  label: 'AIRBOX #',  icon: () => ICON.wind },
+  { key: 'exhaust_number', label: 'EXHAUST #', icon: () => ICON.exhaust },
 ];
 
 function showReturnScreen() {
@@ -1640,7 +1658,7 @@ function showReturnScreen() {
   document.getElementById('retEngineClass').textContent  = (_returnEngine.class || d.race_class || '').toUpperCase();
   document.getElementById('retErr').textContent = '';
   document.getElementById('retConfirmBtn').disabled = false;
-  document.getElementById('retConfirmBtn').textContent = '♻️ CONFIRM RETURN';
+  document.getElementById('retConfirmBtn').innerHTML = ICON.recycle + ' CONFIRM RETURN';
 
   renderRetBody();
   showScreen('s-return');
@@ -1659,16 +1677,16 @@ function renderRetBody() {
       const rowCls  = st === 'ok' ? 'peri-row peri-ok' : st === 'fail' ? 'peri-row peri-fail' : 'peri-row';
       const tickCls = st === 'ok' ? 'peri-tick-btn ok' : 'peri-tick-btn';
       const scanCls = st === 'ok' ? 'peri-scan-btn ok' : st === 'fail' ? 'peri-scan-btn fail' : 'peri-scan-btn';
-      const icon    = st === 'ok' ? '✅' : st === 'fail' ? '❌' : '○';
+      const icon    = st === 'ok' ? ICON.check : st === 'fail' ? ICON.x : '<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6"/></svg>';
       return `<div class="${rowCls}" id="peri-row-${p.key}">
         <div class="peri-status">${icon}</div>
         <div class="peri-info">
-          <div class="peri-label">${p.icon} ${p.label}</div>
+          <div class="peri-label">${p.icon()} ${p.label}</div>
           <div class="peri-val">${e[p.key]}</div>
         </div>
         <div class="peri-actions">
-          <button class="${tickCls}" onclick="tickPeri('${p.key}')">✓ TICK</button>
-          <button class="${scanCls}" onclick="scanPeri('${p.key}')" title="Scan barcode">📷</button>
+          <button class="${tickCls}" onclick="tickPeri('${p.key}')">TICK</button>
+          <button class="${scanCls}" onclick="scanPeri('${p.key}')" title="Scan barcode">${ICON.camera}</button>
         </div>
       </div>`;
     }).join('');
@@ -1680,17 +1698,17 @@ function renderRetBody() {
   // PRACTICE return — apply overnight seal before signature
   if (currentEvent?.day_label === 'PRACTICE') {
     const sealSet = !!_overnightSealVal;
-    html += `<div class="ret-section" style="color:var(--amber)">🔒 OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
+    html += `<div class="ret-section" style="color:var(--amber)">${ICON.lock} OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
     <div style="display:flex;gap:8px;align-items:center">
       <input id="retOvernightSeal" type="text" class="big-input" placeholder="scan or enter seal barcode" autocapitalize="characters" autocomplete="off" style="font-size:36px;flex:1;${sealSet ? 'border-color:var(--green);color:var(--green)' : ''}" oninput="onOvernightSealInput(this.value)">
     </div>
-    ${sealSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px">✅ SEAL APPLIED: ${_overnightSealVal}</div>` : ''}`;
+    ${sealSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px">${ICON.check} SEAL APPLIED: ${_overnightSealVal}</div>` : ''}`;    
   }
 
   // ROUND 3 RETURN — carb returned separately + carb overnight seal
   if (currentEvent?.day_label === 'ROUND 3 — RETURN') {
     const carbSet = !!_carbOvernightSeal;
-    html += `<div class="ret-section" style="color:var(--amber)">⚙️ CARB RETURN &amp; OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
+    html += `<div class="ret-section" style="color:var(--amber)">${ICON.cog} CARB RETURN &amp; OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
       <input type="checkbox" id="retCarbReturned" style="width:28px;height:28px;cursor:pointer" onchange="renderRetBody();setTimeout(initSigCanvas,50)">
       <label for="retCarbReturned" style="font-size:26px;cursor:pointer">CARB RETURNED SEPARATELY</label>
@@ -1698,7 +1716,7 @@ function renderRetBody() {
     <div id="retCarbSealWrap" style="${e.carb_number ? '' : 'opacity:0.5'}">
       <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-bottom:4px">CARB # ${e.carb_number || '—'}</div>
       <input id="retCarbOvernightSeal" type="text" class="big-input" placeholder="scan or enter carb seal barcode" autocapitalize="characters" autocomplete="off" style="font-size:36px;width:100%;box-sizing:border-box;${carbSet ? 'border-color:var(--green);color:var(--green)' : ''}" oninput="onCarbSealInput(this.value)">
-      ${carbSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px;margin-top:4px">✅ CARB SEAL: ${_carbOvernightSeal}</div>` : ''}
+      ${carbSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px;margin-top:4px">${ICON.check} CARB SEAL: ${_carbOvernightSeal}</div>` : ''}
     </div>`
   }
 
@@ -1803,7 +1821,7 @@ async function confirmReturn() {
   const dayLabel = currentEvent?.day_label || '';
   const liveOvernightSeal = (document.getElementById('retOvernightSeal')?.value || '').trim().toUpperCase() || _overnightSealVal;
   if (dayLabel === 'PRACTICE' && !liveOvernightSeal) {
-    document.getElementById('retErr').textContent = '🔒 Apply overnight seal before confirming';
+    document.getElementById('retErr').textContent = 'Apply overnight seal before confirming';
     document.getElementById('retOvernightSeal')?.focus();
     return;
   }
@@ -1813,11 +1831,11 @@ async function confirmReturn() {
   const carbReturnedChecked = document.getElementById('retCarbReturned')?.checked;
   if (dayLabel === 'ROUND 3 — RETURN') {
     if (!carbReturnedChecked) {
-      document.getElementById('retErr').textContent = '⚙️ Confirm carb has been returned separately';
+      document.getElementById('retErr').textContent = 'Confirm carb has been returned separately';
       return;
     }
     if (!liveCarbSeal) {
-      document.getElementById('retErr').textContent = '🔒 Apply carb overnight seal before confirming';
+      document.getElementById('retErr').textContent = 'Apply carb overnight seal before confirming';
       document.getElementById('retCarbOvernightSeal')?.focus();
       return;
     }
@@ -1864,12 +1882,12 @@ async function confirmReturn() {
     } else {
       document.getElementById('retErr').textContent = resp.error || 'Return failed — try again';
       btn.disabled = false;
-      btn.textContent = '♻️ CONFIRM RETURN';
+      btn.innerHTML = ICON.recycle + ' CONFIRM RETURN';
     }
   } catch(err) {
     document.getElementById('retErr').textContent = 'Server error — try again';
     btn.disabled = false;
-    btn.textContent = '♻️ CONFIRM RETURN';
+    btn.innerHTML = ICON.recycle + ' CONFIRM RETURN';
   }
 }
 
@@ -1911,7 +1929,7 @@ async function openCollectScreen() {
       document.getElementById('colEngineSerial').textContent = data.record.engine_serial || '—';
       document.getElementById('colOvernightSeal').textContent = data.record.overnight_seal || '(no seal on record)';
       if (!data.record.overnight_seal) {
-        document.getElementById('colErr').textContent = '⚠️ No overnight seal recorded for this driver — contact admin';
+        document.getElementById('colErr').textContent = 'No overnight seal recorded for this driver — contact admin';
       }
     } else {
       document.getElementById('colEngineSerial').textContent = d.engine_serial || '—';
@@ -1934,12 +1952,12 @@ async function submitCollectSeal() {
     errEl.style.color = 'var(--red)'; errEl.textContent = 'Draw record not loaded — cannot verify'; return;
   }
   if (!_collectRecord.overnight_seal) {
-    errEl.style.color = 'var(--amber)'; errEl.textContent = '⚠️ No overnight seal on record — cannot verify. Contact admin.'; return;
+    errEl.style.color = 'var(--amber)'; errEl.textContent = 'No overnight seal on record — cannot verify. Contact admin.'; return;
   }
   if (val !== _collectRecord.overnight_seal.toUpperCase().trim()) {
     _snd('err');
     errEl.style.color = 'var(--red)';
-    errEl.textContent = `❌ Seal mismatch — expected ${_collectRecord.overnight_seal}`;
+    errEl.textContent = `SEAL MISMATCH — expected ${_collectRecord.overnight_seal}`;
     return;
   }
 
@@ -1963,7 +1981,7 @@ async function submitCollectSeal() {
       document.getElementById('colDoneDriver').textContent = `#${d.race_number} ${d.first_name} ${d.last_name}`;
       document.getElementById('colDoneClass').textContent  = d.race_class || '';
       document.getElementById('colDoneSerial').textContent = _collectRecord.engine_serial || '—';
-      document.getElementById('colDoneSeal').textContent   = `✅ SEAL ${val} VERIFIED`;
+      document.getElementById('colDoneSeal').textContent   = `SEAL ${val} VERIFIED`;
       showScreen('s-collect-done');
     } else {
       _snd('err');
@@ -2004,7 +2022,7 @@ async function openCarbVerify() {
       document.getElementById('cvCarbNumber').textContent = carbNum;
       document.getElementById('cvCarbSeal').textContent   = data.record.carb_overnight_seal || '(no seal recorded)';
       if (!data.record.carb_overnight_seal) {
-        document.getElementById('cvErr').textContent = '⚠️ No carb overnight seal on record — contact admin';
+        document.getElementById('cvErr').textContent = 'No carb overnight seal on record — contact admin';
       }
     } else {
       document.getElementById('cvCarbNumber').textContent = e.carb_number || '—';
@@ -2028,20 +2046,20 @@ function submitCarbVerify() {
   }
   if (!_carbVerifyRecord.carb_overnight_seal) {
     errEl.style.color = 'var(--amber)';
-    errEl.textContent = '⚠️ No carb seal on record — contact admin. Cannot proceed without verification.';
+    errEl.textContent = 'No carb seal on record — contact admin. Cannot proceed without verification.';
     return;
   }
   if (val !== _carbVerifyRecord.carb_overnight_seal.toUpperCase().trim()) {
     _snd('err');
     errEl.style.color = 'var(--red)';
-    errEl.textContent = `❌ Seal mismatch — expected ${_carbVerifyRecord.carb_overnight_seal}`;
+    errEl.textContent = `SEAL MISMATCH — expected ${_carbVerifyRecord.carb_overnight_seal}`;
     return;
   }
 
   _snd('ok');
   _carbSealVerified = true;
   errEl.style.color = 'var(--green)';
-  errEl.textContent = '✅ Carb seal verified!';
+  errEl.textContent = 'CARB SEAL VERIFIED';
   setTimeout(() => {
     // Proceed to seal verify screen (step 2 of draw) then to confirm
     showSealScreen();
