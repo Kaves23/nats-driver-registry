@@ -11672,6 +11672,9 @@ function shareBoardCSS(accentBg = '#0f172a') {
     .mono{font-family:'Courier New',monospace;font-size:12px;letter-spacing:0.03em;}
     .badge-green{display:inline-block;background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
     .badge-red{display:inline-block;background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+    .badge-amber{display:inline-block;background:#fef3c7;color:#b45309;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+    tr.parc-ferme{background:#fffbeb;}
+    tr.parc-ferme td{color:#92400e;}
     .time-badge{display:inline-block;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}
     .empty{color:#cbd5e1;}
     .page-footer{text-align:center;padding:20px 16px;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;margin-top:8px;}
@@ -11718,30 +11721,50 @@ app.get('/share/engine-draw', async (req, res) => {
         SELECT pe.draw_number, pe.engine_serial, pe.seal_number,
                pe.carb_number, pe.airbox_number, pe.exhaust_number,
                pe.class, pe.notes, pe.active,
-               d.first_name || ' ' || d.last_name AS assigned_driver_name,
-               d.race_number                        AS assigned_race_number
+               -- Currently active assignment (not returned)
+               d_active.first_name || ' ' || d_active.last_name AS active_driver_name,
+               d_active.race_number                              AS active_race_number,
+               -- Parc fermé: latest overnight-sealed return for this engine
+               pf.overnight_seal                                 AS pf_overnight_seal,
+               pf.draw_number                                    AS pf_draw_number,
+               d_pf.first_name || ' ' || d_pf.last_name         AS pf_driver_name,
+               d_pf.race_number                                  AS pf_race_number
         FROM pool_engines pe
-        LEFT JOIN race_entries re
-               ON UPPER(re.engine_serial) = UPPER(pe.engine_serial)
-              AND re.engine_returned IS NOT TRUE
-              AND re.engine_serial IS NOT NULL
+        -- Active (engine not yet returned)
+        LEFT JOIN race_entries re_active
+               ON UPPER(re_active.engine_serial) = UPPER(pe.engine_serial)
+              AND re_active.engine_returned IS NOT TRUE
               AND pe.engine_serial IS NOT NULL
               AND pe.engine_serial <> ''
-        LEFT JOIN drivers d ON re.driver_id = d.driver_id
+        LEFT JOIN drivers d_active ON re_active.driver_id = d_active.driver_id
+        -- Parc fermé: most recent entry_engine_draws record with overnight seal
+        LEFT JOIN LATERAL (
+          SELECT eed2.overnight_seal, eed2.draw_number, re2.driver_id
+          FROM entry_engine_draws eed2
+          JOIN race_entries re2 ON eed2.entry_id = re2.entry_id
+          WHERE UPPER(eed2.engine_serial) = UPPER(pe.engine_serial)
+            AND eed2.returned = true
+            AND eed2.overnight_seal IS NOT NULL
+          ORDER BY eed2.returned_at DESC NULLS LAST
+          LIMIT 1
+        ) pf ON true
+        LEFT JOIN drivers d_pf ON pf.driver_id = d_pf.driver_id
         WHERE pe.deleted_at IS NULL AND pe.active = true
         ORDER BY pe.class,
           NULLIF(regexp_replace(pe.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
           pe.draw_number
       `);
       engines = result.rows.map(e => ({
-        draw_number:          e.draw_number,
+        draw_number:          e.pf_draw_number || e.draw_number,
         engine_serial:        e.engine_serial,
         seal_number:          e.seal_number,
         carb_number:          e.carb_number,
         class:                e.class,
-        assigned_driver_name: e.assigned_driver_name,
-        assigned_race_number: e.assigned_race_number,
-        returned:             false
+        assigned_driver_name: e.active_driver_name || e.pf_driver_name || null,
+        assigned_race_number: e.active_race_number || e.pf_race_number || null,
+        returned:             false,
+        parc_ferme:           !!e.pf_overnight_seal,
+        overnight_seal:       e.pf_overnight_seal || null
       }));
     } else {
       // ── Historical: draws from entry_engine_draws for this event ────────
@@ -11935,21 +11958,37 @@ app.get('/share/engine-draw', async (req, res) => {
         const { bg, text } = shareClassColor(cls);
         const clsEngines = engines.filter(e => (e.class || 'Unclassified') === cls);
         const rows = clsEngines.map(e => {
-          return `<tr class="${e.assigned_driver_name ? 'assigned' : 'unassigned'}">
+          let statusCell;
+          if (e.parc_ferme) {
+            statusCell = `<span class="badge-amber">&#128274; PARC FERM&#201;</span>`;
+          } else if (e.assigned_driver_name) {
+            statusCell = `<span class="badge-green">Assigned</span>`;
+          } else {
+            statusCell = `<span class="badge-red">Available</span>`;
+          }
+          const overnightSealCell = e.overnight_seal
+            ? `<td class="mono" style="font-weight:800;color:#d97706;background:#fffbeb;">${e.overnight_seal}</td>`
+            : `<td class="mono" style="color:#94a3b8;">—</td>`;
+          return `<tr class="${e.parc_ferme ? 'parc-ferme' : (e.assigned_driver_name ? 'assigned' : 'unassigned')}">
             <td><span class="draw-num" style="background:${bg};color:${text};">${e.draw_number || '—'}</span></td>
             <td>${e.assigned_driver_name ? `<span class="driver-name">${e.assigned_driver_name}</span>` : '<span class="empty">—</span>'}</td>
             <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
             <td class="mono">${e.engine_serial || '—'}</td>
             <td class="mono">${e.carb_number || '—'}</td>
             <td class="mono">${e.seal_number || '—'}</td>
-            <td>${e.assigned_driver_name ? '<span class="badge-green">Assigned</span>' : '<span class="badge-red">Available</span>'}</td>
+            ${overnightSealCell}
+            <td>${statusCell}</td>
           </tr>`;
         }).join('');
-        const assignedInClass = clsEngines.filter(e => e.assigned_driver_name).length;
+        const assignedInClass = clsEngines.filter(e => e.assigned_driver_name && !e.parc_ferme).length;
+        const parcFermeCount  = clsEngines.filter(e => e.parc_ferme).length;
+        const statsLabel = parcFermeCount > 0
+          ? `${assignedInClass} assigned · ${parcFermeCount} &#128274; parc ferm&#233;`
+          : `${assignedInClass}/${clsEngines.length} assigned`;
         return `<div class="class-group">
-          <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
+          <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${statsLabel}</span></div>
           <div class="table-scroll"><table>
-            <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Carb #</th><th>Seal #</th><th>Status</th></tr></thead>
+            <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Carb #</th><th>Seal #</th><th style="background:#fffbeb;color:#92400e;">&#128274; Night Seal</th><th>Status</th></tr></thead>
             <tbody>${rows}</tbody>
           </table></div>
         </div>`;
