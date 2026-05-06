@@ -11687,7 +11687,10 @@ function shareBoardCSS(accentBg = '#0f172a') {
 app.get('/share/engine-draw', async (req, res) => {
   try {
     const selectedEventId = req.query.event_id || 'live';
+    const selectedDayLabel = req.query.day_label || '';   // '' = all days
+    const reportType = req.query.report_type || 'draw';   // 'draw' or 'possession'
     const isLive = selectedEventId === 'live';
+    const isPossession = reportType === 'possession';
 
     // Always fetch event list for the selector
     const eventsRes = await pool.query(
@@ -11707,6 +11710,7 @@ app.get('/share/engine-draw', async (req, res) => {
     let pageTitle = 'Engine Draw Board — Live';
     let eventLabel = 'Live Pool';
     let isHistorical = false;
+    let availableDays = [];
 
     if (isLive) {
       // ── Live: current pool with current assignments ─────────────────────
@@ -11733,6 +11737,7 @@ app.get('/share/engine-draw', async (req, res) => {
         draw_number:          e.draw_number,
         engine_serial:        e.engine_serial,
         seal_number:          e.seal_number,
+        carb_number:          e.carb_number,
         class:                e.class,
         assigned_driver_name: e.assigned_driver_name,
         assigned_race_number: e.assigned_race_number,
@@ -11747,6 +11752,29 @@ app.get('/share/engine-draw', async (req, res) => {
         pageTitle  = `Engine Draw Board — ${evt.event_name}`;
       }
 
+      // Fetch distinct day labels for this event (for the day dropdown)
+      const daysRes = await pool.query(`
+        SELECT DISTINCT COALESCE(eed.day_label, TO_CHAR(eed.assigned_at AT TIME ZONE 'Africa/Johannesburg', 'FMDay DD Mon YYYY')) AS day_label,
+               MIN(eed.assigned_at) AS first_at
+        FROM entry_engine_draws eed
+        JOIN race_entries re ON eed.entry_id = re.entry_id
+        WHERE re.event_id = $1
+        GROUP BY 1
+        ORDER BY MIN(eed.assigned_at)
+      `, [selectedEventId]);
+      availableDays = daysRes.rows.map(r => r.day_label);
+
+      // Build query conditions
+      const params = [selectedEventId];
+      let extraWhere = '';
+      if (selectedDayLabel) {
+        params.push(selectedDayLabel);
+        extraWhere += ` AND COALESCE(eed.day_label, TO_CHAR(eed.assigned_at AT TIME ZONE 'Africa/Johannesburg', 'FMDay DD Mon YYYY')) = $${params.length}`;
+      }
+      if (isPossession) {
+        extraWhere += ` AND eed.returned = true AND eed.overnight_seal IS NOT NULL`;
+      }
+
       const result = await pool.query(`
         SELECT
           eed.draw_number,
@@ -11755,22 +11783,25 @@ app.get('/share/engine-draw', async (req, res) => {
           eed.assigned_at,
           eed.returned,
           eed.returned_at,
+          eed.overnight_seal,
+          eed.overnight_seal_verified_at,
           d.first_name || ' ' || d.last_name AS assigned_driver_name,
           d.race_number                        AS assigned_race_number,
           COALESCE(pe.class, re.race_class)    AS class,
-          pe.seal_number
+          pe.seal_number,
+          pe.carb_number
         FROM entry_engine_draws eed
         JOIN race_entries re ON eed.entry_id = re.entry_id
         JOIN drivers d       ON re.driver_id = d.driver_id
         LEFT JOIN pool_engines pe
                ON UPPER(pe.engine_serial) = UPPER(eed.engine_serial)
               AND pe.deleted_at IS NULL
-        WHERE re.event_id = $1
+        WHERE re.event_id = $1${extraWhere}
         ORDER BY eed.assigned_at,
           COALESCE(pe.class, re.race_class),
           NULLIF(regexp_replace(eed.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
           eed.draw_number
-      `, [selectedEventId]);
+      `, params);
       engines = result.rows;
     }
 
@@ -11782,17 +11813,70 @@ app.get('/share/engine-draw', async (req, res) => {
       return `<option value="${e.event_id}"${sel}>${e.event_name} — ${d}</option>`;
     }).join('');
 
+    // Day options (only for historical mode)
+    const dayOptionsHTML = isHistorical && availableDays.length > 0 ? `
+      <select name="day_label" onchange="this.form.submit()" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:white;cursor:pointer;">
+        <option value="">All Days</option>
+        ${availableDays.map(d => `<option value="${d}"${d === selectedDayLabel ? ' selected' : ''}>${d}</option>`).join('')}
+      </select>` : '';
+
+    // Report type toggle (only for historical mode)
+    const reportTypeHTML = isHistorical ? `
+      <span style="font-size:12px;font-weight:700;color:#1e293b;white-space:nowrap;margin-left:6px;">Report:</span>
+      <a href="/share/engine-draw?event_id=${selectedEventId}&day_label=${encodeURIComponent(selectedDayLabel)}&report_type=draw"
+         style="padding:5px 12px;border-radius:5px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid #cbd5e1;${reportType==='draw'?'background:#1e3a5f;color:white;':'background:white;color:#334155;'}">
+        &#128195; Draw Report</a>
+      <a href="/share/engine-draw?event_id=${selectedEventId}&day_label=${encodeURIComponent(selectedDayLabel)}&report_type=possession"
+         style="padding:5px 12px;border-radius:5px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid #cbd5e1;${reportType==='possession'?'background:#b45309;color:white;':'background:white;color:#334155;'}">
+        &#128274; Overnight Possession</a>` : '';
+
     // ── Build content HTML ──────────────────────────────────────────────────
     let classGroupsHTML = '';
 
     if (engines.length === 0) {
+      const emptyMsg = isPossession
+        ? 'No overnight possession records found for this selection.<br><small style="font-size:12px;">Engines are listed here after they are returned with an overnight seal.</small>'
+        : 'No engine draw records found for this event or day.';
       classGroupsHTML = `<div style="text-align:center;padding:60px 20px;color:#64748b;font-family:sans-serif;">
-           <div style="font-size:40px;margin-bottom:12px;">&#128237;</div>
-           <div style="font-size:16px;font-weight:600;">No engine draw records found</div>
-           <div style="font-size:13px;margin-top:6px;">No draws were recorded for this event, or the event has no entries yet.</div>
+           <div style="font-size:40px;margin-bottom:12px;">${isPossession ? '&#128274;' : '&#128237;'}</div>
+           <div style="font-size:16px;font-weight:600;">${emptyMsg}</div>
          </div>`;
+    } else if (isHistorical && isPossession) {
+      // ── Possession report: flat list grouped by class (day already filtered)
+      const possessionLabel = selectedDayLabel ? ` — ${selectedDayLabel}` : '';
+      const classes = [...new Set(engines.map(e => e.class || 'Unclassified'))];
+      classGroupsHTML = `<div class="day-section last-day">
+        <div class="day-header" style="background:#92400e;">
+          <span class="day-title">&#128274; OVERNIGHT POSSESSION REPORT${possessionLabel}</span>
+          <span class="day-stats">${engines.length} engine${engines.length !== 1 ? 's' : ''} sealed</span>
+        </div>
+        ${classes.map(cls => {
+          const { bg, text } = shareClassColor(cls);
+          const clsEngines = engines.filter(e => (e.class || 'Unclassified') === cls);
+          const rows = clsEngines.map(e => {
+            const retAt = e.returned_at ? new Date(e.returned_at).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }) : '—';
+            const verified = e.overnight_seal_verified_at ? ' &#10003;' : '';
+            return `<tr>
+              <td><span class="draw-num" style="background:${bg};color:${text};">${e.draw_number || '—'}</span></td>
+              <td><span class="driver-name">${e.assigned_driver_name || '—'}</span></td>
+              <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
+              <td class="mono">${e.engine_serial || '—'}</td>
+              <td class="mono">${e.carb_number || '—'}</td>
+              <td class="mono" style="font-weight:800;font-size:14px;color:#d97706;background:#fffbeb;">${e.overnight_seal || '—'}${verified}</td>
+              <td class="mono" style="font-size:11px;color:#64748b;">${retAt}</td>
+            </tr>`;
+          }).join('');
+          return `<div class="class-group">
+            <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${clsEngines.length} sealed</span></div>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Carb #</th><th style="background:#fffbeb;color:#92400e;">&#128274; Overnight Seal #</th><th>Returned At</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table></div>
+          </div>`;
+        }).join('')}
+      </div>`;
     } else if (isHistorical) {
-      // Historical: group by day → then by class within each day
+      // Historical draw report: group by day → then by class within each day
       const days = [...new Set(engines.map(e => e.day_label || 'Unknown'))];
       // Sort days by the earliest assigned_at in each group
       const dayOrder = {};
@@ -11818,6 +11902,7 @@ app.get('/share/engine-draw', async (req, res) => {
               <td><span class="driver-name">${e.assigned_driver_name || '—'}</span></td>
               <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
               <td class="mono">${e.engine_serial || '—'}</td>
+              <td class="mono">${e.carb_number || '—'}</td>
               <td class="mono">${e.seal_number || '—'}</td>
               <td class="mono" style="font-size:11px;color:#64748b;">${assignedAt}</td>
               <td>${returned ? '<span class="badge-red">Returned</span>' : '<span class="badge-green">Assigned</span>'}</td>
@@ -11827,7 +11912,7 @@ app.get('/share/engine-draw', async (req, res) => {
           return `<div class="class-group">
             <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
             <div class="table-scroll"><table>
-              <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Seal #</th><th>Time</th><th>Status</th></tr></thead>
+              <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Carb #</th><th>Seal #</th><th>Time</th><th>Status</th></tr></thead>
               <tbody>${rows}</tbody>
             </table></div>
           </div>`;
@@ -11855,6 +11940,7 @@ app.get('/share/engine-draw', async (req, res) => {
             <td>${e.assigned_driver_name ? `<span class="driver-name">${e.assigned_driver_name}</span>` : '<span class="empty">—</span>'}</td>
             <td>${e.assigned_race_number ? `<span class="race-num">#${e.assigned_race_number}</span>` : '<span class="empty">—</span>'}</td>
             <td class="mono">${e.engine_serial || '—'}</td>
+            <td class="mono">${e.carb_number || '—'}</td>
             <td class="mono">${e.seal_number || '—'}</td>
             <td>${e.assigned_driver_name ? '<span class="badge-green">Assigned</span>' : '<span class="badge-red">Available</span>'}</td>
           </tr>`;
@@ -11863,7 +11949,7 @@ app.get('/share/engine-draw', async (req, res) => {
         return `<div class="class-group">
           <div class="class-title" style="background:${bg};color:${text};">${cls} <span class="class-stats">${assignedInClass}/${clsEngines.length} assigned</span></div>
           <div class="table-scroll"><table>
-            <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Seal #</th><th>Status</th></tr></thead>
+            <thead><tr><th>Draw #</th><th>Driver</th><th>Race #</th><th>Engine Serial</th><th>Carb #</th><th>Seal #</th><th>Status</th></tr></thead>
             <tbody>${rows}</tbody>
           </table></div>
         </div>`;
@@ -11881,9 +11967,14 @@ app.get('/share/engine-draw', async (req, res) => {
               ${eventOptions}
             </optgroup>
           </select>
+          ${dayOptionsHTML}
+          <input type="hidden" name="report_type" value="${reportType}">
           <span style="font-size:12px;color:#64748b;">${isLive ? 'Showing current engine assignments' : `Historical draw: ${eventLabel}`}</span>
         </form>
-        <button onclick="window.print()" style="padding:7px 18px;background:#1e3a5f;color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">&#128438; Print / Save PDF</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          ${reportTypeHTML}
+          <button onclick="window.print()" style="padding:7px 18px;background:#1e3a5f;color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:8px;">&#128438; Print / Save PDF</button>
+        </div>
       </div>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -11926,15 +12017,17 @@ app.get('/share/engine-draw', async (req, res) => {
   ${branding.header ? `<div class="branding-header"><img src="${branding.header}" alt="Event Header"></div>` : ''}
   <div class="page-header">
     <div>
-      <h1>&#128295; Engine Draw Board</h1>
-      <div class="sub">${isLive ? 'Live Pool' : eventLabel} &bull; Generated: ${generatedAt}</div>
+      <h1>${isPossession ? '&#128274; Overnight Possession Report' : '&#128295; Engine Draw Board'}</h1>
+      <div class="sub">${isLive ? 'Live Pool' : eventLabel}${selectedDayLabel ? ` &bull; ${selectedDayLabel}` : ''} &bull; Generated: ${generatedAt}</div>
     </div>
     <div class="header-right no-print">
       ${isLive ? `<a href="/share/engine-draw" class="refresh-btn">&#128260; Refresh</a>` : ''}
     </div>
   </div>
   <div class="summary-bar">
-    <strong>${assignedCount}</strong> of <strong>${engines.length}</strong> engines assigned
+    ${isPossession
+      ? `<strong>${engines.length}</strong> engine${engines.length !== 1 ? 's' : ''} sealed in overnight possession`
+      : `<strong>${assignedCount}</strong> of <strong>${engines.length}</strong> engines assigned`}
     ${isHistorical ? ' <span style="margin-left:12px;font-size:11px;opacity:0.75;">(historical record)</span>' : ''}
   </div>
   <div class="content">${classGroupsHTML}</div>
