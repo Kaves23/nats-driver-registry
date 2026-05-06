@@ -401,7 +401,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       await client.query(`
         UPDATE race_entries
-        SET engine_returned = true, engine_returned_at = NOW(), updated_at = NOW()
+        SET engine_returned = true, engine_returned_at = NOW(), engine_serial = NULL, updated_at = NOW()
         WHERE entry_id = $1
       `, [row.entry_id]);
 
