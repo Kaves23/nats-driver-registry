@@ -1682,8 +1682,9 @@ let _returnEngine   = null;  // pool engine record matching driver's serial
 let _periState      = {};    // { seal_number: 'pending'|'ok'|'fail', ... }
 let _periScanTarget = null;  // which peripheral is being camera-scanned
 let _sigCanvas = null, _sigCtx = null, _sigDrawing = false, _sigHasMark = false;
-let _overnightSealVal  = ''; // filled on PRACTICE return — Friday night
-let _carbOvernightSeal = ''; // filled on ROUND 3 RETURN — Saturday night
+let _overnightSealVal    = ''; // filled on PRACTICE return — Friday night
+let _carbOvernightSeal   = ''; // filled on ROUND 3 RETURN — Saturday night
+let _carbReturnedChecked = false; // RETURN_CARB mode: carb returned separately checkbox
 
 const PERI_DEFS = [
   { key: 'seal_number',    label: 'SEAL #',    icon: () => ICON.lock },
@@ -1704,8 +1705,9 @@ function showReturnScreen() {
   _periState      = {};
   _periScanTarget = null;
   _sigHasMark     = false;
-  _overnightSealVal  = '';
-  _carbOvernightSeal = '';
+  _overnightSealVal    = '';
+  _carbOvernightSeal   = '';
+  _carbReturnedChecked = false;
 
   document.getElementById('retDriverNum').textContent   = '#' + d.race_number;
   document.getElementById('retDriverName').textContent  = d.first_name + ' ' + d.last_name;
@@ -1724,7 +1726,8 @@ function showReturnScreen() {
 
 function renderRetBody() {
   const e = _returnEngine;
-  const activePeri = PERI_DEFS.filter(p => e[p.key]);
+  // In RETURN_CARB mode, carb is handled in its own section below — exclude from component check
+  const activePeri = PERI_DEFS.filter(p => e[p.key] && !(currentSessionMode === 'RETURN_CARB' && p.key === 'carb_number'));
   let html = '';
 
   if (activePeri.length) {
@@ -1757,7 +1760,7 @@ function renderRetBody() {
     const carbSet = !!_carbOvernightSeal;
     html += `<div class="ret-section" style="color:var(--amber)">${ICON.cog} CARB RETURN &amp; OVERNIGHT SEAL <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
-      <input type="checkbox" id="retCarbReturned" style="width:28px;height:28px;cursor:pointer" onchange="renderRetBody();setTimeout(initSigCanvas,50)">
+      <input type="checkbox" id="retCarbReturned" style="width:28px;height:28px;cursor:pointer" ${_carbReturnedChecked ? 'checked' : ''} onchange="_carbReturnedChecked=this.checked;renderRetBody();setTimeout(initSigCanvas,50)">
       <label for="retCarbReturned" style="font-size:26px;cursor:pointer">CARB RETURNED SEPARATELY</label>
     </div>
     <div id="retCarbSealWrap" style="${e.carb_number ? '' : 'opacity:0.5'}">
