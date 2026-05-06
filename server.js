@@ -11826,6 +11826,52 @@ app.get('/share/engine-draw', async (req, res) => {
           eed.draw_number
       `, params);
       engines = result.rows;
+
+      // Also check for engines currently booked out in race_entries but with no
+      // open entry_engine_draws record (e.g. collectEngine ran before this fix was deployed)
+      const missingRes = await pool.query(`
+        SELECT re.entry_id, re.engine_serial,
+               d.first_name || ' ' || d.last_name AS assigned_driver_name,
+               d.race_number                        AS assigned_race_number,
+               COALESCE(pe.class, re.race_class)    AS class,
+               pe.seal_number, pe.carb_number,
+               pe.draw_number
+        FROM race_entries re
+        JOIN drivers d ON re.driver_id = d.driver_id
+        LEFT JOIN pool_engines pe
+               ON UPPER(pe.engine_serial) = UPPER(re.engine_serial) AND pe.deleted_at IS NULL
+        WHERE re.event_id = $1
+          AND re.engine_serial IS NOT NULL
+          AND (re.engine_returned = false OR re.engine_returned IS NULL)
+          AND NOT EXISTS (
+            SELECT 1 FROM entry_engine_draws eed2
+            WHERE eed2.entry_id = re.entry_id
+              AND eed2.returned = false
+          )
+      `, [selectedEventId]);
+
+      if (missingRes.rows.length > 0 && !isPossession) {
+        const missingEngines = missingRes.rows.map(r => ({
+          draw_number:          r.draw_number || '?',
+          engine_serial:        r.engine_serial,
+          seal_number:          r.seal_number,
+          carb_number:          r.carb_number,
+          class:                r.class,
+          day_label:            'BOOKED OUT',
+          assigned_driver_name: r.assigned_driver_name,
+          assigned_race_number: r.assigned_race_number,
+          returned:             false,
+          _orphan:              true
+        }));
+        // Only include if "All Days" or "BOOKED OUT" day selected
+        if (!selectedDayLabel || selectedDayLabel === 'BOOKED OUT') {
+          engines = [...engines, ...missingEngines];
+        }
+        // Always add BOOKED OUT to the day dropdown if there are orphaned engines
+        if (!availableDays.includes('BOOKED OUT')) {
+          availableDays.push('BOOKED OUT');
+        }
+      }
     }
 
     const assignedCount = engines.filter(e => e.assigned_driver_name && !e.returned).length;
@@ -11944,8 +11990,8 @@ app.get('/share/engine-draw', async (req, res) => {
         const dayTotal   = dayEngines.length;
         const dayAssigned = dayEngines.filter(e => !e.returned).length;
         return `<div class="day-section${isLastDay ? ' last-day' : ''}">
-          <div class="day-header">
-            <span class="day-title">${day}</span>
+          <div class="day-header" style="${day === 'BOOKED OUT' ? 'background:#92400e;' : ''}">
+            <span class="day-title">${day === 'BOOKED OUT' ? '&#9888; BOOKED OUT (no draw record)' : day}</span>
             <span class="day-stats">${dayAssigned}/${dayTotal} assignments</span>
           </div>
           ${classSections}

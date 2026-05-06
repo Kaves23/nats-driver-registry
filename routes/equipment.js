@@ -465,7 +465,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
 
       // Find the matching PRACTICE draw record with an overnight seal that hasn't been verified yet
       const { rows } = await pool.query(
-        `SELECT draw_id, overnight_seal, engine_serial, entry_id
+        `SELECT draw_id, overnight_seal, engine_serial, draw_number, entry_id
          FROM entry_engine_draws
          WHERE entry_id = $1
            AND day_label = 'PRACTICE'
@@ -485,10 +485,34 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         return res.json({ success: false, error: `Seal mismatch — expected ${drawRow.overnight_seal}` });
       }
 
+      // Mark the PRACTICE draw as seal-verified
       await pool.query(
         `UPDATE entry_engine_draws SET overnight_seal_verified_at = NOW() WHERE draw_id = $1`,
         [drawRow.draw_id]
       );
+
+      // Create a ROUND 3 — COLLECT draw record so the report reflects the engine is booked out
+      try {
+        await pool.query(
+          `INSERT INTO entry_engine_draws (entry_id, engine_serial, draw_number, day_label, assigned_at)
+           VALUES ($1, $2, $3, 'ROUND 3 — COLLECT', NOW())`,
+          [entryId, drawRow.engine_serial, drawRow.draw_number || null]
+        );
+      } catch (insertErr) {
+        console.warn('⚠️ collectEngine: entry_engine_draws insert failed (non-fatal):', insertErr.message);
+      }
+
+      // Re-activate the engine assignment in race_entries so it shows as "booked out"
+      try {
+        await pool.query(
+          `UPDATE race_entries
+           SET engine_serial = $1, engine_returned = false, engine_returned_at = NULL, updated_at = NOW()
+           WHERE entry_id = $2`,
+          [drawRow.engine_serial, entryId]
+        );
+      } catch (reErr) {
+        console.warn('⚠️ collectEngine: race_entries update failed (non-fatal):', reErr.message);
+      }
 
       // Log the collection scan
       const entryInfo = await pool.query(
