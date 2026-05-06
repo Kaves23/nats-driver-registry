@@ -1686,6 +1686,7 @@ let _sigCanvas = null, _sigCtx = null, _sigDrawing = false, _sigHasMark = false;
 let _overnightSealVal    = ''; // filled on PRACTICE return — Friday night
 let _carbOvernightSeal   = ''; // filled on ROUND 3 RETURN — Saturday night
 let _carbReturnedChecked = false; // RETURN_CARB mode: carb returned separately checkbox
+let _driverCarbNumber = null;         // driver's sealed carb number (from draw history, not engine)
 
 const PERI_DEFS = [
   { key: 'seal_number',    label: 'SEAL #',    icon: () => ICON.lock },
@@ -1709,6 +1710,7 @@ function showReturnScreen() {
   _overnightSealVal    = '';
   _carbOvernightSeal   = '';
   _carbReturnedChecked = false;
+  _driverCarbNumber    = null;
 
   document.getElementById('retDriverNum').textContent   = '#' + d.race_number;
   document.getElementById('retDriverName').textContent  = d.first_name + ' ' + d.last_name;
@@ -1723,6 +1725,20 @@ function showReturnScreen() {
   renderRetBody();
   showScreen('s-return');
   setTimeout(initSigCanvas, 80);
+  // RETURN_CARB: async-fetch driver's carb from draw history (carb belongs to driver, not engine)
+  if (currentSessionMode === 'RETURN_CARB') {
+    fetch(`/api/driverDrawRecord?entryId=${encodeURIComponent(d.entry_id)}&sessionType=DRIVER_CARB`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.record?.carb_number) {
+          _driverCarbNumber = data.record.carb_number;
+        } else {
+          _driverCarbNumber = _returnEngine.carb_number || null;
+        }
+        renderRetBody();
+      })
+      .catch(() => { _driverCarbNumber = _returnEngine.carb_number || null; renderRetBody(); });
+  }
 }
 
 function renderRetBody() {
@@ -1764,8 +1780,8 @@ function renderRetBody() {
       <input type="checkbox" id="retCarbReturned" style="width:28px;height:28px;cursor:pointer" ${_carbReturnedChecked ? 'checked' : ''} onchange="_carbReturnedChecked=this.checked;renderRetBody();setTimeout(initSigCanvas,50)">
       <label for="retCarbReturned" style="font-size:26px;cursor:pointer">CARB RETURNED SEPARATELY</label>
     </div>
-    <div id="retCarbSealWrap" style="${e.carb_number ? '' : 'opacity:0.5'}">
-      <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-bottom:4px">CARB # ${e.carb_number || '—'}</div>
+    <div id="retCarbSealWrap" style="${(_driverCarbNumber || e.carb_number) ? '' : 'opacity:0.5'}">
+      <div style="font-size:18px;letter-spacing:2px;color:var(--dim);margin-bottom:4px">CARB # ${_driverCarbNumber || e.carb_number || '—'}</div>
       <input id="retCarbOvernightSeal" type="text" class="big-input" placeholder="scan or enter carb seal barcode" autocapitalize="characters" autocomplete="off" style="font-size:36px;width:100%;box-sizing:border-box;${carbSet ? 'border-color:var(--green);color:var(--green)' : ''}" oninput="onCarbSealInput(this.value)">
       ${carbSet ? `<div style="color:var(--green);font-size:24px;letter-spacing:1px;margin-top:4px">${ICON.check} CARB SEAL: ${_carbOvernightSeal}</div>` : ''}
     </div>`
@@ -2111,20 +2127,12 @@ async function openCarbVerify() {
         document.getElementById('cvOverrideBtn').style.display = '';
       }
     } else {
-      const fallbackCarb = e.carb_number || null;
-      document.getElementById('cvCarbNumber').textContent = fallbackCarb || '—';
-      if (fallbackCarb) {
-        // No RETURN_CARB record but carb is on engine — allow admin override
-        _carbVerifyRecord = { carb_number: fallbackCarb, carb_overnight_seal: null };
-        document.getElementById('cvCarbSeal').textContent = '(no seal on record)';
-        document.getElementById('cvErr').style.color = 'var(--amber)';
-        document.getElementById('cvErr').textContent = '⚠ No RETURN+CARB record — carb seal cannot be verified';
-        document.getElementById('cvOverrideBtn').style.display = '';
-      } else {
-        document.getElementById('cvCarbSeal').textContent = '(no record found)';
-        document.getElementById('cvErr').style.color = 'var(--red)';
-        document.getElementById('cvErr').textContent = data.error || 'No RETURN+CARB record found';
-      }
+      // No RETURN_CARB record — carb is de-coupled from pool_engines, require admin override
+      document.getElementById('cvCarbNumber').textContent = '—';
+      document.getElementById('cvCarbSeal').textContent = '(no carb record for this driver)';
+      document.getElementById('cvErr').style.color = 'var(--amber)';
+      document.getElementById('cvErr').textContent = '⚠ No RETURN+CARB record found — admin override required';
+      document.getElementById('cvOverrideBtn').style.display = '';
     }
   } catch(e2) {
     document.getElementById('cvCarbNumber').textContent = '—';

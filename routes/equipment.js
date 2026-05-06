@@ -287,12 +287,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
             );
             drawCarbNumber = curCarb.rows[0]?.carb_number || null;
           }
-          if (drawCarbNumber) {
-            await client.query(
-              `UPDATE pool_engines SET carb_number = $1 WHERE UPPER(engine_serial) = $2`,
-              [drawCarbNumber, engineSerial.toUpperCase()]
-            );
-          }
+          // (carb de-coupled: no longer written back to pool_engines)
         } catch (carbRestoreErr) {
           console.warn('⚠️ assignEngine DRAW_CARB: carb restore failed (non-fatal):', carbRestoreErr.message);
         }
@@ -417,15 +412,26 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       const overnightSealVal = overnight_seal ? overnight_seal.toUpperCase().trim() : null;
       const carbSealVal = carb_overnight_seal ? carb_overnight_seal.toUpperCase().trim() : null;
 
-      // RETURN_CARB: snapshot carb_number from pool_engines before clearing it
+      // RETURN_CARB: snapshot carb_number from entry draw history (carb belongs to driver, not engine)
       let snapshotCarbNumber = null;
       if (sessionType === 'RETURN_CARB') {
         try {
+          // Prefer draw history (driver's carb travels with them, not with any engine)
           const carbRes = await client.query(
-            `SELECT carb_number FROM pool_engines WHERE UPPER(engine_serial) = $1 LIMIT 1`,
-            [theSerial]
+            `SELECT carb_number FROM entry_engine_draws
+             WHERE entry_id = $1 AND carb_number IS NOT NULL
+             ORDER BY assigned_at DESC LIMIT 1`,
+            [row.entry_id]
           );
           snapshotCarbNumber = carbRes.rows[0]?.carb_number || null;
+          // Fall back to pool_engines static reference if no draw history
+          if (!snapshotCarbNumber) {
+            const peRes = await client.query(
+              `SELECT carb_number FROM pool_engines WHERE UPPER(engine_serial) = $1 LIMIT 1`,
+              [theSerial]
+            );
+            snapshotCarbNumber = peRes.rows[0]?.carb_number || null;
+          }
         } catch (carbLookupErr) {
           console.warn('⚠️ returnEngine RETURN_CARB: carb lookup failed (non-fatal):', carbLookupErr.message);
         }
@@ -444,17 +450,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
          sessionType, snapshotCarbNumber]
       );
 
-      // RETURN_CARB: clear carb_number from pool_engines
-      if (sessionType === 'RETURN_CARB') {
-        try {
-          await client.query(
-            `UPDATE pool_engines SET carb_number = NULL WHERE UPPER(engine_serial) = $1`,
-            [theSerial]
-          );
-        } catch (carbClearErr) {
-          console.warn('⚠️ returnEngine RETURN_CARB: pool carb clear failed (non-fatal):', carbClearErr.message);
-        }
-      }
+      // (carb de-coupled from pool_engines — carb tracked in draw records only)
 
       await client.query('COMMIT');
 
@@ -537,6 +533,14 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
            WHERE entry_id = $1 AND session_type = $2
            ORDER BY assigned_at DESC LIMIT 1`,
           [entryId, sessionType]
+        ));
+      } else if (sessionType === 'DRIVER_CARB') {
+        // Most recent draw record for this entry that has any carb_number (driver's carb from history)
+        ({ rows } = await pool.query(
+          `${SELECT} FROM entry_engine_draws
+           WHERE entry_id = $1 AND carb_number IS NOT NULL
+           ORDER BY assigned_at DESC LIMIT 1`,
+          [entryId]
         ));
       } else {
         // Legacy dayLabel lookup
