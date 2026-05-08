@@ -419,6 +419,7 @@ button{touch-action:manipulation}
   <button class="day-btn" style="border-color:#f97316;color:#f97316" onclick="selectMode('RETURN_CARB')">RETURN + CARB SEAL</button>
   <button class="day-btn" style="border-color:#22d3ee;color:#22d3ee" onclick="selectMode('DRAW_CARB')">DRAW + SEALED CARB</button>
   <button class="day-btn day-btn-r2"       onclick="selectMode('RETURN')">ENGINE RETURN</button>
+  <button class="day-btn" style="border-color:#f43f5e;color:#f43f5e" onclick="selectMode('SWAP')">ENGINE SWAP</button>
   <div style="height:1px;background:rgba(255,255,255,0.1);width:100%;max-width:340px;flex-shrink:0"></div>
   <div style="font-size:16px;letter-spacing:2px;color:var(--dim);text-align:center;flex-shrink:0">DAY LABEL (for reports)</div>
   <div class="day-label-row">
@@ -795,6 +796,9 @@ function showScreen(id) {
   if (id === 's-overnight') {
     setTimeout(() => { const el = document.getElementById('ovSealInput'); if (el) { el.value = ''; el.focus(); } }, 80);
   }
+  if (id === 's-swap') {
+    setTimeout(() => { const el = document.getElementById('swapReason'); if (el) el.focus(); }, 80);
+  }
 }
 
 // ─────────────────────────────────────────────────
@@ -960,7 +964,7 @@ function setDayLabel(label) {
 function updateStationBadge() {
   const name = currentScanner?.name || 'DRAW STATION';
   const day  = currentDayLabel ? ' · ' + currentDayLabel : '';
-  const modeLabels = {DRAW:'DRAW',RETURN:'RETURN',OVERNIGHT:'OVERNIGHT',COLLECT:'COLLECT',RETURN_CARB:'RETURN+CARB',DRAW_CARB:'DRAW+CARB'};
+  const modeLabels = {DRAW:'DRAW',RETURN:'RETURN',OVERNIGHT:'OVERNIGHT',COLLECT:'COLLECT',RETURN_CARB:'RETURN+CARB',DRAW_CARB:'DRAW+CARB',SWAP:'SWAP'};
   const modeStr = currentSessionMode ? ' [' + (modeLabels[currentSessionMode] || currentSessionMode) + ']' : '';
   document.getElementById('stationBadge').innerHTML = `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="0.8" fill="currentColor" stroke="none"/><line x1="8" y1="1" x2="8" y2="4.5"/><line x1="8" y1="11.5" x2="8" y2="15"/><line x1="1" y1="8" x2="4.5" y2="8"/><line x1="11.5" y1="8" x2="15" y2="8"/></svg> ${name}${modeStr}${day}`;
 }
@@ -1445,6 +1449,7 @@ function openDraw() {
   if (currentSessionMode === 'RETURN_CARB') { showReturnScreen(); return; }
   if (currentSessionMode === 'OVERNIGHT')   { openOvernightScreen(); return; }
   if (currentSessionMode === 'COLLECT')     { openCollectScreen(); return; }
+  if (currentSessionMode === 'SWAP')        { openSwapScreen(); return; }
 
   const d = currentDriver;
   document.getElementById('drawDriverNum').textContent  = '#' + d.race_number;
@@ -1596,7 +1601,8 @@ async function confirmDraw() {
       drawNumber:    e.draw_number || null,
       dayLabel:      currentDayLabel || null,
       mode:          currentSessionMode,
-      carb_overnight_seal_verified: _carbSealVerified || false
+      carb_overnight_seal_verified: _carbSealVerified || false,
+      swapNote:      _swapNote || undefined
     };
     const r = await fetch('/api/assignEngine', {
       method: 'POST',
@@ -1640,6 +1646,10 @@ function showDone(engine, driver, warning) {
   document.getElementById('doneSeal').textContent = sealParts.join('  ·  ');
   const warnEl = document.getElementById('doneWarn');
   if (warning) { warnEl.textContent = warning; warnEl.classList.add('show'); }
+  else if (currentSessionMode === 'SWAP' && _swapNote) {
+    warnEl.textContent = 'SWAP REASON: ' + _swapNote;
+    warnEl.classList.add('show');
+  }
   else { warnEl.textContent = ''; warnEl.classList.remove('show'); }
   showScreen('s-done');
 }
@@ -1655,6 +1665,7 @@ function nextDriver() {
   _carbVerifyRecord = null;
   _carbSealVerified = false;
   currentDayLabel = null;
+  _swapNote = '';
   const directEl = document.getElementById('raceNumInput');
   if (directEl) directEl.value = '';
   document.getElementById('lookupErr').textContent = '';
@@ -1687,6 +1698,7 @@ let _overnightSealVal    = ''; // filled on PRACTICE return — Friday night
 let _carbOvernightSeal   = ''; // filled on ROUND 3 RETURN — Saturday night
 let _carbReturnedChecked = false; // RETURN_CARB mode: carb returned separately checkbox
 let _driverCarbNumber = null;         // driver's sealed carb number (from draw history, not engine)
+let _swapNote = '';                   // ENGINE SWAP mode: reason note
 
 const PERI_DEFS = [
   { key: 'seal_number',    label: 'SEAL #',    icon: () => ICON.lock },
@@ -2178,6 +2190,123 @@ function submitCarbVerify() {
     showSealScreen();
   }, 600);
 }
+
+// ─────────────────────────────────────────────────
+// ENGINE SWAP FLOW
+// ─────────────────────────────────────────────────
+function openSwapScreen() {
+  const d = currentDriver;
+  if (!d || !d.engine_serial) {
+    // No engine currently assigned — skip straight to pick a new one
+    showSwapDrawGrid();
+    return;
+  }
+  const eng = allEngines.find(e => e.engine_serial?.toUpperCase() === d.engine_serial?.toUpperCase())
+    || { engine_serial: d.engine_serial, draw_number: '?' };
+
+  document.getElementById('swapDriverNum').textContent   = '#' + d.race_number;
+  document.getElementById('swapDriverName').textContent  = d.first_name + ' ' + d.last_name;
+  document.getElementById('swapDriverClass').textContent = d.race_class || '—';
+  document.getElementById('swapDrawNum').textContent     = 'DRAW #' + (eng.draw_number || '?');
+  document.getElementById('swapSerial').textContent      = eng.engine_serial;
+  document.getElementById('swapErr').textContent         = '';
+  document.getElementById('swapConfirmBtn').disabled     = false;
+  document.getElementById('swapConfirmBtn').innerHTML    =
+    '<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5a5.5 5.5 0 0 1 9.2-4"/><path d="M13.5 7.5a5.5 5.5 0 0 1-9.2 4"/><polyline points="11.7 2 11.7 5.5 8.2 5.5"/><polyline points="4.3 14 4.3 10.5 7.8 10.5"/></svg> RETURN ENGINE &amp; PICK NEW \u2192';
+  _swapNote = '';
+  showScreen('s-swap');
+}
+
+function showSwapDrawGrid() {
+  const d = currentDriver;
+  document.getElementById('drawDriverNum').textContent   = '#' + d.race_number;
+  document.getElementById('drawDriverName').textContent  = d.first_name + ' ' + d.last_name;
+  document.getElementById('drawDriverClass').textContent = d.race_class || '—';
+  const engEl = document.getElementById('drawDriverEngine');
+  if (engEl) engEl.style.display = 'none';
+  const retBtn = document.getElementById('returnBtn');
+  if (retBtn) retBtn.classList.remove('show');
+  classEngines = allEngines
+    .filter(e => (e.class || '').toLowerCase() === (d.race_class || '').toLowerCase())
+    .sort((a, b) => (parseInt(a.draw_number)||0) - (parseInt(b.draw_number)||0));
+  document.getElementById('drawClassLabel').textContent = (d.race_class || 'ALL') + ' — PICK NEW ENGINE';
+  renderDrawGrid();
+  showScreen('s-draw');
+}
+
+async function confirmSwap() {
+  const reason = (document.getElementById('swapReason').value || '').trim();
+  const errEl  = document.getElementById('swapErr');
+  if (!reason) { errEl.textContent = 'Reason is required for an engine swap'; return; }
+
+  const btn = document.getElementById('swapConfirmBtn');
+  btn.disabled    = true;
+  btn.textContent = 'RETURNING ENGINE\u2026';
+  errEl.textContent = '';
+
+  const d   = currentDriver;
+  const eng = allEngines.find(e => e.engine_serial?.toUpperCase() === d.engine_serial?.toUpperCase())
+    || { engine_serial: d.engine_serial, draw_number: '?' };
+
+  try {
+    const body = {
+      engineSerial:       eng.engine_serial || null,
+      entryId:            d.entry_id,
+      driverId:           d.driver_id,
+      peripheralsChecked: {},
+      signatureData:      null,
+      scannedBy:          currentScanner?.name || currentScanner?.scanner_name || 'Engine Swap',
+      notes:              `ENGINE SWAP: ${reason} | Draw #${eng.draw_number} returned by #${d.race_number} ${d.first_name} ${d.last_name}`,
+      mode:               'SWAP'
+    };
+    const r    = await fetch('/api/returnEngine', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const resp = await r.json();
+    if (resp.success) {
+      _swapNote = reason;
+      currentDriver.engine_serial = null;
+      const cached = allEngines.find(x => x.engine_serial && eng.engine_serial &&
+        x.engine_serial.toUpperCase() === eng.engine_serial.toUpperCase());
+      if (cached) { cached.assigned_driver_name = null; cached.assigned_race_number = null; }
+      await preloadEngines();
+      showSwapDrawGrid();
+    } else {
+      errEl.textContent = resp.error || 'Return failed — try again';
+      btn.disabled      = false;
+      btn.innerHTML     = '<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5a5.5 5.5 0 0 1 9.2-4"/><path d="M13.5 7.5a5.5 5.5 0 0 1-9.2 4"/><polyline points="11.7 2 11.7 5.5 8.2 5.5"/><polyline points="4.3 14 4.3 10.5 7.8 10.5"/></svg> RETURN ENGINE &amp; PICK NEW \u2192';
+    }
+  } catch(err) {
+    errEl.textContent = 'Server error — try again';
+    btn.disabled      = false;
+    btn.innerHTML     = '<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5a5.5 5.5 0 0 1 9.2-4"/><path d="M13.5 7.5a5.5 5.5 0 0 1-9.2 4"/><polyline points="11.7 2 11.7 5.5 8.2 5.5"/><polyline points="4.3 14 4.3 10.5 7.8 10.5"/></svg> RETURN ENGINE &amp; PICK NEW \u2192';
+  }
+}
 </script>
+
+<!-- ── ENGINE SWAP SCREEN ──────────────────── -->
+<div id="s-swap" class="screen">
+  <div class="driver-bar">
+    <div class="driver-num" id="swapDriverNum">—</div>
+    <div class="driver-info">
+      <div class="driver-name" id="swapDriverName">—</div>
+      <div class="driver-class" id="swapDriverClass">—</div>
+    </div>
+    <button class="back-btn" onclick="goScan()">← CANCEL</button>
+  </div>
+  <div class="ret-engine-card">
+    <div class="ret-draw-badge" id="swapDrawNum">—</div>
+    <div class="ret-engine-info">
+      <div class="ret-engine-serial" id="swapSerial">—</div>
+      <div class="ret-engine-class" style="color:#f43f5e;font-size:20px;letter-spacing:2px;">ENGINE SWAP</div>
+    </div>
+  </div>
+  <div class="ret-section" style="color:#f43f5e">REASON FOR SWAP <span style="font-size:0.6em;color:var(--dim)">(REQUIRED)</span></div>
+  <textarea id="swapReason" placeholder="Enter reason for engine swap (mechanical issue, protest, seized, etc.)" style="width:100%;box-sizing:border-box;background:#1a2332;color:#e2e8f0;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;font-size:28px;min-height:130px;resize:vertical;margin-bottom:8px;"></textarea>
+  <div id="swapErr" style="color:var(--red);font-size:26px;min-height:20px;text-align:center;margin-bottom:8px;"></div>
+  <button id="swapConfirmBtn" onclick="confirmSwap()" style="background:#f43f5e;border-color:#f43f5e;font-size:32px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 8.5a5.5 5.5 0 0 1 9.2-4"/><path d="M13.5 7.5a5.5 5.5 0 0 1-9.2 4"/><polyline points="11.7 2 11.7 5.5 8.2 5.5"/><polyline points="4.3 14 4.3 10.5 7.8 10.5"/></svg> RETURN ENGINE &amp; PICK NEW →</button>
+</div>
+
 </body>
 </html>

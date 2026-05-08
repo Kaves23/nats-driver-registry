@@ -213,7 +213,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
     const client = await pool.connect();
     try {
       const { ticketBarcode, engineSerial, driverId, entryId, drawNumber, dayLabel,
-              carb_overnight_seal_verified } = req.body;
+              carb_overnight_seal_verified, swapNote } = req.body;
 
       if (!engineSerial || !driverId || !entryId) {
         client.release();
@@ -265,8 +265,9 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         ? `${driverInfo.rows[0].first_name} ${driverInfo.rows[0].last_name}`
         : 'Unknown';
 
-      const sessionType = (typeof req.body.mode === 'string' && req.body.mode.toUpperCase() === 'DRAW_CARB')
-        ? 'DRAW_CARB' : 'DRAW';
+      const modeUp = typeof req.body.mode === 'string' ? req.body.mode.toUpperCase() : '';
+      const sessionType = modeUp === 'DRAW_CARB' ? 'DRAW_CARB' :
+                          modeUp === 'SWAP'       ? 'SWAP'       : 'DRAW';
 
       // DRAW_CARB: find driver's latest RETURN_CARB record, restore carb_number to the new engine
       let drawCarbNumber = null;
@@ -296,10 +297,10 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       try {
         await client.query(
           `INSERT INTO entry_engine_draws
-             (entry_id, engine_serial, draw_number, day_label, session_type, carb_number, assigned_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+             (entry_id, engine_serial, draw_number, day_label, session_type, carb_number, notes, assigned_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
           [entryId, engineSerial.toUpperCase(), drawNumber || null, dayLabel || null,
-           sessionType, drawCarbNumber]
+           sessionType, drawCarbNumber, swapNote ? `ENGINE SWAP: ${swapNote}` : null]
         );
       } catch (drawErr) {
         console.warn('⚠️ entry_engine_draws insert failed (non-fatal):', drawErr.message);
@@ -335,7 +336,8 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         equipment_serial: engineSerial.toUpperCase(),
         scanned_by: 'System',
         action_result: 'success',
-        notes: `${dayLabel ? '[' + dayLabel + '] ' : ''}${drawNumber ? 'Draw #' + drawNumber + ' — ' : ''}Engine ${engineSerial} assigned${noTicketFlag ? ' [NO TICKET SCANNED]' : ''}`,
+        notes: `${dayLabel ? '[' + dayLabel + '] ' : ''}${drawNumber ? 'Draw #' + drawNumber + ' — ' : ''}Engine ${engineSerial} assigned${noTicketFlag ? ' [NO TICKET SCANNED]' : ''}${swapNote ? ' | SWAP: ' + swapNote : ''}`,
+
         event_id: assignResult.rows[0]?.event_id,
         race_class: assignResult.rows[0]?.race_class
       });
@@ -366,7 +368,8 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         carb_overnight_seal,
         mode: returnMode
       } = req.body;
-      const sessionType = (returnMode === 'RETURN_CARB') ? 'RETURN_CARB' : 'RETURN';
+      const sessionType = (returnMode === 'RETURN_CARB') ? 'RETURN_CARB' :
+                          (returnMode === 'SWAP')         ? 'SWAP'         : 'RETURN';
 
       if (!engineSerial && !entryId) {
         client.release();
