@@ -8642,7 +8642,7 @@ app.post('/api/getRaceEntries', async (req, res) => {
           r.ticket_fuel_ref,
           d.first_name AS driver_first_name,
           d.last_name AS driver_last_name,
-          d.race_number,
+          COALESCE(NULLIF(r.race_number, ''), d.race_number) AS race_number,
           d.transponder_number,
           c.email AS driver_email,
           c.phone_mobile AS entrant_phone,
@@ -8666,7 +8666,7 @@ app.post('/api/getRaceEntries', async (req, res) => {
           r.ticket_fuel_ref,
           d.first_name AS driver_first_name,
           d.last_name AS driver_last_name,
-          d.race_number,
+          COALESCE(NULLIF(r.race_number, ''), d.race_number) AS race_number,
           d.transponder_number,
           c.email AS driver_email,
           c.phone_mobile AS entrant_phone,
@@ -8738,7 +8738,7 @@ app.get('/api/allRaceEntries', async (req, res) => {
 // Update Race Entry (Admin - Inline Editing)
 app.post('/api/updateRaceEntry', async (req, res) => {
   try {
-    const { race_entry_id, entry_id, field, value, race_class, race_number, entry_status, payment_status, amount_paid, performed_by } = req.body;
+    const { race_entry_id, entry_id, field, value, race_class, race_number, team_code, entry_status, payment_status, amount_paid, performed_by } = req.body;
 
     // Accept either entry_id or race_entry_id
     const entryId = entry_id || race_entry_id;
@@ -8749,6 +8749,7 @@ app.post('/api/updateRaceEntry', async (req, res) => {
 
     // Check if this is a multi-field update (from Titan Command) or single field update
     const isMultiFieldUpdate = race_class !== undefined || race_number !== undefined || 
+                                team_code !== undefined ||
                                 entry_status !== undefined || payment_status !== undefined || 
                                 amount_paid !== undefined;
 
@@ -8765,6 +8766,10 @@ app.post('/api/updateRaceEntry', async (req, res) => {
       if (race_number !== undefined) {
         updates.push(`race_number = $${paramCount++}`);
         values.push(race_number);
+      }
+      if (team_code !== undefined) {
+        updates.push(`team_code = $${paramCount++}`);
+        values.push(team_code);
       }
       if (entry_status !== undefined) {
         updates.push(`entry_status = $${paramCount++}`);
