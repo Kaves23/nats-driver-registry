@@ -2547,7 +2547,7 @@
     let currentDriver = null;
     let allDrivers = [];
     let advancedView = false;
-    let adminToken = sessionStorage.getItem('adminToken') || null;
+    let adminToken = localStorage.getItem('adminToken') || null;
 
     // Helper: get admin auth headers for all fetch calls
     function adminHeaders(extra = {}) {
@@ -2587,7 +2587,7 @@
 
         if (data.success && data.token) {
           adminToken = data.token;
-          sessionStorage.setItem('adminToken', adminToken);
+          localStorage.setItem('adminToken', adminToken);
           
           const loginWrapper = document.getElementById('loginWrapper');
           const adminWrapper = document.getElementById('adminWrapper');
@@ -2638,11 +2638,13 @@
             loadDrivers();
             loadAdminMSAEventDropdown();
             checkLocalMode();
-            sessionStorage.removeItem('adminToken');
+            // keep adminToken in memory so subsequent API calls are authenticated
+          } else {
+            localStorage.removeItem('adminToken');
             adminToken = null;
           }
         } catch(e) {
-          sessionStorage.removeItem('adminToken');
+          localStorage.removeItem('adminToken');
           adminToken = null;
         }
       }
@@ -2659,7 +2661,7 @@
         try { await fetch('/api/admin/logout', { method: 'POST', headers: adminHeaders() }); } catch(e) {}
       }
       adminToken = null;
-      sessionStorage.removeItem('adminToken');
+      localStorage.removeItem('adminToken');
       const loginWrapper = document.getElementById('loginWrapper');
       const adminWrapper = document.getElementById('adminWrapper');
       const pwEl = document.getElementById('adminPassword');

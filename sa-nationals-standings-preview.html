@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PREVIEW — SA Nationals 2026 Standings (After Autumn Nats — Drop Scoring)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:            #1e40af;
+      --ink:           #dbeafe;
+      --ink-dim:       rgba(219,234,254,0.65);
+      --ink-faint:     rgba(219,234,254,0.3);
+      --white:         #ffffff;
+      --gold:          #facc15;
+      --p2:            rgba(219,234,254,0.85);
+      --p3:            #93c5fd;
+      --border:        rgba(219,234,254,0.15);
+      --border-bright: rgba(219,234,254,0.4);
+      --preview:       #f97316;
+      --drop-color:    #f87171;
+      --drop-bg:       rgba(248,113,113,0.08);
+      --kept-color:    #4ade80;
+      --wknd1-bg:      rgba(15,23,42,0.18);
+      --wknd2-bg:      rgba(250,204,21,0.03);
+    }
+    html, body { min-height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    .preview-banner {
+      background: var(--preview); color: #fff;
+      text-align: center; padding: 10px 20px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    }
+    .hero { display: flex; flex-direction: column; align-items: center; text-align: center;
+      padding: clamp(28px,5vw,52px) 24px clamp(16px,3vw,28px); }
+    .kicker { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 0.7rem; }
+    .title { font-size: clamp(1.5rem,5vw,3rem); font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: var(--white); line-height: 1; margin-bottom: 0.7rem; }
+    .subtitle { font-size: 0.7rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-dim); }
+    .rounds-note { margin-top: 10px; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+    .divider { width: 48px; height: 2px; background: var(--gold); margin: 1rem auto 0; }
+    .tab-wrap { display: flex; justify-content: center; padding: 0 16px 24px; }
+    .tab-bar { display: flex; background: rgba(15,23,42,0.3); border: 1px solid var(--border); flex-wrap: wrap; }
+    .class-tab { padding: 10px 24px; border: none; background: transparent; color: var(--ink-dim);
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.18s; border-right: 1px solid var(--border); white-space: nowrap; }
+    .class-tab:last-child { border-right: none; }
+    .class-tab:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+    .class-tab.active { background: rgba(15,23,42,0.55); color: var(--white); box-shadow: inset 0 -2px 0 var(--gold); }
+    .panel-wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px 80px; }
+    .class-panel { display: none; }
+    .class-panel.active { display: block; }
+    /* PODIUM */
+    .podium-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+    .podium-card { background: rgba(15,23,42,0.4); border: 1px solid var(--border);
+      padding: 20px 16px 16px; text-align: center; position: relative; }
+    .podium-card.p1 { border-color: rgba(250,204,21,0.5); }
+    .podium-card.p2 { border-color: rgba(219,234,254,0.3); }
+    .podium-card.p3 { border-color: rgba(147,197,253,0.3); }
+    .podium-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+    .podium-card.p1::before { background: var(--gold); }
+    .podium-card.p2::before { background: rgba(219,234,254,0.6); }
+    .podium-card.p3::before { background: #93c5fd; }
+    .podium-pos { font-size:0.6rem; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:6px; }
+    .p1 .podium-pos { color: var(--gold); }
+    .p2 .podium-pos { color: var(--p2); }
+    .p3 .podium-pos { color: var(--p3); }
+    .podium-name { font-size:0.85rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+      color: var(--white); line-height:1.3; margin-bottom:8px; }
+    .podium-pts { font-size:2rem; font-weight:800; line-height:1; }
+    .p1 .podium-pts { color: var(--gold); }
+    .p2 .podium-pts { color: var(--p2); }
+    .p3 .podium-pts { color: var(--p3); }
+    .podium-pts-label { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-dim); margin-top:2px; }
+    .podium-full { font-size:0.62rem; letter-spacing:0.08em; color:var(--ink-faint); margin-top:4px; }
+    .podium-raceno { position:absolute; top:10px; right:12px; font-size:0.65rem; letter-spacing:0.12em; color:var(--ink-faint); font-weight:600; }
+    /* RULE BOX */
+    .rule-box { border:1px solid rgba(250,204,21,0.25); background:rgba(250,204,21,0.04);
+      padding:12px 16px; margin-bottom:16px; font-size:0.68rem; letter-spacing:0.06em; color:var(--ink-dim); line-height:1.6; }
+    .rule-box strong { color:var(--gold); font-weight:700; }
+    .rule-legend { display:flex; gap:20px; margin-top:8px; flex-wrap:wrap; }
+    .rl-item { display:flex; align-items:center; gap:8px; font-size:0.64rem; letter-spacing:0.08em; }
+    .rl-swatch { width:34px; height:18px; border:1px solid; font-size:0.56rem; font-weight:700;
+      display:flex; align-items:center; justify-content:center; border-radius:2px; }
+    .rl-swatch.drop { background: var(--drop-bg); border-color: rgba(248,113,113,0.4); color: var(--drop-color); text-decoration:line-through; }
+    .rl-swatch.keep { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.3); color: var(--kept-color); }
+    .rl-swatch.single { background: rgba(219,234,254,0.05); border-color: var(--border); color: var(--ink-dim); }
+    /* SECTION LABEL */
+    .section-label { font-size:0.6rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--ink-dim);
+      margin-bottom:14px; display:flex; align-items:center; gap:12px; }
+    .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+    /* TABLE */
+    .tbl-wrap { border:1px solid var(--border); overflow-x:auto; margin-bottom:40px; }
+    table { width:100%; border-collapse:collapse; min-width:920px; }
+    thead tr.th-top { background: rgba(15,23,42,0.65); }
+    thead tr.th-sub { background: rgba(15,23,42,0.45); border-bottom:2px solid var(--border-bright); }
+    th { padding:8px 8px; font-size:0.57rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+      color:var(--ink-dim); text-align:center; white-space:nowrap; }
+    th.left { text-align:left; }
+    /* Summer Nats weekend (RSR) — bright yellow */
+    .thg-w1 { background: rgba(253,224,71,0.06); border-left:1px solid rgba(253,224,71,0.28); color: #fde047 !important; }
+    .thg-w1-end { border-right:1px solid rgba(253,224,71,0.28); }
+    /* Autumn Nats weekend (VKC) — warm orange */
+    .thg-w2 { background: rgba(251,146,60,0.07); border-left:1px solid rgba(251,146,60,0.28); color: #fb923c !important; }
+    .thg-w2-end { border-right:1px solid rgba(251,146,60,0.28); }
+    .thg-adj { background: rgba(15,23,42,0.55); border-left:2px solid var(--border-bright); }
+    /* TABLE BODY */
+    tbody tr { border-bottom:1px solid rgba(219,234,254,0.06); transition:background 0.12s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:rgba(255,255,255,0.04); }
+    tbody tr.rank1 { background: rgba(250,204,21,0.05); }
+    tbody tr.rank2 { background: rgba(219,234,254,0.03); }
+    tbody tr.rank3 { background: rgba(147,197,253,0.04); }
+    td { padding:10px 8px; font-size:0.76rem; color:var(--ink); text-align:center; white-space:nowrap; }
+    td.left { text-align:left; }
+    .rank-num { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px;
+      font-size:0.78rem; font-weight:800; border:1px solid var(--border); color:var(--ink-dim);
+      background:rgba(15,23,42,0.3); }
+    .rank1 .rank-num { border-color:rgba(250,204,21,0.6); color:var(--gold); background:rgba(250,204,21,0.08); }
+    .rank2 .rank-num { border-color:rgba(219,234,254,0.4); color:var(--p2); background:rgba(219,234,254,0.05); }
+    .rank3 .rank-num { border-color:rgba(147,197,253,0.4); color:var(--p3); background:rgba(147,197,253,0.06); }
+    .driver-name { font-size:0.82rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:var(--white); }
+    .driver-note { font-size:0.62rem; letter-spacing:0.08em; color:var(--ink-faint); margin-top:2px; }
+    .race-no { display:inline-block; padding:2px 6px; font-size:0.68rem; font-weight:700;
+      letter-spacing:0.1em; border:1px solid var(--border); color:var(--ink-dim); background:rgba(15,23,42,0.3); }
+    /* HEATS cell */
+    .heat-val  { font-size:0.72rem; color:var(--ink-dim); }
+    .heat-excl { font-size:0.62rem; color:var(--drop-color); opacity:0.75; }
+    .heat-zero { font-size:0.72rem; color:rgba(219,234,254,0.2); }
+    .sep       { color:var(--ink-faint); margin:0 1px; font-size:0.65rem; }
+    .sub-val    { font-size:0.9rem; font-weight:700; color:var(--ink); display:block; }
+    .sub-absent { color:rgba(219,234,254,0.15); font-size:0.8rem; }
+    .drop-tag { display:block; font-size:0.52rem; font-weight:700; letter-spacing:0.12em;
+      text-transform:uppercase; color:var(--drop-color); margin-top:2px; opacity:0.85; }
+    .kept-tag { display:block; font-size:0.52rem; font-weight:700; letter-spacing:0.12em;
+      text-transform:uppercase; color:var(--kept-color); margin-top:2px; opacity:0.75; }
+    /* weekend cell backgrounds */
+    .cw1h { background: rgba(253,224,71,0.04); border-left:1px solid rgba(253,224,71,0.12); }
+    .cw1s { background: rgba(253,224,71,0.04); }
+    .cw2h { background: rgba(251,146,60,0.04); border-left:1px solid rgba(251,146,60,0.12); }
+    .cw2s { background: rgba(251,146,60,0.04); }
+    .cw2-end { border-right:1px solid rgba(251,146,60,0.12); }
+    /* DROPPED individual heat (lowest heat of the weekend) */
+    .heat-drop { text-decoration: line-through; color: var(--drop-color) !important; font-weight: 700; opacity: 0.7; }
+    /* ADJ TOTAL cell */
+    td.adj-total { border-left:2px solid var(--border-bright); background:rgba(15,23,42,0.22); vertical-align:middle; }
+    .adj-pts { font-size:1.1rem; font-weight:800; color:var(--white); display:block; }
+    .rank1 .adj-pts { color: var(--gold); }
+    .rank2 .adj-pts { color: var(--p2); }
+    .rank3 .adj-pts { color: var(--p3); }
+    .full-label { display:block; font-size:0.61rem; letter-spacing:0.06em; color:var(--ink-faint); margin-top:3px; }
+    .full-label.same { color:rgba(74,222,128,0.45); }
+    .rule-wrap { max-width:1200px; margin:0 auto; padding:0 16px 60px; }
+    @media (max-width:600px) {
+      .podium-row { grid-template-columns:1fr; }
+      .class-tab { padding:8px 12px; font-size:0.65rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="preview-banner">
+  WARNING: LOCAL PREVIEW ONLY &mdash; After Autumn Nats (VKC 09 &amp; 10 May) &mdash; DROP-HEAT SCORING APPLIED (lowest single heat per weekend dropped) &mdash; NOT YET LIVE
+</div>
+
+<div class="hero">
+  <div class="kicker">ROK Cup South Africa &middot; 2026</div>
+  <div class="title">National Championship</div>
+  <div class="subtitle">Standings Preview &middot; Drop-Heat Scoring &middot; 2026 Season</div>
+  <div class="divider"></div>
+</div>
+
+<div class="tab-wrap">
+  <div class="tab-bar" id="classTabs">
+    <button class="class-tab active" data-class="cadet">Cadet ROK</button>
+    <button class="class-tab" data-class="mini">Mini ROK</button>
+    <button class="class-tab" data-class="okj">OK Junior</button>
+    <button class="class-tab" data-class="okn">OK National</button>
+  </div>
+</div>
+
+<div class="panel-wrap" id="panelWrap"></div>
+
+<div class="rule-wrap">
+  <div class="rule-box"><strong>Drop-heat rule:</strong> For each weekend where a driver
+  started <em>both</em> rounds, the single lowest individual heat score across all heats
+  in that weekend is dropped. The dropped heat is shown struck-through in the heats column;
+  the <em>Sub</em> column shows the adjusted round total with the drop amount in
+  <span style="color:var(--drop-color)">red</span>.
+    <div class="rule-legend">
+      <div class="rl-item"><span style="text-decoration:line-through;color:var(--drop-color);font-weight:700;font-size:0.82rem;letter-spacing:0">30</span>&nbsp; Dropped heat &mdash; lowest single heat of the weekend</div>
+      <div class="rl-item"><div class="rl-swatch drop" style="text-decoration:none">&minus;30</div> Sub shows dropped value in red</div>
+      <div class="rl-item"><div class="rl-swatch single">32</div> Normal heat score</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ROUND & WEEKEND DEFINITIONS
+// ============================================================
+var ROUNDS = [
+  { date: 'RSR 21-Mar', label: 'Rd 1', isNew: false, wknd: 0 },
+  { date: 'RSR 22-Mar', label: 'Rd 2', isNew: false, wknd: 0 },
+  { date: 'VKC 09-May', label: 'Rd 3 NEW', isNew: true,  wknd: 1 },
+  { date: 'VKC 10-May', label: 'Rd 4 NEW', isNew: true,  wknd: 1 }
+];
+// For each weekend: which round indices pair together for drop-rule
+var WEEKENDS = [
+  { title: 'SUMMER NATS', color: '#fde047', label: 'RSR Weekend  \u00B7  21-22 Mar',         rounds: [0, 1] },
+  { title: 'AUTUMN NATS', color: '#fb923c', label: 'VKC Weekend  \u00B7  09-10 May',          rounds: [2, 3] }
+];
+
+// ============================================================
+// RACE DATA
+// rounds[i] = null  => driver absent that round
+// rounds[i] = [h1,h2,h3]  where hN = null (excluded/excl), 0 (DNS), or integer points
+// ============================================================
+var CLASSES = {
+  cadet: { label: 'Cadet ROK', drivers: [
+    { name: 'Grayson Venter',       no: '29', rounds: [[30,30,32],[32,32,32],[35,35,35],[35,35,35]] },
+    { name: 'Yerhu Malabie',        no: '88', rounds: [[35,35,35],[35,35,35],null,null] },
+    { name: 'Christopher Grimmick', no: '96', rounds: [[32,32,30],[29,30,30],null,null] },
+    { name: 'Grant William',        no: '61', rounds: [[29,29,28],[30,29,29],null,null] },
+    { name: 'Ewan Wentink',         no: '22', rounds: [null,[28,28,28],null,null], note: 'o/e' },
+    { name: 'Tiyani Malabie',       no: '29', rounds: [null,null,[32,0,0],null] }
+  ]},
+  mini: { label: 'Mini ROK', drivers: [
+    { name: 'Kayde Cornofsky',      no: '17', rounds: [[35,35,35],[29,32,30],[35,35,30],[32,35,35]] },
+    { name: 'Maddox Mason',         no: '29', rounds: [[29,30,29],[35,35,35],[32,30,32],[35,27,29]] },
+    { name: 'Riley Van Staden',     no: '18', rounds: [[32,32,30],[30,19,28],[29,28,35],[30,32,30]] },
+    { name: 'Zac Boshoff',          no: '55', rounds: [[28,23,27],[27,29,29],[26,32,22],[29,28,32]] },
+    { name: 'Ronald Venter',        no: '50', rounds: [[15,24,24],[25,28,27],[30,29,29],[27,26,28]] },
+    { name: 'Parker van der Molen', no: '58', rounds: [[24,26,25],[23,23,25],[25,27,22],[25,20,26]] },
+    { name: 'Hunter North',         no: '12', rounds: [[21,22,20],[20,22,22],[28,25,27],[26,29,25]] },
+    { name: 'Omolemo Mfana',        no: '44', rounds: [[20,19,19],[19,20,20],[27,26,28],[20,25,24]] },
+    { name: 'Diego Berardone',      no: '88', rounds: [[27,28,28],[24,25,23],null,[28,30,27]] },
+    { name: 'Noah Cronje',          no: '24', rounds: [[30,29,32],[32,30,32],null,null] },
+    { name: 'Diego Antunes',        no: '66', rounds: [[25,25,26],[28,27,26],null,null] },
+    { name: 'Egor Grishin',         no: '11', rounds: [[26,27,21],[22,24,24],null,null] },
+    { name: 'Ethan Tuttleberg',     no: '46', rounds: [[23,21,22],[26,26,15],null,null] },
+    { name: 'Igor Esteves',         no: '59', rounds: [[22,20,23],[21,21,21],null,null], note: 'OSA' }
+  ]},
+  okj: { label: 'OK Junior', drivers: [
+    { name: 'Mattao Mason',          no: '28', rounds: [[35,35,35],[35,35,35],[35,35,35],[35,35,35]] },
+    { name: 'Thekiso Retlotleng',    no: '78', rounds: [[29,30,32],[29,32,29],[23,27,29],[29,29,27]] },
+    { name: 'Logan Billau',          no: '68', rounds: [[28,26,26],[28,28,27],[30,30,30],[25,32,30]] },
+    { name: 'Aleksandar Praizovic',  no: '15', rounds: [[32,32,30],[30,29,30],[23,25,25],[24,20,25]] },
+    { name: 'Kiyaan Reddi',          no: '13', rounds: [[27,28,24],[24,27,28],[28,28,27],[27,26,24]] },
+    { name: 'Max Boshoff',           no: '33', rounds: [[30,0,29],[32,30,32],[23,20,26],[32,30,29]] },
+    { name: 'Ruvan Maritz',          no: '88', rounds: [[25,29,28],[25,25,25],[29,26,20],[30,20,28]] },
+    { name: 'Jordan Klaasen',        no: '22', rounds: [[null,27,27],[26,null,26],[0,29,28],[26,25,26]] },
+    { name: 'Declan Jurgens',        no: '63', rounds: [null,null,[32,32,32],[28,27,32]] },
+    { name: 'Aashay Nagura',         no: '27', rounds: [[26,25,25],[27,26,24],null,null] },
+    { name: 'Durelle Goodman',       no: '47', rounds: [null,null,[23,20,20],[19,28,19]] }
+  ]},
+  okn: { label: 'OK National', drivers: [
+    { name: 'Jack Moore',             no: '31',  rounds: [[29,35,35],[32,35,35],[30,32,35],[35,28,28]] },
+    { name: 'Chase Haskins',          no: '11',  rounds: [[35,30,29],[30,29,30],[32,29,29],[32,29,30]] },
+    { name: 'Aidan Calitz',           no: '221', rounds: [[30,28,32],[29,30,29],[27,35,30],[30,32,32]] },
+    { name: 'Ashaan Reddi',           no: '26',  rounds: [[32,29,30],[28,28,28],[28,27,27],[29,30,29]] },
+    { name: 'Emile van der Wateren',  no: '23',  rounds: [[28,32,28],[35,32,32],null,null] },
+    { name: 'Jason Coetzee',          no: '77',  rounds: [null,null,[29,28,28],[24,35,35]] },
+    { name: 'Troy Snyman',            no: '21',  rounds: [null,null,[35,30,32],[null,null,null]] }
+  ]}
+};
+
+// ============================================================
+// SCORING LOGIC
+// ============================================================
+function hv(h) { return h === null ? 0 : h; }
+
+// calcScores: for each weekend where both rounds were attended, drop the
+// single lowest individual heat score from across all heats in that weekend.
+function calcScores(driver) {
+  // full = sum of every heat across all attended rounds
+  var full = 0;
+  driver.rounds.forEach(function(r) {
+    if (r === null) return;
+    r.forEach(function(h) { full += hv(h); });
+  });
+
+  // droppedHeat: keyed "ri-hi" → dropped heat value
+  var droppedHeat = {};
+  WEEKENDS.forEach(function(wk) {
+    var a = wk.rounds[0], b = wk.rounds[1];
+    var ra = driver.rounds[a], rb = driver.rounds[b];
+    if (ra === null || rb === null) return; // must attend both rounds
+    var heats = [];
+    ra.forEach(function(h, hi) { heats.push({ ri: a, hi: hi, val: hv(h) }); });
+    rb.forEach(function(h, hi) { heats.push({ ri: b, hi: hi, val: hv(h) }); });
+    // find index of the lowest heat (first on tie)
+    var minVal = Infinity, minIdx = 0;
+    heats.forEach(function(hObj, i) { if (hObj.val < minVal) { minVal = hObj.val; minIdx = i; } });
+    droppedHeat[heats[minIdx].ri + '-' + heats[minIdx].hi] = heats[minIdx].val;
+  });
+
+  // adjusted = full minus sum of all dropped heat values
+  var dropSum = 0;
+  Object.keys(droppedHeat).forEach(function(k) { dropSum += droppedHeat[k]; });
+
+  return { full: full, adjusted: full - dropSum, droppedHeat: droppedHeat };
+}
+
+// per-round adjusted sub: full round sum minus the dropped heat if it's in this round
+function roundAdjSub(r, ri, droppedHeat) {
+  if (r === null) return null;
+  return r.reduce(function(s, h, hi) {
+    return droppedHeat[ri + '-' + hi] !== undefined ? s : s + hv(h);
+  }, 0);
+}
+
+// ============================================================
+// HTML HELPERS
+// ============================================================
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function ordinal(n) {
+  var v = n % 100;
+  return n + ((v >= 11 && v <= 13) ? 'th' : (['th','st','nd','rd'][n % 10] || 'th'));
+}
+// ri and droppedHeat are needed to mark the dropped individual heat
+function renderHeats(r, ri, droppedHeat) {
+  if (r === null) return '<span class="sub-absent">\u2013</span>';
+  return r.map(function(h, hi) {
+    var isDrop = droppedHeat[ri + '-' + hi] !== undefined;
+    var dc = isDrop ? ' heat-drop' : '';
+    if (h === null) return '<span class="heat-excl' + dc + '">excl</span>';
+    if (h === 0)    return '<span class="heat-zero' + dc + '">0</span>';
+    return '<span class="heat-val' + dc + '">' + h + '</span>';
+  }).join('<span class="sep">/</span>');
+}
+
+// ============================================================
+// PANEL RENDERER
+// ============================================================
+function renderPanel(classKey) {
+  var cls = CLASSES[classKey];
+  // sort by adjusted desc, then full desc as tiebreak
+  var ds = cls.drivers.map(function(d) { return { d: d, sc: calcScores(d) }; });
+  ds.sort(function(a, b) {
+    return (b.sc.adjusted - a.sc.adjusted) || (b.sc.full - a.sc.full);
+  });
+
+  // Podium cards (top 3)
+  var pcls = ['p1','p2','p3'];
+  var podiumHTML = ds.slice(0, 3).map(function(x, i) {
+    var d = x.d, sc = x.sc;
+    return '<div class="podium-card ' + pcls[i] + '">'
+      + '<span class="podium-raceno">#' + esc(d.no) + '</span>'
+      + '<div class="podium-pos">' + ordinal(i + 1) + ' Place</div>'
+      + '<div class="podium-name">' + esc(d.name) + '</div>'
+      + '<div class="podium-pts">' + sc.adjusted + '</div>'
+      + '<div class="podium-pts-label">Adj. Points</div>'
+      + '<div class="podium-full">(' + sc.full + ' full total)</div>'
+      + '</div>';
+  }).join('');
+
+  // Table header row 1 — weekend group spans
+  var hdr1 = '<tr class="th-top">'
+    + '<th rowspan="2" style="width:44px">Pos</th>'
+    + '<th rowspan="2" class="left" style="min-width:150px">Driver</th>'
+    + '<th rowspan="2" style="width:50px">No.</th>'
+    + WEEKENDS.map(function(wk, wi) {
+        var thCls = wi === 0 ? 'thg-w1' : 'thg-w2 thg-w2-end';
+        return '<th colspan="4" class="' + thCls + '">'
+          + '<span style="display:block;font-size:0.54rem;letter-spacing:0.32em;margin-bottom:4px;color:' + wk.color + ';font-weight:800;opacity:0.9">' + wk.title + '</span>'
+          + esc(wk.label)
+          + '</th>';
+      }).join('')
+    + '<th rowspan="2" class="thg-adj" style="min-width:90px">Adj Total<br>'
+    +   '<span style="font-weight:400;font-size:0.5rem;color:var(--ink-faint)">(full total)</span></th>'
+    + '</tr>';
+
+  // Table header row 2 — per-round labels
+  var hdr2 = '<tr class="th-sub">'
+    + ROUNDS.map(function(r, ri) {
+        var cls1 = r.isNew ? 'thg-w2' : 'thg-w1';
+        var cls2 = (ri === 3) ? cls1 + ' thg-w2-end' : cls1;
+        return '<th class="' + cls1 + '">' + r.date + '<br>'
+          + '<span style="font-weight:400">' + r.label + '</span></th>'
+          + '<th class="' + cls2 + '">Sub</th>';
+      }).join('')
+    + '</tr>';
+
+  // Data rows
+  var rowsHTML = ds.map(function(x, idx) {
+    var d = x.d, sc = x.sc;
+    var rank = idx + 1;
+    var rCls = rank <= 3 ? ' rank' + rank : '';
+    var sameTotal = sc.full === sc.adjusted;
+
+    var cells = d.rounds.map(function(r, ri) {
+      var isNew = ROUNDS[ri].isNew;
+      var hBase = isNew ? 'cw2' : 'cw1';
+      var endMod = (ri === 3) ? ' cw2-end' : '';
+
+      // find if a heat was dropped from THIS round, and its value
+      var dropVal = null;
+      if (r) {
+        r.forEach(function(h, hi) {
+          if (sc.droppedHeat[ri + '-' + hi] !== undefined) dropVal = sc.droppedHeat[ri + '-' + hi];
+        });
+      }
+
+      // heats cell — dropped heat shown with strikethrough via .heat-drop class
+      var heatTd = '<td class="' + hBase + 'h">' + renderHeats(r, ri, sc.droppedHeat) + '</td>';
+
+      // subtotal cell — show adjusted round sub; if a heat was dropped show –N
+      var adjSub = roundAdjSub(r, ri, sc.droppedHeat);
+      var subContent;
+      if (adjSub === null) {
+        subContent = '<span class="sub-absent">\u2013</span>';
+      } else {
+        subContent = '<span class="sub-val">' + adjSub + '</span>';
+        if (dropVal !== null) subContent += '<span class="drop-tag">\u2212' + dropVal + '</span>';
+      }
+      var subTd = '<td class="' + hBase + 's' + endMod + '">' + subContent + '</td>';
+      return heatTd + subTd;
+    }).join('');
+
+    var adjContent = '<span class="adj-pts">' + sc.adjusted + '</span>'
+      + '<span class="full-label' + (sameTotal ? ' same' : '') + '">'
+      + (sameTotal ? '= full total' : '(' + sc.full + ' full)') + '</span>';
+
+    var noteHtml = d.note ? '<div class="driver-note">' + esc(d.note) + '</div>' : '';
+    return '<tr class="' + rCls.trim() + '">'
+      + '<td><div class="rank-num">' + rank + '</div></td>'
+      + '<td class="left"><div class="driver-name">' + esc(d.name) + '</div>' + noteHtml + '</td>'
+      + '<td><span class="race-no">' + esc(d.no) + '</span></td>'
+      + cells
+      + '<td class="adj-total">' + adjContent + '</td>'
+      + '</tr>';
+  }).join('');
+
+  return '<div class="podium-row">' + podiumHTML + '</div>'
+    + '<div class="section-label">' + esc(cls.label) + ' &mdash; ROK Nats 2026 &mdash; Drop Scoring &mdash; 4 Rounds</div>'
+    + '<div class="tbl-wrap"><table>'
+    + '<thead>' + hdr1 + hdr2 + '</thead>'
+    + '<tbody>' + rowsHTML + '</tbody>'
+    + '</table></div>';
+}
+
+// ============================================================
+// INIT / TAB SWITCHING
+// ============================================================
+var panelWrap = document.getElementById('panelWrap');
+var cache = {};
+
+function showPanel(key) {
+  if (!cache[key]) {
+    var div = document.createElement('div');
+    div.id = 'panel-' + key;
+    div.className = 'class-panel';
+    div.innerHTML = renderPanel(key);
+    panelWrap.appendChild(div);
+    cache[key] = div;
+  }
+  Object.keys(cache).forEach(function(k) { cache[k].classList.remove('active'); });
+  cache[key].classList.add('active');
+}
+
+document.getElementById('classTabs').addEventListener('click', function(e) {
+  var btn = e.target.closest('.class-tab');
+  if (!btn) return;
+  document.querySelectorAll('.class-tab').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  showPanel(btn.dataset['class']);
+});
+
+showPanel('cadet');
+</script>
+</body>
+</html>

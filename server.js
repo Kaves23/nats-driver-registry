@@ -274,7 +274,7 @@ app.post('/api/admin/login', (req, res) => {
   }
   clearLoginAttempts(clientIp);
   const token = uuidv4();
-  adminTokens.set(token, { expires: Date.now() + 8 * 60 * 60 * 1000 }); // 8 hour session
+  adminTokens.set(token, { expires: Date.now() + 16 * 60 * 60 * 1000 }); // 16 hour session
   saveAdminTokens();
   console.log(`✅ Admin login successful - session created`);
   res.json({ success: true, token });
