@@ -4537,28 +4537,141 @@
           return;
         }
         
-        // Fetch NATS championship standings to determine driver's current position
-        const natsRankMap = {};
+        // ── Drop-heat calculation (same rule as sa-nationals-standings.html) ──
+        // Weekends: rounds [1,2] (RSR) and [3,4] (VKC) — if driver did both, drop 1 lowest heat
+        function calcDropForDriver(roundRows) {
+          const WEEKENDS = [[1,2],[3,4]];
+          const byRound = {};
+          roundRows.forEach(function(r) { byRound[+r.round] = r; });
+          const drops = {};
+          var full = 0;
+          roundRows.forEach(function(r) {
+            full += (+r.heat1_points||0) + (+r.heat2_points||0) + (+r.final_points||0);
+          });
+          var dropSum = 0;
+          WEEKENDS.forEach(function(wk) {
+            const ra = wk[0], rb = wk[1];
+            if (!byRound[ra] || !byRound[rb]) return;
+            const heats = [
+              {round:ra, key:'heat1', val:+byRound[ra].heat1_points||0},
+              {round:ra, key:'heat2', val:+byRound[ra].heat2_points||0},
+              {round:ra, key:'final', val:+byRound[ra].final_points||0},
+              {round:rb, key:'heat1', val:+byRound[rb].heat1_points||0},
+              {round:rb, key:'heat2', val:+byRound[rb].heat2_points||0},
+              {round:rb, key:'final', val:+byRound[rb].final_points||0},
+            ];
+            var minVal = Infinity, minIdx = 0;
+            heats.forEach(function(h,i) { if (h.val < minVal) { minVal = h.val; minIdx = i; } });
+            const d = heats[minIdx];
+            drops[d.round + ':' + d.key] = d.val;
+            dropSum += d.val;
+          });
+          return { full: full, adjusted: full - dropSum, drops: drops };
+        }
+
+        // ── Fetch per-round heat data and build drop-adjusted standings ──
+        const natsClasses = [...new Set(
+          (data.points || []).filter(p => p.championship_type === 'ROK NATS').map(p => p.class)
+        )];
+        const natsStandings = {};
         try {
-          const natsClasses = [...new Set(
-            (data.points || []).filter(p => p.championship_type === 'ROK NATS').map(p => p.class)
-          )];
           await Promise.all(natsClasses.map(async cls => {
             try {
-              const sr = await fetch(`/api/championship-standings/2026/${encodeURIComponent(cls)}?championship_type=ROK%20NATS`);
-              if (!sr.ok) return;
-              const sd = await sr.json();
-              if (sd.success && Array.isArray(sd.standings)) {
-                const idx = sd.standings.findIndex(s => s.driver_id === driverId);
-                if (idx >= 0) natsRankMap[cls] = idx + 1;
-              }
+              const hr = await fetch(`/api/championship-heats/2026/${encodeURIComponent(cls)}?championship_type=ROK%20NATS`);
+              if (!hr.ok) return;
+              const hd = await hr.json();
+              if (!hd.success || !Array.isArray(hd.rows)) return;
+              const byDriver = {};
+              hd.rows.forEach(r => {
+                if (!byDriver[r.driver_id]) byDriver[r.driver_id] = { driver_id: r.driver_id, rounds: [] };
+                byDriver[r.driver_id].rounds.push(r);
+              });
+              const st = Object.values(byDriver).map(d => {
+                const sc = calcDropForDriver(d.rounds);
+                return { driver_id: d.driver_id, adjusted: sc.adjusted, full: sc.full };
+              });
+              st.sort((a,b) => (b.adjusted - a.adjusted) || (b.full - a.full));
+              natsStandings[cls] = st;
             } catch(e) { /* ignore per-class failure */ }
           }));
         } catch(e) { /* ignore standings fetch failure gracefully */ }
 
+        const natsRankMap = {};
+        natsClasses.forEach(cls => {
+          const st = natsStandings[cls];
+          if (!st) return;
+          const idx = st.findIndex(s => s.driver_id === driverId);
+          if (idx >= 0) natsRankMap[cls] = idx + 1;
+        });
+
+        // Drop info for this driver's own NATS rounds
+        const myDropInfo = {};
+        natsClasses.forEach(cls => {
+          const myRounds = (data.points || []).filter(p => p.championship_type === 'ROK NATS' && p.class === cls);
+          if (myRounds.length > 0) myDropInfo[cls] = calcDropForDriver(myRounds);
+        });
+
+        // ── Northern Regions drop rule: drop 3 lowest individual heats overall ──
+        function calcNrDrop(roundRows) {
+          var allHeats = [];
+          roundRows.forEach(function(r) {
+            allHeats.push({round:+r.round,key:'heat1',val:+(r.heat1_points||0)});
+            allHeats.push({round:+r.round,key:'heat2',val:+(r.heat2_points||0)});
+            allHeats.push({round:+r.round,key:'final',val:+(r.final_points||0)});
+          });
+          allHeats.sort(function(a,b){ return a.val-b.val; });
+          var drops={}, dropSum=0;
+          var n=Math.min(3,allHeats.length);
+          for(var i=0;i<n;i++){drops[allHeats[i].round+':'+allHeats[i].key]=allHeats[i].val;dropSum+=allHeats[i].val;}
+          var full=allHeats.reduce(function(s,h){return s+h.val;},0);
+          return{full:full,adjusted:full-dropSum,drops:drops};
+        }
+
+        // ── NR standings: fetch heats + apply 3-heat drop ──
+        const nrClasses = [...new Set(
+          (data.points||[]).filter(p=>p.championship_type==='Northern Regions').map(p=>p.class)
+        )];
+        const nrStandings = {};
+        try {
+          await Promise.all(nrClasses.map(async cls => {
+            try {
+              const hr = await fetch(`/api/championship-heats/2026/${encodeURIComponent(cls)}?championship_type=Northern%20Regions`);
+              if (!hr.ok) return;
+              const hd = await hr.json();
+              if (!hd.success || !Array.isArray(hd.rows)) return;
+              const byDriver = {};
+              hd.rows.forEach(r => {
+                if (!byDriver[r.driver_id]) byDriver[r.driver_id]={driver_id:r.driver_id,rounds:[]};
+                byDriver[r.driver_id].rounds.push(r);
+              });
+              const st = Object.values(byDriver).map(d => {
+                const sc = calcNrDrop(d.rounds);
+                return {driver_id:d.driver_id, adjusted:sc.adjusted, full:sc.full};
+              });
+              st.sort((a,b)=>(b.adjusted-a.adjusted)||(b.full-a.full));
+              nrStandings[cls] = st;
+            } catch(e) {}
+          }));
+        } catch(e) {}
+
+        const nrRankMap = {};
+        nrClasses.forEach(cls => {
+          const st = nrStandings[cls];
+          if (!st) return;
+          const idx = st.findIndex(s=>s.driver_id===driverId);
+          if (idx>=0) nrRankMap[cls] = idx+1;
+        });
+
+        const myNrDropInfo = {};
+        nrClasses.forEach(cls => {
+          const myRounds = (data.points||[]).filter(p=>p.championship_type==='Northern Regions'&&p.class===cls);
+          if (myRounds.length>0) myNrDropInfo[cls] = calcNrDrop(myRounds);
+        });
+
         // Helper: build a points results table for a given championship type
-        function buildChampSection(champType, points, totals, isRegional, rankMap) {
+        function buildChampSection(champType, points, totals, isRegional, rankMap, dropInfo) {
           rankMap = rankMap || {};
+          dropInfo = dropInfo || {};
           const accentColor  = isRegional ? '#0ea5e9' : '#f59e0b';
           const accentLight  = isRegional ? '#e0f2fe' : '#fef3c7';
           const accentDark   = isRegional ? '#0c4a6e' : '#92400e';
@@ -4572,8 +4685,12 @@
           const filteredTotals = totals.filter(t => t.championship_type === champType);
 
           const summaryCards = filteredTotals.map(s => {
-            const avg = s.races_completed > 0 ? (s.total_points / s.races_completed).toFixed(1) : '0.0';
-            const champPos = !isRegional ? (rankMap[s.class] || null) : null;
+            const myDrop       = dropInfo[s.class] || null;
+            const displayTotal = myDrop ? myDrop.adjusted : parseInt(s.total_points||0);
+            const fullTotal    = myDrop ? myDrop.full : null;
+            const dropAmt      = myDrop ? (myDrop.full - myDrop.adjusted) : 0;
+            const avg = s.races_completed > 0 ? (displayTotal / s.races_completed).toFixed(1) : '0.0';
+            const champPos = rankMap[s.class] || null;
             const posOrdinal = champPos ? (champPos + (
               (champPos % 100 >= 11 && champPos % 100 <= 13) ? 'th'
               : ['th','st','nd','rd'][champPos % 10] || 'th'
@@ -4585,13 +4702,14 @@
                 </div>
                 <div>
                   <div style="font-size:13px;font-weight:800;color:${accentDark};">${posOrdinal} in Championship</div>
-                  <div style="font-size:10px;color:${accentDark};opacity:0.75;">National standings · ${escapeHtml(s.class)}</div>
+                  <div style="font-size:10px;color:${accentDark};opacity:0.75;">${isRegional ? '3-heat drop · NR Regional' : 'Drop-adj. standings'} · ${escapeHtml(s.class)}</div>
                 </div>
               </div>` : '';
+            const dropBadge = dropAmt > 0 ? `<div style="margin-top:8px;padding:4px 8px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);border-radius:4px;font-size:10px;color:#f87171;font-weight:700;">−${dropAmt} drop applied · full: ${fullTotal}</div>` : '';
             return `
               <div style="flex:1;min-width:0;max-width:340px;padding:18px;background:${cardGrad};border-radius:8px;border:2px solid ${accentBorder};box-shadow:0 4px 12px ${accentColor}30;">
-                <div style="font-size:28px;font-weight:800;color:${accentDark};margin-bottom:4px;">${escapeHtml(s.total_points||0)}</div>
-                <div style="font-size:10px;font-weight:700;color:${accentDark};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Total Points</div>
+                <div style="font-size:28px;font-weight:800;color:${accentDark};margin-bottom:4px;">${escapeHtml(String(displayTotal))}</div>
+                <div style="font-size:10px;font-weight:700;color:${accentDark};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">${dropAmt > 0 ? 'Adj. Points' : 'Total Points'}</div>
                 <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid ${accentColor}40;">
                   <div>
                     <div style="font-size:17px;font-weight:700;color:${accentDark};">${escapeHtml(s.races_completed)}</div>
@@ -4603,6 +4721,7 @@
                   </div>
                 </div>
                 <div style="margin-top:8px;font-size:12px;font-weight:600;color:${accentDark};">${escapeHtml(s.season)} · ${escapeHtml(s.class)}</div>
+                ${dropBadge}
                 ${posBlock}
               </div>`;
           }).join('');
@@ -4623,20 +4742,35 @@
           }
 
           const rows = filteredPoints.map((p, i) => {
-            const bg  = i % 2 === 0 ? '#111' : '#0a0a0a';
-            const tc  = p.total_points >= 75 ? '#16a34a' : p.total_points >= 50 ? '#d97706' : '#6b7280';
-            const dsqNote = p.notes && p.notes.includes('DSQ') ? ` <span style="font-size:10px;color:#dc2626;font-weight:700;">DSQ</span>` : '';
+            const bg    = i % 2 === 0 ? '#111' : '#0a0a0a';
+            const rnd   = +p.round;
+            const drops = dropInfo[p.class] ? dropInfo[p.class].drops : {};
+            const hCell = function(val, heatKey) {
+              const dropped = drops[rnd + ':' + heatKey] !== undefined;
+              const dispVal = val != null ? val : '—';
+              const style   = dropped ? 'font-size:13px;text-decoration:line-through;color:#f87171;font-weight:700;' : 'font-size:13px;color:var(--muted);';
+              const dropTag = dropped ? `<span style="display:block;font-size:9px;color:#f87171;font-weight:700;margin-top:1px;">drop</span>` : '';
+              return `<td style="padding:10px 8px;text-align:center;"><span style="${style}">${dispVal}</span>${dropTag}</td>`;
+            };
+            const droppedHere = ['heat1','heat2','final'].reduce(function(acc,k) {
+              return drops[rnd + ':' + k] !== undefined ? acc + drops[rnd + ':' + k] : acc;
+            }, 0);
+            const adjRndTotal = p.total_points - droppedHere;
+            const hasDropHere = droppedHere > 0;
+            const tc        = adjRndTotal >= 75 ? '#16a34a' : adjRndTotal >= 50 ? '#d97706' : '#6b7280';
+            const dsqNote   = p.notes && p.notes.includes('DSQ') ? ` <span style="font-size:10px;color:#dc2626;font-weight:700;">DSQ</span>` : '';
             return `
               <tr style="border-bottom:1px solid #1f1f1f;background:${bg};" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='${bg}'">
                 <td style="padding:10px 8px;">
                   <div style="font-weight:600;color:var(--ink);font-size:13px;">${escapeHtml(p.event||'Event')}</div>
                   <div style="font-size:11px;color:var(--muted);margin-top:2px;">Round ${escapeHtml(String(p.round||'—'))} · ${escapeHtml(p.class||'')}</div>
                 </td>
-                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.heat1_points||'—'}${p.notes&&p.notes.includes('R1')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
-                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.heat2_points||'—'}${p.notes&&p.notes.includes('R2')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
-                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.final_points||'—'}${p.notes&&p.notes.includes('R3')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
+                ${hCell(p.heat1_points, 'heat1')}
+                ${hCell(p.heat2_points, 'heat2')}
+                ${hCell(p.final_points, 'final')}
                 <td style="padding:10px 8px;text-align:center;">
-                  <div style="font-size:15px;font-weight:700;color:${tc};">${p.total_points||0}${dsqNote}</div>
+                  <div style="font-size:15px;font-weight:700;color:${tc};">${adjRndTotal}${dsqNote}</div>
+                  ${hasDropHere ? `<div style="font-size:10px;color:#f87171;margin-top:1px;">(${p.total_points} full)</div>` : ''}
                 </td>
                 <td style="padding:10px 8px;text-align:center;">
                   <div style="display:inline-block;padding:3px 10px;background:${accentLight};color:${accentDark};font-size:12px;font-weight:700;border-radius:4px;">${p.position||'—'}</div>
@@ -4644,13 +4778,16 @@
               </tr>`;
           }).join('');
 
-          const totalPts = filteredTotals.reduce((s,t) => s + parseInt(t.total_points||0), 0);
+          const totalPts = filteredTotals.reduce((s,t) => {
+            return s + (dropInfo[t.class] ? dropInfo[t.class].adjusted : parseInt(t.total_points||0));
+          }, 0);
+          const hasDrops = filteredTotals.some(t => dropInfo[t.class] && dropInfo[t.class].full > dropInfo[t.class].adjusted);
 
           return `
             <div style="margin-bottom:32px;">
               <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${accentColor};">
                 <span style="font-size:17px;font-weight:700;color:var(--ink);">${label}</span>
-                <span style="font-size:12px;background:${accentLight};color:${accentDark};padding:3px 10px;border-radius:20px;font-weight:600;">${totalPts} pts total</span>
+                <span style="font-size:12px;background:${accentLight};color:${accentDark};padding:3px 10px;border-radius:20px;font-weight:600;">${totalPts} ${hasDrops ? 'adj. ' : ''}pts total</span>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:18px;">
                 ${summaryCards}
@@ -4663,7 +4800,7 @@
                       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Race 1</th>
                       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Race 2</th>
                       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Race 3</th>
-                      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Total</th>
+                      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">${!isRegional && hasDrops ? 'Adj. Total' : 'Total'}</th>
                       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Position</th>
                     </tr>
                   </thead>
@@ -4673,33 +4810,28 @@
             </div>`;
         }
 
-        const nrSection   = buildChampSection('Northern Regions', data.points, data.seasonTotals, true,  {});
-        const natsSection = buildChampSection('ROK NATS',         data.points, data.seasonTotals, false, natsRankMap);
+        const nrSection   = buildChampSection('Northern Regions', data.points, data.seasonTotals, true, nrRankMap, myNrDropInfo);
+        const natsSection = buildChampSection('ROK NATS',         data.points, data.seasonTotals, false, natsRankMap, myDropInfo);
 
-        // ── Championship Gap Visualiser ──────────────────────────────────────
+        // ── Championship Gap Visualiser (uses already-fetched drop-adjusted standings — no extra fetch) ──
         let gapHtml = '';
         try {
-          const natsClasses2 = [...new Set(
-            (data.points || []).filter(p => p.championship_type === 'ROK NATS').map(p => p.class)
-          )];
-          const gapBlocks = await Promise.all(natsClasses2.map(async cls => {
+          const gapBlocks = natsClasses.map(cls => {
             try {
-              const sr = await fetch(`/api/championship-standings/2026/${encodeURIComponent(cls)}?championship_type=ROK%20NATS`);
-              if (!sr.ok) return null;
-              const sd = await sr.json();
-              if (!sd.success || !Array.isArray(sd.standings) || sd.standings.length === 0) return null;
-              const idx = sd.standings.findIndex(s => s.driver_id === driverId);
+              const st = natsStandings[cls];
+              if (!st || st.length === 0) return null;
+              const idx = st.findIndex(s => s.driver_id === driverId);
               if (idx < 0) return null;
-              const myPts  = parseInt(sd.standings[idx].total_points || 0);
-              const pos    = idx + 1;
-              const leader = parseInt(sd.standings[0].total_points || 0);
-              const above  = idx > 0 ? parseInt(sd.standings[idx - 1].total_points || 0) : null;
-              const below  = idx < sd.standings.length - 1 ? parseInt(sd.standings[idx + 1].total_points || 0) : null;
+              const myPts     = st[idx].adjusted;
+              const pos       = idx + 1;
+              const leader    = st[0].adjusted;
+              const above     = idx > 0 ? st[idx - 1].adjusted : null;
+              const below     = idx < st.length - 1 ? st[idx + 1].adjusted : null;
               const gapToLead = leader - myPts;
               const gapToNext = above !== null ? above - myPts : 0;
               const gapAhead  = below !== null ? myPts - below : null;
-              const pct = leader > 0 ? Math.round((myPts / leader) * 100) : 0;
-              const posOrd = pos + ([,'st','nd','rd'][pos % 10] || 'th');
+              const pct       = leader > 0 ? Math.round((myPts / leader) * 100) : 0;
+              const posOrd    = pos + ([,'st','nd','rd'][pos % 10] || 'th');
               const tip = pos === 1
                 ? `You lead by ${gapAhead !== null ? gapAhead : '?'} pts`
                 : gapToNext === 0
@@ -4709,10 +4841,10 @@
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
                   <div>
                     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:2px;">${cls} · Championship Standings</div>
-                    <div style="font-size:20px;font-weight:900;color:#ffffff;">${posOrd} <span style="font-size:13px;font-weight:500;color:#9ca3af;">of ${sd.standings.length}</span></div>
+                    <div style="font-size:20px;font-weight:900;color:#ffffff;">${posOrd} <span style="font-size:13px;font-weight:500;color:#9ca3af;">of ${st.length}</span></div>
                   </div>
                   <div style="text-align:right;">
-                    <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;">My Points</div>
+                    <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.08em;">Adj. Points</div>
                     <div style="font-size:22px;font-weight:900;color:#facc15;">${myPts}</div>
                   </div>
                 </div>
@@ -4722,12 +4854,11 @@
                 <div style="font-size:12px;color:#9ca3af;">${tip}${gapToLead > 0 ? ` · <span style="color:#6b7280;">${gapToLead} pts off the lead</span>` : ''}</div>
               </div>`;
             } catch(e) { return null; }
-          }));
-          const validBlocks = gapBlocks.filter(Boolean);
-          if (validBlocks.length > 0) {
+          }).filter(Boolean);
+          if (gapBlocks.length > 0) {
             gapHtml = `<div style="margin-bottom:24px;">
-              <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">🏎 Championship Standing</div>
-              ${validBlocks.join('')}
+              <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">🏎 Championship Standing (drop-adj.)</div>
+              ${gapBlocks.join('')}
             </div>`;
           }
         } catch(e) { /* gap visualiser is non-critical */ }
