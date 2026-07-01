@@ -12268,6 +12268,11 @@ app.get('/share/tyre-board', async (req, res) => {
   }
 });
 
+// Clean URL: /winternats opens index.html and JS auto-opens the Race Specific tab
+app.get('/winternats', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Serve static files from the project root (AFTER all API routes)
 // Block server-side source files from being served directly
 app.use((req, res, next) => {

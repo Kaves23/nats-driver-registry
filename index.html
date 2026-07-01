@@ -7404,9 +7404,9 @@ the paddock quickly and consistently.
       document.getElementById('infoTabGeneral').style.display = tab === 'general' ? 'flex' : 'none';
       document.getElementById('infoTabRaceSpecific').style.display = tab === 'race-specific' ? 'flex' : 'none';
 
-      // Update URL hash so this view can be bookmarked / shared
+      // Update URL so this view can be bookmarked / shared
       if (tab === 'race-specific') {
-        history.replaceState(null, '', '#race-specific');
+        history.replaceState(null, '', '/winternats');
         // Set initial red pulse immediately (before API call)
         const raceSpecificTab = document.querySelector('.info-top-tab[data-info-tab="race-specific"]');
         if (raceSpecificTab) {
@@ -7416,7 +7416,7 @@ the paddock quickly and consistently.
         loadRaceSpecificData();
         initScrollIndicator();
       } else {
-        if (window.location.hash === '#race-specific') history.replaceState(null, '', window.location.pathname);
+        if (window.location.pathname === '/winternats') history.replaceState(null, '', '/');        if (window.location.hash === '#race-specific') history.replaceState(null, '', window.location.pathname);
       }
     };
 
@@ -8379,8 +8379,8 @@ function closeModals() {
     // Initial section state (and scroll reset)
     activateSection('pool');
 
-    // Direct-link support: open Race Specific tab if URL hash is #race-specific
-    if (window.location.hash === '#race-specific') {
+    // Direct-link support: open Race Specific tab if URL is /winternats or hash is #race-specific
+    if (window.location.pathname === '/winternats' || window.location.hash === '#race-specific') {
       setTimeout(() => {
         openModal(infoModal);
         setTimeout(() => switchInfoTopTab('race-specific'), 200);
