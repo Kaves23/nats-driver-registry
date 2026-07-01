@@ -7574,8 +7574,13 @@ the paddock quickly and consistently.
         seasonColor = '#22c55e'; // Green for Spring
         seasonColorHover = '#16a34a';
       }
-      
-      eventBox.style.background = seasonColor;
+
+      // Winter Nats: photo behind a semi-transparent blue overlay
+      if (currentSeason.id === 'winter') {
+        eventBox.style.background = 'linear-gradient(rgba(37,99,235,0.62),rgba(37,99,235,0.62)),url(\'/images/winter-nats-2026-banner.jpg\') center top / cover no-repeat';
+      } else {
+        eventBox.style.background = seasonColor;
+      }
       
       // Update ENTER NOW button to match race color
       if (enterNowBtn) {
