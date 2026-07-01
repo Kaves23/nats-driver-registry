@@ -7404,8 +7404,9 @@ the paddock quickly and consistently.
       document.getElementById('infoTabGeneral').style.display = tab === 'general' ? 'flex' : 'none';
       document.getElementById('infoTabRaceSpecific').style.display = tab === 'race-specific' ? 'flex' : 'none';
 
-      // Load race-specific data when switching to that tab
+      // Update URL hash so this view can be bookmarked / shared
       if (tab === 'race-specific') {
+        history.replaceState(null, '', '#race-specific');
         // Set initial red pulse immediately (before API call)
         const raceSpecificTab = document.querySelector('.info-top-tab[data-info-tab="race-specific"]');
         if (raceSpecificTab) {
@@ -7414,6 +7415,8 @@ the paddock quickly and consistently.
         }
         loadRaceSpecificData();
         initScrollIndicator();
+      } else {
+        if (window.location.hash === '#race-specific') history.replaceState(null, '', window.location.pathname);
       }
     };
 
@@ -7937,6 +7940,31 @@ the paddock quickly and consistently.
     }
 
     function buildLoadingFolderStructure() {
+      const pulse = '@keyframes rsDocPulse{0%,100%{opacity:1}50%{opacity:0.35}}';
+      function shimCard(delay) {
+        return '<div style="background:#0f172a;border:1px solid #1e293b;border-top:3px solid #1e293b;border-radius:8px;padding:18px 16px 14px;min-height:128px;display:flex;flex-direction:column;gap:10px;animation:rsDocPulse 1.4s ease-in-out '+delay+'s infinite;">'
+          +'<div style="display:flex;justify-content:space-between;gap:8px;">'
+          +'<div style="height:9px;width:52px;background:#1e293b;border-radius:3px;"></div>'
+          +'<div style="height:9px;width:60px;background:#1e293b;border-radius:3px;"></div>'
+          +'</div>'
+          +'<div style="height:13px;width:80%;background:#1e293b;border-radius:3px;"></div>'
+          +'<div style="height:13px;width:55%;background:#1e293b;border-radius:3px;"></div>'
+          +'<div style="height:9px;width:90px;background:#1e293b;border-radius:3px;margin-top:auto;"></div>'
+          +'</div>';
+      }
+      function shimSection(label, count, startDelay) {
+        let cards = '';
+        for (let i=0;i<count;i++) cards += shimCard(((startDelay+i)*0.07).toFixed(2));
+        return '<div><div style="height:9px;width:140px;background:#1e293b;border-radius:3px;margin-bottom:12px;padding-bottom:8px;animation:rsDocPulse 1.4s ease-in-out '+(startDelay*0.07).toFixed(2)+'s infinite;"></div>'
+          +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;">'+cards+'</div></div>';
+      }
+      let html = '<style>'+pulse+'</style>';
+      html += '<div style="display:flex;flex-direction:column;gap:28px;">';
+      html += shimSection('Race Day Instructions', 3, 0);
+      html += shimSection('General Documents', 4, 4);
+      html += '</div>';
+      return html;
+      // dead code below kept to avoid orphan-brace issues
       const classCategories = [
         { name: 'OFFICIAL', id: 'official' },
         { name: 'General', id: 'general' },
@@ -7946,8 +7974,8 @@ the paddock quickly and consistently.
         { name: 'OK-N', id: 'okn' }
       ];
       
-      let html = '<style>@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }</style>';
-      html += '<div class="folder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 100%; padding: 0;">';
+      let _html = '<style>@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }</style>';
+      _html += '<div class="folder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 100%; padding: 0;">';
       classCategories.forEach((cat, idx) => {
         // Color scheme: Official = yellow, General = green, others = blue
         let folderColor = '#0ea5e9';
@@ -8345,6 +8373,14 @@ function closeModals() {
 
     // Initial section state (and scroll reset)
     activateSection('pool');
+
+    // Direct-link support: open Race Specific tab if URL hash is #race-specific
+    if (window.location.hash === '#race-specific') {
+      setTimeout(() => {
+        openModal(infoModal);
+        setTimeout(() => switchInfoTopTab('race-specific'), 200);
+      }, 700);
+    }
   })();
 </script>
     
