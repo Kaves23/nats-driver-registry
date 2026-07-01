@@ -4809,7 +4809,6 @@ body[data-season="spring"] .info-section-select {
     <div class="actions">
       <button class="btn btn--next-race" id="btnNextRace">NEXT RACE</button>
       <button class="btn" id="btnMoreInfo">MORE INFO</button>
-      <button class="btn" id="btnStandings" onclick="window.location.href='sa-nationals-standings.html'">STANDINGS</button>
       <button class="btn" id="btnEnterNow" style="animation: flashButton 0.6s ease-in-out 4;">ENTER NOW</button>
     </div>
   </div>
@@ -7708,7 +7707,7 @@ the paddock quickly and consistently.
             }
 
             // Load event documents
-            loadRsEventDocuments(matchingEvent.event_id);
+            loadRsEventDocuments(matchingEvent.event_id, currentSeason.id);
           } else {
             // No events - show coming soon and empty folder structure
             document.getElementById('rsStatusText').textContent = 'COMING SOON';
@@ -7859,163 +7858,78 @@ the paddock quickly and consistently.
       document.addEventListener('keydown', escHandler);
     }
 
-    async function loadRsEventDocuments(eventId) {
+    async function loadRsEventDocuments(eventId, seasonId) {
       const container = document.getElementById('rsEventDocuments');
-      
-      // Define class categories for organizing documents
-      const classCategories = [
-        { id: 'official', name: 'OFFICIAL', keywords: ['supplementary', 'sr', 'regulation', 'official regulation', 'mandate', 'rule', 'declaration', 'announcement', 'permit'] },
-        { id: 'general', name: 'General', keywords: ['track', 'map', 'pit', 'paddock', 'layout', 'timetable', 'entry', 'bulletin', 'result', 'final', 'general'] },
-        { id: 'cadet', name: 'Cadet', keywords: ['cadet'] },
-        { id: 'mini', name: 'Mini ROK', keywords: ['mini', 'u10', 'under 10', 'under10'] },
-        { id: 'okj', name: 'OK-J', keywords: ['ok-j', 'okj', 'junior'] },
-        { id: 'okn', name: 'OK-N', keywords: ['ok-n', 'okn', 'senior', 'national'] }
-      ];
-      
+
+      // Accent colour per season
+      const seasonColors = { winter:'#3b82f6', autumn:'#f97316', summer:'#fbbf24', spring:'#22c55e', northern:'#2563eb' };
+      const accent = seasonColors[seasonId] || '#3b82f6';
+
+      function rdocRef(fp) { const m=(fp||'').match(/RDOC(\d+)/i); return m?'RDOC'+m[1]:''; }
+      function shortTitle(s) { return (s||'').replace(/\s*[—–-]\s*.{0,8}nats.*/i,'').trim(); }
+
+      function renderCard(doc) {
+        const ref  = rdocRef(doc.file_path);
+        const name = shortTitle(doc.display_name);
+        const type = doc.document_type || '';
+        return '<a href="'+doc.file_path+'" target="_blank" rel="noopener" style="text-decoration:none;display:block;">'
+          +'<div style="background:#0f172a;border:1px solid #1e293b;border-top:3px solid '+accent+';border-radius:8px;padding:18px 16px 14px;display:flex;flex-direction:column;gap:8px;min-height:128px;transition:all 0.18s;cursor:pointer;"'
+          +' onmouseover="this.style.background=\'#1e293b\';this.style.borderColor=\''+accent+'\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 28px rgba(0,0,0,0.45)\';"'
+          +' onmouseout="this.style.background=\'#0f172a\';this.style.borderColor=\'#1e293b\';this.style.borderTopColor=\''+accent+'\';this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\';">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">'
+          +'<span style="font-size:9px;font-weight:900;letter-spacing:0.22em;color:'+accent+';text-transform:uppercase;font-family:\'Montserrat\',sans-serif;">'+ref+'</span>'
+          +'<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.3);background:#1e293b;padding:2px 7px;border-radius:3px;white-space:nowrap;">'+type+'</span>'
+          +'</div>'
+          +'<div style="font-size:13px;font-weight:700;color:#f1f5f9;line-height:1.35;flex:1;">'+name+'</div>'
+          +'<div style="display:flex;align-items:center;gap:5px;color:'+accent+';font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;">'
+          +'Open Document'
+          +'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+          +'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'
+          +'<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>'
+          +'</svg></div></div></a>';
+      }
+
+      function sectionLabel(text) {
+        return '<div style="font-size:9px;font-weight:900;letter-spacing:0.28em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1e293b;">'+text+'</div>';
+      }
+
       try {
         const response = await fetch('/api/events/' + eventId + '/docs');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.documents && data.documents.length > 0) {
-            // Group documents by category
-            const grouped = {};
-            classCategories.forEach(cat => grouped[cat.id] = []);
-            
-            data.documents.forEach(doc => {
-              const docNameLower = (doc.display_name + ' ' + doc.document_type).toLowerCase();
-              let assigned = false;
-              
-              // If server already gave us a category (admin-uploaded from filesystem), use it directly
-              if (doc.category && grouped.hasOwnProperty(doc.category)) {
-                grouped[doc.category].push(doc);
-                assigned = true;
-              }
-              
-              if (!assigned) {
-                for (const cat of classCategories) {
-                  if (cat.keywords.some(kw => docNameLower.includes(kw))) {
-                    grouped[cat.id].push(doc);
-                    assigned = true;
-                    break;
-                  }
-                }
-              }
-              if (!assigned) {
-                grouped['general'].push(doc);
-              }
-            });
-            
-            console.log('📊 Final grouped documents:', grouped);
-            
-            // Build folder grid with popups
-            let html = '<div class="folder-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 100%; padding: 0;">';
-            classCategories.forEach((cat, idx) => {
-              const count = grouped[cat.id].length;
-              const isEmpty = count === 0;
-              // Color scheme: Official = yellow, General = green, others = blue
-              let folderColor = '#0ea5e9'; // Default blue
-              let textColor = 'rgba(255,255,255,0.95)';
-              if (cat.id === 'official') {
-                folderColor = '#fbbf24'; // Summer yellow
-                textColor = 'rgba(0,0,0,0.9)';
-              } else if (cat.id === 'general') {
-                folderColor = '#22c55e'; // Spring green
-              }
-              const opacity = isEmpty ? '0.6' : '1';
-              
-              // Prepare document data for modal
-              let dataAttr = '';
-              if (count > 0) {
-                const docData = JSON.stringify(grouped[cat.id].map(d => ({
-                  name: d.display_name,
-                  url: d.file_path
-                })));
-                dataAttr = ' data-documents="' + docData.replace(/"/g, '&quot;') + '"';
-              }
-              
-              html += '<div class="folder-item" data-folder-id="' + cat.id + '" data-folder-name="' + cat.name + '"' + dataAttr + ' style="' +
-                'position: relative; ' +
-                'cursor: ' + (isEmpty ? 'default' : 'pointer') + '; ' +
-                'transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); ' +
-                'transform-style: preserve-3d; ' +
-                'opacity: ' + opacity + ';' +
-              '">' +
-                // Folder tab
-                '<div style="' +
-                  'position: absolute; ' +
-                  'top: -8px; ' +
-                  'left: 12px; ' +
-                  'width: 50px; ' +
-                  'height: 12px; ' +
-                  'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + '99 100%); ' +
-                  'border-radius: 4px 4px 0 0; ' +
-                  'box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);' +
-                '"></div>' +
-                // Main folder body
-                '<div style="' +
-                  'background: linear-gradient(135deg, ' + folderColor + ' 0%, ' + folderColor + 'dd 100%); ' +
-                  'border-radius: 0 8px 8px 8px; ' +
-                  'padding: 20px 16px 16px 16px; ' +
-                  'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2); ' +
-                  'min-height: 80px; ' +
-                  'display: flex; ' +
-                  'flex-direction: column; ' +
-                  'gap: 8px; ' +
-                  'position: relative; ' +
-                  'overflow: hidden;' +
-                '">' +
-                  // Folder icon and name
-                  '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
-                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + textColor + '">' +
-                      '<path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>' +
-                    '</svg>' +
-                    '<span style="color: ' + textColor + '; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + cat.name + '</span>' +
-                  '</div>' +
-                  // Document count badge
-                  '<div style="' +
-                    'display: flex; ' +
-                    'align-items: center; ' +
-                    'gap: 6px; ' +
-                    'padding: 6px 10px; ' +
-                    'background: ' + (cat.id === 'official' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)') + '; ' +
-                    'border-radius: 20px; ' +
-                    'backdrop-filter: blur(10px); ' +
-                    'align-self: flex-start;' +
-                  '">' +
-                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="' + textColor + '">' +
-                      '<path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>' +
-                    '</svg>' +
-                    '<span style="color: ' + textColor + '; font-size: 11px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">' + count + ' ' + (count === 1 ? 'doc' : 'docs') + '</span>' +
-                  '</div>' +
-                '</div>' +
-              '</div>';
-            });
-            html += '</div>';
-            
-            container.innerHTML = html;
-            
-            // Add click handlers to folders with documents
-            document.querySelectorAll('.folder-item[data-documents]').forEach(folder => {
-              folder.addEventListener('click', function() {
-                const folderName = this.getAttribute('data-folder-name');
-                const documents = JSON.parse(this.getAttribute('data-documents'));
-                showDocumentModal(folderName, documents);
-              });
-            });
-          } else {
-            // No documents from API - still show empty folder structure
-            container.innerHTML = buildEmptyFolderStructure();
-          }
-        } else {
-          // API returned error - show empty folder structure
-          container.innerHTML = buildEmptyFolderStructure();
+        if (!response.ok) { container.innerHTML = buildEmptyFolderStructure(); return; }
+        const data = await response.json();
+        if (!data.success || !data.documents || !data.documents.length) {
+          container.innerHTML = buildEmptyFolderStructure(); return;
         }
+
+        // Filter to current season — always keep admin-uploaded (non-static) docs
+        let docs = data.documents;
+        if (seasonId) {
+          docs = docs.filter(d => !d.isStatic || (d.display_name||'').toLowerCase().includes(seasonId.toLowerCase()));
+        }
+        if (!docs.length) { container.innerHTML = buildEmptyFolderStructure(); return; }
+
+        const classDocs   = docs.filter(d => ['mini','okj','okn','cadet'].includes(d.category));
+        const generalDocs = docs.filter(d => !['mini','okj','okn','cadet'].includes(d.category));
+
+        let html = '<div style="display:flex;flex-direction:column;gap:28px;">';
+        if (classDocs.length) {
+          html += '<div>'+sectionLabel('Race Day Instructions')
+            +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;">'
+            +classDocs.map(renderCard).join('')+'</div></div>';
+        }
+        if (generalDocs.length) {
+          html += '<div>'+sectionLabel('General Documents')
+            +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;">'
+            +generalDocs.map(renderCard).join('')+'</div></div>';
+        }
+        html += '</div>';
+        container.innerHTML = html;
+
       } catch (error) {
-        // Show empty folder structure on error
         container.innerHTML = buildEmptyFolderStructure();
       }
     }
-    
+
     function buildLoadingFolderStructure() {
       const classCategories = [
         { name: 'OFFICIAL', id: 'official' },
