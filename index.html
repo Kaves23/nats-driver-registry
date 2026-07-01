@@ -7868,17 +7868,23 @@ the paddock quickly and consistently.
       function rdocRef(fp) { const m=(fp||'').match(/RDOC(\d+)/i); return m?'RDOC'+m[1]:''; }
       function shortTitle(s) { return (s||'').replace(/\s*[—–-]\s*.{0,8}nats.*/i,'').trim(); }
 
+      // Category badge colours
+      const catClr = { mini:'#c084fc', okj:'#38bdf8', okn:'#fb923c', cadet:'#34d399', general:accent, official:'#fbbf24' };
+      const catBg  = { mini:'rgba(192,132,252,0.15)', okj:'rgba(56,189,248,0.15)', okn:'rgba(251,146,60,0.15)', cadet:'rgba(52,211,153,0.15)', general:'rgba(59,130,246,0.15)', official:'rgba(251,191,36,0.15)' };
+
       function renderCard(doc) {
         const ref  = rdocRef(doc.file_path);
         const name = shortTitle(doc.display_name);
         const type = doc.document_type || '';
+        const tc   = catClr[doc.category] || 'rgba(255,255,255,0.5)';
+        const tb   = catBg[doc.category]  || 'rgba(255,255,255,0.08)';
         return '<a href="'+doc.file_path+'" target="_blank" rel="noopener" style="text-decoration:none;display:block;">'
           +'<div style="background:#0f172a;border:1px solid #1e293b;border-top:3px solid '+accent+';border-radius:8px;padding:18px 16px 14px;display:flex;flex-direction:column;gap:8px;min-height:128px;transition:all 0.18s;cursor:pointer;"'
           +' onmouseover="this.style.background=\'#1e293b\';this.style.borderColor=\''+accent+'\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 28px rgba(0,0,0,0.45)\';"'
           +' onmouseout="this.style.background=\'#0f172a\';this.style.borderColor=\'#1e293b\';this.style.borderTopColor=\''+accent+'\';this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\';">'
           +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">'
           +'<span style="font-size:9px;font-weight:900;letter-spacing:0.22em;color:'+accent+';text-transform:uppercase;font-family:\'Montserrat\',sans-serif;">'+ref+'</span>'
-          +'<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.3);background:#1e293b;padding:2px 7px;border-radius:3px;white-space:nowrap;">'+type+'</span>'
+          +'<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:'+tc+';background:'+tb+';border:1px solid '+tc+'33;padding:2px 7px;border-radius:3px;white-space:nowrap;">'+type+'</span>'
           +'</div>'
           +'<div style="font-size:13px;font-weight:700;color:#f1f5f9;line-height:1.35;flex:1;">'+name+'</div>'
           +'<div style="display:flex;align-items:center;gap:5px;color:'+accent+';font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;">'
