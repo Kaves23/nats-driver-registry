@@ -1,0 +1,763 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Self-Declaration Scrutineering Form · Winter Nats 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --winter:     #2563eb;
+      --winter-dk:  #1d4ed8;
+      --winter-xdk: #1e3a8a;
+      --winter-bg:  #eff6ff;
+      --winter-bg2: #dbeafe;
+      --ink:        #1a1a1a;
+      --ink-2:      #374151;
+      --ink-3:      #6b7280;
+      --border:     #e5e7eb;
+      --border-dk:  #d1d5db;
+      --white:      #ffffff;
+      --page-bg:    #f3f4f6;
+    }
+
+    @page { margin: 0; size: A4; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: var(--white);
+    }
+    @media screen { .page { box-shadow: 0 4px 24px rgba(0,0,0,0.10); margin: 24px auto; } }
+
+    /* ── HEADER ── */
+    .doc-header {
+      background: var(--winter);
+      padding: 32px 40px 26px;
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .doc-header::before {
+      content: '';
+      position: absolute;
+      top: 0; right: -30px;
+      width: 240px; height: 100%;
+      background: rgba(255,255,255,0.06);
+      transform: skewX(-12deg);
+      pointer-events: none;
+    }
+    .doc-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand img { height: 44px; width: auto; filter: brightness(0) invert(1); display: block; }
+    .brand-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); }
+    .brand-name {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .brand-season {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .header-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hbadge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.85);
+    }
+    .hbadge.filled {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.6);
+      color: var(--white);
+    }
+    .doc-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+    }
+    .doc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+      margin-bottom: 8px;
+    }
+    .doc-subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 20px;
+    }
+    .doc-meta-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta-pill {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+    }
+
+    /* ── CONTENT ── */
+    .doc-content { padding: 28px 40px 64px; }
+
+    /* ── DRIVER INFO BAR ── */
+    .driver-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1.5px solid var(--border-dk);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .driver-info-cell {
+      padding: 10px 14px;
+      border-right: 1px solid var(--border-dk);
+      border-bottom: 1px solid var(--border-dk);
+    }
+    .driver-info-cell:nth-child(2n) { border-right: none; }
+    .driver-info-cell:nth-last-child(-n+2) { border-bottom: none; }
+    .driver-info-cell--full {
+      grid-column: 1 / -1;
+      border-right: none;
+    }
+    .driver-info-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--ink-3);
+      margin-bottom: 4px;
+    }
+    .driver-info-line {
+      border-bottom: 1px solid var(--border-dk);
+      min-height: 20px;
+      width: 100%;
+    }
+
+    /* ── INSTRUCTIONS ROW ── */
+    .instructions-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .instructions-box {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 14px;
+    }
+    .instructions-box--tick { border-left: 3px solid #16a34a; }
+    .instructions-box--fail { border-left: 3px solid #e11d48; }
+    .instructions-box-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 4px;
+    }
+    .instructions-box--tick .instructions-box-title { color: #16a34a; }
+    .instructions-box--fail .instructions-box-title { color: #e11d48; }
+    .instructions-box p {
+      font-size: 11px;
+      color: var(--ink-3);
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    /* ── SECTION HEADING ── */
+    .form-section-heading {
+      background: var(--ink);
+      color: var(--white);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      text-align: center;
+      padding: 7px 14px;
+      margin: 0;
+    }
+
+    /* ── CHECKLIST TABLE ── */
+    .check-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .check-table td, .check-table th {
+      border: 1px solid var(--border-dk);
+      padding: 6px 10px;
+      vertical-align: middle;
+    }
+    .check-table tr:nth-child(even) td { background: #fafafa; }
+    .col-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--ink);
+      background: var(--winter-bg);
+      width: 22%;
+      white-space: nowrap;
+    }
+    .col-item {
+      font-size: 12px;
+      color: var(--ink-2);
+      width: 28%;
+    }
+    .col-box {
+      width: 6%;
+      text-align: center;
+      border: 1.5px solid var(--border-dk);
+      padding: 0;
+      height: 28px;
+    }
+    .check-table .section-row td {
+      background: var(--ink) !important;
+      color: var(--white);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 6px 10px;
+      border-color: var(--ink);
+    }
+    .rowspan-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--ink);
+      background: var(--winter-bg);
+      vertical-align: middle;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    /* ── ENGINE SECTION ── */
+    .engine-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 0;
+    }
+    .engine-box {
+      border: 1px solid var(--border-dk);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .engine-box-header {
+      background: var(--winter-bg);
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border-dk);
+    }
+    .engine-field {
+      display: flex;
+      align-items: center;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      font-size: 11px;
+      color: var(--ink-2);
+    }
+    .engine-field:last-child { border-bottom: none; }
+    .engine-field-label { width: 120px; flex-shrink: 0; }
+    .engine-field-line { flex: 1; border-bottom: 1px solid var(--border-dk); height: 20px; }
+
+    /* ── TRANSPONDER / FUEL SECTION ── */
+    .two-col-check {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid var(--border-dk);
+    }
+    .two-col-check-side {
+      padding: 10px 14px;
+      border-right: 1px solid var(--border-dk);
+    }
+    .two-col-check-side:last-child { border-right: none; }
+    .two-col-check-header {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--winter-dk);
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+    }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 11.5px;
+      color: var(--ink-2);
+      border-bottom: 1px solid var(--border);
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-box {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border-dk);
+      flex-shrink: 0;
+    }
+
+    /* ── DECLARATION ── */
+    .declaration {
+      border: 1px solid var(--border-dk);
+      border-top: 3px solid var(--winter);
+      border-radius: 4px;
+      padding: 18px 20px;
+      margin-top: 16px;
+    }
+    .declaration-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      text-align: center;
+      margin-bottom: 12px;
+      color: var(--ink);
+    }
+    .declaration ol {
+      padding-left: 18px;
+      margin-bottom: 12px;
+    }
+    .declaration li {
+      font-size: 11px;
+      color: var(--ink-2);
+      line-height: 1.65;
+      margin-bottom: 8px;
+    }
+    .declaration li:last-child { margin-bottom: 0; }
+    .sig-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .sig-field-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-3);
+      margin-bottom: 20px;
+    }
+    .sig-line {
+      border-bottom: 1px solid var(--ink);
+      width: 100%;
+    }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      background: var(--winter);
+      color: var(--white);
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .footer-left { font-size: 11px; opacity: 0.85; }
+    .doc-ref {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .page { width: 100%; box-shadow: none; margin: 0; }
+      .doc-content { padding: 20px 28px 40px; }
+      p { orphans: 3; widows: 3; }
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      .page { width: 100%; margin: 0; box-shadow: none; }
+      .doc-header { padding: 22px 20px 18px; }
+      .header-top { flex-wrap: wrap; }
+      .header-badges { display: none; }
+      .doc-content { padding: 20px 16px 48px; }
+      .doc-footer { padding: 12px 20px; }
+      .engine-grid { grid-template-columns: 1fr; }
+      .instructions-row { grid-template-columns: 1fr; }
+      .sig-row { grid-template-columns: 1fr; }
+      .two-col-check { grid-template-columns: 1fr; }
+      .two-col-check-side { border-right: none; border-bottom: 1px solid var(--border-dk); }
+      .driver-info-grid { grid-template-columns: 1fr; }
+      .driver-info-cell { border-right: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="doc-header">
+    <div class="header-top">
+      <div class="brand">
+        <img src="/icons/rok-logo-original.png" alt="ROK Cup SA" />
+        <div class="brand-divider"></div>
+        <div class="brand-info">
+          <div class="brand-name">ROK Cup South Africa</div>
+          <div class="brand-season">Winter Nationals 2026</div>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="hbadge">Official Document</span>
+        <span class="hbadge filled">RDOC014</span>
+      </div>
+    </div>
+    <div class="doc-eyebrow">Scrutineering</div>
+    <div class="doc-title">Self-Declaration Scrutineering Form</div>
+    <div class="doc-subtitle">Karting self-declaration form — to be completed and signed before presenting for scrutineering</div>
+    <div class="doc-meta-pills">
+      <span class="meta-pill">All Classes</span>
+      <span class="meta-pill">Winter Nats 2026</span>
+      <span class="meta-pill">FK &#183; 10&#8211;12 July 2026</span>
+      <span class="meta-pill">Scrutineering</span>
+      <span class="meta-pill">MSA — GCR 93 (iii)</span>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="doc-content">
+
+    <!-- ENVELOPE NOTE -->
+    <div class="alert alert-blue" style="margin-bottom:20px;">
+      <div class="alert-title">Included for Reference</div>
+      <p>A printed copy of this self-declaration form will be provided in your <strong>competitor envelope</strong>. This digital version is included here for your reference. Please use the printed form when presenting your kart for scrutineering.</p>
+    </div>
+
+    <!-- DRIVER INFO -->
+    <div class="driver-info-grid">
+      <div class="driver-info-cell">
+        <div class="driver-info-label">Event Name</div>
+        <div class="driver-info-line"></div>
+      </div>
+      <div class="driver-info-cell">
+        <div class="driver-info-label">Date</div>
+        <div class="driver-info-line"></div>
+      </div>
+      <div class="driver-info-cell">
+        <div class="driver-info-label">Driver</div>
+        <div class="driver-info-line"></div>
+      </div>
+      <div class="driver-info-cell">
+        <div class="driver-info-label">Class</div>
+        <div class="driver-info-line"></div>
+      </div>
+      <div class="driver-info-cell driver-info-cell--full">
+        <div class="driver-info-label">Kart Number</div>
+        <div class="driver-info-line"></div>
+      </div>
+    </div>
+
+    <!-- INSTRUCTIONS -->
+    <div class="instructions-row">
+      <div class="instructions-box instructions-box--tick">
+        <div class="instructions-box-title">Tick block if correct ✓</div>
+        <p>Place a tick in the block next to each item that is in correct order.</p>
+      </div>
+      <div class="instructions-box instructions-box--fail">
+        <div class="instructions-box-title">Mark failures with (X)</div>
+        <p>All failures will be checked and left up to the discretion of the scrutineer.</p>
+      </div>
+    </div>
+
+    <!-- GEAR SECTION -->
+    <div class="form-section-heading">GEAR</div>
+    <table class="check-table">
+      <tbody>
+        <tr>
+          <td class="rowspan-label" rowspan="2">HELMET</td>
+          <td class="col-item">Visor clear</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label" rowspan="2">RACE SUIT</td>
+          <td class="col-item">No loose parts</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="col-item">Strap correct</td>
+          <td class="col-box"></td>
+          <td class="col-item">No holes</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label">GLOVES</td>
+          <td class="col-item">Good condition</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label">RACE BOOTS</td>
+          <td class="col-item">Good condition</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label">FIRE EXTINGUISHER</td>
+          <td class="col-item">Service</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label"></td>
+          <td class="col-item"></td>
+          <td class="col-box"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- KART SECTION -->
+    <div class="form-section-heading" style="margin-top:10px;">KART</div>
+    <table class="check-table">
+      <tbody>
+        <tr>
+          <td class="rowspan-label" rowspan="2">NOSE CONE</td>
+          <td class="col-item">No damage</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label" rowspan="2">WHEEL BEARING</td>
+          <td class="col-item">Bearings — no play</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="col-item">Correct fitment</td>
+          <td class="col-box"></td>
+          <td class="col-item">Lock nuts — no play</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label" rowspan="2">STEERING SYSTEM</td>
+          <td class="col-item">No wear</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label" rowspan="2">PEDALS</td>
+          <td class="col-item">Not protrude</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="col-item">Tight</td>
+          <td class="col-box"></td>
+          <td class="col-item">Return springs</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label" rowspan="2">GENERAL SAFETY</td>
+          <td class="col-item">No cracks</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label" rowspan="2">SEAT</td>
+          <td class="col-item">No cracks</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="col-item">No loose bolts</td>
+          <td class="col-box"></td>
+          <td class="col-item">Firmly attached</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label" rowspan="2">FLOOR PAN</td>
+          <td class="col-item">No cracks</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label" rowspan="2">REAR NUMBER PLATE</td>
+          <td class="col-item">Numbers correct size</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="col-item">Firmly attached</td>
+          <td class="col-box"></td>
+          <td class="col-item">Numbers correct colour</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label">BALLAST</td>
+          <td class="col-item">Firmly attached (bolted)</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label">SIDE PODS</td>
+          <td class="col-item">Correctly attached</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label">BRAKES</td>
+          <td class="col-item">Operational</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label">REAR BUMPER</td>
+          <td class="col-item">Meets requirements</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label">CHAIN GUARD</td>
+          <td class="col-item">Full cover guard</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label">REAR AXLE</td>
+          <td class="col-item">Wheel bearings no play</td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="rowspan-label" rowspan="3">FUEL TANK</td>
+          <td class="col-item">No leaks</td>
+          <td class="col-box"></td>
+          <td class="rowspan-label" rowspan="3"></td>
+          <td class="col-item"></td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="col-item">Firmly attached</td>
+          <td class="col-box"></td>
+          <td class="col-item"></td>
+          <td class="col-box"></td>
+        </tr>
+        <tr>
+          <td class="col-item">Lines secure</td>
+          <td class="col-box"></td>
+          <td class="col-item"></td>
+          <td class="col-box"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ENGINE SECTION -->
+    <div class="form-section-heading" style="margin-top:10px;">ENGINE</div>
+    <div style="border: 1px solid var(--border-dk); padding: 14px 16px;">
+      <div class="engine-grid">
+        <div class="engine-box">
+          <div class="engine-box-header">ENGINE 1</div>
+          <div class="engine-field">
+            <div class="engine-field-label">Engine seal number</div>
+            <div class="engine-field-line"></div>
+          </div>
+          <div class="engine-field">
+            <div class="engine-field-label">Engine number</div>
+            <div class="engine-field-line"></div>
+          </div>
+        </div>
+        <div class="engine-box">
+          <div class="engine-box-header">ENGINE 2</div>
+          <div class="engine-field">
+            <div class="engine-field-label">Engine seal number</div>
+            <div class="engine-field-line"></div>
+          </div>
+          <div class="engine-field">
+            <div class="engine-field-label">Engine number</div>
+            <div class="engine-field-line"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="two-col-check" style="border-radius:4px; overflow:hidden;">
+          <div class="two-col-check-side">
+            <div class="two-col-check-header">FUEL LINE</div>
+            <div class="check-item"><div class="check-box"></div>No leaks</div>
+            <div class="check-item"><div class="check-box"></div>Attached</div>
+          </div>
+          <div class="two-col-check-side">
+            <div class="two-col-check-header">EXHAUST</div>
+            <div class="check-item"><div class="check-box"></div>Firmly attached</div>
+            <div class="check-item"><div class="check-box"></div>Springs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSPONDER & LOGOS SECTION -->
+    <div class="form-section-heading" style="margin-top:10px;">TRANSPONDER &amp; LOGOS</div>
+    <div style="border: 1px solid var(--border-dk); padding: 14px 16px;">
+      <div class="two-col-check" style="border-radius:4px; overflow:hidden;">
+        <div class="two-col-check-side">
+          <div class="two-col-check-header">TRANSPONDER</div>
+          <div class="check-item"><div class="check-box"></div>Fitted</div>
+          <div class="check-item"><div class="check-box"></div>In correct place (under bib, behind front axle)</div>
+        </div>
+        <div class="two-col-check-side">
+          <div class="two-col-check-header">LOGOS</div>
+          <div class="check-item"><div class="check-box"></div>On kart</div>
+          <div class="check-item"><div class="check-box"></div>In correct place</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DECLARATION -->
+    <div class="declaration">
+      <div class="declaration-title">We, the undersigned driver and entrant respectively do hereby:</div>
+      <ol>
+        <li>Give the following undertaking as required in terms of GCR 93 (iii) namely: <em>"I declare that any vehicle/machine entered by me, will comply with all regulations and specifications pertaining to the event."</em></li>
+        <li>Confirm that all safety requirements relating to both the vehicle/machine and those referring to the personal protective equipment and apparel of the driver, are fully compliant with the regulations, have not reached their expiry date (where applicable), and have been correctly installed.</li>
+        <li>The vehicle/machine has been inspected by us and is in all respects in a proper and safe condition and is fully compliant with all applicable legislation relating to vehicles used on public roads (where applicable).</li>
+        <li>Indemnify, and hold harmless, Motorsport South Africa, the promoters, organisers, all officials, landowners and other persons associated with the event from all consequences which may arise from any failure on our part to diligently undertake the self-scrutiny process required in terms of MSA's regulations and/or any supplementary official circulars.</li>
+      </ol>
+      <div class="sig-row">
+        <div>
+          <div class="sig-field-label">Date</div>
+          <div class="sig-line"></div>
+        </div>
+        <div>
+          <div class="sig-field-label">Signature (Driver)</div>
+          <div class="sig-line"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="doc-footer">
+    <div class="footer-left">ROK Cup South Africa · Winter Nationals 2026 · Official Document · V1 Last Updated 10.07.2026</div>
+    <span class="doc-ref">RDOC014</span>
+  </footer>
+
+</div>
+</body>
+</html>

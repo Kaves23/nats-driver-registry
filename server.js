@@ -274,7 +274,7 @@ app.post('/api/admin/login', (req, res) => {
   }
   clearLoginAttempts(clientIp);
   const token = uuidv4();
-  adminTokens.set(token, { expires: Date.now() + 16 * 60 * 60 * 1000 }); // 16 hour session
+  adminTokens.set(token, { expires: Date.now() + 8 * 60 * 60 * 1000 }); // 8 hour session
   saveAdminTokens();
   console.log(`✅ Admin login successful - session created`);
   res.json({ success: true, token });
@@ -8013,34 +8013,6 @@ app.get('/api/championship-standings/:season/:class', async (req, res) => {
   }
 });
 
-// Per-round heat detail for drop-heat scoring on the standings page
-app.get('/api/championship-heats/:season/:class', async (req, res) => {
-  try {
-    const { season, class: raceClass } = req.params;
-    const champType = req.query.championship_type || 'Northern Regions';
-
-    if (!season || !raceClass) throw new Error('Season and class required');
-
-    const result = await pool.query(
-      `SELECT d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name,
-              p.round, p.heat1_points, p.heat2_points, p.final_points, p.total_points, p.position
-       FROM points p
-       JOIN drivers d ON p.driver_id = d.driver_id
-       WHERE p.season = $1 AND p.class = $2
-         AND COALESCE(p.championship_type, 'Northern Regions') = $3
-         AND (p.notes IS NULL OR p.notes NOT LIKE '%TEST ENTRY%')
-       ORDER BY d.last_name, d.first_name, p.round`,
-      [season, raceClass, champType]
-    );
-
-    console.log(`✅ Retrieved championship heats: ${season} ${raceClass} - ${result.rows.length} rows`);
-    res.json({ success: true, rows: result.rows, season, class: raceClass });
-  } catch (err) {
-    console.error('❌ championship-heats error:', err.message);
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
-
 // Get driver's race results with lap times
 app.get('/api/driver-results/:driverId', async (req, res) => {
   try {
@@ -12389,6 +12361,70 @@ const STATIC_CLASS_DOCS = [
     document_type: 'General',
     file_path: '/documents/raceday/RDOC008-sticker-placement-scrutineering-autumn-nats-2026.html',
     preview_url: '/documents/raceday/RDOC008-sticker-placement-scrutineering-autumn-nats-2026.html',
+    category: 'general',
+    icon: '🏷️',
+    isStatic: true
+  },
+  // ── WINTER NATS 2026 — FK · 10–12 July 2026 ──
+  {
+    display_name: 'Race Day Instructions — Winter Nats 2026',
+    document_type: 'Mini ROK',
+    file_path: '/documents/raceday/RDOC009-mini-rok-winter-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC009-mini-rok-winter-nats-2026-race-day-instructions.html',
+    category: 'mini',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Race Day Instructions — Winter Nats 2026',
+    document_type: 'OK Junior',
+    file_path: '/documents/raceday/RDOC010-ok-junior-winter-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC010-ok-junior-winter-nats-2026-race-day-instructions.html',
+    category: 'okj',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Race Day Instructions — Winter Nats 2026',
+    document_type: 'OK National',
+    file_path: '/documents/raceday/RDOC011-ok-national-winter-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC011-ok-national-winter-nats-2026-race-day-instructions.html',
+    category: 'okn',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Tyre Collection Instructions — Winter Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC012-tyre-collection-winter-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC012-tyre-collection-winter-nats-2026.html',
+    category: 'general',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Controlled Fuel Instructions — Winter Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC013-controlled-fuel-winter-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC013-controlled-fuel-winter-nats-2026.html',
+    category: 'general',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Self-Declaration Scrutineering Form — Winter Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC014-self-declaration-scrutineering-winter-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC014-self-declaration-scrutineering-winter-nats-2026.html',
+    category: 'general',
+    icon: '📋',
+    isStatic: true
+  },
+  {
+    display_name: 'Sticker Placement for Scrutineering — Winter Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC015-sticker-placement-scrutineering-winter-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC015-sticker-placement-scrutineering-winter-nats-2026.html',
     category: 'general',
     icon: '🏷️',
     isStatic: true

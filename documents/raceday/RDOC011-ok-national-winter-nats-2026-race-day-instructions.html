@@ -1,0 +1,931 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OK National — Race Day Instructions · Winter Nats 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --winter:     #2563eb;
+      --winter-dk:  #1d4ed8;
+      --winter-xdk: #1e3a8a;
+      --winter-bg:  #eff6ff;
+      --winter-bg2: #dbeafe;
+      --ink:        #1a1a1a;
+      --ink-2:      #374151;
+      --ink-3:      #6b7280;
+      --border:     #e5e7eb;
+      --border-dk:  #d1d5db;
+      --white:      #ffffff;
+      --page-bg:    #f3f4f6;
+    }
+
+    @page { margin: 0; size: A4; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: var(--white);
+    }
+    @media screen { .page { box-shadow: 0 4px 24px rgba(0,0,0,0.10); margin: 24px auto; } }
+
+    /* ── HEADER ── */
+    .doc-header {
+      background: var(--winter);
+      padding: 32px 40px 26px;
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .doc-header::before {
+      content: '';
+      position: absolute;
+      top: 0; right: -30px;
+      width: 240px; height: 100%;
+      background: rgba(255,255,255,0.06);
+      transform: skewX(-12deg);
+      pointer-events: none;
+    }
+    .doc-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand img { height: 44px; width: auto; filter: brightness(0) invert(1); display: block; }
+    .brand-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); }
+    .brand-info {}
+    .brand-name {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .brand-season {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .header-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hbadge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.85);
+    }
+    .hbadge.filled {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.6);
+      color: var(--white);
+    }
+    .doc-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+    }
+    .doc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(26px, 5vw, 38px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+      margin-bottom: 8px;
+    }
+    .doc-subtitle {
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 20px;
+    }
+    .doc-meta-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta-pill {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+    }
+
+    /* ── STICKY NAV ── */
+    .nav-bar {
+      background: var(--winter-xdk);
+      overflow-x: auto;
+      scrollbar-width: none;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .nav-bar::-webkit-scrollbar { display: none; }
+    .nav-inner { display: flex; padding: 0 32px; white-space: nowrap; }
+    .nav-link {
+      display: inline-block;
+      padding: 11px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-link:hover { color: var(--white); border-bottom-color: var(--winter); }
+
+    /* ── CONTENT ── */
+    .doc-content { padding: 0 40px 64px; }
+
+    .section { padding-top: 44px; }
+    .section + .section { border-top: 2px solid var(--border); margin-top: 44px; }
+
+    .section-label { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .section-num {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: var(--white);
+      background: var(--winter);
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+    .section-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-3);
+    }
+    .section-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--winter-dk);
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+    .sub-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      margin: 28px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    p {
+      font-size: 13.5px;
+      color: var(--ink-2);
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card:last-child { margin-bottom: 0; }
+    .card-heading {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--winter-dk);
+      margin-bottom: 10px;
+    }
+    .card-blue { background: var(--winter-bg); border-color: var(--winter); border-left: 4px solid var(--winter); }
+
+    /* ── ALERTS ── */
+    .alert {
+      border-radius: 4px;
+      padding: 18px 22px;
+      margin: 20px 0;
+      border-left: 4px solid;
+    }
+    .alert-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 8px;
+    }
+    .alert p { font-size: 13px; line-height: 1.75; color: var(--ink-2); margin-bottom: 0; }
+    .alert-blue { background: var(--winter-bg); border-color: var(--winter); }
+    .alert-blue .alert-title { color: var(--winter-dk); }
+    .alert-critical { background: #fff1f2; border-color: #e11d48; }
+    .alert-critical .alert-title { color: #be123c; }
+    .alert-critical p { color: #3f1219; }
+
+    /* ── STAT BOX ── */
+    .stat-box {
+      background: var(--winter-bg);
+      border: 1px solid var(--winter);
+      border-radius: 4px;
+      padding: 24px 28px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0 24px;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .stat-value {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 38px;
+      font-weight: 900;
+      color: var(--winter);
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--winter-dk); margin-bottom: 4px; }
+    .stat-body { font-size: 13px; color: var(--ink-2); line-height: 1.75; }
+    .stat-body strong { color: var(--ink); }
+
+    /* ── STEPS ── */
+    .steps { list-style: none; }
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 0 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--winter);
+      line-height: 1.1;
+      padding-top: 2px;
+    }
+    .step-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .step-desc { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+
+    /* ── CHECKLIST ── */
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--ink-2);
+      line-height: 1.65;
+    }
+    .checklist li::before {
+      content: '→';
+      color: var(--winter);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .checklist li strong { color: var(--ink); }
+
+    /* ── ITEMS GRID ── */
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .item-chip {
+      background: var(--winter-bg);
+      border: 1px solid var(--winter-bg2);
+      border-radius: 4px;
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .item-chip .ico { width: 22px; height: 22px; flex-shrink: 0; color: var(--winter-dk); }
+    .item-chip .ico svg { width: 22px; height: 22px; display: block; }
+
+    /* ── COST CARDS ── */
+    .cost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+    .cost-card {
+      background: var(--white);
+      border: 1px solid var(--border-dk);
+      border-top: 4px solid var(--winter);
+      border-radius: 4px;
+      padding: 20px 22px;
+      text-align: center;
+    }
+    .cc-class { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-3); margin-bottom: 8px; }
+    .cc-amount { font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 900; color: var(--winter-dk); }
+    .cc-note { font-size: 11px; color: var(--ink-3); margin-top: 6px; line-height: 1.5; }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--winter-bg);
+      border: 1px solid var(--winter-bg2);
+      border-left: 4px solid var(--winter);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin: 24px 0 32px;
+    }
+    .toc-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--winter-dk);
+      margin-bottom: 12px;
+    }
+    .toc ol { padding-left: 18px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--winter-dk);
+      text-decoration: none;
+    }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── TIMELINE ── */
+    .timeline { position: relative; padding-left: 32px; margin: 20px 0; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 11px; top: 8px; bottom: 8px;
+      width: 2px;
+      background: var(--winter-bg2);
+    }
+    .tl-item {
+      position: relative;
+      padding: 0 0 24px 20px;
+    }
+    .tl-item:last-child { padding-bottom: 0; }
+    .tl-item::before {
+      content: '';
+      position: absolute;
+      left: -21px;
+      top: 6px;
+      width: 12px; height: 12px;
+      background: var(--winter);
+      border-radius: 50%;
+      border: 2px solid var(--white);
+      box-shadow: 0 0 0 2px var(--winter);
+    }
+    .tl-time {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--winter-dk);
+      margin-bottom: 2px;
+    }
+    .tl-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .tl-desc { font-size: 13px; color: var(--ink-2); line-height: 1.65; }
+    .tl-desc p { margin-bottom: 0; }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      background: var(--winter);
+      color: var(--white);
+      padding: 14px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .footer-left { font-size: 11px; opacity: 0.85; }
+    .doc-ref {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      .nav-bar { display: none; }
+      .page { width: 100%; box-shadow: none; margin: 0; }
+      .doc-content { padding: 0 28px 48px; }
+      .section { padding-top: 32px; }
+      p { orphans: 3; widows: 3; }
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      .page { width: 100%; margin: 0; box-shadow: none; }
+      .doc-header { padding: 22px 20px 18px; }
+      .header-top { flex-wrap: wrap; }
+      .header-badges { display: none; }
+      .nav-inner { padding: 0 16px; }
+      .doc-content { padding: 0 20px 48px; }
+      .cost-grid { grid-template-columns: 1fr; }
+      .stat-box { grid-template-columns: 1fr; gap: 8px 0; }
+      .doc-footer { padding: 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="doc-header">
+    <div class="header-top">
+      <div class="brand">
+        <img src="/icons/rok-logo-original.png" alt="ROK Cup SA" />
+        <div class="brand-divider"></div>
+        <div class="brand-info">
+          <div class="brand-name">ROK Cup South Africa</div>
+          <div class="brand-season">Winter Nationals 2026</div>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="hbadge">Official Document</span>
+        <span class="hbadge filled">RDOC011</span>
+      </div>
+    </div>
+    <div class="doc-eyebrow">Race Day Instructions</div>
+    <div class="doc-title">OK National</div>
+    <div class="doc-subtitle">Engine draw, handling procedures, and race day conduct — Winter Nationals 2026 &#183; FK &#183; 10&#8211;12 July 2026</div>
+    <div class="doc-meta-pills">
+      <span class="meta-pill">OK National</span>
+      <span class="meta-pill">Winter Nats 2026</span>
+      <span class="meta-pill">FK &#183; 10&#8211;12 July 2026</span>
+      <span class="meta-pill">Engine Draw System</span>
+      <span class="meta-pill">Official Use</span>
+    </div>
+  </header>
+
+  <!-- STICKY NAV -->
+  <nav class="nav-bar" aria-label="Document sections">
+    <div class="nav-inner">
+      <a class="nav-link" href="#intro">Introduction</a>
+      <a class="nav-link" href="#draw">Engine Draw</a>
+      <a class="nav-link" href="#notes">Draw Notes</a>
+      <a class="nav-link" href="#tampering">Tampering</a>
+      <a class="nav-link" href="#reporting">Reporting Issues</a>
+      <a class="nav-link" href="#swaps">Engine Swaps</a>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="doc-content">
+
+    <!-- TOC -->
+    <div class="toc" role="navigation" aria-label="Table of contents">
+      <div class="toc-title">Contents</div>
+      <ol>
+        <li><a href="#intro">Introduction</a></li>
+        <li><a href="#draw">How the Engine Draw Works</a></li>
+        <li><a href="#notes">Engine Draw Notes</a></li>
+        <li><a href="#tampering">Tampering Policy</a></li>
+        <li><a href="#reporting">Reporting Engine Issues</a></li>
+        <li><a href="#swaps">Note on Engine Swaps</a></li>
+      </ol>
+    </div>
+
+    <!-- 1. INTRODUCTION -->
+    <section class="section" id="intro">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <span class="section-tag">Welcome</span>
+      </div>
+      <h2 class="section-heading">Introduction</h2>
+
+      <p>Welcome to the OK National class. We are pleased to have you with us for what is expected to be a high-standard, fast-paced, and competitive weekend at the Winter Nationals 2026.</p>
+
+      <p>The OK National class is the senior category in the ROK Cup South Africa structure. It uses the Vortex OK engine — a high-performance, technically demanding unit at the top of the ROK Cup platform. The class attracts experienced and skilled drivers, and the standard of competition reflects that.</p>
+
+      <div class="alert alert-blue">
+        <div class="alert-title">Our Focus</div>
+        <p>The structure of the class is built around fairness. Every driver competes using the same engine platform and within the same controlled technical framework. The objective is not to create an engine development contest, but to place the emphasis where it belongs: on <strong>outright driving ability, race strategy, mechanical preparation, and the highest standard of conduct on and off the circuit</strong>.</p>
+      </div>
+
+      <p>Competitors, mechanics, entrants, and teams are expected to uphold the standards of the category and to conduct themselves professionally throughout the event.</p>
+
+      <p>The intention is to provide a premier racing environment where the fastest, most consistent, and best-prepared competitors can demonstrate their ability in a level and properly controlled competition.</p>
+    </section>
+
+    <!-- 2. ENGINE DRAW -->
+    <section class="section" id="draw">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <span class="section-tag">Procedure</span>
+      </div>
+      <h2 class="section-heading">How the Engine Draw Works</h2>
+
+      <h3 class="sub-heading">OK National Engine Draw and Handling</h3>
+
+      <p>The OK National class will operate with an official engine draw system designed to support fair competition and clear technical control.</p>
+
+      <p>Each competitor will draw an engine on <strong>Friday morning</strong> by selecting a number from the draw system. The engine allocated to that number, together with its carburettor, will be issued to the competitor for use during Friday practice. The same engine and carburettor will be reissued on Saturday morning. On Sunday morning, a new engine is drawn from the pool, but the competitor's own carburettor — the same one used on Friday and Saturday — is returned to them to use with the new engine.</p>
+
+      <p>The engine will be supplied together with its carburettor and related components. The carburettor will be issued in a recommended starting setup, intended to provide competitors with a practical and reliable baseline from which to begin Friday practice.</p>
+
+      <div class="alert alert-blue">
+        <div class="alert-title">Carburettor Adjustment</div>
+        <p>Carburettor adjustment is permitted within the applicable OK National technical regulations. Competitors, teams, and mechanics may make setup adjustments to the carburettor, provided all components remain compliant with the regulations and the engine and carburettor remain within the permitted specification.</p>
+      </div>
+
+      <div class="alert alert-critical">
+        <div class="alert-title">Engine Tampering — Zero Tolerance</div>
+        <p>The engine and carburettor must remain as the official issued unit. The engine may <strong>not be opened, modified, interfered with, or tampered with</strong> in any way.</p>
+      </div>
+
+      <h3 class="sub-heading">Weekend Engine Schedule</h3>
+      <div class="timeline">
+
+        <div class="tl-item">
+          <div class="tl-time">Friday Morning</div>
+          <div class="tl-title">Engine Draw — First Draw</div>
+          <div class="tl-desc">Each competitor draws a number. The engine assigned to that number is issued together with its carburettor. Competitors are responsible for both from the moment they are signed out.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Friday — All Day</div>
+          <div class="tl-title">Practice Use</div>
+          <div class="tl-desc">The drawn engine and carburettor are used for the whole of Friday practice. All issued components must be handled with care throughout.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Friday Evening</div>
+          <div class="tl-title">Engine &amp; Carburettor Return</div>
+          <div class="tl-desc">The engine and carburettor must be returned together as one complete unit. <strong>The carburettor must remain fitted to the engine when returned.</strong> The unit will be stored overnight in the engine trailer under the control of the organiser.</div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-time">Saturday Morning</div>
+          <div class="tl-title">Same Engine &amp; Carburettor Reissued</div>
+          <div class="tl-desc">Each competitor receives back the <strong>same engine and carburettor</strong> they used on Friday. The sealed unit is checked, the seal verified, and reissued for Saturday's racing.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Saturday — All Day</div>
+          <div class="tl-title">Racing Use</div>
+          <div class="tl-desc">The same engine and carburettor from Friday are used for the full day of Saturday racing.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Saturday Evening</div>
+          <div class="tl-title">Engine Returns to Pool — Carburettor Sealed Separately</div>
+          <div class="tl-desc">At the end of Saturday, the <strong>engine is returned to the general pool</strong> and will be redistributed. The <strong>carburettor is removed, sealed, and stored separately</strong> — it is tagged to that competitor and will be returned to them on Sunday morning.</div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-time">Sunday Morning</div>
+          <div class="tl-title">New Engine Draw — Same Carburettor Returned</div>
+          <div class="tl-desc">Each competitor <strong>draws a new engine</strong> from the pool for Sunday. At the same time, they receive back their <strong>own sealed carburettor</strong> from Friday and Saturday. The new engine and the competitor's carburettor are used together for Sunday's racing.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">Sunday — All Day</div>
+          <div class="tl-title">Racing Use</div>
+          <div class="tl-desc">The new drawn engine paired with the competitor's own carburettor is used for the full day of Sunday racing.</div>
+        </div>
+
+      </div>
+
+      <div class="alert alert-blue" style="margin-top:20px;">
+        <div class="alert-title">Summary — What Stays With You</div>
+        <p>Your <strong>carburettor follows you all weekend</strong> — Friday, Saturday, and Sunday. The engine changes after Saturday: you get a freshly drawn engine on Sunday. This ensures the carburettor setup you develop across the weekend remains consistent while the engine platform stays controlled and fair.</p>
+      </div>
+
+      <div class="alert alert-critical" style="margin-top:16px;">
+        <div class="alert-title">Organiser's Discretion — Sunday Carburettor Allocation</div>
+        <p>The default arrangement is that each competitor retains their own carburettor for the full event weekend. However, <strong>the engine builder, organiser, or promoter reserves the right to determine that carburettors remain assigned to their engine</strong> rather than being returned to the competitor at Sunday's draw. Where this variation is applied, all competitors will be formally notified at the time of returning their engine on Saturday night. In this case, the carburettor will be issued together with the newly drawn engine and both will be used for the full day of Sunday racing. This decision rests solely with the engine builder, organiser, and/or promoter and is not subject to appeal.</p>
+      </div>
+
+      <p>By following this process, all competitors assist in maintaining a fair and controlled racing environment.</p>
+    </section>
+
+    <!-- 3. DRAW NOTES -->
+    <section class="section" id="notes">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <span class="section-tag">Collection Procedure</span>
+      </div>
+      <h2 class="section-heading">Engine Draw Notes</h2>
+
+      <h3 class="sub-heading">Official Engine Collection Procedure</h3>
+      <p>Competitors must attend engine collection at the official time published in the event programme or communicated by the organiser.</p>
+      <p>The engine draw will take place on Friday morning. Each competitor, entrant, or authorised mechanic will draw a number, and the engine allocated to that number will be issued for use.</p>
+      <p>Competitors must arrive at engine collection with the necessary equipment, tools, and personnel required to fit the engine correctly and safely.</p>
+      <p>No engine will be considered officially issued until the relevant documentation has been completed and the engine has been <strong>signed for</strong> by the entrant or an authorised representative.</p>
+
+      <h3 class="sub-heading">Entrant or Authorised Mechanic Signature</h3>
+      <div class="card card-blue">
+        <div class="card-heading">Important — Signature Requirements</div>
+        <p>An entrant's signature is required at the time of the engine draw. If a mechanic signs for and receives the engine on behalf of the entrant, the technical team will regard that mechanic as acting with the entrant's full authority.</p>
+      </div>
+      <ul class="checklist" style="margin-top:14px;">
+        <li>The mechanic must know the <strong>driver's name, race number, and class</strong> before attempting to collect the engine.</li>
+        <li>Once signed out, the competitor and entrant are <strong>fully responsible</strong> for the engine and all issued components.</li>
+      </ul>
+
+      <h3 class="sub-heading">Items Included With the Engine</h3>
+      <p>When signing for the engine, the following items may be issued as part of the engine package. <strong>All items must be returned together at the required time.</strong></p>
+
+      <div class="items-grid">
+
+        <!-- Engine -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="7" width="14" height="9" rx="1.5"/>
+            <path d="M8 7V5h6v2"/>
+            <path d="M4 10H2v3h2"/>
+            <path d="M18 10h2v3h-2"/>
+            <line x1="8" y1="11" x2="8" y2="13"/>
+            <line x1="11" y1="11" x2="11" y2="13"/>
+            <line x1="14" y1="11" x2="14" y2="13"/>
+          </svg></span>
+          Engine
+        </div>
+
+        <!-- Engine Mount -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="14" width="16" height="4" rx="1"/>
+            <rect x="7" y="10" width="8" height="4"/>
+            <line x1="6" y1="10" x2="4" y2="14"/>
+            <line x1="16" y1="10" x2="18" y2="14"/>
+            <line x1="7" y1="18" x2="7" y2="20"/>
+            <line x1="15" y1="18" x2="15" y2="20"/>
+          </svg></span>
+          Engine Mount
+        </div>
+
+        <!-- Carburettor -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="8" width="10" height="8" rx="1"/>
+            <path d="M9 8V5h4v3"/>
+            <path d="M9 16v2h4v-2"/>
+            <line x1="6" y1="11" x2="3" y2="11"/>
+            <line x1="16" y1="11" x2="19" y2="11"/>
+            <line x1="11" y1="10" x2="11" y2="14"/>
+            <line x1="9" y1="12" x2="13" y2="12"/>
+          </svg></span>
+          Carburettor
+        </div>
+
+        <!-- Airbox -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="8" width="14" height="9" rx="2"/>
+            <path d="M8 8C8 5.8 9.8 4 12 4s4 1.8 4 4"/>
+            <line x1="9" y1="12" x2="13" y2="12"/>
+            <line x1="11" y1="10" x2="11" y2="14"/>
+          </svg></span>
+          Airbox
+        </div>
+
+        <!-- Airbox Mount -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="6" width="14" height="7" rx="1.5"/>
+            <rect x="3" y="13" width="16" height="3" rx="1"/>
+            <line x1="7" y1="16" x2="7" y2="19"/>
+            <line x1="15" y1="16" x2="15" y2="19"/>
+            <line x1="8" y1="9.5" x2="14" y2="9.5"/>
+          </svg></span>
+          Airbox Mount
+        </div>
+
+        <!-- Exhaust -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11 C3 11 5 7 9 8 C13 9 13 13 17 13"/>
+            <ellipse cx="17" cy="13" rx="2.5" ry="4"/>
+            <path d="M3 11 C4 9 5 8 6 8"/>
+            <line x1="3" y1="11" x2="2" y2="11"/>
+          </svg></span>
+          Exhaust
+        </div>
+
+        <!-- Silencer -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="5" cy="11" rx="2" ry="4"/>
+            <rect x="5" y="7" width="12" height="8" rx="1"/>
+            <ellipse cx="17" cy="11" rx="2" ry="4"/>
+            <line x1="8" y1="9" x2="8" y2="13"/>
+            <line x1="11" y1="9" x2="11" y2="13"/>
+            <line x1="14" y1="9" x2="14" y2="13"/>
+          </svg></span>
+          Silencer
+        </div>
+
+        <!-- Exhaust Springs -->
+        <div class="item-chip">
+          <span class="ico"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 4 C9 4 9 7 7 7 C5 7 5 10 7 10 C9 10 9 13 7 13 C5 13 5 16 7 16 C9 16 9 19 7 19"/>
+            <path d="M15 4 C17 4 17 7 15 7 C13 7 13 10 15 10 C17 10 17 13 15 13 C13 13 13 16 15 16 C17 16 17 19 15 19"/>
+          </svg></span>
+          Exhaust Springs
+        </div>
+
+      </div>
+
+      <div class="alert alert-critical" style="margin-top:20px;">
+        <div class="alert-title">Missing or Damaged Items</div>
+        <p>Missing, damaged, altered, or incomplete items may be referred to the technical team and/or organiser. Ensure all items are accounted for at collection and at return.</p>
+      </div>
+    </section>
+
+    <!-- 4. TAMPERING -->
+    <section class="section" id="tampering">
+      <div class="section-label">
+        <span class="section-num">04</span>
+        <span class="section-tag">Integrity Policy</span>
+      </div>
+      <h2 class="section-heading">Tampering Policy</h2>
+
+      <p>Once an engine has been drawn and handed over, the competitor and entrant are responsible for looking after it until it is returned. The engine must be used as supplied.</p>
+
+      <div class="alert alert-critical">
+        <div class="alert-title">Zero Tolerance — No Exceptions</div>
+        <p>No opening, internal modification, unauthorised interference, or tampering is permitted under any circumstances. If an entrant, competitor, mechanic, or team member is found to have interfered with the engine or any controlled component in an unauthorised manner, a <strong>non-negotiable fine of R10,000 may apply</strong>, and exclusion from the event is highly likely.</p>
+      </div>
+
+      <p>Carburettor setup adjustments are permitted only within the applicable technical regulations. This does not allow any unauthorised modification to the engine, carburettor body, controlled components, seals, or any specified no-go dimensions.</p>
+
+      <div class="stat-box">
+        <div>
+          <div class="stat-label">Tampering Fine</div>
+          <div class="stat-value">R10 000</div>
+        </div>
+        <div class="stat-body">
+          <strong>Non-negotiable.</strong> Applied to any entrant, competitor, or team member found to have interfered with the engine or controlled components in an unauthorised manner. Exclusion from the event is also highly likely. This policy exists to protect every competitor equally.
+        </div>
+      </div>
+
+      <h3 class="sub-heading">Looking After the Engine</h3>
+      <p>The engine is official controlled equipment and must be returned in the same condition in which it was issued, subject only to normal use during the event.</p>
+      <ul class="checklist">
+        <li>If something does not feel correct, report it to the technical team <strong>immediately</strong>.</li>
+        <li>Do <strong>not</strong> attempt to repair, open, modify, or interfere with the engine yourself.</li>
+        <li>The purpose of the engine system is to keep racing fair and focused on <strong>driver performance</strong>.</li>
+      </ul>
+    </section>
+
+    <!-- 5. REPORTING -->
+    <section class="section" id="reporting">
+      <div class="section-label">
+        <span class="section-num">05</span>
+        <span class="section-tag">Technical Issues</span>
+      </div>
+      <h2 class="section-heading">Reporting Engine Issues</h2>
+
+      <h3 class="sub-heading">What to Do if You Suspect a Problem</h3>
+      <p>If a competitor believes there is an issue with the engine during the event, the kart must be brought to the technical team in parc fermé as soon as possible. Where possible, the engine must remain fitted to the kart and must be presented exactly as it came off the track.</p>
+      <p>The technical team will inspect the engine and assess whether there is a fault, abnormal condition, or compliance concern. In some cases, competitors may be asked to provide data from their logger to assist with the assessment.</p>
+
+      <div class="alert alert-blue">
+        <div class="alert-title">Why Early Reporting Matters</div>
+        <p>Early reporting helps prevent small issues from becoming larger problems. Competitors should not wait until the end of the day to report an issue that was known earlier. If something does not feel right, it must be reported promptly.</p>
+      </div>
+
+      <h3 class="sub-heading">Step-by-Step Engine Issue Reporting Process</h3>
+      <ol class="steps">
+        <li class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Do not remove the engine</div>
+            <div class="step-desc">Leave the engine fitted to the kart exactly as it came off the track.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Proceed directly to parc fermé</div>
+            <div class="step-desc">Go to the parc fermé or technical control area without delay.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Report to an official</div>
+            <div class="step-desc">Speak to a race official or member of the technical team immediately.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-title">Explain the issue clearly</div>
+            <div class="step-desc">Describe what happened, including when the issue occurred and what the driver or mechanic noticed.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">5</div>
+          <div>
+            <div class="step-title">Allow technical inspection</div>
+            <div class="step-desc">Allow the technical team to inspect the engine. Provide logger data if requested.</div>
+          </div>
+        </li>
+        <li class="step">
+          <div class="step-num">6</div>
+          <div>
+            <div class="step-title">Wait for official feedback</div>
+            <div class="step-desc">Do not refit, swap, repair, adjust beyond permitted carburettor setup, or interfere with the engine unless specifically instructed by an official.</div>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 6. ENGINE SWAPS -->
+    <section class="section" id="swaps">
+      <div class="section-label">
+        <span class="section-num">06</span>
+        <span class="section-tag">Changes</span>
+      </div>
+      <h2 class="section-heading">Note on Engine Swaps</h2>
+
+      <p>During National Championship events, competitors may be required to swap engines from the start of official practice. The number of engine swaps or engine changes for an event is not limited to two and may vary at the sole discretion of the organiser and/or promoter.</p>
+
+      <p>Competitors may also request <strong>one engine change</strong> during the event at their own discretion.</p>
+
+      <div class="cost-grid">
+        <div class="cost-card">
+          <div class="cc-class">Competitor-Initiated Change</div>
+          <div class="cc-amount">R3 000</div>
+          <div class="cc-note">One permitted per event</div>
+        </div>
+        <div class="cost-card">
+          <div class="cc-class">Refund if Engine Faulty</div>
+          <div class="cc-amount">Full</div>
+          <div class="cc-note">Confirmed by technical team inspection</div>
+        </div>
+      </div>
+
+      <ul class="checklist">
+        <li>Only <strong>one competitor-initiated engine change</strong> is permitted per event.</li>
+        <li>A maximum of <strong>three spare engines</strong> per category may be reserved on standby — <strong>first-come, first-served</strong>.</li>
+        <li>Once all standby engines have been allocated, no further changes will be allowed unless approved by the organiser under exceptional circumstances.</li>
+        <li>All engine swap decisions remain subject to the control of the <strong>organiser, promoter, and technical team</strong>.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="doc-footer">
+    <div class="footer-left">ROK Cup South Africa · Winter Nationals 2026 · Official Document</div>
+    <span class="doc-ref">RDOC011</span>
+  </footer>
+
+</div>
+</body>
+</html>
