@@ -3889,6 +3889,11 @@
         const entry = entries.find(e => String(e.entry_id) === String(entryId) || String(e.race_entry_id) === String(entryId));
         if (!entry) throw new Error('Entry not found');
 
+        const pricingResponse = await fetch(`/api/getEventPricing/${encodeURIComponent(entry.event_id)}`);
+        const pricingData = pricingResponse.ok ? await pricingResponse.json() : { success: false, pricing: {} };
+        const pricingMap = pricingData.success ? (pricingData.pricing || {}) : {};
+        const cfg = pricingMap[entry.race_class] || pricingMap[(entry.race_class || '').toUpperCase()] || null;
+
         const parseItems = (raw) => {
           if (!raw) return [];
           try {
@@ -3907,14 +3912,44 @@
           return String(item || '');
         }).filter(Boolean);
 
+        const hasItem = (term) => selectedItems.some(item => item.toLowerCase().includes(term));
+        const isNatEvent = !!entry.event_national_only;
+        const pEntry = cfg ? parseFloat(isNatEvent ? (cfg.natP1 || cfg.regP1 || 0) : (cfg.regP1 || cfg.natP1 || 0)) : 0;
+        const pEngine = cfg && hasItem('engine') ? parseFloat(cfg.engP1 || 0) : 0;
+        const pTyres = cfg && hasItem('tyre') && !hasItem('wet') && !hasItem('practice') ? parseFloat(cfg.tyrP1 || 0) : 0;
+        const pWet = cfg && hasItem('wet') ? parseFloat(cfg.wetPrice || 0) : 0;
+        const pTransponder = cfg && hasItem('transponder') ? parseFloat(cfg.transP1 || 0) : 0;
+        const pFuel = cfg && hasItem('fuel') ? parseFloat(cfg.fuelP1 || 0) : 0;
+        const pPractice = cfg && hasItem('practice') ? parseFloat(cfg.pracUnit || 0) : 0;
+
+        const invoiceItems = [
+          { label: 'Base Entry Fee', amount: pEntry },
+          { label: 'Engine Rental', amount: pEngine, selected: hasItem('engine') },
+          { label: 'Tyres', amount: pTyres, selected: hasItem('tyre') && !hasItem('wet') && !hasItem('practice') },
+          { label: 'Wet Tyres', amount: pWet, selected: hasItem('wet') },
+          { label: 'Practice Tyres', amount: pPractice, selected: hasItem('practice') },
+          { label: 'Transponder Rental', amount: pTransponder, selected: hasItem('transponder') },
+          { label: 'Controlled Fuel', amount: pFuel, selected: hasItem('fuel') }
+        ].filter(row => row.amount > 0 || row.selected);
+
+        const calculatedTotal = invoiceItems.reduce((sum, row) => sum + parseFloat(row.amount || 0), 0);
+        const recordedAmount = parseFloat(entry.amount_paid || entry.total_amount || 0);
+        const difference = recordedAmount - calculatedTotal;
+
         const driverNameSafe = (driverName || `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim() || 'Driver').replace(/</g, '&lt;');
         const eventName = (entry.event_name || 'Race Event').replace(/</g, '&lt;');
         const raceClass = (entry.race_class || '').replace(/</g, '&lt;') || '-';
         const paymentRef = (entry.payment_reference || '').replace(/</g, '&lt;') || '-';
         const paymentStatus = (entry.payment_status || 'Pending').replace(/</g, '&lt;');
-        const amountPaid = formatMoney(entry.amount_paid || entry.total_amount || 0);
+        const amountPaid = formatMoney(recordedAmount);
         const eventDate = entry.event_date ? new Date(entry.event_date).toLocaleDateString('en-ZA') : '-';
         const raceNumber = entry.race_number || '-';
+        const breakdownRows = invoiceItems.map(row => ({
+          label: row.label,
+          amount: formatMoney(row.amount),
+          selected: row.amount > 0 || row.selected
+        }));
+
         const ticketRows = [
           ['Race Ticket', entry.payment_reference || '—'],
           ['Engine Rental Ticket', entry.ticket_engine_ref || '—'],
@@ -3993,6 +4028,18 @@
       </div>
 
       <div class="section">
+        <h2>Pricing Breakdown</h2>
+        <table>
+          ${breakdownRows.map(row => `<tr><td>${row.label}</td><td>${row.amount}</td></tr>`).join('')}
+        </table>
+      </div>
+
+      <div class="total">
+        <span>Calculated Total</span>
+        <strong>${formatMoney(calculatedTotal)}</strong>
+      </div>
+
+      <div class="section">
         <h2>Options Selected</h2>
         <div class="list">
           ${selectedItems.length ? selectedItems.map(item => `<span class="pill">${item.replace(/</g, '&lt;')}</span>`).join('') : '<span style="color:#6b7280;">No add-on options were recorded for this entry.</span>'}
@@ -4006,13 +4053,15 @@
         </table>
       </div>
 
-      <div class="total">
-        <span>Total Charged</span>
-        <strong>${amountPaid}</strong>
+      <div class="total" style="background:#ecfdf5;border-color:#bbf7d0;">
+        <span>Recorded Amount Paid</span>
+        <strong style="color:#15803d;">${amountPaid}</strong>
       </div>
 
+      ${Math.abs(difference) > 0.01 ? `<div class="note" style="color:#b45309;">Recorded amount differs from calculated total by ${formatMoney(Math.abs(difference))}.</div>` : ''}
+
       <div class="note">
-        This view shows the exact stored selections and the amount recorded against the entry. It is intended for quick accounting reference and can be printed or saved as a PDF.
+        This view shows the stored selections and a calculated breakdown using the event pricing config that was active for the entry. It is intended for quick accounting reference and can be printed or saved as a PDF.
       </div>
     </div>
   </div>
