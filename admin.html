@@ -853,8 +853,6 @@
     body.success-flash {
       animation: successBorderFlash 0.8s ease-out;
     }
-    /* ── ICONS ─────────────────────────────────── */
-    .icon{display:inline-block;width:1em;height:1em;vertical-align:-0.15em;overflow:visible;flex-shrink:0}
   </style>
 </head>
 <body>
@@ -896,12 +894,12 @@
       <button class="tab-btn" onclick="switchTab('notifications')" data-tab="notifications">Notifications</button>
       <button class="tab-btn" onclick="switchTab('audit')" data-tab="audit">Audit Trail</button>
       <button class="tab-btn" onclick="switchTab('discountCodes')" data-tab="discountCodes">Discount Codes</button>
-      <button class="tab-btn" onclick="switchTab('manualPayments')" data-tab="manualPayments"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3.5" width="14" height="9" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="3.5" y1="10.5" x2="5.5" y2="10.5"/><line x1="7" y1="10.5" x2="9" y2="10.5"/></svg> Manual Payments</button>
-      <button class="tab-btn" onclick="switchTab('scanners')" data-tab="scanners"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="1" width="8" height="14" rx="1.5"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor" stroke="none"/><line x1="6" y1="3.5" x2="10" y2="3.5"/></svg> Scanners</button>
-      <button class="tab-btn" onclick="switchTab('poolEngines')" data-tab="poolEngines"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> Pool Engines</button>
-      <button class="tab-btn" onclick="switchTab('accessControl')" data-tab="accessControl"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="11" height="8" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/><circle cx="8" cy="11" r="1.2" fill="currentColor" stroke="none"/></svg> Access Control</button>
+      <button class="tab-btn" onclick="switchTab('manualPayments')" data-tab="manualPayments">💳 Manual Payments</button>
+      <button class="tab-btn" onclick="switchTab('scanners')" data-tab="scanners">📱 Scanners</button>
+      <button class="tab-btn" onclick="switchTab('poolEngines')" data-tab="poolEngines">🔧 Pool Engines</button>
+      <button class="tab-btn" onclick="switchTab('accessControl')" data-tab="accessControl">🔒 Access Control</button>
       <a href="/clerk.html" target="_blank" class="tab-btn" style="margin-left: auto; color: #dc2626; font-weight: 600;">Race Control →</a>
-      <a href="/engine-management.html" target="_blank" class="tab-btn" style="color: #f97316; font-weight: 600;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v1.5M8 13v1.5M14.5 8H13M3 8H1.5M12.7 3.3l-1 1M4.3 11.7l-1 1M12.7 12.7l-1-1M4.3 4.3l-1-1"/></svg> Engine Mgmt →</a>
+      <a href="/engine-management.html" target="_blank" class="tab-btn" style="color: #f97316; font-weight: 600;">⚙ Engine Mgmt →</a>
     </div>
 
     <!-- Drivers Tab -->
@@ -920,9 +918,9 @@
           <option value="Unpaid">Unpaid</option>
         </select>
         <button class="search-btn" onclick="loadDrivers()">Search</button>
-        <button class="search-btn" id="advancedViewBtn" onclick="toggleAdvancedView()"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4.5" width="3" height="9.5" rx="0.5"/><rect x="11" y="1.5" width="3" height="12.5" rx="0.5"/><line x1="0.5" y1="14.5" x2="15.5" y2="14.5"/></svg> Advanced View</button>
+        <button class="search-btn" id="advancedViewBtn" onclick="toggleAdvancedView()">📊 Advanced View</button>
         <button class="search-btn" onclick="exportDriversCSV()">Export CSV</button>
-        <a href="/admin-driver-labels.html" target="_blank"><button class="search-btn" type="button"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.8 1H3a1 1 0 0 0-1 1v4.8a1 1 0 0 0 .3.7l6.7 6.7a1 1 0 0 0 1.4 0l4.1-4.1a1 1 0 0 0 0-1.4L7.8 1z"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor" stroke="none"/></svg> Print Envelope Labels</button></a>
+        <a href="/admin-driver-labels.html" target="_blank"><button class="search-btn" type="button">🏷 Print Envelope Labels</button></a>
       </div>
 
       <div class="table-wrapper">
@@ -985,17 +983,17 @@
           <option value="">Loading events...</option>
         </select>
         <button class="search-btn" onclick="loadRaceEntries()">Load Entries</button>
-        <button class="search-btn" id="syncNowBtn" onclick="forceSyncNow()" style="background: #0891b2;" title="Re-pull all entries from cloud (use when wifi is available)"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="2" x2="8" y2="14"/><polyline points="4 10 8 14 12 10"/></svg> Sync from Cloud</button>
-        <button class="search-btn" id="pushOfflineBtn" onclick="pushOfflineData()" style="background: #d97706; display:none;" title="Push engine draws & assignments from this laptop to cloud (use after racing offline)"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="14" x2="8" y2="2"/><polyline points="4 6 8 2 12 6"/></svg> Push to Cloud</button>
+        <button class="search-btn" id="syncNowBtn" onclick="forceSyncNow()" style="background: #0891b2;" title="Re-pull all entries from cloud (use when wifi is available)">⬇️ Sync from Cloud</button>
+        <button class="search-btn" id="pushOfflineBtn" onclick="pushOfflineData()" style="background: #d97706; display:none;" title="Push engine draws & assignments from this laptop to cloud (use after racing offline)">⬆️ Push to Cloud</button>
         <button class="search-btn" onclick="showQuickAddEntryModal()" style="background: #22c55e;">+ Quick Add Entry</button>
         <button class="search-btn" onclick="exportRaceEntriesCSV()" style="background: #4caf50;">Export CSV</button>
-        <button class="search-btn" onclick="exportROKControlCSV()" style="background: #b91c1c;" title="Export drivers.csv for ROKControl scanner app"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><line x1="5" y1="8" x2="11" y2="8"/></svg> ROKControl CSV</button>
+        <button class="search-btn" onclick="exportROKControlCSV()" style="background: #b91c1c;" title="Export drivers.csv for ROKControl scanner app">🔴 ROKControl CSV</button>
         <button class="search-btn" onclick="exportRaceEntriesPDF()" style="background: #2563eb;">Export PDF with Barcodes</button>
         <button class="search-btn" onclick="exportRaceEntriesExcel()" style="background: #1d6f42;">&#128202; Export Excel</button>
         <button class="search-btn" onclick="exportFinancialReportCSV()" style="background: #f59e0b; color: #1a1a1a;">&#128184; Financial Report</button>
-        <button class="search-btn" onclick="openTyreBoardShare()" style="background:#0f172a;color:white;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="1" x2="3" y2="15"/><path d="M3 1h10l-3 5 3 4H3z"/><rect x="5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="9" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="7" y="4.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> Share Tyre Board</button>
-        <button class="search-btn" onclick="printQRStickers()" style="background: #7c3aed; color: white;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.8 1H3a1 1 0 0 0-1 1v4.8a1 1 0 0 0 .3.7l6.7 6.7a1 1 0 0 0 1.4 0l4.1-4.1a1 1 0 0 0 0-1.4L7.8 1z"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor" stroke="none"/></svg> QR Sticker Sheet</button>
-        <button class="search-btn" onclick="exportTyreCollectionList()" style="background: #1e293b; color: white; border: 1px solid #475569;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 10h12v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-2z"/><path d="M4 10l1.5-3.5h5L12 10"/><circle cx="4.5" cy="13" r="1.5"/><circle cx="11.5" cy="13" r="1.5"/></svg> Tyre Collection List</button>
+        <button class="search-btn" onclick="openTyreBoardShare()" style="background:#0f172a;color:white;">🏁 Share Tyre Board</button>
+        <button class="search-btn" onclick="printQRStickers()" style="background: #7c3aed; color: white;">🏷️ QR Sticker Sheet</button>
+        <button class="search-btn" onclick="exportTyreCollectionList()" style="background: #1e293b; color: white; border: 1px solid #475569;">🏎️ Tyre Collection List</button>
         <label style="margin-left: 20px; color: #ef4444; font-size: 14px; cursor: pointer; font-weight: 600;">
           <input type="checkbox" id="showCancelledEntries" onchange="loadRaceEntries()" style="margin-right: 6px; cursor: pointer;">
           Show Cancelled/Incomplete
@@ -1004,7 +1002,7 @@
 
       <!-- Barcode search bar -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:10px 14px;">
-        <span style="font-size:13px;color:#94a3b8;white-space:nowrap;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5"/><line x1="10.5" y1="10.5" x2="14.5" y2="14.5"/></svg> Barcode lookup:</span>
+        <span style="font-size:13px;color:#94a3b8;white-space:nowrap;">🔍 Barcode lookup:</span>
         <input id="barcodeSearchInput" type="text" placeholder="e.g. E0013, GAS0045, ENG6033…"
           autocapitalize="characters" autocomplete="off" spellcheck="false"
           style="flex:1;min-width:0;padding:7px 12px;background:#0f172a;border:2px solid #334155;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:14px;font-weight:700;letter-spacing:1px;"
@@ -1046,20 +1044,20 @@
     <!-- 🔧 Equipment Tracking Tab -->
     <div id="equipmentTab" class="admin-content" style="display: none;">
       <div class="section-header">
-        <h2 style="margin: 0 0 8px 0; color: #1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> Equipment Tracking</h2>
+        <h2 style="margin: 0 0 8px 0; color: #1e293b;">🔧 Equipment Tracking</h2>
         <p style="margin: 0; color: #64748b; font-size: 14px;">Monitor all equipment assignments</p>
       </div>
       
       <!-- Sub-tabs for Equipment -->
       <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #374151; padding-bottom: 10px;">
         <button id="equipByDriverBtn" onclick="switchEquipmentView('driver')" style="padding: 8px 16px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
-          <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2 14.5a6 6 0 0 1 12 0"/></svg> By Driver
+          👤 By Driver
         </button>
         <button id="equipByItemBtn" onclick="switchEquipmentView('item')" style="padding: 8px 16px; background: #4b5563; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
-          <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.8 1H3a1 1 0 0 0-1 1v4.8a1 1 0 0 0 .3.7l6.7 6.7a1 1 0 0 0 1.4 0l4.1-4.1a1 1 0 0 0 0-1.4L7.8 1z"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor" stroke="none"/></svg> By Equipment
+          🏷️ By Equipment
         </button>
         <button id="equipDatabaseBtn" onclick="switchEquipmentView('database')" style="padding: 8px 16px; background: #4b5563; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
-          <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 1h8l3 3v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/><rect x="5" y="1" width="5" height="4.5"/><rect x="4" y="9" width="8" height="5"/></svg> Database View
+          💾 Database View
         </button>
       </div>
       
@@ -1070,7 +1068,7 @@
             <option value="">Select Event...</option>
           </select>
           <button class="search-btn" onclick="loadEquipmentByDriver()" style="padding: 10px 20px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4.5" width="3" height="9.5" rx="0.5"/><rect x="11" y="1.5" width="3" height="12.5" rx="0.5"/><line x1="0.5" y1="14.5" x2="15.5" y2="14.5"/></svg> Load
+            📊 Load
           </button>
         </div>
         
@@ -1085,11 +1083,11 @@
         <!-- Engine Pool Section (no event filter — pool is global) -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div>
-            <h3 style="margin:0;font-size:15px;color:#1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> Engine Pool — Full Register</h3>
+            <h3 style="margin:0;font-size:15px;color:#1e293b;">🔧 Engine Pool — Full Register</h3>
             <p style="margin:3px 0 0 0;font-size:12px;color:#64748b;">All engines ever added (including removed). Click any row to view history.</p>
           </div>
           <button onclick="loadAllPoolEngines()" style="padding:9px 18px;background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;">
-            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Load / Refresh
+            🔄 Load / Refresh
           </button>
         </div>
         <div id="poolEnginesGrid" style="margin-bottom:30px;">
@@ -1098,13 +1096,13 @@
 
         <!-- Transponders section (still event-based) -->
         <div style="border-top:2px solid #e2e8f0;padding-top:20px;">
-          <h3 style="margin:0 0 10px 0;font-size:15px;color:#1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="9" x2="8" y2="14.5"/><path d="M5 11a4 4 0 0 1 6 0"/><path d="M3 8.5a7 7 0 0 1 10 0"/><circle cx="8" cy="9" r="1.2" fill="currentColor" stroke="none"/></svg> Transponders Currently Out</h3>
+          <h3 style="margin:0 0 10px 0;font-size:15px;color:#1e293b;">📡 Transponders Currently Out</h3>
           <div class="filters-bar">
             <select id="equipItemEventFilter" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
               <option value="">Select Event...</option>
             </select>
             <button class="search-btn" onclick="loadEquipmentByItem()" style="padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-              <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4.5" width="3" height="9.5" rx="0.5"/><rect x="11" y="1.5" width="3" height="12.5" rx="0.5"/><line x1="0.5" y1="14.5" x2="15.5" y2="14.5"/></svg> Load
+              📊 Load
             </button>
           </div>
           <div id="equipmentByItemTable" style="margin-top: 15px; overflow-x: auto;">
@@ -1120,10 +1118,10 @@
             <option value="">Select Event...</option>
           </select>
           <button class="search-btn" onclick="loadEquipmentDatabase()" style="padding: 10px 20px; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4.5" width="3" height="9.5" rx="0.5"/><rect x="11" y="1.5" width="3" height="12.5" rx="0.5"/><line x1="0.5" y1="14.5" x2="15.5" y2="14.5"/></svg> Load All Equipment Data
+            📊 Load All Equipment Data
           </button>
           <button id="liveModeToggle" class="live-toggle-btn" onclick="toggleLiveMode()" style="display: none;">
-            <svg class="icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="currentColor"/><circle cx="8" cy="8" r="8" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"/></svg> LIVE MODE
+            🔴 LIVE MODE
           </button>
           <div id="liveStatusIndicator" style="display: none; align-items: center; gap: 8px;">
             <span class="live-badge">
@@ -1141,9 +1139,9 @@
       
       <!-- Scan Log -->
       <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #374151;">
-        <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3.5" width="10" height="11" rx="1"/><path d="M6 3.5V2.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1"/><line x1="5.5" y1="8" x2="10.5" y2="8"/><line x1="5.5" y1="11" x2="9" y2="11"/></svg> Recent Equipment Scans (Last 50)</h3>
+        <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 16px;">📋 Recent Equipment Scans (Last 50)</h3>
         <button class="search-btn" onclick="loadEquipmentScanLog()" style="padding: 8px 16px; background: #6366f1; margin-bottom: 15px;">
-          <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Refresh Log
+          🔄 Refresh Log
         </button>
         <div id="equipmentScanLog" style="max-height: 400px; overflow-y: auto; background: #f8fafc; border-radius: 8px; padding: 10px;">
           <p style="color: #94a3b8; text-align: center; padding: 20px;">Click refresh to load scan history</p>
@@ -1255,7 +1253,7 @@
     <!-- Discount Codes Tab -->
     <div id="discountCodesTab" class="admin-content" style="display: none;">
       <div class="filters-bar" style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="margin: 0; color: #1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v7M6 5.8h2.5a1.5 1.5 0 0 1 0 3H7.5a1.5 1.5 0 0 0 0 3H10"/></svg> Discount Codes Management</h3>
+        <h3 style="margin: 0; color: #1e293b;">💰 Discount Codes Management</h3>
         <button class="search-btn" onclick="showAddCodeModal()" style="background: linear-gradient(135deg, #22c55e, #16a34a);">+ Add New Code</button>
       </div>
 
@@ -1296,37 +1294,37 @@
         <div style="display:flex; align-items:center; gap:10px;">
           <button id="payfastSandboxBtn" onclick="setPayFastMode(true)"
             style="padding:9px 18px; border:none; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; background:#f59e0b; color:#000;">
-            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 1H6v8l-3 3.5A1.5 1.5 0 0 0 4.2 15h7.6a1.5 1.5 0 0 0 1.2-2.5L10 9V1z"/><line x1="6" y1="1" x2="10" y2="1"/><line x1="6" y1="9" x2="10" y2="9"/></svg> Switch to SANDBOX
+            🧪 Switch to SANDBOX
           </button>
           <button id="payfastLiveBtn" onclick="setPayFastMode(false)"
             style="padding:9px 18px; border:none; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; background:#22c55e; color:#000;">
-            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><line x1="8" y1="5" x2="8" y2="11"/><line x1="5" y1="8" x2="11" y2="8"/></svg> Switch to LIVE
+            🔴 Switch to LIVE
           </button>
         </div>
       </div>
       <!-- ===== END MODE TOGGLE ===== -->
 
       <div style="margin-bottom: 24px;">
-        <h2 style="margin: 0 0 8px 0; color: #1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3.5" width="14" height="9" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="3.5" y1="10.5" x2="5.5" y2="10.5"/><line x1="7" y1="10.5" x2="9" y2="10.5"/></svg> Manual Payments &amp; PayFast Webhooks</h2>
+        <h2 style="margin: 0 0 8px 0; color: #1e293b;">💳 Manual Payments & PayFast Webhooks</h2>
         <p style="margin: 0; color: #64748b; font-size: 14px;">View ALL PayFast webhook notifications and manually reconcile payments that couldn't be automatically processed</p>
       </div>
 
       <!-- Stats Cards -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #22c55e; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><polyline points="5 8.5 7 11 11 5.5"/></svg> Processed</div>
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">✅ Processed</div>
           <div style="font-size: 28px; font-weight: 700; color: #22c55e;" id="webhooksProcessed">0</div>
         </div>
         <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3.5" width="10" height="11" rx="1"/><path d="M6 3.5V2.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1"/><line x1="5.5" y1="8" x2="10.5" y2="8"/><line x1="5.5" y1="11" x2="9" y2="11"/></svg> Unmatched</div>
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">⏳ Unmatched</div>
           <div style="font-size: 28px; font-weight: 700; color: #f59e0b;" id="webhooksUnmatched">0</div>
         </div>
         <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #ef4444; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1L1.5 13.5h13z"/><line x1="8" y1="6.5" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r="0.7" fill="currentColor" stroke="none"/></svg> Errors</div>
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">❌ Errors</div>
           <div style="font-size: 28px; font-weight: 700; color: #ef4444;" id="webhooksErrors">0</div>
         </div>
         <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #8b5cf6; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v7M6 5.8h2.5a1.5 1.5 0 0 1 0 3H7.5a1.5 1.5 0 0 0 0 3H10"/></svg> Total Amount</div>
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">💰 Total Amount</div>
           <div style="font-size: 28px; font-weight: 700; color: #8b5cf6;" id="webhooksTotalAmount">R0</div>
         </div>
       </div>
@@ -1344,8 +1342,8 @@
         </select>
         <input type="date" id="webhookStartDate" />
         <input type="date" id="webhookEndDate" />
-        <button class="search-btn" onclick="loadPayFastWebhooks()"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5"/><line x1="10.5" y1="10.5" x2="14.5" y2="14.5"/></svg> Search</button>
-        <button class="search-btn" onclick="loadPayFastWebhooks()" style="background: #22c55e;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Refresh</button>
+        <button class="search-btn" onclick="loadPayFastWebhooks()">🔍 Search</button>
+        <button class="search-btn" onclick="loadPayFastWebhooks()" style="background: #22c55e;">🔄 Refresh</button>
       </div>
 
       <!-- Webhooks Table -->
@@ -1376,7 +1374,7 @@
     <!-- ✅ Payment Status Dashboard Tab -->
     <div id="scannersTab" class="admin-content" style="display:none;">
       <div style="margin-bottom:24px;">
-        <h2 style="margin:0 0 8px 0;color:#1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="1" width="8" height="14" rx="1.5"/><circle cx="8" cy="12.5" r="0.8" fill="currentColor" stroke="none"/><line x1="6" y1="3.5" x2="10" y2="3.5"/></svg> Scanner Identities</h2>
+        <h2 style="margin:0 0 8px 0;color:#1e293b;">📱 Scanner Identities</h2>
         <p style="margin:0;color:#64748b;font-size:14px;">Each scanning device uses a unique 4-digit PIN. When a user signs into the Check app with that PIN, their scanner name is shown on the monitor feed and captured in the audit log.</p>
       </div>
       <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:20px;">
@@ -1405,7 +1403,7 @@
     <!-- Pool Engines Tab -->
     <div id="poolEnginesTab" class="admin-content" style="display:none;">
       <div style="margin-bottom:20px;">
-        <h2 style="margin:0 0 6px 0;color:#1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5a3 3 0 0 0-2.8 4L2 11a1.5 1.5 0 1 0 2.1 2.1l5.7-5.7A3 3 0 1 0 10.5 1.5z"/></svg> Pool Engines</h2>
+        <h2 style="margin:0 0 6px 0;color:#1e293b;">🔧 Pool Engines</h2>
         <p style="margin:0;color:#64748b;font-size:14px;">Define the engine pool for draws. Each engine is identified by its draw number and linked to its peripherals (seal, carb, airbox, exhaust).</p>
       </div>
 
@@ -1462,7 +1460,7 @@
 
       <!-- Filter / search -->
       <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="peSearch" placeholder="Search draw #, engine, class…" oninput="renderPoolEngines()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
+        <input type="text" id="peSearch" placeholder="🔍 Search draw #, engine, class…" oninput="renderPoolEngines()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
         <select id="peClassFilter" onchange="renderPoolEngines()" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
           <option value="">All classes</option>
           <option value="Mini ROK U/10">Mini ROK U/10</option>
@@ -1471,7 +1469,7 @@
           <option value="OK-N">OK-N</option>
         </select>
         <span id="peCount" style="font-size:12px;color:#94a3b8;"></span>
-        <button onclick="window.open('/share/engine-draw','_blank')" style="padding:8px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a1a1a;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5.5 4.5 8 2 10.5 4.5"/><line x1="8" y1="2" x2="8" y2="10"/><path d="M4 7H2.5a1 1 0 0 0-1 1v5.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H12"/></svg> Share Draw Board</button>
+        <button onclick="window.open('/share/engine-draw','_blank')" style="padding:8px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a1a1a;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">📤 Share Draw Board</button>
       </div>
 
       <div class="table-wrapper">
@@ -1497,8 +1495,8 @@
       <!-- Seal History Panel -->
       <div id="sealHistoryPanel" style="display:none;margin-top:20px;background:white;border:1px solid #e2e8f0;border-radius:10px;padding:20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <h3 id="sealHistoryTitle" style="margin:0;font-size:15px;color:#1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="11" height="8" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/><circle cx="8" cy="11" r="1.2" fill="currentColor" stroke="none"/></svg> Seal Number History</h3>
-          <button onclick="document.getElementById('sealHistoryPanel').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+          <h3 id="sealHistoryTitle" style="margin:0;font-size:15px;color:#1e293b;">🔒 Seal Number History</h3>
+          <button onclick="document.getElementById('sealHistoryPanel').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#64748b;">✕</button>
         </div>
         <div id="sealHistoryBody" style="font-size:13px;">Loading…</div>
       </div>
@@ -1507,21 +1505,21 @@
     <!-- Access Control Tab -->
     <div id="accessControlTab" class="admin-content" style="display:none;">
       <div style="margin-bottom:20px;">
-        <h2 style="margin:0 0 6px 0;color:#1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="11" height="8" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/><circle cx="8" cy="11" r="1.2" fill="currentColor" stroke="none"/></svg> Access Control</h2>
+        <h2 style="margin:0 0 6px 0;color:#1e293b;">🔒 Access Control</h2>
         <p style="margin:0;color:#64748b;font-size:14px;">Define checkpoint areas, set class permissions, manage flags, and review access logs.</p>
       </div>
 
       <!-- Checkpoint PIN notice -->
       <div style="background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#92400e;">
-        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="7" r="3.5"/><line x1="8.5" y1="7" x2="15" y2="7"/><line x1="12" y1="7" x2="12" y2="9.5"/><line x1="14.5" y1="7" x2="14.5" y2="9"/></svg> Checkpoint devices use PIN: <strong id="acPinDisplay">checkpoint2026</strong> &nbsp;—&nbsp; set via <code>CHECKPOINT_PIN</code> environment variable.
+        🔑 Checkpoint devices use PIN: <strong id="acPinDisplay">checkpoint2026</strong> &nbsp;—&nbsp; set via <code>CHECKPOINT_PIN</code> environment variable.
         &nbsp; <a href="/checkpoint.html" target="_blank" style="color:#d97706;font-weight:700;">Open Checkpoint Page →</a>
       </div>
 
       <!-- Sub-tabs -->
       <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #e2e8f0;padding-bottom:0;">
-        <button id="acTab_areas" onclick="acSwitchTab('areas')" style="padding:8px 16px;background:#1e3a5f;color:white;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px;font-weight:600;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.5a4.5 4.5 0 0 0-4.5 4.5C3.5 9.5 8 14.5 8 14.5s4.5-5 4.5-8A4.5 4.5 0 0 0 8 1.5z"/><circle cx="8" cy="6" r="1.5"/></svg> Areas</button>
-        <button id="acTab_flags" onclick="acSwitchTab('flags')" style="padding:8px 16px;background:#f1f5f9;color:#64748b;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1L1.5 13.5h13z"/><line x1="8" y1="6.5" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r="0.7" fill="currentColor" stroke="none"/></svg> Flags</button>
-        <button id="acTab_log"   onclick="acSwitchTab('log')"   style="padding:8px 16px;background:#f1f5f9;color:#64748b;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3.5" width="10" height="11" rx="1"/><path d="M6 3.5V2.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1"/><line x1="5.5" y1="8" x2="10.5" y2="8"/><line x1="5.5" y1="11" x2="9" y2="11"/></svg> Access Log</button>
+        <button id="acTab_areas" onclick="acSwitchTab('areas')" style="padding:8px 16px;background:#1e3a5f;color:white;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px;font-weight:600;">📍 Areas</button>
+        <button id="acTab_flags" onclick="acSwitchTab('flags')" style="padding:8px 16px;background:#f1f5f9;color:#64748b;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px;">🚨 Flags</button>
+        <button id="acTab_log"   onclick="acSwitchTab('log')"   style="padding:8px 16px;background:#f1f5f9;color:#64748b;border:none;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px;">📋 Access Log</button>
       </div>
 
       <!-- AREAS sub-tab -->
@@ -1575,7 +1573,7 @@
           <div id="acPermRows"></div>
           <button onclick="acAddPermRow()" style="padding:6px 14px;background:#f1f5f9;color:#1e293b;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer;margin-top:8px;">+ Add Row</button>
           <div style="margin-top:14px;display:flex;gap:8px;">
-            <button onclick="acSavePerms()" style="padding:8px 18px;background:#059669;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 1h8l3 3v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/><rect x="5" y="1" width="5" height="4.5"/><rect x="4" y="9" width="8" height="5"/></svg> Save Permissions</button>
+            <button onclick="acSavePerms()" style="padding:8px 18px;background:#059669;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">💾 Save Permissions</button>
             <button onclick="document.getElementById('acPermEditor').style.display='none'" style="padding:8px 14px;background:#f1f5f9;color:#1e293b;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;cursor:pointer;">Cancel</button>
             <span id="acPermMsg" style="font-size:13px;line-height:2;"></span>
           </div>
@@ -1586,7 +1584,7 @@
       <div id="acPane_flags" style="display:none;">
         <!-- Add flag form -->
         <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:20px;">
-          <h3 style="margin:0 0 14px 0;font-size:14px;font-weight:700;color:#1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1L1.5 13.5h13z"/><line x1="8" y1="6.5" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r="0.7" fill="currentColor" stroke="none"/></svg> Flag an Entry</h3>
+          <h3 style="margin:0 0 14px 0;font-size:14px;font-weight:700;color:#1e293b;">🚨 Flag an Entry</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
             <div>
               <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">ENTRY ID <span style="color:#ef4444">*</span></label>
@@ -1595,9 +1593,9 @@
             <div>
               <label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:4px;">FLAG TYPE</label>
               <select id="acFlagType" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
-                <option value="BLOCK"><svg aria-hidden="true">&#9632;</svg> BLOCK — Full deny</option>
-                <option value="IMPOUND"><svg aria-hidden="true">&#128274;</svg> IMPOUND — Do not release kart</option>
-                <option value="WARNING"> WARNING — Alert only, still admit</option>
+                <option value="BLOCK">🔴 BLOCK — Full deny</option>
+                <option value="IMPOUND">🔒 IMPOUND — Do not release kart</option>
+                <option value="WARNING">⚠️ WARNING — Alert only, still admit</option>
               </select>
             </div>
             <div>
@@ -1616,7 +1614,7 @@
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
-            <button onclick="acAddFlag()" style="padding:8px 20px;background:#ef4444;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1L1.5 13.5h13z"/><line x1="8" y1="6.5" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r="0.7" fill="currentColor" stroke="none"/></svg> Add Flag</button>
+            <button onclick="acAddFlag()" style="padding:8px 20px;background:#ef4444;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🚨 Add Flag</button>
             <span id="acFlagMsg2" style="font-size:13px;"></span>
           </div>
         </div>
@@ -1648,8 +1646,8 @@
           <select id="acLogAreaFilter" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;">
             <option value="">All areas</option>
           </select>
-          <button onclick="loadAccessLog()" style="padding:8px 18px;background:#1e3a5f;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Load Log</button>
-          <button onclick="exportAccessLogCSV()" style="padding:8px 18px;background:#22c55e;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4.5" width="3" height="9.5" rx="0.5"/><rect x="11" y="1.5" width="3" height="12.5" rx="0.5"/><line x1="0.5" y1="14.5" x2="15.5" y2="14.5"/></svg> Export CSV</button>
+          <button onclick="loadAccessLog()" style="padding:8px 18px;background:#1e3a5f;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🔄 Load Log</button>
+          <button onclick="exportAccessLogCSV()" style="padding:8px 18px;background:#22c55e;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">📊 Export CSV</button>
           <span id="acLogCount" style="font-size:12px;color:#94a3b8;"></span>
         </div>
         <div class="table-wrapper">
@@ -1675,7 +1673,7 @@
 
     <div id="paymentStatusTab" class="admin-content" style="display: none;">
       <div style="margin-bottom: 24px;">
-        <h2 style="margin: 0 0 8px 0; color:  #1e293b;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3.5" width="14" height="9" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="3.5" y1="10.5" x2="5.5" y2="10.5"/><line x1="7" y1="10.5" x2="9" y2="10.5"/></svg> Payment Status Dashboard</h2>
+        <h2 style="margin: 0 0 8px 0; color:  #1e293b;">💳 Payment Status Dashboard</h2>
         <p style="margin: 0; color: #64748b; font-size: 14px;">Monitor all payment statuses and reconcile missing payments</p>
       </div>
 
@@ -1686,15 +1684,15 @@
           <div style="font-size: 32px; font-weight: 700;" id="completedCount">0</div>
         </div>
         <div style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 20px; border-radius: 12px; color: white;">
-          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><polyline points="8 4.5 8 8 10.5 10"/></svg> Pending</div>
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">⏳ Pending</div>
           <div style="font-size: 32px; font-weight: 700;" id="pendingCount">0</div>
         </div>
         <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 20px; border-radius: 12px; color: white;">
-          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1L1.5 13.5h13z"/><line x1="8" y1="6.5" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r="0.7" fill="currentColor" stroke="none"/></svg> Failed</div>
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">⚠️ Failed</div>
           <div style="font-size: 32px; font-weight: 700;" id="failedCount">0</div>
         </div>
         <div style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 20px; border-radius: 12px; color: white;">
-          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v7M6 5.8h2.5a1.5 1.5 0 0 1 0 3H7.5a1.5 1.5 0 0 0 0 3H10"/></svg> Total Revenue</div>
+          <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">💰 Total Revenue</div>
           <div style="font-size: 32px; font-weight: 700;" id="totalRevenue">R0</div>
         </div>
       </div>
@@ -1702,7 +1700,7 @@
       <!-- Manual Reconciliation Form -->
       <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 24px;">
         <h3 style="margin: 0 0 16px 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-          <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Manual Payment Reconciliation
+          <span>🔄</span> Manual Payment Reconciliation
         </h3>
         <p style="margin: 0 0 16px 0; color: #64748b; font-size: 14px;">
           Use this form to manually reconcile a payment if the PayFast notification was missed.
@@ -1743,7 +1741,7 @@
 
         <button onclick="reconcilePayment()" 
                 style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-          <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Reconcile Payment
+          🔄 Reconcile Payment
         </button>
       </div>
 
@@ -1758,7 +1756,7 @@
               <option value="Pending">Pending</option>
               <option value="Failed">Failed</option>
             </select>
-            <button onclick="loadPaymentStatus()" class="search-btn"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Refresh</button>
+            <button onclick="loadPaymentStatus()" class="search-btn">🔄 Refresh</button>
           </div>
         </div>
 
@@ -1789,7 +1787,7 @@
         <!-- Send Notification Form -->
         <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           <h3 style="margin: 0 0 20px 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-            <svg class="icon" style="width:24px;height:24px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 7c0-2.8-2.2-5-5-5S3 4.2 3 7v3l-1.5 2.5h13L13 10V7z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg> Send Push Notification
+            <span style="font-size: 24px;">📢</span> Send Push Notification
           </h3>
           
           <div style="margin-bottom: 16px;">
@@ -1815,10 +1813,10 @@
           <div style="margin-bottom: 16px;">
             <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #374151;">Send To</label>
             <select id="pushTargetType" onchange="updateTargetOptions()" style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;">
-              <option value="all">All Subscribed Drivers</option>
-              <option value="class">Specific Class</option>
-              <option value="event">Registered for Event</option>
-              <option value="driver">Individual Driver</option>
+              <option value="all">📢 All Subscribed Drivers</option>
+              <option value="class">🏎️ Specific Class</option>
+              <option value="event">📅 Registered for Event</option>
+              <option value="driver">👤 Individual Driver</option>
             </select>
           </div>
           
@@ -1864,7 +1862,7 @@
           
           <button onclick="sendPushNotification()" id="sendNotificationBtn"
                   style="width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <svg class="icon" style="width:18px;height:18px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1a4 4 0 0 1 4 4v3l1.5 2.5h-11L4 8V5a4 4 0 0 1 4-4z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg> Send Notification
+            <span style="font-size: 18px;">🔔</span> Send Notification
           </button>
         </div>
         
@@ -1886,42 +1884,42 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <!-- Quick Templates -->
             <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-              <h4 style="margin: 0 0 16px 0; color: #1e293b; font-size: 14px;">Quick Templates</h4>
+              <h4 style="margin: 0 0 16px 0; color: #1e293b; font-size: 14px;">⚡ Quick Templates</h4>
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button onclick="useTemplate('Race Starting', 'Your heat is starting in 30 minutes. Please proceed to the grid area.')" 
                         style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
-                  <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="1" x2="3" y2="15"/><path d="M3 1h10l-3 5 3 4H3z"/><rect x="5" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="9" y="2.5" width="2" height="2" fill="currentColor" stroke="none"/><rect x="7" y="4.5" width="2" height="2" fill="currentColor" stroke="none"/></svg> Race Starting
+                  🏁 Race Starting
                 </button>
                 <button onclick="useTemplate('Schedule Change', 'The race schedule has been updated. Please check the latest times on your driver portal.')" 
                         style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
-                  <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="3" width="13" height="11.5" rx="1.5"/><line x1="1.5" y1="7" x2="14.5" y2="7"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><circle cx="5" cy="10" r="0.8" fill="currentColor" stroke="none"/><circle cx="8" cy="10" r="0.8" fill="currentColor" stroke="none"/><circle cx="11" cy="10" r="0.8" fill="currentColor" stroke="none"/></svg> Schedule Update
+                  📋 Schedule Update
                 </button>
                 <button onclick="useTemplate('Weather Alert', 'Due to weather conditions, racing is temporarily paused. Please standby for further announcements.')" 
                         style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
-                  Weather Alert
+                  🌧️ Weather Alert
                 </button>
                 <button onclick="useTemplate('Results Posted', 'Race results are now available! Check your driver portal to see your times and positions.')" 
                         style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
-                  <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2h8v5a4 4 0 0 1-8 0z"/><path d="M2 2a2 2 0 0 0 2 4"/><path d="M14 2a2 2 0 0 1-2 4"/><line x1="8" y1="11" x2="8" y2="13"/><line x1="5.5" y1="13" x2="10.5" y2="13"/><line x1="4" y1="15" x2="12" y2="15"/></svg> Results Posted
+                  🏆 Results Posted
                 </button>
                 <button onclick="useTemplate('Briefing Reminder', 'Drivers briefing in 15 minutes at the main tent. Attendance is mandatory.')" 
                         style="padding: 10px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; text-align: left; cursor: pointer; transition: all 0.2s; font-size: 12px;">
-                  Briefing
+                  📣 Briefing
                 </button>
               </div>
             </div>
             
             <!-- Message Builder -->
             <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-              <h4 style="margin: 0 0 16px 0; color: #1e293b; font-size: 14px;">Message Builder</h4>
+              <h4 style="margin: 0 0 16px 0; color: #1e293b; font-size: 14px;">🛠️ Message Builder</h4>
               <div style="display: flex; flex-direction: column; gap: 10px;">
                 <select id="msgBuilderType" onchange="updateMsgBuilder()" style="padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; background: white;">
                   <option value="">Select type...</option>
-                  <option value="heat">Heat/Race Call</option>
+                  <option value="heat">🏎️ Heat/Race Call</option>
                   <option value="time">⏰ Time Reminder</option>
-                  <option value="location">Location Alert</option>
-                  <option value="announcement">General Announcement</option>
-                  <option value="urgent">Urgent Notice</option>
+                  <option value="location">📍 Location Alert</option>
+                  <option value="announcement">📢 General Announcement</option>
+                  <option value="urgent">🚨 Urgent Notice</option>
                 </select>
                 
                 <div id="msgBuilderOptions" style="display: none;">
@@ -1970,16 +1968,16 @@
                   <!-- Urgent options -->
                   <div id="urgentOptions" style="display: none;">
                     <select id="urgentType" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px;">
-                      <option value="red">Red Flag</option>
+                      <option value="red">🔴 Red Flag</option>
                       <option value="delay">⏸️ Session Delayed</option>
-                      <option value="cancelled">Session Cancelled</option>
-                      <option value="safety">Safety Notice</option>
+                      <option value="cancelled">❌ Session Cancelled</option>
+                      <option value="safety">⚠️ Safety Notice</option>
                     </select>
                   </div>
                 </div>
                 
                 <button onclick="generateMessage()" style="padding: 10px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                  Generate Message
+                  ✨ Generate Message
                 </button>
               </div>
             </div>
@@ -1988,9 +1986,9 @@
           <!-- Push Subscribers List -->
           <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h4 style="margin: 0; color: #1e293b;">Active Subscribers</h4>
+              <h4 style="margin: 0; color: #1e293b;">👥 Active Subscribers</h4>
               <button onclick="loadPushSubscribers()" style="padding: 6px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 0-.7 2.6"/><polyline points="13 13.5 13 8.5 8 8.5"/></svg> Refresh
+                🔄 Refresh
               </button>
             </div>
             <div id="subscribersList" style="max-height: 400px; overflow-y: auto;">
@@ -2002,7 +2000,7 @@
       
       <!-- Recent Notifications Log -->
       <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-top: 24px;">
-        <h4 style="margin: 0 0 16px 0; color: #1e293b;">Recent Notifications</h4>
+        <h4 style="margin: 0 0 16px 0; color: #1e293b;">📜 Recent Notifications</h4>
         <div id="notificationLog" style="max-height: 200px; overflow-y: auto;">
           <p style="color: #6b7280; text-align: center; padding: 20px;">No notifications sent yet</p>
         </div>
@@ -2353,7 +2351,7 @@
   <!-- Assign Driver Barcodes Modal -->
   <div class="modal" id="assignBarcodesModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center;">
     <div class="modal-content" style="max-width:480px;width:94%;background:#1e293b;border-radius:12px;padding:28px;color:#e2e8f0;">
-      <h2 style="margin:0 0 6px;font-size:18px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.8 1H3a1 1 0 0 0-1 1v4.8a1 1 0 0 0 .3.7l6.7 6.7a1 1 0 0 0 1.4 0l4.1-4.1a1 1 0 0 0 0-1.4L7.8 1z"/><circle cx="5.5" cy="5.5" r="1" fill="currentColor" stroke="none"/></svg> Assign Driver Barcodes</h2>
+      <h2 style="margin:0 0 6px;font-size:18px;">🏷️ Assign Driver Barcodes</h2>
       <p style="color:#64748b;font-size:13px;margin:0 0 20px;">Scan or type up to 3 custom barcodes (e.g. E0045) that should resolve to this driver. Scanning any of these on the engine draw, check-in, or equipment screens will return the correct race number.</p>
       <input type="hidden" id="assignBarcodesEntryId">
       <div style="display:flex;flex-direction:column;gap:12px;">
@@ -2443,7 +2441,7 @@
   <!-- Reconcile Payment Modal -->
   <div class="modal" id="reconcilePaymentModal">
     <div class="modal-content" style="max-width: 500px;">
-      <h2><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v7M6 5.8h2.5a1.5 1.5 0 0 1 0 3H7.5a1.5 1.5 0 0 0 0 3H10"/></svg> Reconcile Payment</h2>
+      <h2>💰 Reconcile Payment</h2>
       <p style="color: #6b7280; font-size: 14px; margin-bottom: 20px;">
         Manually mark payment as received when PayFast webhook fails. This will update payment status to "Completed" and entry status to "confirmed".
       </p>
@@ -2469,7 +2467,7 @@
       
       <div style="padding: 12px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24; margin-top: 16px;">
         <div style="display: flex; gap: 8px; align-items: flex-start;">
-          <span style="font-size: 18px;"><svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1L1.5 13.5h13z"/><line x1="8" y1="6.5" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r="0.7" fill="currentColor" stroke="none"/></svg></span>
+          <span style="font-size: 18px;">⚠️</span>
           <div style="font-size: 12px; color: #92400e;">
             <strong>Important:</strong> Only use this when you've verified payment was received in your PayFast portal. This will confirm the entry and send tickets.
           </div>
@@ -2547,7 +2545,7 @@
     let currentDriver = null;
     let allDrivers = [];
     let advancedView = false;
-    let adminToken = localStorage.getItem('adminToken') || null;
+    let adminToken = sessionStorage.getItem('adminToken') || null;
 
     // Helper: get admin auth headers for all fetch calls
     function adminHeaders(extra = {}) {
@@ -2587,7 +2585,7 @@
 
         if (data.success && data.token) {
           adminToken = data.token;
-          localStorage.setItem('adminToken', adminToken);
+          sessionStorage.setItem('adminToken', adminToken);
           
           const loginWrapper = document.getElementById('loginWrapper');
           const adminWrapper = document.getElementById('adminWrapper');
@@ -2638,13 +2636,11 @@
             loadDrivers();
             loadAdminMSAEventDropdown();
             checkLocalMode();
-            // keep adminToken in memory so subsequent API calls are authenticated
-          } else {
-            localStorage.removeItem('adminToken');
+            sessionStorage.removeItem('adminToken');
             adminToken = null;
           }
         } catch(e) {
-          localStorage.removeItem('adminToken');
+          sessionStorage.removeItem('adminToken');
           adminToken = null;
         }
       }
@@ -2661,7 +2657,7 @@
         try { await fetch('/api/admin/logout', { method: 'POST', headers: adminHeaders() }); } catch(e) {}
       }
       adminToken = null;
-      localStorage.removeItem('adminToken');
+      sessionStorage.removeItem('adminToken');
       const loginWrapper = document.getElementById('loginWrapper');
       const adminWrapper = document.getElementById('adminWrapper');
       const pwEl = document.getElementById('adminPassword');
@@ -2678,7 +2674,7 @@
       const thead = document.getElementById('driversTableHead');
       
       if (advancedView) {
-        btn.innerHTML = '<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4.5" width="3" height="9.5" rx="0.5"/><rect x="11" y="1.5" width="3" height="12.5" rx="0.5"/><line x1="0.5" y1="14.5" x2="15.5" y2="14.5"/></svg> Basic View';
+        btn.textContent = '📊 Basic View';
         btn.style.borderColor = '#3f3f46';
         btn.style.fontWeight = '600';
         
@@ -2717,7 +2713,7 @@
           </tr>
         `;
       } else {
-        btn.innerHTML = '<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="8" width="3" height="6" rx="0.5"/><rect x="6" y="4.5" width="3" height="9.5" rx="0.5"/><rect x="11" y="1.5" width="3" height="12.5" rx="0.5"/><line x1="0.5" y1="14.5" x2="15.5" y2="14.5"/></svg> Advanced View';
+        btn.textContent = '📊 Advanced View';
         btn.style.borderColor = '#d4d4d8';
         btn.style.fontWeight = '500';
         
@@ -2826,7 +2822,7 @@
               <td>${driver.medical_conditions || '-'}</td>
               <td>${driver.emergency_contact_name || '-'}</td>
               <td>${driver.emergency_contact_phone || '-'}</td>
-              <td>${driver.indemnity_signed ? '✓' : '-'}</td>
+              <td>${driver.indemnity_signed ? '✅' : '-'}</td>
               <td>${driver.parent_guardian_name || '-'}</td>
               <td>${driver.parent_guardian_id || '-'}</td>
               <td>${formatDateTime(driver.created_at)}</td>
@@ -3148,7 +3144,7 @@
         return;
       }
       
-      if (!confirm(`WARNING: This will permanently delete ${driverName}. This cannot be undone!\n\nAre you sure?`)) return;
+      if (!confirm(`⚠️ WARNING: This will permanently delete ${driverName}. This cannot be undone!\n\nAre you sure?`)) return;
 
       try {
         const response = await fetch('/api/admin/deleteDriver', {
@@ -3282,8 +3278,8 @@
             bar.style.display = '';
             bar.className = d.cloudReachable === false ? 'offline' : 'online';
             bar.textContent = d.cloudReachable === false
-              ? 'Offline Mode — Cloud unreachable. Data is stored locally and will sync when internet is available.'
-              : 'Offline Mode (Local DB) — Cloud connected. Use "Push to Cloud" to sync engine data.';
+              ? '⚠️ Offline Mode — Cloud unreachable. Data is stored locally and will sync when internet is available.'
+              : '✅ Offline Mode (Local DB) — Cloud connected. Use "Push to Cloud" to sync engine data.';
           }
         } else {
           if (btn) btn.style.display = 'none';
@@ -3293,7 +3289,7 @@
         if (bar) {
           bar.style.display = '';
           bar.className = 'error';
-          bar.textContent = 'Cannot reach local server.';
+          bar.textContent = '❌ Cannot reach local server.';
         }
       }
     }
@@ -3306,7 +3302,7 @@
         const res = await fetch('/api/admin/syncNow', { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-          showToast(`${data.message}`, 'success');
+          showToast(`✅ ${data.message}`, 'success');
           // Reload the entries table automatically
           const eventId = document.getElementById('filterRace').value;
           if (eventId) loadRaceEntries();
@@ -3323,12 +3319,12 @@
     // Push offline engine draws + assignments from this laptop to cloud
     async function pushOfflineData() {
       const btn = document.getElementById('pushOfflineBtn');
-      if (btn) { btn.disabled = true; btn.textContent = 'Pushing...'; }
+      if (btn) { btn.disabled = true; btn.textContent = '⬆️ Pushing...'; }
       try {
         const res = await fetch('/api/admin/pushOfflineData', { method: 'POST', headers: adminHeaders() });
         const data = await res.json();
         if (data.success) {
-          showToast(`${data.drawsPushed} draws pushed, ${data.drawsUpdated} updated, ${data.entriesUpdated} entries synced to cloud`, 'success');
+          showToast(`✅ ${data.drawsPushed} draws pushed, ${data.drawsUpdated} updated, ${data.entriesUpdated} entries synced to cloud`, 'success');
           checkLocalMode();
         } else {
           showToast('Push failed: ' + (data.error || 'No internet?'), 'error');
@@ -3336,7 +3332,7 @@
       } catch (e) {
         showToast('Push failed: ' + e.message, 'error');
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = 'Push to Cloud'; }
+        if (btn) { btn.disabled = false; btn.textContent = '⬆️ Push to Cloud'; }
       }
     }
 
@@ -3485,7 +3481,7 @@
             </td>
             <td class="editable-cell" onclick="editCell(this, '${entryId}', 'team_code', '${entry.team_code || ''}')">${entry.team_code ? entry.team_code : '-'}</td>
             <td>
-              <button class="action-btn" onclick="showEntryActionsMenu(event, '${entryId}', '${driverName}', '${entry.driver_email}')" style="background: #6366f1; padding: 8px 12px; font-size: 12px;">Actions ▼</button>
+              <button class="action-btn" onclick="showEntryActionsMenu(event, '${entryId}', '${driverName}', '${entry.driver_email}')" style="background: #6366f1; padding: 8px 12px; font-size: 12px;">⚙️ Actions ▼</button>
             </td>
           </tr>
         `;
@@ -3868,7 +3864,7 @@
   ${_tkHb ? `<div style="margin-bottom:8px;"><img src="${_tkHb}" style="width:100%;max-height:90px;object-fit:contain;display:block;" /></div>` : ''}
   ${data.html.replace(/<div style="page-break-after:always;"><\/div>/g, '<div class="page-break" style="page-break-after:always;height:0;"></div>')}
   ${_tkFb ? `<div style="margin-top:12px;text-align:center;"><img src="${_tkFb}" style="width:100%;max-height:60px;object-fit:contain;" /></div>` : ''}
-  <button class="no-print" onclick="window.print()">Print / Save as PDF</button>
+  <button class="no-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
 </body>
 </html>`;
 
@@ -3878,6 +3874,162 @@
       } catch (err) {
         console.error('downloadEntryTicketsPDF error:', err);
         showToast('Error generating tickets: ' + err.message, 'error');
+      }
+    }
+
+    async function viewEntryInvoice(entryId, driverName) {
+      try {
+        showToast('Loading invoice summary…', 'info');
+        const response = await fetch('/api/allRaceEntries', {
+          headers: { 'x-admin-token': adminToken }
+        });
+        if (!response.ok) throw new Error('Failed to load entries');
+
+        const entries = await response.json();
+        const entry = entries.find(e => String(e.entry_id) === String(entryId) || String(e.race_entry_id) === String(entryId));
+        if (!entry) throw new Error('Entry not found');
+
+        const parseItems = (raw) => {
+          if (!raw) return [];
+          try {
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return Array.isArray(parsed) ? parsed : [];
+          } catch (_) {
+            return [];
+          }
+        };
+
+        const formatMoney = (value) => `R${parseFloat(value || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const items = parseItems(entry.entry_items);
+        const selectedItems = items.map(item => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') return item.name || item.label || JSON.stringify(item);
+          return String(item || '');
+        }).filter(Boolean);
+
+        const driverNameSafe = (driverName || `${entry.driver_first_name || ''} ${entry.driver_last_name || ''}`.trim() || 'Driver').replace(/</g, '&lt;');
+        const eventName = (entry.event_name || 'Race Event').replace(/</g, '&lt;');
+        const raceClass = (entry.race_class || '').replace(/</g, '&lt;') || '-';
+        const paymentRef = (entry.payment_reference || '').replace(/</g, '&lt;') || '-';
+        const paymentStatus = (entry.payment_status || 'Pending').replace(/</g, '&lt;');
+        const amountPaid = formatMoney(entry.amount_paid || entry.total_amount || 0);
+        const eventDate = entry.event_date ? new Date(entry.event_date).toLocaleDateString('en-ZA') : '-';
+        const raceNumber = entry.race_number || '-';
+        const ticketRows = [
+          ['Race Ticket', entry.payment_reference || '—'],
+          ['Engine Rental Ticket', entry.ticket_engine_ref || '—'],
+          ['Tyres Ticket', entry.ticket_tyres_ref || '—'],
+          ['Transponder Ticket', entry.ticket_transponder_ref || '—'],
+          ['Fuel Ticket', entry.ticket_fuel_ref || '—']
+        ];
+
+        const win = window.open('', '_blank');
+        if (!win) {
+          showToast('Pop-up blocked — please allow pop-ups for this page.', 'error');
+          return;
+        }
+
+        const pageHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice – ${driverNameSafe} – ${eventName}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; background: #f3f4f6; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #111827; }
+    .sheet { max-width: 900px; margin: 0 auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,0.08); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #0f172a 0%, #2563eb 100%); color: #fff; padding: 26px 30px; }
+    .header h1 { margin: 0; font-size: 28px; letter-spacing: 0.02em; }
+    .header p { margin: 6px 0 0; opacity: 0.92; }
+    .content { padding: 26px 30px 30px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; }
+    .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; font-weight: 700; margin-bottom: 6px; }
+    .value { font-size: 15px; font-weight: 700; color: #111827; }
+    .section { margin-top: 22px; }
+    .section h2 { margin: 0 0 12px; font-size: 18px; color: #0f172a; }
+    .list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 12px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+    td:last-child { text-align: right; font-weight: 700; }
+    .total { margin-top: 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .total span { font-size: 14px; color: #1e3a8a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+    .total strong { font-size: 24px; color: #1d4ed8; }
+    .note { margin-top: 14px; color: #6b7280; font-size: 13px; line-height: 1.5; }
+    .actions { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; gap: 10px; }
+    .btn { border: none; border-radius: 10px; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 24px rgba(0,0,0,0.18); }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-secondary { background: #111827; color: #fff; }
+    @page { size: A4 portrait; margin: 12mm; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .sheet { box-shadow: none; border-radius: 0; border: none; }
+      .actions { display: none; }
+    }
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .header { padding: 22px 20px; }
+      .content { padding: 20px; }
+      .total { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="header">
+      <h1>Invoice Summary</h1>
+      <p>${eventName} · ${eventDate}</p>
+    </div>
+    <div class="content">
+      <div class="grid">
+        <div class="card"><div class="label">Driver</div><div class="value">${driverNameSafe}</div></div>
+        <div class="card"><div class="label">Race Class</div><div class="value">${raceClass}</div></div>
+        <div class="card"><div class="label">Race Number</div><div class="value">#${raceNumber}</div></div>
+        <div class="card"><div class="label">Payment Status</div><div class="value">${paymentStatus}</div></div>
+        <div class="card"><div class="label">Payment Reference</div><div class="value">${paymentRef}</div></div>
+        <div class="card"><div class="label">Recorded Charge</div><div class="value">${amountPaid}</div></div>
+      </div>
+
+      <div class="section">
+        <h2>Options Selected</h2>
+        <div class="list">
+          ${selectedItems.length ? selectedItems.map(item => `<span class="pill">${item.replace(/</g, '&lt;')}</span>`).join('') : '<span style="color:#6b7280;">No add-on options were recorded for this entry.</span>'}
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Ticket / Reference Summary</h2>
+        <table>
+          ${ticketRows.map(([label, value]) => `<tr><td>${label}</td><td style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">${String(value).replace(/</g, '&lt;')}</td></tr>`).join('')}
+        </table>
+      </div>
+
+      <div class="total">
+        <span>Total Charged</span>
+        <strong>${amountPaid}</strong>
+      </div>
+
+      <div class="note">
+        This view shows the exact stored selections and the amount recorded against the entry. It is intended for quick accounting reference and can be printed or saved as a PDF.
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="window.close()">Close</button>
+    <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+</body>
+</html>`;
+
+        win.document.write(pageHTML);
+        win.document.close();
+        showToast('Invoice summary opened', 'success');
+      } catch (err) {
+        console.error('viewEntryInvoice error:', err);
+        showToast('Error loading invoice: ' + err.message, 'error');
       }
     }
 
@@ -3908,22 +4060,25 @@
           ✓ Confirm Entry
         </button>
         <button onclick="showReconcilePaymentModal('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
-          Reconcile Payment
+          💰 Reconcile Payment
         </button>
         <button onclick="sendTicketsEmail('${entryId}', '${driverEmail}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
-          Send Tickets Email
+          📧 Send Tickets Email
         </button>
         <button onclick="downloadEntryTicketsPDF('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #a78bfa; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
-          Download Tickets PDF
+          🎟️ Download Tickets PDF
+        </button>
+        <button onclick="viewEntryInvoice('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #22c55e; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
+          🧾 View Invoice
         </button>
         <button onclick="sendToTrello('${entryId}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #0ea5e9; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
-          Send to Trello
+          📋 Send to Trello
         </button>
         <button onclick="showAssignBarcodesModal('${entryId}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
-          Assign Barcodes
+          🏷️ Assign Barcodes
         </button>
         <button onclick="deleteRaceEntry('${entryId}', '${driverName}'); closeEntryActionsMenu();" style="width: 100%; text-align: left; padding: 10px 16px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; transition: background 0.2s;" onmouseover="this.style.background='#374151'" onmouseout="this.style.background='none'">
-          Delete Entry
+          🗑️ Delete Entry
         </button>
       `;
       
@@ -4418,7 +4573,7 @@
     async function acEditPermissions(areaId) {
       _acEditPermAreaId = areaId;
       const area = _acAreas.find(a => a.area_id === areaId);
-      document.getElementById('acPermTitle').textContent = `Permissions — ${area ? area.area_name : areaId}`;
+      document.getElementById('acPermTitle').textContent = `⚙ Permissions — ${area ? area.area_name : areaId}`;
       document.getElementById('acPermEditor').style.display = '';
       document.getElementById('acPermMsg').textContent = '';
       try {
@@ -4669,7 +4824,7 @@
           <td style="font-family:monospace;font-weight:600;white-space:nowrap;">${e.engine_serial||'—'}</td>
           <td style="white-space:nowrap;">${e.assigned_driver_name
             ? `<span style="font-weight:600;color:#1e293b;">#${e.assigned_race_number||'?'} ${e.assigned_driver_name}</span>&nbsp;<span style="font-size:10px;font-weight:600;color:#3b82f6;background:rgba(59,130,246,0.10);padding:1px 6px;border-radius:8px;vertical-align:middle;">IN</span>`
-            : (e.engine_serial ? '<span style="color:#16a34a;font-weight:700;font-size:12px;">Available</span>' : '<span style="color:#94a3b8;font-size:12px;">No serial</span>')}</td>
+            : (e.engine_serial ? '<span style="color:#16a34a;font-weight:700;font-size:12px;">✅ Available</span>' : '<span style="color:#94a3b8;font-size:12px;">No serial</span>')}</td>
           <td style="font-family:monospace;white-space:nowrap;">${e.seal_number||'—'}</td>
           <td style="font-family:monospace;white-space:nowrap;">${e.carb_number||'—'}</td>
           <td style="font-family:monospace;white-space:nowrap;">${e.airbox_number||'—'}</td>
@@ -4924,7 +5079,7 @@
             <td>${created}</td>
             <td>
               <button class="action-btn" onclick="editEvent('${event.event_id}')" style="margin-right: 5px;">Edit</button>
-              <button class="action-btn" onclick="openEventPricingModal('${event.event_id}')" style="background:#a855f7;margin-right:5px;">Pricing</button>
+              <button class="action-btn" onclick="openEventPricingModal('${event.event_id}')" style="background:#a855f7;margin-right:5px;">⚙ Pricing</button>
               <button class="action-btn" onclick="viewRegistrations('${event.event_id}')" style="background: #3b82f6;margin-right:5px;">Registrations</button>
               <button class="action-btn" onclick="openEventDocsModal('${event.event_id}', '${event.event_name.replace(/'/g,'\\\'')}')" style="background:#f59e0b;color:#1a1a1a;">📁 Docs</button>
             </td>
@@ -5085,7 +5240,7 @@
         <div style="background:#0f0f0f;border:1px solid rgba(255,255,255,0.14);max-width:700px;margin:36px auto;border-radius:10px;box-shadow:0 30px 60px rgba(0,0,0,.8);">
           <div style="padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.10);display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <h2 style="margin:0 0 3px;font-size:17px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.06em;">Entry Pricing Config</h2>
+              <h2 style="margin:0 0 3px;font-size:17px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:.06em;">⚙ Entry Pricing Config</h2>
               <div style="font-size:12px;color:#a855f7;font-weight:600;" id="epEventLabel">—</div>
             </div>
             <button type="button" onclick="closeEventPricingModal()" style="background:none;border:none;font-size:26px;cursor:pointer;color:#6b7280;line-height:1;">×</button>
@@ -5239,7 +5394,7 @@
         _epConfigs[cls] = config;
         renderEPTabs();
         switchEPClass(cls);
-        showToast(cls + ' pricing saved', 'success');
+        showToast('✅ ' + cls + ' pricing saved', 'success');
       } catch(err) {
         showToast('Error: ' + err.message, 'error');
       } finally {
@@ -5721,11 +5876,11 @@
         const isDir    = log.source === 'dir';
         let srcBadge;
         if (isEquip) {
-          srcBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(249,115,22,0.12);color:#f97316;border:1px solid #f9731630;">equip</span>';
+          srcBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(249,115,22,0.12);color:#f97316;border:1px solid #f9731630;">⚙ equip</span>';
         } else if (isDir) {
-          srcBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid #a855f730;">DIR</span>';
+          srcBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(168,85,247,0.12);color:#a855f7;border:1px solid #a855f730;">🔩 DIR</span>';
         } else {
-          srcBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid #3b82f630;">driver</span>';
+          srcBadge = '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid #3b82f630;">👤 driver</span>';
         }
         const driverName = [log.driver_first_name, log.driver_last_name].filter(Boolean).join(' ') || (isDir ? 'DIR Portal' : 'System');
         const email    = log.driver_email || '—';
@@ -6093,7 +6248,7 @@
             <div>
               <div style="font-weight: 500; color: #1e293b;">${d.first_name} ${d.last_name}</div>
               <div style="font-size: 12px; color: #6b7280;">#${d.race_number || '?'} • ${d.team_name || 'No team'}</div>
-              <div style="font-size: 11px; color: #9ca3af;">${email}</div>
+              <div style="font-size: 11px; color: #9ca3af;">📧 ${email}</div>
             </div>
             ${isSelected ? '<span style="color: #2563eb; font-weight: 600;">✓</span>' : ''}
           </div>`;
@@ -6244,10 +6399,10 @@
       } else if (type === 'urgent') {
         const urgentType = document.getElementById('urgentType').value;
         const urgentMessages = {
-          'red':    { title: 'RED FLAG', body: 'RED FLAG! All drivers must stop racing immediately and return to the pit lane safely.' },
+          'red': { title: '🔴 RED FLAG', body: 'RED FLAG! All drivers must stop racing immediately and return to the pit lane safely.' },
           'delay': { title: 'Session Delayed', body: 'The current session has been delayed. Please standby for further announcements.' },
           'cancelled': { title: 'Session Cancelled', body: 'The session has been cancelled. Please check with race control for updated schedule.' },
-          'safety': { title: 'Safety Notice', body: 'Important safety notice: Please ensure all equipment is properly secured and follow marshal instructions.' }
+          'safety': { title: '⚠️ Safety Notice', body: 'Important safety notice: Please ensure all equipment is properly secured and follow marshal instructions.' }
         };
         title = urgentMessages[urgentType].title;
         body = urgentMessages[urgentType].body;
@@ -6350,13 +6505,13 @@
           // Refresh stats
           loadPushStats();
           
-          alert(`Notification sent successfully!\n\nTarget: ${targetDescription}\nSent: ${result.sent}\nFailed: ${result.failed}`);
+          alert(`✅ Notification sent successfully!\n\nTarget: ${targetDescription}\nSent: ${result.sent}\nFailed: ${result.failed}`);
         } else {
-          alert('Failed to send notification: ' + (result.error || 'Unknown error'));
+          alert('❌ Failed to send notification: ' + (result.error || 'Unknown error'));
         }
       } catch (error) {
         console.error('Error sending notification:', error);
-        alert('Error sending notification. Please check your connection.');
+        alert('❌ Error sending notification. Please check your connection.');
       } finally {
         button.disabled = false;
         button.innerHTML = originalText;
@@ -6576,7 +6731,7 @@
 <body>
 <div class="no-print" style="padding:12px;background:#0b2e55;color:white;text-align:center;margin-bottom:12px;font-size:14px;">
   <strong>${eventName}</strong> — ${entries.length} stickers &nbsp;&nbsp;
-  <button onclick="window.print()" style="padding:8px 20px;background:#22c55e;color:white;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-left:12px;">Print</button>
+  <button onclick="window.print()" style="padding:8px 20px;background:#22c55e;color:white;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-left:12px;">🖨️ Print</button>
   <button onclick="window.close()" style="padding:8px 14px;background:#6b7280;color:white;border:none;border-radius:6px;font-size:13px;cursor:pointer;margin-left:8px;">✕ Close</button>
 </div>
 <div class="grid">${stickers}</div>
@@ -7313,8 +7468,8 @@
 
     async function setPayFastMode(sandbox) {
       const confirmMsg = sandbox
-        ? 'Switch to SANDBOX mode?\n\nPayments will go to PayFast sandbox \u2014 NO real money will be charged.\nSandbox merchant ID: 10000100'
-        : 'Switch back to LIVE mode?\n\nReal payments will be charged to drivers. Make sure you\'re ready for production.';
+        ? '🧪 Switch to SANDBOX mode?\n\nPayments will go to PayFast sandbox — NO real money will be charged.\nSandbox merchant ID: 10000100'
+        : '🔴 Switch back to LIVE mode?\n\nReal payments will be charged to drivers. Make sure you\'re ready for production.';
       if (!confirm(confirmMsg)) return;
 
       try {
@@ -7326,7 +7481,7 @@
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
         applyPayFastModeUI(data);
-        showToast(sandbox ? 'Switched to SANDBOX mode' : 'Switched to LIVE mode', sandbox ? 'warning' : 'success');
+        showToast(sandbox ? '🧪 Switched to SANDBOX mode' : '✅ Switched to LIVE mode', sandbox ? 'warning' : 'success');
       } catch (err) {
         showToast('Failed to switch mode: ' + err.message, 'error');
       }
@@ -7344,7 +7499,7 @@
       if (data.sandbox) {
         banner.style.background  = '#fef3c7';
         banner.style.borderColor = '#f59e0b';
-        icon.textContent  = 'TEST';
+        icon.textContent  = '🧪';
         label.textContent = 'SANDBOX MODE ACTIVE — Test payments only, no real money charged';
         label.style.color = '#92400e';
         details.textContent = `Sandbox merchant ID: 10000100 · URL: ${data.processUrl}`;
@@ -7353,7 +7508,7 @@
       } else {
         banner.style.background  = '#f0fdf4';
         banner.style.borderColor = '#22c55e';
-        icon.textContent  = '●';
+        icon.textContent  = '🔴';
         label.textContent = 'LIVE MODE — Real PayFast payments are active';
         label.style.color = '#14532d';
         details.textContent = `Merchant ID: ${data.merchantId} · Notify URL: ${data.notifyUrl}`;
@@ -7406,7 +7561,7 @@
           'reconciled': '#8b5cf6'
         }[webhook.processing_status] || '#64748b';
         
-        const signatureIcon = webhook.signature_valid === true ? '✓' : webhook.signature_valid === false ? '×' : '?';
+        const signatureIcon = webhook.signature_valid === true ? '✅' : webhook.signature_valid === false ? '❌' : '❓';
         const receivedDate = new Date(webhook.received_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' });
         
         html += `
@@ -7533,7 +7688,7 @@
         
         if (!reconcileResult.success) throw new Error(reconcileResult.error || 'Reconciliation failed');
         
-        showToast(`Payment reconciled! Driver: ${reconcileResult.driver} | Event: ${reconcileResult.event} | Amount: R${reconcileResult.amount}`, 'success');
+        showToast(`✅ Payment reconciled!\nDriver: ${reconcileResult.driver}\nEvent: ${reconcileResult.event}\nAmount: R${reconcileResult.amount}`, 'success');
         loadPayFastWebhooks();
       } catch (err) {
         console.error('Error reconciling webhook:', err);
@@ -7990,7 +8145,7 @@
       if (orphans.length > 0) {
         html += `<div style="background:white;border-radius:10px;margin-bottom:16px;overflow:hidden;border:1px solid #fde68a;">
           <div style="background:#fef3c7;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-weight:700;color:#92400e;font-size:13px;">Historical Serials (Not in active pool)</span>
+            <span style="font-weight:700;color:#92400e;font-size:13px;">⚠️ Historical Serials (Not in active pool)</span>
             <span style="font-size:11px;color:#b45309;">${orphans.length} serial${orphans.length>1?'s':''} — click to view history</span>
           </div>
           <table style="width:100%;font-size:12px;border-collapse:collapse;">
@@ -8090,7 +8245,7 @@
       if (liveMode.active) {
         // Start live mode
         btn.classList.add('active');
-        btn.textContent = 'LIVE ON';
+        btn.textContent = '🟢 LIVE MODE ON';
         indicator.style.display = 'flex';
         
         // Start polling
@@ -8103,7 +8258,7 @@
       } else {
         // Stop live mode
         btn.classList.remove('active');
-        btn.textContent = 'LIVE';
+        btn.textContent = '🔴 LIVE MODE';
         indicator.style.display = 'none';
         
         // Clear interval
@@ -8708,7 +8863,7 @@
             </div>
             <input type="file" id="brandingHeaderFile" accept=".jpg,.jpeg,.png" style="width:100%;font-size:11px;color:#cbd5e1;margin-bottom:6px;">
             <div style="display:flex;gap:6px;">
-              <button onclick="uploadBrandingFile('header')" style="flex:1;background:#f59e0b;color:#1a1a1a;border:none;padding:6px;border-radius:5px;font-weight:700;cursor:pointer;font-size:11px;">Upload</button>
+              <button onclick="uploadBrandingFile('header')" style="flex:1;background:#f59e0b;color:#1a1a1a;border:none;padding:6px;border-radius:5px;font-weight:700;cursor:pointer;font-size:11px;">⬆ Upload</button>
               <button id="brandingHeaderDeleteBtn" onclick="deleteBrandingFile('header')" style="display:none;background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;font-size:11px;">✕</button>
             </div>
             <div id="brandingHeaderStatus" style="font-size:11px;margin-top:5px;"></div>
@@ -8722,7 +8877,7 @@
             </div>
             <input type="file" id="brandingFooterFile" accept=".jpg,.jpeg,.png" style="width:100%;font-size:11px;color:#cbd5e1;margin-bottom:6px;">
             <div style="display:flex;gap:6px;">
-              <button onclick="uploadBrandingFile('footer')" style="flex:1;background:#f59e0b;color:#1a1a1a;border:none;padding:6px;border-radius:5px;font-weight:700;cursor:pointer;font-size:11px;">Upload</button>
+              <button onclick="uploadBrandingFile('footer')" style="flex:1;background:#f59e0b;color:#1a1a1a;border:none;padding:6px;border-radius:5px;font-weight:700;cursor:pointer;font-size:11px;">⬆ Upload</button>
               <button id="brandingFooterDeleteBtn" onclick="deleteBrandingFile('footer')" style="display:none;background:#ef4444;color:#fff;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;font-size:11px;">✕</button>
             </div>
             <div id="brandingFooterStatus" style="font-size:11px;margin-top:5px;"></div>
@@ -8759,7 +8914,7 @@
         </div>
 
         <button onclick="adminUploadDoc()" style="background:#f59e0b;color:#1a1a1a;border:none;padding:10px 22px;border-radius:6px;font-weight:700;cursor:pointer;font-size:14px;">
-          Upload
+          📤 Upload
         </button>
         <span id="docsUploadStatus" style="margin-left:12px;font-size:13px;"></span>
 
@@ -9355,11 +9510,11 @@
         // Draw number badge (sky blue) + class badge (class colour)
         chipParts.push(`<span style="background:#0ea5e9;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;">Draw #${poolEng.draw_number}</span>`);
         if(poolEng.class){ const cp=CLASS_COLORS[poolEng.class]||{bg:'#64748b',text:'#fff'}; chipParts.push(`<span style="background:${cp.bg};color:${cp.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;">${poolEng.class}</span>`); }
-        if(poolEng.seal_number)    chipParts.push(`<span style="background:${PART_COLORS.seal.bg};color:${PART_COLORS.seal.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">SEAL ${poolEng.seal_number}</span>`);
-        if(poolEng.carb_number)    chipParts.push(`<span style="background:${PART_COLORS.carb.bg};color:${PART_COLORS.carb.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">CARB ${poolEng.carb_number}</span>`);
-        if(poolEng.airbox_number)  chipParts.push(`<span style="background:${PART_COLORS.airbox.bg};color:${PART_COLORS.airbox.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">AIRBOX ${poolEng.airbox_number}</span>`);
-        if(poolEng.exhaust_number) chipParts.push(`<span style="background:${PART_COLORS.exhaust.bg};color:${PART_COLORS.exhaust.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">EXHAUST ${poolEng.exhaust_number}</span>`);
-        if(poolEng.deleted_at)     chipParts.push(`<span style="background:#475569;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;">REMOVED</span>`);
+        if(poolEng.seal_number)    chipParts.push(`<span style="background:${PART_COLORS.seal.bg};color:${PART_COLORS.seal.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">🔏 SEAL ${poolEng.seal_number}</span>`);
+        if(poolEng.carb_number)    chipParts.push(`<span style="background:${PART_COLORS.carb.bg};color:${PART_COLORS.carb.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">⚙️ CARB ${poolEng.carb_number}</span>`);
+        if(poolEng.airbox_number)  chipParts.push(`<span style="background:${PART_COLORS.airbox.bg};color:${PART_COLORS.airbox.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">💨 AIRBOX ${poolEng.airbox_number}</span>`);
+        if(poolEng.exhaust_number) chipParts.push(`<span style="background:${PART_COLORS.exhaust.bg};color:${PART_COLORS.exhaust.text};font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:.4px;">🔊 EXHAUST ${poolEng.exhaust_number}</span>`);
+        if(poolEng.deleted_at)     chipParts.push(`<span style="background:#475569;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;">⚫ REMOVED</span>`);
       }
       // Assigned drivers
       const driverChips = assignments.map(a=>`<span style="background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;">${a.first_name} ${a.last_name} #${a.race_number||'?'} · ${a.race_class||'?'}</span>`);

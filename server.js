@@ -8717,7 +8717,9 @@ app.get('/api/allRaceEntries', async (req, res) => {
         c.phone_alt AS entrant_cell,
         c.full_name AS entrant_name,
         c.relationship AS entrant_relationship,
-        e.event_name
+        e.event_name,
+        e.event_date,
+        e.national_only AS event_national_only
        FROM race_entries r
        LEFT JOIN drivers d ON r.driver_id = d.driver_id
        LEFT JOIN contacts c ON r.driver_id = c.driver_id
