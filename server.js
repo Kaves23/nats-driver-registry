@@ -12455,10 +12455,11 @@ app.get('/api/events/:eventId/docs', async (req, res) => {
     };
     try {
       const s3Docs = [];
+      const s3ListAbortSignal = AbortSignal.timeout(2500);
       for (const [folderKey, meta] of Object.entries(S3_FOLDER_META)) {
         const prefix = eventDocPrefix(eventId, folderKey);
         const listCmd = new ListObjectsV2Command({ Bucket: Z1_BUCKET, Prefix: prefix });
-        const data = await s3.send(listCmd);
+        const data = await s3.send(listCmd, { abortSignal: s3ListAbortSignal });
         for (const obj of (data.Contents || [])) {
           const filename = obj.Key.replace(prefix, '');
           if (!filename || filename.startsWith('.')) continue;
