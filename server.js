@@ -12435,6 +12435,33 @@ const STATIC_CLASS_DOCS = [
     category: 'general',
     icon: '🏷️',
     isStatic: true
+  },
+  {
+    display_name: 'Friday Timetable — Winter Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC016-friday-winter-nats-2026-timetable.pdf',
+    preview_url: '/documents/raceday/RDOC016-friday-winter-nats-2026-timetable.pdf',
+    category: 'general',
+    icon: '📅',
+    isStatic: true
+  },
+  {
+    display_name: 'Saturday Timetable — Winter Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC017-saturday-winter-nats-2026-timetable.pdf',
+    preview_url: '/documents/raceday/RDOC017-saturday-winter-nats-2026-timetable.pdf',
+    category: 'general',
+    icon: '📅',
+    isStatic: true
+  },
+  {
+    display_name: 'Sunday Timetable — Winter Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC018-sunday-winter-nats-2026-timetable.pdf',
+    preview_url: '/documents/raceday/RDOC018-sunday-winter-nats-2026-timetable.pdf',
+    category: 'general',
+    icon: '📅',
+    isStatic: true
   }
 ];
 
