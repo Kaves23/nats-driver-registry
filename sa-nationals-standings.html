@@ -9,19 +9,17 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:            #1e40af;
-      --ink:           #dbeafe;
-      --ink-dim:       rgba(219,234,254,0.65);
-      --ink-faint:     rgba(219,234,254,0.3);
-      --white:         #ffffff;
-      --gold:          #facc15;
-      --p1:            #facc15;
-      --p2:            rgba(219,234,254,0.85);
-      --p3:            #93c5fd;
-      --border:        rgba(219,234,254,0.15);
+      --bg:        #1e40af;
+      --ink:       #dbeafe;
+      --ink-dim:   rgba(219,234,254,0.65);
+      --ink-faint: rgba(219,234,254,0.3);
+      --white:     #ffffff;
+      --gold:      #facc15;
+      --p1:        #facc15;
+      --p2:        rgba(219,234,254,0.85);
+      --p3:        #93c5fd;
+      --border:    rgba(219,234,254,0.15);
       --border-bright: rgba(219,234,254,0.4);
-      --drop-color:    #f87171;
-      --drop-bg:       rgba(248,113,113,0.08);
     }
 
     html, body { height: 100%; overscroll-behavior-y: none; }
@@ -92,7 +90,7 @@
     .class-tab.active { background: rgba(15,23,42,0.55); color: var(--white); box-shadow: inset 0 -2px 0 var(--gold); }
 
     /* PANEL */
-    .panel-wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px 48px; }
+    .panel-wrap { max-width: 880px; margin: 0 auto; padding: 0 16px 80px; }
 
     /* PODIUM */
     .podium-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
@@ -127,26 +125,19 @@
     .podium-team { margin-top: 8px; font-size: 0.68rem; letter-spacing: 0.1em; color: var(--ink-dim); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* TABLE */
-    .tbl-wrap { border: 1px solid var(--border); overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 920px; }
-    thead tr.th-top { background: rgba(15,23,42,0.65); }
-    thead tr.th-sub { background: rgba(15,23,42,0.45); border-bottom: 2px solid var(--border-bright); }
-    th { padding: 8px 8px; font-size: 0.57rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); text-align: center; white-space: nowrap; }
-    th.left { text-align: left; }
-    .thg-w1 { background: rgba(253,224,71,0.06); border-left: 1px solid rgba(253,224,71,0.28); color: #fde047 !important; }
-    .thg-w1-end { border-right: 1px solid rgba(253,224,71,0.28); }
-    .thg-w2 { background: rgba(251,146,60,0.07); border-left: 1px solid rgba(251,146,60,0.28); color: #fb923c !important; }
-    .thg-w2-end { border-right: 1px solid rgba(251,146,60,0.28); }
-    .thg-adj { background: rgba(15,23,42,0.55); border-left: 2px solid var(--border-bright); }
+    .tbl-wrap { border: 1px solid var(--border); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: rgba(15,23,42,0.55); border-bottom: 1px solid var(--border-bright); }
+    th { padding: 12px 16px; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-dim); text-align: left; }
+    th.c { text-align: center; }
     tbody tr { border-bottom: 1px solid rgba(219,234,254,0.06); transition: background 0.12s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: rgba(255,255,255,0.04); }
     tbody tr.r1 { background: rgba(250,204,21,0.05); }
     tbody tr.r2 { background: rgba(219,234,254,0.03); }
     tbody tr.r3 { background: rgba(147,197,253,0.04); }
-    td { padding: 10px 8px; font-size: 0.76rem; color: var(--ink); text-align: center; }
+    td { padding: 14px 16px; font-size: 0.82rem; color: var(--ink); }
     td.c { text-align: center; }
-    td.left { text-align: left; }
     .rank-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: 0.78rem; font-weight: 800; border: 1px solid var(--border); color: var(--ink-dim); background: rgba(15,23,42,0.3); }
     .r1 .rank-num { border-color: rgba(250,204,21,0.6); color: var(--gold); background: rgba(250,204,21,0.08); }
     .r2 .rank-num { border-color: rgba(219,234,254,0.4); color: var(--p2); background: rgba(219,234,254,0.05); }
@@ -194,43 +185,6 @@
       .title { letter-spacing: 0.15em; }
     }
     @media (max-width: 400px) { .back { display: none; } }
-    /* WEEKEND CELL BACKGROUNDS */
-    .cw1h { background: rgba(253,224,71,0.04); border-left: 1px solid rgba(253,224,71,0.12); }
-    .cw1s { background: rgba(253,224,71,0.04); }
-    .cw1-end { border-right: 1px solid rgba(253,224,71,0.12); }
-    .cw2h { background: rgba(251,146,60,0.04); border-left: 1px solid rgba(251,146,60,0.12); }
-    .cw2s { background: rgba(251,146,60,0.04); }
-    .cw2-end { border-right: 1px solid rgba(251,146,60,0.12); }
-    /* HEAT VALUES */
-    .heat-val  { font-size: 0.72rem; color: var(--ink-dim); }
-    .heat-excl { font-size: 0.62rem; color: var(--drop-color); opacity: 0.75; }
-    .heat-zero { font-size: 0.72rem; color: rgba(219,234,254,0.2); }
-    .sep       { color: var(--ink-faint); margin: 0 1px; font-size: 0.65rem; }
-    .sub-val   { font-size: 0.9rem; font-weight: 700; color: var(--ink); display: block; }
-    .sub-absent { color: rgba(219,234,254,0.15); font-size: 0.8rem; }
-    .drop-tag  { display: block; font-size: 0.52rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--drop-color); margin-top: 2px; opacity: 0.85; }
-    .heat-drop { text-decoration: line-through; color: var(--drop-color) !important; font-weight: 700; opacity: 0.7; }
-    /* ADJ TOTAL */
-    td.adj-total { border-left: 2px solid var(--border-bright); background: rgba(15,23,42,0.22); vertical-align: middle; }
-    .adj-pts   { font-size: 1.1rem; font-weight: 800; color: var(--white); display: block; }
-    .rank1 .adj-pts { color: var(--gold); }
-    .rank2 .adj-pts { color: var(--p2); }
-    .rank3 .adj-pts { color: var(--p3); }
-    .full-label { display: block; font-size: 0.61rem; letter-spacing: 0.06em; color: var(--ink-faint); margin-top: 3px; }
-    .full-label.same { color: rgba(74,222,128,0.45); }
-    /* ROW RANK COLOURS (new naming) */
-    tbody tr.rank1 { background: rgba(250,204,21,0.05); }
-    tbody tr.rank2 { background: rgba(219,234,254,0.03); }
-    tbody tr.rank3 { background: rgba(147,197,253,0.04); }
-    .rank1 .rank-num { border-color: rgba(250,204,21,0.6); color: var(--gold); background: rgba(250,204,21,0.08); }
-    .rank2 .rank-num { border-color: rgba(219,234,254,0.4); color: var(--p2); background: rgba(219,234,254,0.05); }
-    .rank3 .rank-num { border-color: rgba(147,197,253,0.4); color: var(--p3); background: rgba(147,197,253,0.06); }
-    /* PODIUM EXTRA */
-    .podium-full { font-size: 0.62rem; letter-spacing: 0.08em; color: var(--ink-faint); margin-top: 4px; }
-    /* RULE BOX */
-    .rule-box { border: 1px solid rgba(250,204,21,0.25); background: rgba(250,204,21,0.04); padding: 12px 16px; margin-bottom: 16px; font-size: 0.68rem; letter-spacing: 0.06em; color: var(--ink-dim); line-height: 1.6; }
-    .rule-box strong { color: var(--gold); font-weight: 700; }
-    .rule-wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px 60px; }
   </style>
 </head>
 <body>
@@ -252,190 +206,77 @@
   <div class="panel-wrap">
     <div id="standingsContent"></div>
   </div>
-  <div class="rule-wrap">
-    <div class="rule-box"><strong>Drop-heat rule:</strong> For each weekend where a driver
-    started <em>both</em> rounds, the single lowest individual heat score across all heats
-    in that weekend is dropped. The dropped heat is shown struck-through in red;
-    the <em>Sub</em> column shows the adjusted round total with the drop amount.
-    </div>
-  </div>
   <script>
-    var SEASON='2026',CHAMP='ROK NATS';
-    var CLASS_LABELS={'CADET':'Cadet ROK','MINI ROK':'Mini ROK','OK-J':'OK Junior','OK-N':'OK National'};
-    var ROUNDS=[
-      {date:'RSR 21-Mar',label:'Rd 1',wknd:0},
-      {date:'RSR 22-Mar',label:'Rd 2',wknd:0},
-      {date:'VKC 09-May',label:'Rd 3',wknd:1},
-      {date:'VKC 10-May',label:'Rd 4',wknd:1}
-    ];
-    var WEEKENDS=[
-      {title:'SUMMER NATS',color:'#fde047',label:'RSR Weekend \u00B7 21\u201322 Mar',dbRounds:[1,2]},
-      {title:'AUTUMN NATS',color:'#fb923c',label:'VKC Weekend \u00B7 09\u201310 May',dbRounds:[3,4]}
-    ];
-    var currentClass='CADET',cache={};
-    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-    function ordinal(n){var v=n%100;return n+((v>=11&&v<=13)?'th':(['th','st','nd','rd'][n%10]||'th'));}
-    function hv(h){return h===null||h===undefined?0:h;}
-    document.getElementById('classTabs').addEventListener('click',function(e){
-      var btn=e.target.closest('.class-tab');if(!btn)return;
-      document.querySelectorAll('.class-tab').forEach(function(b){b.classList.remove('active');});
-      btn.classList.add('active');currentClass=btn.dataset.class;loadStandings(currentClass);
+    const SEASON='2026', CHAMP='ROK NATS';
+    const CLASS_LABELS={'CADET':'Cadet ROK','MINI ROK':'Mini ROK','OK-J':'OK Junior','OK-N':'OK National'};
+    let currentClass='CADET';
+    const cache={};
+    function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function ordinal(n){const v=n%100;return n+((v>=11&&v<=13)?'th':['th','st','nd','rd'][n%10]||'th');}
+    document.getElementById('classTabs').addEventListener('click',e=>{
+      const btn=e.target.closest('.class-tab');if(!btn)return;
+      document.querySelectorAll('.class-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active'); currentClass=btn.dataset.class; loadStandings(currentClass);
     });
     function showSkeleton(){
-      var c=document.getElementById('standingsContent');
+      const c=document.getElementById('standingsContent');
       c.innerHTML='<div class="podium-row" style="margin-bottom:20px;">'
-        +[1,2,3].map(function(){return '<div class="skel" style="height:140px;"></div>';}).join('')
+        +[1,2,3].map(()=>'<div class="skel" style="height:140px;"></div>').join('')
         +'</div><div class="tbl-wrap"><div class="skel" style="height:48px;margin-bottom:1px;"></div>'
         +Array(8).fill('<div class="skel" style="height:52px;margin-bottom:1px;"></div>').join('')
         +'</div>';
     }
-    function calcScores(driver){
-      var full=0;
-      driver.rounds.forEach(function(r){
-        if(r===null)return;
-        r.forEach(function(h){full+=hv(h);});
-      });
-      var droppedHeat={};
-      WEEKENDS.forEach(function(wk,wi){
-        var ra=driver.rounds[wi*2],rb=driver.rounds[wi*2+1];
-        if(ra===null||rb===null)return;
-        var heats=[];
-        ra.forEach(function(h,hi){heats.push({ri:wi*2,hi:hi,val:hv(h)});});
-        rb.forEach(function(h,hi){heats.push({ri:wi*2+1,hi:hi,val:hv(h)});});
-        var minVal=Infinity,minIdx=0;
-        heats.forEach(function(o,i){if(o.val<minVal){minVal=o.val;minIdx=i;}});
-        droppedHeat[heats[minIdx].ri+'-'+heats[minIdx].hi]=heats[minIdx].val;
-      });
-      var dropSum=0;
-      Object.keys(droppedHeat).forEach(function(k){dropSum+=droppedHeat[k];});
-      return{full:full,adjusted:full-dropSum,droppedHeat:droppedHeat};
-    }
-    function roundAdjSub(r,ri,droppedHeat){
-      if(r===null)return null;
-      return r.reduce(function(s,h,hi){return droppedHeat[ri+'-'+hi]!==undefined?s:s+hv(h);},0);
-    }
-    function renderHeats(r,ri,droppedHeat){
-      if(r===null)return '<span class="sub-absent">\u2013</span>';
-      return r.map(function(h,hi){
-        var isDrop=droppedHeat[ri+'-'+hi]!==undefined;
-        var dc=isDrop?' heat-drop':'';
-        if(h===null)return '<span class="heat-excl'+dc+'">excl</span>';
-        if(h===0)return '<span class="heat-zero'+dc+'">0</span>';
-        return '<span class="heat-val'+dc+'">'+h+'</span>';
-      }).join('<span class="sep">/</span>');
-    }
-    function buildDrivers(rows){
-      var dMap=new Map();
-      rows.forEach(function(r){
-        var id=r.driver_id;
-        if(!dMap.has(id)){
-          dMap.set(id,{id:id,name:((r.first_name||'')+' '+(r.last_name||'')).trim(),no:r.race_number||'',team:r.team_name||'',rounds:[null,null,null,null]});
-        }
-        var d=dMap.get(id);
-        var ri=parseInt(r.round)-1;
-        if(ri>=0&&ri<=3){
-          var h1=r.heat1_points!=null?parseFloat(r.heat1_points):null;
-          var h2=r.heat2_points!=null?parseFloat(r.heat2_points):null;
-          var h3=r.final_points!=null?parseFloat(r.final_points):null;
-          d.rounds[ri]=[h1,h2,h3];
-        }
-      });
-      return Array.from(dMap.values());
-    }
-    function renderStandings(rows,raceClass){
-      var c=document.getElementById('standingsContent');
-      var label=CLASS_LABELS[raceClass]||raceClass;
-      var now=new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
-      if(!rows||rows.length===0){
+    function renderStandings(standings,raceClass){
+      const c=document.getElementById('standingsContent');
+      const label=CLASS_LABELS[raceClass]||raceClass;
+      const now=new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+      if(!standings||standings.length===0){
         c.innerHTML='<div class="empty"><div class="empty-icon">&#127937;</div><div class="empty-title">No results yet</div><div class="empty-sub">Data will appear once rounds are complete</div></div>';
         return;
       }
-      var drivers=buildDrivers(rows);
-      var ds=drivers.map(function(d){return{d:d,sc:calcScores(d)};});
-      ds.sort(function(a,b){return(b.sc.adjusted-a.sc.adjusted)||(b.sc.full-a.sc.full);});
-      // Podium
-      var pCls=['p1','p2','p3'];
-      var podium=ds.slice(0,3).map(function(x,i){
-        var d=x.d,sc=x.sc;
+      standings.sort((a,b)=>parseFloat(b.total_points)-parseFloat(a.total_points)||parseFloat(b.races_completed)-parseFloat(a.races_completed));
+      const pCls=['p1','p2','p3'];
+      const podium=standings.slice(0,3).map((s,i)=>{
+        const name=esc((s.first_name||'')+' '+(s.last_name||'')).trim();
+        const pts=Math.round(parseFloat(s.total_points||0));
         return '<div class="podium-card '+pCls[i]+'">'
-          +'<span class="podium-raceno">#'+esc(d.no)+'</span>'
-          +'<div class="podium-pos">'+ordinal(i+1)+' Place</div>'
-          +'<div class="podium-name">'+esc(d.name)+'</div>'
-          +'<div class="podium-pts">'+sc.adjusted+'</div>'
-          +'<div class="podium-pts-label">Adj. Points</div>'
-          +(sc.full!==sc.adjusted?'<div class="podium-full">('+sc.full+' full total)</div>':'')
-          +(d.team?'<div class="podium-team">'+esc(d.team)+'</div>':'')
+          +'<span class="podium-raceno">#'+esc(s.race_number||'')+'</span>'
+          +'<div class="podium-pos">'+ordinal(i+1)+' place</div>'
+          +'<div class="podium-name">'+name+'</div>'
+          +'<div class="podium-pts">'+pts+'</div>'
+          +'<div class="podium-pts-label">points</div>'
+          +(s.team_name?'<div class="podium-team">'+esc(s.team_name)+'</div>':'')
           +'</div>';
       }).join('');
-      // Header row 1
-      var hdr1='<tr class="th-top">'
-        +'<th rowspan="2" style="width:44px">Pos</th>'
-        +'<th rowspan="2" class="left" style="min-width:150px">Driver</th>'
-        +'<th rowspan="2" style="width:50px">No.</th>'
-        +WEEKENDS.map(function(wk,wi){
-          var cls=wi===0?'thg-w1 thg-w1-end':'thg-w2 thg-w2-end';
-          return '<th colspan="4" class="'+cls+'">'
-            +'<span style="display:block;font-size:0.54rem;letter-spacing:0.32em;margin-bottom:4px;color:'+wk.color+';font-weight:800;opacity:0.9">'+wk.title+'</span>'
-            +esc(wk.label)+'</th>';
-        }).join('')
-        +'<th rowspan="2" class="thg-adj" style="min-width:90px">Adj Total<br><span style="font-weight:400;font-size:0.5rem;color:var(--ink-faint)">(full total)</span></th>'
-        +'</tr>';
-      // Header row 2
-      var hdr2='<tr class="th-sub">'
-        +ROUNDS.map(function(r,ri){
-          var cls=ri<2?'thg-w1':'thg-w2';
-          var endCls=(ri===1)?cls+' thg-w1-end':(ri===3)?cls+' thg-w2-end':cls;
-          return '<th class="'+cls+'">'+r.date+'<br><span style="font-weight:400">'+r.label+'</span></th>'
-            +'<th class="'+endCls+'">Sub</th>';
-        }).join('')
-        +'</tr>';
-      // Data rows
-      var rowsHTML=ds.map(function(x,idx){
-        var d=x.d,sc=x.sc;
-        var rank=idx+1,rCls=rank<=3?' rank'+rank:'';
-        var cells=d.rounds.map(function(r,ri){
-          var base=ri<2?'cw1':'cw2';
-          var endMod=(ri===1)?' cw1-end':(ri===3)?' cw2-end':'';
-          var dropVal=null;
-          if(r)r.forEach(function(h,hi){if(sc.droppedHeat[ri+'-'+hi]!==undefined)dropVal=sc.droppedHeat[ri+'-'+hi];});
-          var heatTd='<td class="'+base+'h">'+renderHeats(r,ri,sc.droppedHeat)+'</td>';
-          var adjSub=roundAdjSub(r,ri,sc.droppedHeat);
-          var subContent;
-          if(adjSub===null){subContent='<span class="sub-absent">\u2013</span>';}
-          else{
-            subContent='<span class="sub-val">'+adjSub+'</span>';
-            if(dropVal!==null)subContent+='<span class="drop-tag">\u2212'+dropVal+'</span>';
-          }
-          var subTd='<td class="'+base+'s'+endMod+'">'+subContent+'</td>';
-          return heatTd+subTd;
-        }).join('');
-        var adjContent='<span class="adj-pts">'+sc.adjusted+'</span>'
-          +'<span class="full-label'+(sc.full===sc.adjusted?' same':'')+'">'+(sc.full===sc.adjusted?'= full total':'('+sc.full+' full)')+'</span>';
-        return '<tr class="'+rCls.trim()+'">'
-          +'<td><div class="rank-num">'+rank+'</div></td>'
-          +'<td class="left"><div class="driver-name">'+esc(d.name)+'</div>'+(d.team?'<div class="driver-team">'+esc(d.team)+'</div>':'')+' </td>'
-          +'<td><span class="race-no">'+esc(d.no)+'</span></td>'
-          +cells
-          +'<td class="adj-total">'+adjContent+'</td>'
+      const rows=standings.map((s,i)=>{
+        const rank=i+1,rc=rank<=3?'r'+rank:'';
+        const name=esc((s.first_name||'')+' '+(s.last_name||'')).trim();
+        const pts=Math.round(parseFloat(s.total_points||0));
+        const rds=parseInt(s.races_completed||0);
+        return '<tr class="'+rc+'">'
+          +'<td class="c" style="width:52px;"><div class="rank-num">'+rank+'</div></td>'
+          +'<td><div class="driver-name">'+name+'</div>'+(s.team_name?'<div class="driver-team">'+esc(s.team_name)+'</div>':'')+'</td>'
+          +'<td class="c"><span class="race-no">'+esc(s.race_number||'')+'</span></td>'
+          +'<td class="c"><span class="rds-val">'+rds+' rd'+(rds!==1?'s':'')+'</span></td>'
+          +'<td class="c"><span class="pts-val">'+pts+'</span></td>'
           +'</tr>';
       }).join('');
-      c.innerHTML='<div class="meta-bar"><span class="live-dot"></span>'+esc(label)+' \u00B7 '+drivers.length+' drivers \u00B7 updated '+now+'</div>'
-        +'<div class="section-label">'+esc(label)+' \u2014 ROK Nats 2026 \u2014 Drop-Heat Scoring \u2014 4 Rounds</div>'
+      c.innerHTML='<div class="meta-bar"><span class="live-dot"></span>'+esc(label)+' &middot; '+standings.length+' drivers &middot; updated '+now+'</div>'
+        +'<div class="section-label">'+esc(label)+' &mdash; ROK NATS 2026</div>'
         +'<div class="podium-row">'+podium+'</div>'
-        +'<div class="tbl-wrap"><table>'
-        +'<thead>'+hdr1+hdr2+'</thead>'
-        +'<tbody>'+rowsHTML+'</tbody>'
-        +'</table></div>';
+        +'<div class="tbl-wrap"><table><thead><tr>'
+        +'<th class="c">Pos</th><th>Driver</th><th class="c">No.</th><th class="c">Rounds</th><th class="c">Points</th>'
+        +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
     }
     async function loadStandings(raceClass){
       if(cache[raceClass]){renderStandings(cache[raceClass],raceClass);return;}
       showSkeleton();
       try{
-        const resp=await fetch('/api/championship-heats/'+SEASON+'/'+encodeURIComponent(raceClass)+'?championship_type='+encodeURIComponent(CHAMP));
+        const resp=await fetch('/api/championship-standings/'+SEASON+'/'+encodeURIComponent(raceClass)+'?championship_type='+encodeURIComponent(CHAMP));
         if(!resp.ok)throw new Error('HTTP '+resp.status);
         const data=await resp.json();
         if(!data.success)throw new Error(data.error||'API error');
-        cache[raceClass]=data.rows||[];
+        cache[raceClass]=data.standings||[];
         renderStandings(cache[raceClass],raceClass);
       }catch(err){
         document.getElementById('standingsContent').innerHTML='<div class="empty"><div class="empty-icon">&#9888;&#65039;</div><div class="empty-title">Failed to load</div><div class="empty-sub">'+esc(err.message)+'</div></div>';
