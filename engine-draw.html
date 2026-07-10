@@ -738,6 +738,13 @@ let allEngines     = [];   // all pool engines from API (incl. assigned_driver_n
 let classEngines   = [];   // engines for current driver's class
 let selectedEngine = null; // the pool engine record the driver picked
 
+function enginePoolClassName(className) {
+  const raw = String(className || '').trim();
+  const norm = raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (norm === 'miniroku10') return 'mini rok';
+  return raw.toLowerCase();
+}
+
 // 3-Day Nats session modes
 // 'DRAW'        — normal engine draw
 // 'RETURN'      — return engine (no carb)
@@ -1469,8 +1476,9 @@ function openDraw() {
   if (retBtn) retBtn.classList.toggle('show', !!d.engine_serial);
 
   // Filter engines for this class, sorted by draw_number numerically
+  const poolClass = enginePoolClassName(d.race_class);
   classEngines = allEngines
-    .filter(e => (e.class || '').toLowerCase() === (d.race_class || '').toLowerCase())
+    .filter(e => enginePoolClassName(e.class) === poolClass)
     .sort((a, b) => (parseInt(a.draw_number)||0) - (parseInt(b.draw_number)||0));
 
   document.getElementById('drawClassLabel').textContent =

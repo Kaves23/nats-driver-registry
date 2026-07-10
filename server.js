@@ -11725,10 +11725,11 @@ app.get('/share/engine-draw', async (req, res) => {
     if (isLive) {
       // ── Live: current pool with current assignments ─────────────────────
       const result = await pool.query(`
-        SELECT pe.draw_number, pe.engine_serial, pe.seal_number,
+        SELECT pe.engine_id, pe.draw_number, pe.engine_serial, pe.seal_number,
                pe.carb_number, pe.airbox_number, pe.exhaust_number,
                pe.class, pe.notes, pe.active,
                -- Currently active assignment (not returned)
+               re_active.entry_id                                AS active_entry_id,
                d_active.first_name || ' ' || d_active.last_name AS active_driver_name,
                d_active.race_number                              AS active_race_number,
                -- Parc fermé: latest overnight-sealed return for this engine
@@ -11752,26 +11753,35 @@ app.get('/share/engine-draw', async (req, res) => {
           WHERE UPPER(eed2.engine_serial) = UPPER(pe.engine_serial)
             AND eed2.returned = true
             AND eed2.overnight_seal IS NOT NULL
+            AND eed2.returned_at >= NOW() - INTERVAL '7 days'
           ORDER BY eed2.returned_at DESC NULLS LAST
           LIMIT 1
-        ) pf ON true
+        ) pf ON re_active.entry_id IS NULL
         LEFT JOIN drivers d_pf ON pf.driver_id = d_pf.driver_id
         WHERE pe.deleted_at IS NULL AND pe.active = true
         ORDER BY pe.class,
           NULLIF(regexp_replace(pe.draw_number,'[^0-9]','','g'),'')::int NULLS LAST,
           pe.draw_number
       `);
-      engines = result.rows.map(e => ({
+      const seenLiveSerials = new Set();
+      engines = result.rows.filter(e => {
+        const key = e.engine_serial
+          ? `serial:${String(e.engine_serial).toUpperCase()}`
+          : `pool:${e.engine_id}`;
+        if (seenLiveSerials.has(key)) return false;
+        seenLiveSerials.add(key);
+        return true;
+      }).map(e => ({
         draw_number:          e.pf_draw_number || e.draw_number,
         engine_serial:        e.engine_serial,
         seal_number:          e.seal_number,
         carb_number:          e.carb_number,
         class:                e.class,
-        assigned_driver_name: e.active_driver_name || e.pf_driver_name || null,
-        assigned_race_number: e.active_race_number || e.pf_race_number || null,
+        assigned_driver_name: e.active_driver_name || (!e.active_entry_id ? e.pf_driver_name : null) || null,
+        assigned_race_number: e.active_race_number || (!e.active_entry_id ? e.pf_race_number : null) || null,
         returned:             false,
-        parc_ferme:           !!e.pf_overnight_seal,
-        overnight_seal:       e.pf_overnight_seal || null
+        parc_ferme:           !e.active_entry_id && !!e.pf_overnight_seal,
+        overnight_seal:       !e.active_entry_id ? (e.pf_overnight_seal || null) : null
       }));
     } else {
       // ── Historical: draws from entry_engine_draws for this event ────────
