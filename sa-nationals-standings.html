@@ -241,8 +241,8 @@
   </div>
   <div class="tab-wrap">
     <div class="tab-bar" id="classTabs">
-      <button class="class-tab active" data-class="CADET">Cadet ROK</button>
-      <button class="class-tab" data-class="MINI ROK">Mini ROK</button>
+      <button class="class-tab" data-class="CADET">Cadet ROK</button>
+      <button class="class-tab active" data-class="MINI ROK">Mini ROK</button>
       <button class="class-tab" data-class="OK-J">OK Junior</button>
       <button class="class-tab" data-class="OK-N">OK National</button>
     </div>
@@ -275,7 +275,7 @@
       {title:'AUTUMN NATS',color:'#fb923c',cls:'w2',label:'VKC Weekend · 09–10 May'},
       {title:'WINTER NATS',color:'#2dd4bf',cls:'w3',label:'FK Weekend · 11–12 Jul'}
     ];
-    var currentClass='CADET',cache={};
+    var currentClass='MINI ROK',cache={};
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
     function ordinal(n){var v=n%100;return n+((v>=11&&v<=13)?'th':(['th','st','nd','rd'][n%10]||'th'));}
     function hv(h){return h===null||h===undefined?0:h;}
