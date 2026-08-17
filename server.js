@@ -1,5 +1,16 @@
 require('dotenv').config();
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+function safeErrorMessage(error, fallback = 'Request failed') {
+  if (isProduction) return fallback;
+  return error && error.message ? error.message : fallback;
+}
+
+function isDebugEnabled() {
+  return !isProduction;
+}
+
 // ============================================================
 // PAYFAST SANDBOX / LIVE MODE SWITCHER
 // Set PAYFAST_SANDBOX=true in .env or toggle from admin panel
@@ -871,7 +882,8 @@ const initRaceEntriesTable = async () => {
     await pool.query(`
       ALTER TABLE race_entries
       ADD COLUMN IF NOT EXISTS race_class VARCHAR(100),
-      ADD COLUMN IF NOT EXISTS entry_items JSONB DEFAULT '[]'
+      ADD COLUMN IF NOT EXISTS entry_items JSONB DEFAULT '[]',
+      ADD COLUMN IF NOT EXISTS race_days VARCHAR(50) DEFAULT 'Saturday'
     `);
 
     // Migration: rename race_entry_id -> entry_id on existing installs
@@ -2270,7 +2282,11 @@ app.get('/api/preview-ticket', (req, res) => {
 });
 
 // Debug endpoint to check environment variables
-app.get('/api/debug-env', (req, res) => {
+app.get('/api/debug-env', requireAdmin, (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   res.json({
     success: true,
     data: {
@@ -2285,7 +2301,11 @@ app.get('/api/debug-env', (req, res) => {
 });
 
 // Test admin registration email
-app.post('/api/test-admin-registration-email', async (req, res) => {
+app.post('/api/test-admin-registration-email', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   try {
     const { email } = req.body;
     if (!email) throw new Error('Email is required');
@@ -2539,12 +2559,16 @@ app.post('/api/test-admin-registration-email', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Test email error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to send test email') } });
   }
 });
 
 // Test email endpoint
-app.post('/api/test-email', async (req, res) => {
+app.post('/api/test-email', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   try {
     const { email, driver_id } = req.body;
     if (!email) throw new Error('Email required');
@@ -2589,13 +2613,17 @@ app.post('/api/test-email', async (req, res) => {
     }
   } catch (err) {
     console.error('❌ Test email error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to send test email') } });
   }
 });
 
 // Test endpoint to check database
 // Sync status — shows whether we're in cloud or local mode and queue depth
-app.get('/api/syncStatus', async (req, res) => {
+app.get('/api/syncStatus', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   const isLocal = process.env.DB_SSL === 'false';
   let queueDepth = 0;
   let cloudReachable = null;
@@ -2620,7 +2648,11 @@ app.get('/api/syncStatus', async (req, res) => {
   });
 });
 
-app.get('/api/test-db', async (req, res) => {
+app.get('/api/test-db', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   try {
     // Get drivers table columns
     const driversInfo = await pool.query(`
@@ -2641,19 +2673,23 @@ app.get('/api/test-db', async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to inspect database') } });
   }
 });
 
 // Get driver profile by ID
-app.post('/api/getDriverProfile', async (req, res) => {
+app.post('/api/getDriverProfile', requireAdmin, async (req, res) => {
   try {
     const { driver_id } = req.body;
-    if (!driver_id) throw new Error('Driver ID required');
+    if (!driver_id) {
+      return res.status(400).json({ success: false, error: { message: 'Driver ID required' } });
+    }
 
     const result = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driver_id]);
     const driver = result.rows[0];
-    if (!driver) throw new Error('Driver not found');
+    if (!driver) {
+      return res.status(404).json({ success: false, error: { message: 'Driver not found' } });
+    }
 
     const contacts = await pool.query('SELECT * FROM contacts WHERE driver_id = $1', [driver_id]);
     const medical = await pool.query('SELECT * FROM medical_consent WHERE driver_id = $1', [driver_id]);
@@ -2671,23 +2707,29 @@ app.post('/api/getDriverProfile', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ getDriverProfile error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to load profile') } });
   }
 });
 
 // Get driver profile by email
-app.post('/api/getDriverProfileByEmail', async (req, res) => {
+app.post('/api/getDriverProfileByEmail', requireAdmin, async (req, res) => {
   try {
-    const { email, pin } = req.body;
-    if (!email || !pin) throw new Error('Missing required fields');
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: { message: 'Email required' } });
+    }
 
     const contactResult = await pool.query('SELECT driver_id FROM contacts WHERE email = $1', [email.toLowerCase()]);
-    if (contactResult.rows.length === 0) throw new Error('Email not found');
+    if (contactResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: { message: 'Email not found' } });
+    }
 
     const driver_id = contactResult.rows[0].driver_id;
     const result = await pool.query('SELECT * FROM drivers WHERE driver_id = $1', [driver_id]);
     const driver = result.rows[0];
-    if (!driver) throw new Error('Driver not found');
+    if (!driver) {
+      return res.status(404).json({ success: false, error: { message: 'Driver not found' } });
+    }
 
     const contacts = await pool.query('SELECT * FROM contacts WHERE driver_id = $1', [driver_id]);
     const medical = await pool.query('SELECT * FROM medical_consent WHERE driver_id = $1', [driver_id]);
@@ -2705,7 +2747,7 @@ app.post('/api/getDriverProfileByEmail', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ getDriverProfileByEmail error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to load profile') } });
   }
 });
 
@@ -2789,7 +2831,11 @@ app.post('/api/loginWithPassword', validateBody(loginSchema), async (req, res) =
 });
 
 // DEBUG: Get database schema for contacts table
-app.get('/api/debug/contacts-schema', async (req, res) => {
+app.get('/api/debug/contacts-schema', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   try {
     // Try SHOW COLUMNS instead (works better with PlanetScale)
     const result = await pool.query(`SHOW COLUMNS FROM contacts`);
@@ -2799,12 +2845,16 @@ app.get('/api/debug/contacts-schema', async (req, res) => {
       columnNames: result.rows.map(r => r.Field)
     });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message, hint: 'Try /api/debug/contacts-sample instead' });
+    res.status(400).json({ success: false, error: safeErrorMessage(err, 'Unable to inspect schema'), hint: 'Try /api/debug/contacts-sample instead' });
   }
 });
 
 // DEBUG: Get sample row from contacts table to see what data exists
-app.get('/api/debug/contacts-sample', async (req, res) => {
+app.get('/api/debug/contacts-sample', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   try {
     const result = await pool.query(
       `SELECT * FROM contacts LIMIT 1`
@@ -2824,7 +2874,7 @@ app.get('/api/debug/contacts-sample', async (req, res) => {
       columnNames: Object.keys(sampleRow)
     });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, error: safeErrorMessage(err, 'Unable to inspect sample data') });
   }
 });
 
@@ -3317,7 +3367,7 @@ app.post('/api/requestPasswordReset', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ requestPasswordReset error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to process password reset request') } });
   }
 });
 
@@ -3364,7 +3414,7 @@ app.post('/api/resetPassword', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ resetPassword error:', err.message);
-    res.status(400).json({ success: false, error: { message: err.message } });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to reset password') } });
   }
 });
 
@@ -3877,7 +3927,11 @@ app.post('/api/payfast-itn', async (req, res) => {
 // Get All Drivers (Admin)
 // Diagnostic endpoint to see actual table schema
 // Create test driver for debugging
-app.post('/api/create-test-driver', async (req, res) => {
+app.post('/api/create-test-driver', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   try {
     const testDriver = {
       first_name: 'Test',
@@ -3951,11 +4005,15 @@ app.post('/api/create-test-driver', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ create-test-driver error:', err.message);
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to create test driver') } });
   }
 });
 
-app.get('/api/check-schema', async (req, res) => {
+app.get('/api/check-schema', requireAdmin, async (req, res) => {
+  if (!isDebugEnabled()) {
+    return res.status(404).json({ success: false, error: 'Not found' });
+  }
+
   try {
     // Check drivers table structure
     const driversResult = await pool.query(`
@@ -3976,7 +4034,7 @@ app.get('/api/check-schema', async (req, res) => {
       sampleDriver: sampleResult.rows[0] || null
     });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, error: { message: safeErrorMessage(err, 'Unable to inspect schema') } });
   }
 });
 
@@ -9529,6 +9587,7 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
          r.payment_status,
          r.entry_status,
          r.engine,
+         r.race_days,
          r.ticket_engine_ref,
          r.ticket_tyres_ref,
          r.ticket_transponder_ref,
@@ -9557,8 +9616,16 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
       `SELECT class_name, config_json FROM event_class_pricing WHERE event_id = $1`,
       [race_event]
     );
+    const normalizeClassKey = value => String(value || '').trim().replace(/\s+/g, ' ').toUpperCase();
     const pricingMap = {};
-    pricingResult.rows.forEach(row => { pricingMap[row.class_name] = row.config_json; });
+    pricingResult.rows.forEach(row => {
+      if (!row.class_name) return;
+      pricingMap[normalizeClassKey(row.class_name)] = row.config_json;
+    });
+    const isBothDaysValue = value => {
+      const s = String(value || '').trim().toLowerCase();
+      return !s ? false : /(both|two day|2 day|weekend|sat.*sun|saturday.*sunday)/.test(s);
+    };
 
     const escCSV = v => {
       if (v === null || v === undefined) return '';
@@ -9571,7 +9638,7 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
     const headers = [
       'Name', 'Race #', 'Class', 'Payment Status',
       'Entry Fee (R)', 'Engine Rental (R)', 'Tyre Set (R)', 'Wet Tyres (R)',
-      'Transponder (R)', 'Fuel (R)', 'Calculated Total (R)',
+      'Practice Tyres (R)', 'Transponder (R)', 'Fuel (R)', 'Calculated Total (R)',
       'Amount Paid (R)', 'Difference (R)', 'Notes'
     ];
 
@@ -9589,24 +9656,34 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
         } catch { return []; }
       })();
 
-      const cfg = pricingMap[entry.race_class] || pricingMap[(entry.race_class || '').toUpperCase()] || null;
+      const qtyFromItem = (itemText) => {
+        const str = String(itemText || '');
+        const match = str.match(/(?:x|×)\s*(\d+)/i) || str.match(/(\d+)\s*set/i);
+        return match ? parseInt(match[1], 10) || 1 : 1;
+      };
+
+      const cfg = pricingMap[normalizeClassKey(entry.race_class)] || pricingMap[normalizeClassKey(entry.race_class || '')] || null;
+      const hasBothDays = isBothDaysValue(entry.race_days);
+      const practiceQty = items.reduce((sum, item) => item.includes('practice') ? sum + qtyFromItem(item) : sum, 0);
+      const tyreQty = items.reduce((sum, item) => (item.includes('tyre') && !item.includes('wet') && !item.includes('practice')) ? sum + qtyFromItem(item) : sum, 0);
 
       // Determine if items were selected
       const hasEngine = (entry.engine === 1 || entry.engine === '1') || items.some(i => i.includes('engine'));
-      const hasTyres  = items.some(i => i.includes('tyre') && !i.includes('wet'));
+      const hasTyres  = tyreQty > 0 || items.some(i => i.includes('tyre') && !i.includes('wet'));
       const hasWet    = items.some(i => i.includes('wet'));
       const hasTrans  = items.some(i => i.includes('transponder'));
       const hasFuel   = items.some(i => i.includes('fuel'));
 
-      // Prices from config, 0 if no config or not applicable
-      const pEntry  = cfg ? parseFloat(cfg.natP1 || cfg.regP1 || 0) : 0;
-      const pEngine = cfg && hasEngine  ? parseFloat(cfg.engP1 || 0) : 0;
-      const pTyres  = cfg && hasTyres   ? parseFloat(cfg.tyrP1 || 0) : 0;
+      // Prices from config, with both-day discounted package applied where applicable
+      const pEntry  = cfg ? parseFloat(hasBothDays ? (cfg.natPB || cfg.regPB || cfg.natP1 || cfg.regP1 || 0) : (cfg.natP1 || cfg.regP1 || 0)) : 0;
+      const pEngine = cfg && hasEngine  ? parseFloat(hasBothDays ? (cfg.engPB || cfg.engP1 || 0) : (cfg.engP1 || 0)) : 0;
+      const pTyres  = cfg && hasTyres   ? parseFloat(hasBothDays ? (cfg.tyrPB || cfg.tyrP1 || 0) : (cfg.tyrP1 || 0)) * (Math.max(1, tyreQty || 1)) : 0;
       const pWet    = cfg && hasWet     ? parseFloat(cfg.wetPrice || 0) : 0;
       const pTrans  = cfg && hasTrans   ? parseFloat(cfg.transP1 || 0) : 0;
-      const pFuel   = cfg && hasFuel    ? parseFloat(cfg.fuelP1 || 0) : 0;
+      const pFuel   = cfg && hasFuel    ? parseFloat(hasBothDays ? (cfg.fuelPB || cfg.fuelP1 || 0) : (cfg.fuelP1 || 0)) : 0;
+      const pPractice = cfg && practiceQty > 0 ? parseFloat(cfg.pracUnit || 0) * practiceQty : 0;
 
-      const calcTotal = pEntry + pEngine + pTyres + pWet + pTrans + pFuel;
+      const calcTotal = pEntry + pEngine + pTyres + pWet + pTrans + pFuel + pPractice;
       const amtPaid   = parseFloat(entry.amount_paid || 0);
       const diff      = amtPaid - calcTotal;
 
@@ -9636,6 +9713,7 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
         fmt(hasEngine ? pEngine : 0),
         fmt(hasTyres  ? pTyres  : 0),
         fmt(hasWet    ? pWet    : 0),
+        fmt(pPractice),
         fmt(hasTrans  ? pTrans  : 0),
         fmt(hasFuel   ? pFuel   : 0),
         fmt(calcTotal),
@@ -9652,6 +9730,7 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
       fmt(colTotals.engine),
       fmt(colTotals.tyres),
       fmt(colTotals.wet),
+      fmt(0),
       fmt(colTotals.trans),
       fmt(colTotals.fuel),
       fmt(grandCalc),

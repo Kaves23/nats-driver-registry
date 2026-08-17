@@ -258,8 +258,8 @@ async function exportTyreCollectionList() {
       if (hasPrac) {
         const pracItem = items.find(i => (typeof i === 'string' ? i : (i.name || '')).toLowerCase().includes('practice'));
         const pracStr = typeof pracItem === 'string' ? pracItem : (pracItem ? pracItem.name || '' : '');
-        const m = pracStr.match(/[×x](\d+)/i);
-        if (m) pracQty = parseInt(m[1], 10);
+        const m = pracStr.match(/[×x](\d+)/i) || pracStr.match(/(\d+)\s*set/i);
+        if (m) pracQty = Math.max(1, parseInt(m[1], 10) || 1);
       }
       const cls = (e.race_class || e.driver_class || '').toUpperCase().trim();
       const raceNum = parseInt(e.race_number, 10) || 9999;
@@ -281,7 +281,8 @@ async function exportTyreCollectionList() {
       const driverName = `${r.e.driver_first_name || ''} ${r.e.driver_last_name || ''}`.trim() || r.e.driver_name || '—';
       const ticketRef = r.e.ticket_tyres_ref || '<span style="color:#ccc;font-size:9px;">—</span>';
       const wets = r.hasWets ? CB : DASH;
-      const prac = r.hasPrac ? `${CB} <span style="font-size:9px;">&times;${r.pracQty}</span>` : DASH;
+      const pracBoxes = r.hasPrac ? Array.from({ length: Math.max(1, r.pracQty) }, () => CB).join('') : DASH;
+      const prac = r.hasPrac ? `<div style="display:flex;justify-content:center;gap:2px;flex-wrap:wrap;">${pracBoxes}</div>` : DASH;
       const bg = idx % 2 === 0 ? '#fff' : '#f7f7f7';
       return `<tr style="background:${bg};">
         <td style="${TD}text-align:center;width:28px;">${idx + 1}</td>
