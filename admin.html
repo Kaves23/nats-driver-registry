@@ -3926,7 +3926,8 @@
           const s = String(value || '').trim().toLowerCase();
           return !s ? false : /(both|two day|2 day|weekend|sat.*sun|saturday.*sunday)/.test(s);
         };
-        const hasBothDays = isBothDaysValue(entry.race_days);
+        const hasMultiDayEvent = !!(entry.start_date && entry.end_date && new Date(entry.end_date) > new Date(entry.start_date));
+        const hasBothDays = isBothDaysValue(entry.race_days) || hasMultiDayEvent;
         const isNatEvent = !!entry.event_national_only;
         const entryPriceBase = cfg ? parseFloat(isNatEvent ? (cfg.natP1 || cfg.regP1 || 0) : (cfg.regP1 || cfg.natP1 || 0)) : 0;
         const entryPriceBoth = cfg ? parseFloat(isNatEvent ? (cfg.natPB || cfg.natP1 || 0) : (cfg.regPB || cfg.regP1 || 0)) : 0;

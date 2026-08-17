@@ -9588,6 +9588,9 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
          r.entry_status,
          r.engine,
          r.race_days,
+         e.start_date,
+         e.end_date,
+         e.event_date,
          r.ticket_engine_ref,
          r.ticket_tyres_ref,
          r.ticket_transponder_ref,
@@ -9600,6 +9603,7 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
        FROM race_entries r
        LEFT JOIN drivers d ON r.driver_id = d.driver_id
        LEFT JOIN contacts c ON r.driver_id = c.driver_id
+       LEFT JOIN events e ON e.event_id = r.event_id
        WHERE r.event_id = $1
          AND (r.entry_status IS NULL OR r.entry_status != 'cancelled')
          AND r.race_class IS NOT NULL
@@ -9663,7 +9667,8 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
       };
 
       const cfg = pricingMap[normalizeClassKey(entry.race_class)] || pricingMap[normalizeClassKey(entry.race_class || '')] || null;
-      const hasBothDays = isBothDaysValue(entry.race_days);
+      const hasDateRangeBothDays = !!(entry.start_date && entry.end_date && new Date(entry.end_date) > new Date(entry.start_date));
+      const hasBothDays = isBothDaysValue(entry.race_days) || hasDateRangeBothDays;
       const practiceQty = items.reduce((sum, item) => item.includes('practice') ? sum + qtyFromItem(item) : sum, 0);
       const tyreQty = items.reduce((sum, item) => (item.includes('tyre') && !item.includes('wet') && !item.includes('practice')) ? sum + qtyFromItem(item) : sum, 0);
 
