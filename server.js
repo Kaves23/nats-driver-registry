@@ -12650,28 +12650,28 @@ const STATIC_CLASS_DOCS = [
     isStatic: true
   },
   {
-    display_name: 'Friday Timetable — Spring Nats 2026',
+    display_name: 'Thursday Practice Timetable — Spring Nats 2026',
     document_type: 'General',
-    file_path: '/documents/raceday/RDOC026-friday-spring-nats-2026-timetable.html',
-    preview_url: '/documents/raceday/RDOC026-friday-spring-nats-2026-timetable.html',
+    file_path: '/documents/raceday/RDOC026-thursday-spring-nats-2026-timetable.html',
+    preview_url: '/documents/raceday/RDOC026-thursday-spring-nats-2026-timetable.html',
     category: 'general',
     icon: '📅',
     isStatic: true
   },
   {
-    display_name: 'Saturday Timetable — Spring Nats 2026',
+    display_name: 'Friday Race Timetable — Spring Nats 2026',
     document_type: 'General',
-    file_path: '/documents/raceday/RDOC027-saturday-spring-nats-2026-timetable.html',
-    preview_url: '/documents/raceday/RDOC027-saturday-spring-nats-2026-timetable.html',
+    file_path: '/documents/raceday/RDOC027-friday-spring-nats-2026-timetable.html',
+    preview_url: '/documents/raceday/RDOC027-friday-spring-nats-2026-timetable.html',
     category: 'general',
     icon: '📅',
     isStatic: true
   },
   {
-    display_name: 'Sunday Timetable — Spring Nats 2026',
+    display_name: 'Saturday Race Timetable — Spring Nats 2026',
     document_type: 'General',
-    file_path: '/documents/raceday/RDOC028-sunday-spring-nats-2026-timetable.html',
-    preview_url: '/documents/raceday/RDOC028-sunday-spring-nats-2026-timetable.html',
+    file_path: '/documents/raceday/RDOC028-saturday-spring-nats-2026-timetable.html',
+    preview_url: '/documents/raceday/RDOC028-saturday-spring-nats-2026-timetable.html',
     category: 'general',
     icon: '📅',
     isStatic: true
