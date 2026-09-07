@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Self-Declaration Scrutineering Form · Spring Nats 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --spring: #22c55e;
+      --spring-dk: #15803d;
+      --spring-bg: #ecfdf5;
+      --ink: #111827;
+      --ink-2: #374151;
+      --ink-3: #6b7280;
+      --border: #dfe7e5;
+      --white: #ffffff;
+      --page-bg: #f3f4f6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--page-bg); color: var(--ink); line-height: 1.6; }
+    .page { width: 210mm; min-height: 297mm; margin: 0 auto; background: var(--white); }
+    @media screen { .page { box-shadow: 0 10px 30px rgba(0,0,0,.08); margin: 24px auto; } }
+    .doc-header { background: linear-gradient(135deg, var(--spring), var(--spring-dk)); color: var(--white); padding: 28px 40px 24px; }
+    .doc-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.78); margin-bottom: 8px; }
+    .doc-title { font-family: 'Montserrat', sans-serif; font-size: clamp(24px, 4vw, 32px); font-weight: 900; letter-spacing: .02em; text-transform: uppercase; margin: 0 0 6px; }
+    .doc-subtitle { font-size: 14px; color: rgba(255,255,255,.85); margin: 0; }
+    .doc-content { padding: 28px 40px 50px; }
+    .section { padding-top: 18px; }
+    .section + .section { border-top: 2px solid var(--border); margin-top: 28px; }
+    .section-label { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+    .section-num { background: var(--spring); color: var(--white); font-family: 'Montserrat', sans-serif; font-size: 10px; font-weight: 900; letter-spacing: .14em; padding: 6px 9px; border-radius: 3px; }
+    .section-tag { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+    .section-heading { font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: .02em; text-transform: uppercase; color: var(--spring-dk); margin: 8px 0 12px; }
+    .driver-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin: 18px 0; }
+    .driver-info-cell { padding: 12px 14px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .driver-info-cell:nth-child(2n) { border-right: none; }
+    .driver-info-cell:nth-last-child(-n+2) { border-bottom: none; }
+    .driver-info-label { font-size: 9px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 5px; }
+    .driver-info-line { min-height: 20px; border-bottom: 1px solid var(--border); }
+    .instructions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+    .instructions-box { border: 1px solid var(--border); border-radius: 4px; padding: 12px 14px; }
+    .instructions-box--tick { border-left: 4px solid #16a34a; }
+    .instructions-box--fail { border-left: 4px solid #dc2626; }
+    .instructions-box-title { font-size: 10px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px; }
+    .instructions-box--tick .instructions-box-title { color: #15803d; }
+    .instructions-box--fail .instructions-box-title { color: #b91c1c; }
+    .instructions-box p { margin: 0; font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+    .form-section-heading { background: var(--ink); color: var(--white); font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; text-align: center; padding: 8px 12px; margin: 18px 0 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid var(--border); padding: 10px 12px; font-size: 12px; }
+    th { background: var(--spring-bg); text-transform: uppercase; letter-spacing: .08em; color: var(--spring-dk); font-size: 10px; }
+    @media (max-width: 760px) { .instructions-row, .driver-info-grid { grid-template-columns: 1fr; } .doc-content, .doc-header { padding-left: 20px; padding-right: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="doc-header">
+      <div class="doc-eyebrow">ROK Cup SA</div>
+      <h1 class="doc-title">Self-Declaration<br>Scrutineering Form</h1>
+      <p class="doc-subtitle">Spring Nats 2026 · Killarney International Raceway · 10–12 September 2026</p>
+    </header>
+    <main class="doc-content">
+      <section class="section">
+        <div class="section-label"><span class="section-num">01</span><span class="section-tag">Driver Details</span></div>
+        <div class="driver-info-grid">
+          <div class="driver-info-cell"><div class="driver-info-label">Driver Name</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Class</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Team</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Race Number</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Chassis</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Engine</div><div class="driver-info-line"></div></div>
+        </div>
+
+        <div class="instructions-row">
+          <div class="instructions-box instructions-box--tick">
+            <div class="instructions-box-title">Yes / Ready</div>
+            <p>Seat, harness, cage and safety equipment are fitted correctly and all required components are present.</p>
+          </div>
+          <div class="instructions-box instructions-box--fail">
+            <div class="instructions-box-title">No / Not Ready</div>
+            <p>Any missing or non-compliant item must be corrected before the kart is allowed onto the circuit.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-label"><span class="section-num">02</span><span class="section-tag">Declaration</span></div>
+        <h2 class="section-heading">Compliance Check</h2>
+        <table>
+          <thead>
+            <tr><th>Item</th><th>Tick</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Race suit, gloves and helmet compliant</td><td></td><td></td></tr>
+            <tr><td>Harnes and seat secure</td><td></td><td></td></tr>
+            <tr><td>Number panels fitted correctly</td><td></td><td></td></tr>
+            <tr><td>Tyres and compound compliant</td><td></td><td></td></tr>
+            <tr><td>Fuel and tank system compliant</td><td></td><td></td></tr>
+            <tr><td>Mechanical and safety checks complete</td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section">
+        <div class="section-label"><span class="section-num">03</span><span class="section-tag">Signature</span></div>
+        <h2 class="section-heading">Declaration</h2>
+        <p>I confirm that the above kart and equipment have been checked and comply with the current event regulations. I acknowledge that any non-compliant equipment may be rejected and may prevent track access.</p>
+        <div class="driver-info-grid">
+          <div class="driver-info-cell"><div class="driver-info-label">Driver Signature</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Parent / Guardian Signature</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Date</div><div class="driver-info-line"></div></div>
+          <div class="driver-info-cell"><div class="driver-info-label">Official Stamp</div><div class="driver-info-line"></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -12584,6 +12584,97 @@ const STATIC_CLASS_DOCS = [
     category: 'general',
     icon: '📅',
     isStatic: true
+  },
+  // ── SPRING NATS 2026 — Killarney · 10–12 Sep 2026 ──
+  {
+    display_name: 'Race Day Instructions — Spring Nats 2026',
+    document_type: 'Mini ROK',
+    file_path: '/documents/raceday/RDOC019-mini-rok-spring-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC019-mini-rok-spring-nats-2026-race-day-instructions.html',
+    category: 'mini',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Race Day Instructions — Spring Nats 2026',
+    document_type: 'OK Junior',
+    file_path: '/documents/raceday/RDOC020-ok-junior-spring-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC020-ok-junior-spring-nats-2026-race-day-instructions.html',
+    category: 'okj',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Race Day Instructions — Spring Nats 2026',
+    document_type: 'OK National',
+    file_path: '/documents/raceday/RDOC021-ok-national-spring-nats-2026-race-day-instructions.html',
+    preview_url: '/documents/raceday/RDOC021-ok-national-spring-nats-2026-race-day-instructions.html',
+    category: 'okn',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Tyre Collection Instructions — Spring Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC022-tyre-collection-spring-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC022-tyre-collection-spring-nats-2026.html',
+    category: 'general',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Controlled Fuel Instructions — Spring Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC023-controlled-fuel-spring-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC023-controlled-fuel-spring-nats-2026.html',
+    category: 'general',
+    icon: '📄',
+    isStatic: true
+  },
+  {
+    display_name: 'Self-Declaration Scrutineering Form — Spring Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC024-self-declaration-scrutineering-spring-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC024-self-declaration-scrutineering-spring-nats-2026.html',
+    category: 'general',
+    icon: '📋',
+    isStatic: true
+  },
+  {
+    display_name: 'Sticker Placement for Scrutineering — Spring Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC025-sticker-placement-scrutineering-spring-nats-2026.html',
+    preview_url: '/documents/raceday/RDOC025-sticker-placement-scrutineering-spring-nats-2026.html',
+    category: 'general',
+    icon: '🏷️',
+    isStatic: true
+  },
+  {
+    display_name: 'Friday Timetable — Spring Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC026-friday-spring-nats-2026-timetable.html',
+    preview_url: '/documents/raceday/RDOC026-friday-spring-nats-2026-timetable.html',
+    category: 'general',
+    icon: '📅',
+    isStatic: true
+  },
+  {
+    display_name: 'Saturday Timetable — Spring Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC027-saturday-spring-nats-2026-timetable.html',
+    preview_url: '/documents/raceday/RDOC027-saturday-spring-nats-2026-timetable.html',
+    category: 'general',
+    icon: '📅',
+    isStatic: true
+  },
+  {
+    display_name: 'Sunday Timetable — Spring Nats 2026',
+    document_type: 'General',
+    file_path: '/documents/raceday/RDOC028-sunday-spring-nats-2026-timetable.html',
+    preview_url: '/documents/raceday/RDOC028-sunday-spring-nats-2026-timetable.html',
+    category: 'general',
+    icon: '📅',
+    isStatic: true
   }
 ];
 

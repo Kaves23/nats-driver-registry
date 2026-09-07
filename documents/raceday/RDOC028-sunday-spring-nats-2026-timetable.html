@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sunday Timetable · Spring Nats 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --spring: #22c55e;
+      --spring-dk: #15803d;
+      --spring-bg: #ecfdf5;
+      --ink: #111827;
+      --ink-2: #374151;
+      --ink-3: #6b7280;
+      --border: #dfe7e5;
+      --white: #ffffff;
+      --page-bg: #f3f4f6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', Arial, sans-serif; background: var(--page-bg); color: var(--ink); line-height: 1.6; }
+    .page { width: 210mm; min-height: 297mm; margin: 0 auto; background: var(--white); }
+    @media screen { .page { box-shadow: 0 10px 30px rgba(0,0,0,.08); margin: 24px auto; } }
+    .doc-header { background: linear-gradient(135deg, var(--spring), var(--spring-dk)); color: var(--white); padding: 28px 40px 24px; }
+    .doc-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.78); margin-bottom: 8px; }
+    .doc-title { font-family: 'Montserrat', sans-serif; font-size: clamp(28px, 4vw, 34px); font-weight: 900; letter-spacing: .02em; text-transform: uppercase; margin: 0 0 6px; }
+    .doc-subtitle { font-size: 14px; color: rgba(255,255,255,.85); margin: 0; }
+    .doc-content { padding: 28px 40px 50px; }
+    .section { padding-top: 18px; }
+    .section + .section { border-top: 2px solid var(--border); margin-top: 28px; }
+    .section-label { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+    .section-num { background: var(--spring); color: var(--white); font-family: 'Montserrat', sans-serif; font-size: 10px; font-weight: 900; letter-spacing: .14em; padding: 6px 9px; border-radius: 3px; }
+    .section-tag { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; border: 1px solid var(--border); }
+    th, td { border: 1px solid var(--border); padding: 11px 12px; font-size: 13px; text-align: left; }
+    th { background: var(--spring-bg); color: var(--spring-dk); text-transform: uppercase; letter-spacing: .09em; font-size: 10px; }
+    .highlight { font-weight: 700; color: var(--spring-dk); }
+    @media (max-width: 760px) { .doc-content, .doc-header { padding-left: 20px; padding-right: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="doc-header">
+      <div class="doc-eyebrow">ROK Cup SA</div>
+      <h1 class="doc-title">Sunday Timetable</h1>
+      <p class="doc-subtitle">Spring Nats 2026 · Killarney International Raceway · 10–12 September 2026</p>
+    </header>
+    <main class="doc-content">
+      <section class="section">
+        <div class="section-label"><span class="section-num">01</span><span class="section-tag">Day 3</span></div>
+        <table>
+          <thead>
+            <tr><th>Time</th><th>Activity</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>07:00</td><td>Paddock and scrutineering check-in opens</td></tr>
+            <tr><td>08:00</td><td>Final technical checks and controls</td></tr>
+            <tr><td>09:30</td><td>Race-day briefings and grid coordination</td></tr>
+            <tr><td>10:30</td><td>Final race sessions and class actions begin</td></tr>
+            <tr><td>14:00</td><td>Presentation and prize checks</td></tr>
+            <tr><td>16:00</td><td><span class="highlight">Event close and paddock clearance</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
