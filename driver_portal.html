@@ -3337,6 +3337,20 @@
     let currentDriverData = {};
     let currentToken = localStorage.getItem('driverToken') || '';
 
+    function getCurrentDriverEmail() {
+      const contactEmail = currentProfile?.contacts?.find(contact => contact?.email)?.email;
+      const candidates = [
+        currentEmail,
+        currentDriverData?.email,
+        currentProfile?.driver?.email,
+        document.getElementById('p_email')?.value,
+        contactEmail,
+        localStorage.getItem('driverEmail')
+      ];
+      const email = candidates.find(value => typeof value === 'string' && value.trim().includes('@'));
+      return email ? email.trim().toLowerCase() : '';
+    }
+
     // Auto-login function - checks for saved credentials and logs in automatically
     async function attemptAutoLogin() {
       const savedEmail = localStorage.getItem('driverEmail');
@@ -4037,6 +4051,9 @@
       currentDriverData = d;  // Store in global for use in other functions
       window.driverNationalPackage = d.national_package || null;
       const contacts = profile.contacts || [];
+      const profileEmail = [d.email, contacts.find(contact => contact?.email)?.email, identShown]
+        .find(value => typeof value === 'string' && value.trim().includes('@'));
+      if (profileEmail) currentEmail = profileEmail.trim().toLowerCase();
       const med = profile.medical || {};
       const points = profile.points || [];
 
@@ -4068,7 +4085,7 @@
       // Load notification history when logged in
       loadNotificationHistory();
 
-      document.getElementById("p_email").value = d.email || identShown || "";
+      document.getElementById("p_email").value = currentEmail || "";
       document.getElementById("p_first_name").value = d.first_name || "";
       document.getElementById("p_last_name").value = d.last_name || "";
       document.getElementById("p_class").value = d.class || "";
@@ -7186,13 +7203,14 @@
           const appliedDiscount = window.appliedDiscountCode;
           const _parsedTotal    = parseFloat(totalPrice.replace('R','').replace(/\s/g,'').replace(',','.')) || 0;
           const isFreeEntry     = _parsedTotal === 0;
+          const entryEmail      = getCurrentDriverEmail();
 
           if (isFreeEntry) {
             // R0 entries still go through the registration API so the entry is recorded
             // and next_race_entry_status is set to Registered properly
             if (!window.selectedEventId) { showModalError('Missing event ID. Please select an event first.'); return; }
             if (!window.currentDriverId) { showModalError('Missing driver ID. Please refresh and login again.'); return; }
-            if (!currentEmail)           { showModalError('Missing email. Please refresh and login again.'); return; }
+            if (!entryEmail)             { showModalError('Missing email. Please update your profile or log in again.'); return; }
             setButtonLoading_(paymentBtn, true, 'Registering…');
             fetch('/api/registerFreeRaceEntry', {
               method:'POST', headers:{'Content-Type':'application/json'},
@@ -7201,7 +7219,7 @@
                 driverId: window.currentDriverId,
                 raceClass: driverClass,
                 selectedItems,
-                email: currentEmail,
+                email: entryEmail,
                 firstName: currentProfile?.driver?.first_name || 'Driver',
                 lastName:  currentProfile?.driver?.last_name  || '',
                 teamCode,
@@ -7229,7 +7247,7 @@
                       <div style="font-family:'Courier New',monospace;font-size:16px;font-weight:900;color:#22c55e;letter-spacing:.08em;">${data.reference}</div>
                     </div>
                     <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:14px;margin-bottom:16px;text-align:center;">
-                      <div style="font-size:13px;color:#86efac;line-height:1.7;">📧 Your tickets &amp; entry confirmation<br>have been sent to <strong style="color:#fff;">${currentEmail}</strong></div>
+                      <div style="font-size:13px;color:#86efac;line-height:1.7;">📧 Your tickets &amp; entry confirmation<br>have been sent to <strong style="color:#fff;">${entryEmail}</strong></div>
                     </div>
                     <div style="font-size:12px;color:#6b7280;text-align:center;margin-bottom:20px;">Check your inbox (and spam folder) for your race tickets and entry details.</div>
                     <button id="entrySuccessBtn" style="width:100%;padding:14px;background:#22c55e;color:#000;font-weight:900;border:none;border-radius:8px;cursor:pointer;font-size:14px;text-transform:uppercase;letter-spacing:.06em;">View My Entries →</button>
@@ -7241,14 +7259,14 @@
                   if (t) t.click();
                 });
                 // Reload profile in the background
-                api('getProfile', {email: currentEmail}).then(profileData => {
+                api('getProfile', {email: entryEmail}).then(profileData => {
                   if (profileData?.driver) {
                     currentProfile = profileData;
                     renderPortalData(currentProfile);
                     updateNextRaceBox(currentProfile.driver);
                     setStatusCard_({ chipText:'Entry Confirmed', chipKind:'good',
                       driver:`${currentProfile.driver.first_name||''} ${currentProfile.driver.last_name||''}`.trim()||'—',
-                      klass: currentProfile.driver.class||'—', ident: currentEmail,
+                      klass: currentProfile.driver.class||'—', ident: entryEmail,
                       status:'Entered for Race', note:`Registered for ${window.selectedEventName||'the event'}`
                     });
                   }
@@ -7283,7 +7301,7 @@
               const itemsParam = encodeURIComponent(JSON.stringify(selectedItems));
               window.location.href = '/api/initiateRacePayment?class=' + encodeURIComponent(driverClass)
                 + '&amount=' + amount
-                + '&email='  + encodeURIComponent(currentEmail)
+                + '&email='  + encodeURIComponent(entryEmail)
                 + '&eventId='   + encodeURIComponent(window.selectedEventId)
                 + '&driverId='  + encodeURIComponent(window.currentDriverId)
                 + '&items='     + itemsParam
