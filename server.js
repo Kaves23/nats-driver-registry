@@ -12901,6 +12901,7 @@ app.get('/api/drawEngines', async (req, res) => {
             AND pe.engine_serial IS NOT NULL
             AND pe.engine_serial <> ''
       LEFT JOIN drivers d ON re.driver_id = d.driver_id
+      WHERE pe.active = true AND pe.deleted_at IS NULL
       ORDER BY pe.class, pe.draw_number
     `);
     res.json({ success: true, engines: result.rows });
@@ -12925,6 +12926,7 @@ app.get('/api/poolEngines', async (req, res) => {
             AND pe.engine_serial IS NOT NULL
             AND pe.engine_serial <> ''
       LEFT JOIN drivers d ON re.driver_id = d.driver_id
+      WHERE pe.active = true AND pe.deleted_at IS NULL
       ORDER BY pe.class, pe.draw_number
     `);
     res.json({ success: true, engines: result.rows });
