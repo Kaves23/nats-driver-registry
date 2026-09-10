@@ -1400,10 +1400,6 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
         SELECT
           driver_id,
           (SELECT equipment_serial FROM equipment_scan_log
-           WHERE driver_id = d.driver_id AND scan_type IN ('engine_assign','LOAN_ASSIGN')
-             AND action_result = 'success' AND equipment_serial IS NOT NULL
-           ORDER BY scan_timestamp DESC LIMIT 1) AS scan_engine,
-          (SELECT equipment_serial FROM equipment_scan_log
            WHERE driver_id = d.driver_id AND scan_type = 'transponder_assign'
              AND action_result = 'success' AND equipment_serial IS NOT NULL
            ORDER BY scan_timestamp DESC LIMIT 1) AS scan_transponder,
@@ -1421,8 +1417,7 @@ module.exports = function equipmentRoutes(pool, logEquipmentScan) {
       for (const row of result.rows) {
         const fb = fallbackMap[row.driver_id] || {};
         // Only treat as currently assigned if NOT returned
-        let engineSerial = (row.engine_serial && row.engine_returned !== true) ? row.engine_serial : null;
-        if (!engineSerial && row.engine_returned !== true) engineSerial = fb.scan_engine || null;
+        const engineSerial = (row.engine_serial && row.engine_returned !== true) ? row.engine_serial : null;
 
         let transponderSerial = row.transponder_serial || fb.scan_transponder || null;
         let fl = row.tyre_front_left  || null;
