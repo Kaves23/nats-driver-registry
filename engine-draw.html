@@ -106,6 +106,15 @@ button{touch-action:manipulation}
 .draw-num{font-size:72px;font-weight:900;line-height:1}
 .draw-serial{font-size:26px;color:var(--dim);margin-top:4px;text-align:center;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .draw-who{font-size:26px;color:var(--amber);text-align:center;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+@media(min-width:1100px){
+  #s-draw{padding-left:24px;padding-right:24px}
+  .draw-scroll{overflow:hidden}
+  .draw-grid{grid-template-columns:repeat(15,minmax(0,1fr));gap:6px;padding-bottom:0}
+  .draw-card{min-height:112px;padding:10px 3px;border-radius:10px}
+  .draw-num{font-size:52px}
+  .draw-serial{font-size:16px;letter-spacing:0}
+  .draw-who,.draw-card.taken .draw-who{font-size:16px}
+}
 .no-engines{text-align:center;color:var(--dim);font-size:36px;padding:40px 20px;letter-spacing:1px}
 
 /* ── CONFIRM SCREEN ──────────────────────── */
