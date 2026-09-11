@@ -129,7 +129,7 @@
 
     /* TABLE */
     .tbl-wrap { border: 1px solid var(--border); overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 1280px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1600px; }
     thead tr.th-top { background: rgba(15,23,42,0.65); }
     thead tr.th-sub { background: rgba(15,23,42,0.45); border-bottom: 2px solid var(--border-bright); }
     th { padding: 8px 8px; font-size: 0.57rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); text-align: center; white-space: nowrap; }
@@ -140,7 +140,10 @@
     .thg-w2-end { border-right: 1px solid rgba(251,146,60,0.28); }
     .thg-w3 { background: rgba(45,212,191,0.07); border-left: 1px solid rgba(45,212,191,0.28); color: #2dd4bf !important; }
     .thg-w3-end { border-right: 1px solid rgba(45,212,191,0.28); }
-    .thg-adj { background: rgba(15,23,42,0.55); border-left: 2px solid var(--border-bright); }
+    .thg-w4 { background: rgba(163,230,53,0.07); border-left: 1px solid rgba(163,230,53,0.28); color: #bef264 !important; }
+    .thg-w4-end { border-right: 1px solid rgba(163,230,53,0.28); }
+    .thg-adj { position: sticky; right: 100px; z-index: 3; background: #182e72; border-left: 2px solid var(--border-bright); }
+    .thg-max { position: sticky; right: 0; z-index: 3; min-width: 100px; background: #244d6c; }
     tbody tr { border-bottom: 1px solid rgba(219,234,254,0.06); transition: background 0.12s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: rgba(255,255,255,0.04); }
@@ -198,6 +201,9 @@
     .cw3h { background: rgba(45,212,191,0.04); border-left: 1px solid rgba(45,212,191,0.12); }
     .cw3s { background: rgba(45,212,191,0.04); }
     .cw3-end { border-right: 1px solid rgba(45,212,191,0.12); }
+    .cw4h { background: rgba(163,230,53,0.04); border-left: 1px solid rgba(163,230,53,0.12); }
+    .cw4s { background: rgba(163,230,53,0.04); }
+    .cw4-end { border-right: 1px solid rgba(163,230,53,0.12); }
 
     /* HEAT VALUES */
     .heat-val  { font-size: 0.72rem; color: var(--ink-dim); }
@@ -209,13 +215,16 @@
     .heat-drop { text-decoration: line-through; color: var(--drop-color) !important; font-weight: 700; opacity: 0.7; }
 
     /* ADJ TOTAL */
-    td.adj-total { border-left: 2px solid var(--border-bright); background: rgba(15,23,42,0.22); vertical-align: middle; }
+    td.adj-total { position: sticky; right: 100px; z-index: 1; min-width: 100px; border-left: 2px solid var(--border-bright); background: #1b3a8b; vertical-align: middle; }
     .adj-pts   { font-size: 1.1rem; font-weight: 800; color: var(--white); display: block; }
     .rank1 .adj-pts { color: var(--gold); }
     .rank2 .adj-pts { color: var(--p2); }
     .rank3 .adj-pts { color: var(--p3); }
     .full-label { display: block; font-size: 0.61rem; letter-spacing: 0.06em; color: var(--ink-faint); margin-top: 3px; }
     .full-label.same { color: rgba(74,222,128,0.45); }
+    td.max-total { position: sticky; right: 0; z-index: 1; min-width: 100px; background: #24506d; vertical-align: middle; box-shadow: -1px 0 rgba(219,234,254,0.25); }
+    .max-pts { display: block; color: #d9f99d; font-size: 1rem; font-weight: 800; }
+    .max-label { display: block; margin-top: 3px; color: var(--ink-faint); font-size: 0.55rem; letter-spacing: 0.06em; }
 
     /* ROW RANK COLOURS */
     tbody tr.rank1 { background: rgba(250,204,21,0.05); }
@@ -268,12 +277,15 @@
       {date:'VKC 09-May',label:'Rd 3',wknd:1},
       {date:'VKC 10-May',label:'Rd 4',wknd:1},
       {date:'FK 11-Jul',label:'Rd 5',wknd:2},
-      {date:'FK 12-Jul',label:'Rd 6',wknd:2}
+      {date:'FK 12-Jul',label:'Rd 6',wknd:2},
+      {date:'Killarney 11-Sep',label:'Rd 7',wknd:3},
+      {date:'Killarney 12-Sep',label:'Rd 8',wknd:3}
     ];
     var WEEKENDS=[
       {title:'SUMMER NATS',color:'#fde047',cls:'w1',label:'RSR Weekend · 21–22 Mar'},
       {title:'AUTUMN NATS',color:'#fb923c',cls:'w2',label:'VKC Weekend · 09–10 May'},
-      {title:'WINTER NATS',color:'#2dd4bf',cls:'w3',label:'FK Weekend · 11–12 Jul'}
+      {title:'WINTER NATS',color:'#2dd4bf',cls:'w3',label:'FK Weekend · 11–12 Jul'},
+      {title:'SPRING NATS',color:'#bef264',cls:'w4',label:'Killarney · 11–12 Sep'}
     ];
     var currentClass='MINI ROK',cache={};
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -320,6 +332,12 @@
       Object.keys(droppedHeat).forEach(function(k){dropSum+=droppedHeat[k];});
       return{full:full,adjusted:full-dropSum,droppedHeat:droppedHeat};
     }
+    function maxAfterRound8(driver){
+      if(driver.rounds[7]!==null)return calcScores(driver).adjusted;
+      var projected={rounds:driver.rounds.slice()};
+      projected.rounds[7]=[35,35,35];
+      return calcScores(projected).adjusted;
+    }
     function roundAdjSub(r,ri,droppedHeat){
       if(r===null)return null;
       return r.reduce(function(s,h,hi){return droppedHeat[ri+'-'+hi]!==undefined?s:s+hv(h);},0);
@@ -339,7 +357,7 @@
       rows.forEach(function(r){
         var id=r.driver_id;
         if(!dMap.has(id)){
-          dMap.set(id,{id:id,name:((r.first_name||'')+' '+(r.last_name||'')).trim(),no:r.race_number||'',team:r.team_name||'',rounds:[null,null,null,null,null,null]});
+          dMap.set(id,{id:id,name:((r.first_name||'')+' '+(r.last_name||'')).trim(),no:r.race_number||'',team:r.team_name||'',rounds:Array(ROUNDS.length).fill(null)});
         }
         var d=dMap.get(id);
         var ri=parseInt(r.round)-1;
@@ -348,6 +366,7 @@
           var h2=r.heat2_points!=null?parseFloat(r.heat2_points):null;
           var h3=r.final_points!=null?parseFloat(r.final_points):null;
           d.rounds[ri]=[h1,h2,h3];
+          if(ri===6){d.name=((r.first_name||'')+' '+(r.last_name||'')).trim();d.no=r.race_number||d.no;}
         }
       });
       return Array.from(dMap.values());
@@ -389,6 +408,7 @@
             +esc(wk.label)+'</th>';
         }).join('')
         +'<th rowspan="2" class="thg-adj" style="min-width:90px">Adj Total<br><span style="font-weight:400;font-size:0.5rem;color:var(--ink-faint)">(full total)</span></th>'
+        +'<th rowspan="2" class="thg-max">Max after<br>Rd 8</th>'
         +'</tr>';
       // Header row 2
       var hdr2='<tr class="th-sub">'
@@ -427,10 +447,11 @@
           +'<td><span class="race-no">'+esc(d.no)+'</span></td>'
           +cells
           +'<td class="adj-total">'+adjContent+'</td>'
+          +'<td class="max-total"><span class="max-pts">'+maxAfterRound8(d)+'</span><span class="max-label">3 wins + drop</span></td>'
           +'</tr>';
       }).join('');
       c.innerHTML='<div class="meta-bar"><span class="live-dot"></span>'+esc(label)+' · '+drivers.length+' drivers · updated '+now+'</div>'
-        +'<div class="section-label">'+esc(label)+' — ROK Nats 2026 — Drop-Heat Scoring — 6 Rounds</div>'
+        +'<div class="section-label">'+esc(label)+' — ROK Nats 2026 — Drop-Heat Scoring — Round 7 of 8</div>'
         +'<div class="podium-row">'+podium+'</div>'
         +'<div class="tbl-wrap"><table>'
         +'<thead>'+hdr1+hdr2+'</thead>'
