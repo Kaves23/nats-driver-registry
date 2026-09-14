@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SA National ROK Karting Championship 2026 — Standings</title>
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #1e40af;
+      --ink:           #dbeafe;
+      --ink-dim:       rgba(219,234,254,0.75);
+      --ink-faint:     rgba(219,234,254,0.4);
+      --white:         #ffffff;
+      --gold:          #facc15;
+      --p1:            #facc15;
+      --p2:            rgba(219,234,254,0.9);
+      --p3:            #93c5fd;
+      --border:        rgba(219,234,254,0.2);
+      --border-bright: rgba(219,234,254,0.35);
+      --drop-color:    #f87171;
+      --drop-bg:       rgba(248,113,113,0.08);
+    }
+
+    html, body { height: 100%; overscroll-behavior-y: none; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    /* INSTAGRAM SQUARE CONTAINER */
+    .instagram-square {
+      width: 100%;
+      max-width: 1080px;
+      aspect-ratio: 1;
+      background: var(--bg);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    /* WATERMARK */
+    .instagram-square::after {
+      content: '';
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 120px;
+      height: 120px;
+      background: url('images/rok-logo.png') no-repeat center;
+      background-size: contain;
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* HERO */
+    .hero {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center;
+      padding: clamp(20px,5vw,40px) 24px clamp(12px,3vw,24px);
+      position: relative; overflow: hidden;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 100%, rgba(250,204,21,0.07) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .kicker {
+      font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--ink-dim); margin-bottom: 0.6rem;
+      opacity: 1;
+    }
+    .title {
+      font-size: clamp(1.4rem, 4vw, 2.8rem); font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--white); line-height: 1; margin-bottom: 0.8rem;
+      opacity: 1;
+    }
+    .subtitle {
+      font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--ink-dim);
+      opacity: 1;
+    }
+    .divider {
+      width: 36px; height: 2px; background: var(--gold);
+      margin: 0.8rem auto 0;
+      opacity: 1;
+    }
+
+    /* TABS */
+    .tab-wrap { display: flex; justify-content: center; padding: 16px; margin-top: 20px; }
+    .tab-bar {
+      display: flex; gap: 0;
+      background: rgba(30,64,175,0.2);
+      border: 1px solid var(--border);
+      overflow: hidden; flex-wrap: wrap;
+    }
+    .class-tab {
+      padding: 6px 12px; border: none; background: transparent;
+      color: var(--ink-dim); font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer;
+      transition: all 0.18s; border-right: 1px solid var(--border); white-space: nowrap;
+    }
+    .class-tab:last-child { border-right: none; }
+    .class-tab:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+    .class-tab.active { background: rgba(30,64,175,0.35); color: var(--white); box-shadow: inset 0 -2px 0 var(--gold); }
+
+    /* PANEL */
+    .panel-wrap { max-width: 1400px; margin: 0 auto; padding: 0 12px; overflow-y: auto; flex: 1; position: relative; z-index: 2; }
+
+    /* PODIUM */
+    .podium-row { display: none; }
+
+    /* TABLE */
+    .tbl-wrap { border: 1px solid var(--border); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr.th-top { background: rgba(15,23,42,0.65); }
+    thead tr.th-sub { background: rgba(15,23,42,0.45); border-bottom: 2px solid var(--border-bright); }
+    th { padding: 8px 6px; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--white); text-align: center; white-space: nowrap; }
+    th.left { text-align: left; }
+    .thg-w1 { background: rgba(253,224,71,0.06); border-left: 1px solid rgba(253,224,71,0.28); color: #fde047 !important; }
+    .thg-w1-end { border-right: 1px solid rgba(253,224,71,0.28); }
+    .thg-w2 { background: rgba(251,146,60,0.07); border-left: 1px solid rgba(251,146,60,0.28); color: #fb923c !important; }
+    .thg-w2-end { border-right: 1px solid rgba(251,146,60,0.28); }
+    .thg-w3 { background: rgba(45,212,191,0.07); border-left: 1px solid rgba(45,212,191,0.28); color: #2dd4bf !important; }
+    .thg-w3-end { border-right: 1px solid rgba(45,212,191,0.28); }
+    .thg-w4 { background: rgba(34,197,94,0.07); border-left: 1px solid rgba(34,197,94,0.28); color: #22c55e !important; }
+    .thg-w4-end { border-right: 1px solid rgba(34,197,94,0.28); }
+    .thg-adj { background: rgba(30,64,175,0.4); border-left: 2px solid var(--border-bright); }
+    tbody tr { border-bottom: 1px solid rgba(219,234,254,0.06); transition: background 0.12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.04); }
+    td { padding: 10px 8px; font-size: 0.76rem; color: var(--ink); text-align: center; }
+    td.c { text-align: center; }
+    td.left { text-align: left; }
+    .rank-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: 0.78rem; font-weight: 800; border: 1px solid var(--border); color: var(--ink-dim); background: rgba(15,23,42,0.3); }
+    .driver-name { font-size: 0.84rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--white); }
+    .driver-team { font-size: 0.7rem; letter-spacing: 0.08em; color: var(--ink-dim); margin-top: 2px; font-style: italic; }
+    .race-no { display: inline-block; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; border: 1px solid var(--border); color: var(--ink-dim); background: rgba(15,23,42,0.3); }
+
+    /* SECTION LABEL */
+    .section-label { font-size: 0.5rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* META BAR */
+    .meta-bar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 8px; font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+    .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 4px #4ade80; animation: blink 2s ease-in-out infinite; flex-shrink: 0; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 30px 15px; color: var(--ink-dim); }
+    .empty-icon { font-size: 30px; margin-bottom: 10px; opacity: 0.3; }
+    .empty-title { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); margin-bottom: 6px; }
+    .empty-sub { font-size: 0.65rem; letter-spacing: 0.05em; }
+
+    /* WEEKEND CELL BACKGROUNDS */
+    .cw1h { background: rgba(253,224,71,0.04); border-left: 1px solid rgba(253,224,71,0.12); }
+    .cw1s { background: rgba(253,224,71,0.04); }
+    .cw1-end { border-right: 1px solid rgba(253,224,71,0.12); }
+    .cw2h { background: rgba(251,146,60,0.04); border-left: 1px solid rgba(251,146,60,0.12); }
+    .cw2s { background: rgba(251,146,60,0.04); }
+    .cw2-end { border-right: 1px solid rgba(251,146,60,0.12); }
+    .cw3h { background: rgba(45,212,191,0.04); border-left: 1px solid rgba(45,212,191,0.12); }
+    .cw3s { background: rgba(45,212,191,0.04); }
+    .cw3-end { border-right: 1px solid rgba(45,212,191,0.12); }
+    .cw4h { background: rgba(34,197,94,0.04); border-left: 1px solid rgba(34,197,94,0.12); }
+    .cw4s { background: rgba(34,197,94,0.04); }
+    .cw4-end { border-right: 1px solid rgba(34,197,94,0.12); }
+
+    /* HEAT VALUES */
+    .heat-val  { font-size: 0.72rem; color: var(--ink-dim); }
+    .heat-zero { font-size: 0.72rem; color: rgba(219,234,254,0.2); }
+    .sep       { color: var(--ink-faint); margin: 0 1px; font-size: 0.5rem; }
+    .sub-val   { font-size: 0.75rem; font-weight: 700; color: var(--ink); display: block; }
+    .sub-absent { color: rgba(209,250,229,0.15); font-size: 0.65rem; }
+    .drop-tag  { display: block; font-size: 0.44rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--drop-color); margin-top: 1px; opacity: 0.85; }
+    .heat-drop { text-decoration: line-through; color: var(--drop-color) !important; font-weight: 700; opacity: 0.7; }
+
+    /* ADJ TOTAL */
+    td.adj-total { border-left: 2px solid var(--border-bright); background: rgba(15,23,42,0.22); vertical-align: middle; }
+    .adj-pts   { font-size: 1.1rem; font-weight: 800; color: var(--white); display: block; }
+    .rank1 .adj-pts { color: var(--gold); }
+    .rank2 .adj-pts { color: var(--p2); }
+    .rank3 .adj-pts { color: var(--p3); }
+    .full-label { display: block; font-size: 0.61rem; letter-spacing: 0.06em; color: var(--ink-faint); margin-top: 3px; }
+    .full-label.same { color: rgba(74,222,128,0.45); }
+
+    /* ROW RANK COLOURS */
+    tbody tr.rank1 { background: rgba(250,204,21,0.05); }
+    tbody tr.rank2 { background: rgba(209,250,229,0.03); }
+    tbody tr.rank3 { background: rgba(110,231,183,0.04); }
+    .rank1 .rank-num { border-color: rgba(250,204,21,0.6); color: var(--gold); background: rgba(250,204,21,0.08); }
+    .rank2 .rank-num { border-color: rgba(209,250,229,0.4); color: var(--p2); background: rgba(209,250,229,0.05); }
+    .rank3 .rank-num { border-color: rgba(110,231,183,0.4); color: var(--p3); background: rgba(110,231,183,0.06); }
+
+    /* BACK */
+    .back { display: none; }
+
+    /* RULE BOX */
+    .rule-wrap { display: none; }
+
+    /* SCROLLBAR */
+    .panel-wrap::-webkit-scrollbar { width: 4px; }
+    .panel-wrap::-webkit-scrollbar-track { background: rgba(30,64,175,0.15); }
+    .panel-wrap::-webkit-scrollbar-thumb { background: rgba(219,234,254,0.5); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="tab-wrap">
+    <div class="tab-bar" id="classTabs">
+      <button class="class-tab" data-class="CADET">Cadet ROK</button>
+      <button class="class-tab active" data-class="MINI ROK">Mini ROK</button>
+      <button class="class-tab" data-class="OK-J">OK Junior</button>
+      <button class="class-tab" data-class="OK-N">OK National</button>
+    </div>
+  </div>
+  <div class="instagram-square">
+    <a href="/" class="back">&#8592; Home</a>
+    <div class="hero">
+      <div class="kicker">ROK Cup South Africa &middot; 2026</div>
+      <div class="title">National Championship</div>
+      <div class="subtitle">Official Standings · 2026</div>
+      <div class="divider"></div>
+    </div>
+    <div class="panel-wrap">
+      <div id="standingsContent"></div>
+    </div>
+  </div>
+  <script>
+    var SEASON='2026',CHAMP='ROK NATS';
+    var CLASS_LABELS={'CADET':'Cadet ROK','MINI ROK':'Mini ROK','OK-J':'OK Junior','OK-N':'OK National'};
+    var ROUNDS=[
+      {date:'RSR 21-Mar',label:'Rd 1',wknd:0},
+      {date:'RSR 22-Mar',label:'Rd 2',wknd:0},
+      {date:'VKC 09-May',label:'Rd 3',wknd:1},
+      {date:'VKC 10-May',label:'Rd 4',wknd:1},
+      {date:'FK 11-Jul',label:'Rd 5',wknd:2},
+      {date:'FK 12-Jul',label:'Rd 6',wknd:2},
+      {date:'KEN 23-Aug',label:'Rd 7',wknd:3},
+      {date:'KEN 24-Aug',label:'Rd 8',wknd:3}
+    ];
+    var WEEKENDS=[
+      {title:'SUMMER NATS',color:'#fde047',cls:'w1',label:'RSR · 21–22 Mar'},
+      {title:'AUTUMN NATS',color:'#fb923c',cls:'w2',label:'VKC · 09–10 May'},
+      {title:'WINTER NATS',color:'#2dd4bf',cls:'w3',label:'FK · 11–12 Jul'},
+      {title:'SPRING NATS',color:'#22c55e',cls:'w4',label:'Killarney · 23–24 Aug'}
+    ];
+    var currentClass='MINI ROK',cache={};
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function ordinal(n){var v=n%100;return n+((v>=11&&v<=13)?'th':(['th','st','nd','rd'][n%10]||'th'));}
+    function hv(h){return h===null||h===undefined?0:h;}
+    document.getElementById('classTabs').addEventListener('click',function(e){
+      var btn=e.target.closest('.class-tab');if(!btn)return;
+      document.querySelectorAll('.class-tab').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');currentClass=btn.dataset.class;loadStandings(currentClass);
+    });
+    function showSkeleton(){
+      var c=document.getElementById('standingsContent');
+      c.innerHTML='<div class="tbl-wrap"><div class="skel" style="height:28px;margin-bottom:1px;"></div>'
+        +Array(6).fill('<div class="skel" style="height:36px;margin-bottom:1px;"></div>').join('')
+        +'</div>';
+    }
+    function calcScores(driver){
+      var full=0;
+      driver.rounds.forEach(function(r){
+        if(r===null)return;
+        r.forEach(function(h){full+=hv(h);});
+      });
+      var droppedHeat={};
+      WEEKENDS.forEach(function(wk,wi){
+        var ra=driver.rounds[wi*2],rb=driver.rounds[wi*2+1];
+        if(ra===null&&rb===null)return;
+        var raArr=ra===null?[0,0,0]:ra, rbArr=rb===null?[0,0,0]:rb;
+        var raFull=ra!==null, rbFull=rb!==null;
+        var heats=[];
+        raArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2,hi:hi,val:v,eligible:h>0||!raFull});});
+        rbArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2+1,hi:hi,val:v,eligible:h>0||!rbFull});});
+        var minVal=Infinity,minIdx=-1;
+        heats.forEach(function(o,i){if(o.eligible&&o.val<minVal){minVal=o.val;minIdx=i;}});
+        if(minIdx===-1)return;
+        droppedHeat[heats[minIdx].ri+'-'+heats[minIdx].hi]=heats[minIdx].val;
+      });
+      var dropSum=0;
+      Object.keys(droppedHeat).forEach(function(k){dropSum+=droppedHeat[k];});
+      return{full:full,adjusted:full-dropSum,droppedHeat:droppedHeat};
+    }
+    function roundAdjSub(r,ri,droppedHeat){
+      if(r===null)return null;
+      return r.reduce(function(s,h,hi){return droppedHeat[ri+'-'+hi]!==undefined?s:s+hv(h);},0);
+    }
+    function renderHeats(r,ri,droppedHeat){
+      if(r===null)return '<span class="sub-absent">–</span>';
+      return r.map(function(h,hi){
+        var isDrop=droppedHeat[ri+'-'+hi]!==undefined;
+        var dc=isDrop?' heat-drop':'';
+        if(h===null)return '<span class="heat-excl'+dc+'">excl</span>';
+        if(h===0)return '<span class="heat-zero'+dc+'">0</span>';
+        return '<span class="heat-val'+dc+'">'+h+'</span>';
+      }).join('<span class="sep">/</span>');
+    }
+    function buildDrivers(rows){
+      var dMap=new Map();
+      rows.forEach(function(r){
+        var id=r.driver_id;
+        if(!dMap.has(id)){
+          dMap.set(id,{id:id,name:((r.first_name||'')+' '+(r.last_name||'')).trim(),no:r.race_number||'',team:r.team_name||'',rounds:[null,null,null,null,null,null,null,null]});
+        }
+        var d=dMap.get(id);
+        var ri=parseInt(r.round)-1;
+        if(ri>=0&&ri<ROUNDS.length){
+          var h1=r.heat1_points!=null?parseFloat(r.heat1_points):null;
+          var h2=r.heat2_points!=null?parseFloat(r.heat2_points):null;
+          var h3=r.final_points!=null?parseFloat(r.final_points):null;
+          d.rounds[ri]=[h1,h2,h3];
+        }
+      });
+      return Array.from(dMap.values());
+    }
+    function renderStandings(rows,raceClass){
+      var c=document.getElementById('standingsContent');
+      var label=CLASS_LABELS[raceClass]||raceClass;
+      var now=new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+      if(!rows||rows.length===0){
+        c.innerHTML='<div class="empty"><div class="empty-icon">&#127937;</div><div class="empty-title">No results yet</div><div class="empty-sub">Spring NATS coming soon</div></div>';
+        return;
+      }
+      var drivers=buildDrivers(rows);
+      var ds=drivers.map(function(d){return{d:d,sc:calcScores(d)};});
+      ds.sort(function(a,b){return(b.sc.adjusted-a.sc.adjusted)||(b.sc.full-a.sc.full);});
+      // Header row 1
+      var hdr1='<tr class="th-top">'
+        +'<th rowspan="2" style="width:32px">Pos</th>'
+        +'<th rowspan="2" class="left" style="min-width:100px">Driver</th>'
+        +'<th rowspan="2" style="width:38px">No.</th>'
+        +WEEKENDS.map(function(wk){
+          var c=wk.cls;
+          return '<th colspan="4" class="thg-'+c+' thg-'+c+'-end">'
+            +'<span style="display:block;font-size:0.42rem;letter-spacing:0.2em;margin-bottom:2px;color:'+wk.color+';font-weight:800;opacity:0.9">'+wk.title+'</span>'
+            +'<span style="font-size:0.42rem">'+esc(wk.label)+'</span></th>';
+        }).join('')
+        +'<th rowspan="2" class="thg-adj" style="min-width:50px">Total</th>'
+        +'</tr>';
+      // Header row 2
+      var hdr2='<tr class="th-sub">'
+        +ROUNDS.map(function(r,ri){
+          var c=WEEKENDS[r.wknd].cls;
+          var isEnd=ri%2===1;
+          return '<th class="thg-'+c+'" style="font-size:0.42rem">'+r.label+'</th>'
+            +'<th class="thg-'+c+(isEnd?' thg-'+c+'-end':'')+'">S</th>';
+        }).join('')
+        +'</tr>';
+      // Data rows
+      var rowsHTML=ds.slice(0,8).map(function(x,idx){
+        var d=x.d,sc=x.sc;
+        var rank=idx+1,rCls=rank<=3?' rank'+rank:'';
+        var cells=d.rounds.map(function(r,ri){
+          var c=WEEKENDS[ROUNDS[ri].wknd].cls;
+          var isEnd=ri%2===1;
+          var dropVal=null;
+          if(r)r.forEach(function(h,hi){if(sc.droppedHeat[ri+'-'+hi]!==undefined)dropVal=sc.droppedHeat[ri+'-'+hi];});
+          var heatTd='<td class="c'+c+'h">'+renderHeats(r,ri,sc.droppedHeat)+'</td>';
+          var adjSub=roundAdjSub(r,ri,sc.droppedHeat);
+          var subContent;
+          if(adjSub===null){subContent='<span class="sub-absent">–</span>';}
+          else{
+            subContent='<span class="sub-val">'+adjSub+'</span>';
+          }
+          var subTd='<td class="c'+c+'s'+(isEnd?' c'+c+'-end':'')+'">'+subContent+'</td>';
+          return heatTd+subTd;
+        }).join('');
+        var adjContent='<span class="adj-pts">'+sc.adjusted+'</span>';
+        return '<tr class="'+rCls.trim()+'">'
+          +'<td><div class="rank-num">'+rank+'</div></td>'
+          +'<td class="left"><div class="driver-name">'+esc(d.name)+'</div>'+(d.team?'<div class="driver-team">'+esc(d.team)+'</div>':'')+' </td>'
+          +'<td><span class="race-no">'+esc(d.no)+'</span></td>'
+          +cells
+          +'<td class="adj-total">'+adjContent+'</td>'
+          +'</tr>';
+      }).join('');
+      c.innerHTML='<div class="meta-bar">'+esc(label)+' · '+drivers.length+' drivers</div>'
+        +'<div class="section-label">'+esc(label)+' · 8 Rounds</div>'
+        +'<div class="tbl-wrap"><table>'
+        +'<thead>'+hdr1+hdr2+'</thead>'
+        +'<tbody>'+rowsHTML+'</tbody>'
+        +'</table></div>';
+    }
+    async function loadStandings(raceClass){
+      if(cache[raceClass]){renderStandings(cache[raceClass],raceClass);return;}
+      showSkeleton();
+      try{
+        const resp=await fetch('http://localhost:3001/api/championship-heats/'+SEASON+'/'+encodeURIComponent(raceClass)+'?championship_type='+encodeURIComponent(CHAMP));
+        if(!resp.ok)throw new Error('HTTP '+resp.status);
+        const data=await resp.json();
+        if(!data.success)throw new Error(data.error||'API error');
+        cache[raceClass]=data.rows||[];
+        renderStandings(cache[raceClass],raceClass);
+      }catch(err){
+        document.getElementById('standingsContent').innerHTML='<div class="empty"><div class="empty-icon">&#9888;&#65039;</div><div class="empty-title">Failed to load</div><div class="empty-sub">'+esc(err.message)+'</div></div>';
+      }
+    }
+    loadStandings(currentClass);
+  </script>
+</body>
+</html>

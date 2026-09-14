@@ -281,9 +281,8 @@
   </div>
   <div class="rule-wrap">
     <div class="rule-box"><strong>Drop-heat rule:</strong> for each weekend (2 rounds), the single
-    lowest <em>eligible</em> individual heat score is dropped &mdash; eligible meaning a genuine
-    scored result, or a zero from a round the driver did not enter at all. A heat cannot be
-    dropped if it was an exclusion/DSQ/DNS within a round the driver otherwise raced. The dropped
+    lowest <em>eligible</em> individual heat score is dropped. A numeric zero can be dropped;
+    an exclusion/DSQ recorded without points cannot be dropped. The dropped
     heat is shown struck-through in red; the <em>Sub</em> column shows the adjusted round total
     with the drop amount.
     </div>
@@ -324,10 +323,8 @@
         +Array(8).fill('<div class="skel" style="height:52px;margin-bottom:1px;"></div>').join('')
         +'</div>';
     }
-    // Per weekend, drop the single lowest ELIGIBLE heat: a heat is eligible if it's a genuine
-    // scored result (>0), or if it belongs to a round the driver has no DB row for at all
-    // (did not enter that round). A heat that is 0 inside a round the driver DID race
-    // (single-heat exclusion/DSQ/DNS) is protected and can never be the dropped heat.
+    // Per weekend, drop the single lowest eligible heat. A started numeric zero is
+    // protected; null marks a DSQ/exclusion and is also protected. A missing round contributes zero.
     function calcScores(driver){
       var full=0;
       driver.rounds.forEach(function(r){
@@ -341,8 +338,8 @@
         var raArr=ra===null?[0,0,0]:ra, rbArr=rb===null?[0,0,0]:rb;
         var raFull=ra!==null, rbFull=rb!==null;
         var heats=[];
-        raArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2,hi:hi,val:v,eligible:v>0||!raFull});});
-        rbArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2+1,hi:hi,val:v,eligible:v>0||!rbFull});});
+        raArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2,hi:hi,val:v,eligible:h>0||!raFull});});
+        rbArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2+1,hi:hi,val:v,eligible:h>0||!rbFull});});
         var minVal=Infinity,minIdx=-1;
         heats.forEach(function(o,i){if(o.eligible&&o.val<minVal){minVal=o.val;minIdx=i;}});
         if(minIdx===-1)return;
