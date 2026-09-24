@@ -2521,7 +2521,8 @@
                     </div>
                     <div>
                       <label>Race number</label>
-                      <input id="p_race_number" />
+                      <input id="p_race_number" placeholder="e.g. 27" />
+                      <div id="p_race_number_hint" class="hint" style="margin-top:4px;"></div>
                     </div>
                   </div>
 
@@ -3351,6 +3352,22 @@
       return email ? email.trim().toLowerCase() : '';
     }
 
+    window.openEntryAfterAuth = (() => {
+      const params = new URLSearchParams(location.search || '');
+      return params.get('openEntry') === '1' || params.get('entry') === '1' || params.get('open_entry') === '1';
+    })();
+
+    function maybeOpenEntryModalAfterLogin() {
+      if (!window.openEntryAfterAuth) return;
+      const modal = document.getElementById('raceEntryModal');
+      if (!modal) return;
+      setTimeout(() => {
+        if (!modal.style.display || modal.style.display === 'none') {
+          showEventSelectionModal();
+        }
+      }, 250);
+    }
+
     // Auto-login function - checks for saved credentials and logs in automatically
     async function attemptAutoLogin() {
       const savedEmail = localStorage.getItem('driverEmail');
@@ -3398,6 +3415,7 @@
           renderPortal(profile, savedEmail);
           document.body.classList.add('logged-in');
           toast("good", "Welcome back! Session restored.");
+          maybeOpenEntryModalAfterLogin();
           console.log('✅ Auto-login successful');
           return true;
         } else {
@@ -6008,6 +6026,7 @@
         currentProfile = profile;
         renderPortal(profile, email);
         document.body.classList.add('logged-in'); // Show mobile logged-in state
+        maybeOpenEntryModalAfterLogin();
         toast("good", "Login successful. Portal loaded.");
       }catch(err){
         setStatusCard_({
@@ -6189,6 +6208,12 @@
 
         setButtonLoading_(btn, true, "Save Changes");
 
+        // Re-validate race number availability right before saving
+        const raceNumberOk = await checkRaceNumberAvailability_();
+        if (!raceNumberOk) {
+          throw new Error("That race number is already taken in this class. Please choose a different number.");
+        }
+
         const updatedProfile = {
           driver_id: currentDriverId,
           email: currentEmail,
@@ -6269,7 +6294,52 @@
           note: 'Portal loaded. Use the tabs above to review and manage your information.'
         });
       }
+      checkRaceNumberAvailability_();
     });
+
+    // Race number uniqueness-per-class check ---------------------------------
+    let raceNumberCheckSeq_ = 0;
+    async function checkRaceNumberAvailability_(){
+      const hintEl = document.getElementById("p_race_number_hint");
+      const numberInput = document.getElementById("p_race_number");
+      const cls = document.getElementById("p_class").value.trim();
+      const num = numberInput.value.trim();
+      if (!hintEl) return true;
+
+      if (!cls || !num) {
+        hintEl.textContent = "";
+        hintEl.style.color = "";
+        return true;
+      }
+
+      const mySeq = ++raceNumberCheckSeq_;
+      hintEl.textContent = "Checking availability...";
+      hintEl.style.color = "#9ca3af";
+      try {
+        const data = await api('checkRaceNumberAvailable', { class: cls, race_number: num, driver_id: currentDriverId });
+        if (mySeq !== raceNumberCheckSeq_) return true; // a newer check superseded this one
+        if (data.available) {
+          hintEl.textContent = `#${num} is available in ${cls}.`;
+          hintEl.style.color = "#059669";
+          return true;
+        } else {
+          hintEl.textContent = `#${num} is already taken by another driver in ${cls}. Please choose a different number.`;
+          hintEl.style.color = "#dc2626";
+          return false;
+        }
+      } catch (e) {
+        if (mySeq !== raceNumberCheckSeq_) return true;
+        hintEl.textContent = "";
+        return true; // don't block save on a network hiccup - server re-validates anyway
+      }
+    }
+
+    let raceNumberDebounce_ = null;
+    document.getElementById("p_race_number").addEventListener("input", function(){
+      clearTimeout(raceNumberDebounce_);
+      raceNumberDebounce_ = setTimeout(checkRaceNumberAvailability_, 450);
+    });
+
 
 
 
@@ -7344,10 +7414,14 @@
     
     clearPortal();
     const initial = (location.hash || "").replace("#","").trim();
-    if(initial === "portal" || initial === "register"){
-      setMode(initial);
-    }else{
+    if ((window.openEntryAfterAuth || initial === "portal" || initial === "register")) {
+      setMode(initial === "register" ? "register" : "portal");
+    } else {
       setMode(null);
+    }
+
+    if (window.openEntryAfterAuth && currentDriverId) {
+      maybeOpenEntryModalAfterLogin();
     }
 
     // Handle password reset token if present in URL (deployed Apps Script can include ?reset_token=...)

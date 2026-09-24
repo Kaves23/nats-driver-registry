@@ -4242,6 +4242,24 @@ app.post('/api/updateDriver', async (req, res) => {
       throw new Error('Driver not found');
     }
 
+    // Enforce race number uniqueness per class (skip if number/class unchanged)
+    const effectiveClass = (klass !== undefined && klass !== null) ? klass : oldDriver.class;
+    const trimmedRaceNumber = race_number !== undefined && race_number !== null ? String(race_number).trim() : undefined;
+    const raceNumberChanged = trimmedRaceNumber !== undefined && trimmedRaceNumber !== (oldDriver.race_number || '');
+    const classChangedWithNumber = trimmedRaceNumber === undefined && klass !== undefined && klass !== oldDriver.class && oldDriver.race_number;
+    if (trimmedRaceNumber && (raceNumberChanged || classChangedWithNumber) && effectiveClass) {
+      const conflict = await pool.query(
+        `SELECT driver_id FROM drivers
+         WHERE class = $1 AND race_number = $2 AND driver_id != $3
+           AND (is_deleted = FALSE OR is_deleted IS NULL)
+         LIMIT 1`,
+        [effectiveClass, trimmedRaceNumber, driver_id]
+      );
+      if (conflict.rows.length > 0) {
+        throw new Error(`Race number ${trimmedRaceNumber} is already taken in class ${effectiveClass}. Please choose a different number.`);
+      }
+    }
+
     // Build UPDATE statement with only the fields we have values for
     const updates = [];
     const values = [];
@@ -4417,6 +4435,24 @@ app.post('/api/updateDriver', async (req, res) => {
         });
       }
     } catch (e) { /* Silent fail */ }
+
+    // Dedicated admin notification specifically for race number changes
+    try {
+      if (trimmedRaceNumber !== undefined && trimmedRaceNumber !== (oldDriver.race_number || '')) {
+        adminNotificationQueue.addNotification({
+          action: 'Race Number Change',
+          subject: `[Race Number] ${first_name || oldDriver.first_name} ${last_name || oldDriver.last_name} ${oldDriver.race_number ? 'changed' : 'set'} their race number`,
+          details: {
+            driverId: driver_id,
+            driverName: `${first_name || oldDriver.first_name} ${last_name || oldDriver.last_name}`,
+            class: effectiveClass || 'Not set',
+            oldRaceNumber: oldDriver.race_number || '(none)',
+            newRaceNumber: trimmedRaceNumber,
+            timestamp: new Date().toLocaleString()
+          }
+        });
+      }
+    } catch (e) { /* Silent fail */ }
     
     res.json({ 
       success: true, 
@@ -4428,6 +4464,49 @@ app.post('/api/updateDriver', async (req, res) => {
   } catch (err) {
     console.error('updateDriver error:', err.message);
     console.error('Full error:', err);
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Get race numbers already taken in a class (used by driver portal race-number picker)
+app.post('/api/getTakenRaceNumbers', async (req, res) => {
+  try {
+    const { class: klass, driver_id } = req.body;
+    if (!klass) throw new Error('Class is required');
+
+    const result = await pool.query(
+      `SELECT race_number, driver_id FROM drivers
+       WHERE class = $1 AND race_number IS NOT NULL AND race_number != ''
+         AND (is_deleted = FALSE OR is_deleted IS NULL)
+         AND ($2::varchar IS NULL OR driver_id != $2)`,
+      [klass, driver_id || null]
+    );
+
+    res.json({ success: true, data: { taken: result.rows.map(r => String(r.race_number).trim()) } });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// Check whether a specific race number is available in a class (excludes the requesting driver)
+app.post('/api/checkRaceNumberAvailable', async (req, res) => {
+  try {
+    const { class: klass, race_number, driver_id } = req.body;
+    if (!klass) throw new Error('Class is required');
+    if (!race_number || !String(race_number).trim()) throw new Error('Race number is required');
+
+    const trimmed = String(race_number).trim();
+    const result = await pool.query(
+      `SELECT driver_id FROM drivers
+       WHERE class = $1 AND race_number = $2
+         AND (is_deleted = FALSE OR is_deleted IS NULL)
+         AND ($3::varchar IS NULL OR driver_id != $3)
+       LIMIT 1`,
+      [klass, trimmed, driver_id || null]
+    );
+
+    res.json({ success: true, data: { available: result.rows.length === 0 } });
+  } catch (err) {
     res.status(400).json({ success: false, error: { message: err.message } });
   }
 });
@@ -9643,7 +9722,8 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
       'Name', 'Race #', 'Class', 'Payment Status',
       'Entry Fee (R)', 'Engine Rental (R)', 'Tyre Set (R)', 'Wet Tyres (R)',
       'Practice Tyres (R)', 'Transponder (R)', 'Fuel (R)', 'Calculated Total (R)',
-      'Amount Paid (R)', 'Difference (R)', 'Notes'
+      'Amount Paid (R)', 'Difference (R)',
+      'Engine Rentals (Qty)', 'Tyre Sets (Qty)', 'Notes'
     ];
 
     // Running totals
@@ -9669,6 +9749,8 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
       const cfg = pricingMap[normalizeClassKey(entry.race_class)] || pricingMap[normalizeClassKey(entry.race_class || '')] || null;
       const hasDateRangeBothDays = !!(entry.start_date && entry.end_date && new Date(entry.end_date) > new Date(entry.start_date));
       const hasBothDays = isBothDaysValue(entry.race_days) || hasDateRangeBothDays;
+      const isCadet = normalizeClassKey(entry.race_class).includes('CADET');
+      const dailyAllocationQty = isCadet ? '' : (hasBothDays ? 2 : 1);
       const practiceQty = items.reduce((sum, item) => item.includes('practice') ? sum + qtyFromItem(item) : sum, 0);
       const tyreQty = items.reduce((sum, item) => (item.includes('tyre') && !item.includes('wet') && !item.includes('practice')) ? sum + qtyFromItem(item) : sum, 0);
 
@@ -9724,6 +9806,8 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
         fmt(calcTotal),
         fmt(amtPaid),
         fmt(diff),
+        dailyAllocationQty,
+        dailyAllocationQty,
         escCSV(notes.join('; '))
       ].join(',');
     });
@@ -9741,6 +9825,8 @@ app.post('/api/exportFinancialReportCSV', async (req, res) => {
       fmt(grandCalc),
       fmt(grandPaid),
       fmt(grandPaid - grandCalc),
+      '',
+      '',
       ''
     ].join(',');
 
