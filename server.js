@@ -8111,6 +8111,31 @@ app.get('/api/driver-points/:driverId', async (req, res) => {
 });
 
 // Get championship standings for a specific class/season/championship_type
+// Per weekend (rounds 1&2, 3&4, 5&6, 7&8), drop the single lowest eligible heat.
+// A started numeric zero is protected; a round the driver didn't enter contributes zero
+// and isn't eligible for the drop. Mirrors the client-side calcScores() in
+// sa-nationals-standings.html so every view of the championship agrees on the same number.
+function calcAdjustedTotal(roundsByNumber) {
+  let full = 0;
+  let dropSum = 0;
+  for (const heats of Object.values(roundsByNumber)) {
+    if (heats) heats.forEach(h => { full += (h === null || h === undefined) ? 0 : Number(h); });
+  }
+  for (let wi = 0; wi < 4; wi++) {
+    const ra = roundsByNumber[wi * 2 + 1] || null;
+    const rb = roundsByNumber[wi * 2 + 2] || null;
+    if (!ra && !rb) continue;
+    const raArr = ra || [0, 0, 0], rbArr = rb || [0, 0, 0];
+    const heats = [];
+    raArr.forEach(h => heats.push({ val: Number(h) || 0, eligible: Number(h) > 0 || !ra }));
+    rbArr.forEach(h => heats.push({ val: Number(h) || 0, eligible: Number(h) > 0 || !rb }));
+    let minVal = Infinity, minIdx = -1;
+    heats.forEach((o, i) => { if (o.eligible && o.val < minVal) { minVal = o.val; minIdx = i; } });
+    if (minIdx !== -1) dropSum += heats[minIdx].val;
+  }
+  return { full, adjusted: full - dropSum };
+}
+
 app.get('/api/championship-standings/:season/:class', async (req, res) => {
   try {
     const { season, class: raceClass } = req.params;
@@ -8120,27 +8145,50 @@ app.get('/api/championship-standings/:season/:class', async (req, res) => {
       throw new Error('Season and class required');
     }
 
-    // Get standings with driver info (exclude test/admin entries)
+    // Fetch per-round heat data so the weekend drop rule can be applied (exclude test/admin entries)
     const result = await pool.query(
       `SELECT d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name,
-              SUM(p.total_points) as total_points,
-              COUNT(p.points_id) as races_completed,
-              MIN(p.position::text) as best_position
+              p.round, p.heat1_points, p.heat2_points, p.final_points, p.position
        FROM points p
        JOIN drivers d ON p.driver_id = d.driver_id
        WHERE p.season = $1 AND p.class = $2
          AND COALESCE(p.championship_type, 'Northern Regions') = $3
          AND (p.notes IS NULL OR p.notes NOT LIKE '%TEST ENTRY%')
-       GROUP BY d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name
-       ORDER BY total_points DESC, races_completed DESC`,
+       ORDER BY d.driver_id, p.round::int`,
       [season, raceClass, champType]
     );
 
-    console.log(`✅ Retrieved championship standings: ${season} ${raceClass} - ${result.rows.length} drivers`);
+    const byDriver = new Map();
+    for (const row of result.rows) {
+      if (!byDriver.has(row.driver_id)) {
+        byDriver.set(row.driver_id, {
+          driver_id: row.driver_id, first_name: row.first_name, last_name: row.last_name,
+          race_number: row.race_number, team_name: row.team_name,
+          races_completed: 0, best_position: null, rounds: {}
+        });
+      }
+      const d = byDriver.get(row.driver_id);
+      d.races_completed++;
+      const posNum = parseInt(row.position, 10);
+      if (!Number.isNaN(posNum) && (d.best_position === null || posNum < d.best_position)) d.best_position = posNum;
+      d.rounds[parseInt(row.round, 10)] = [row.heat1_points, row.heat2_points, row.final_points];
+    }
+
+    const standings = Array.from(byDriver.values()).map(d => {
+      const { full, adjusted } = calcAdjustedTotal(d.rounds);
+      return {
+        driver_id: d.driver_id, first_name: d.first_name, last_name: d.last_name,
+        race_number: d.race_number, team_name: d.team_name,
+        total_points: adjusted, full_total_points: full,
+        races_completed: d.races_completed, best_position: d.best_position
+      };
+    }).sort((a, b) => (b.total_points - a.total_points) || (b.races_completed - a.races_completed));
+
+    console.log(`✅ Retrieved championship standings: ${season} ${raceClass} - ${standings.length} drivers`);
     
     res.json({ 
       success: true, 
-      standings: result.rows,
+      standings,
       season,
       class: raceClass
     });

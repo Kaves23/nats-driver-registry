@@ -2308,6 +2308,7 @@
   
   <nav class="portal-sidebar" aria-label="Driver portal navigation">
     <button class="portal-sidebar-item" data-ptab="driver" data-accent="summer" type="button">Driver Profile</button>
+    <button class="portal-sidebar-item" data-ptab="raceNumber" data-accent="summer" type="button">Race Number</button>
     <button class="portal-sidebar-item" data-ptab="card" data-accent="spring" type="button">Driver Card</button>
     <button class="portal-sidebar-item" data-ptab="events" data-accent="spring" type="button">My Events</button>
     <button class="portal-sidebar-item active" data-ptab="points" data-accent="summer" type="button">Points</button>
@@ -2433,6 +2434,7 @@
             <!-- Portal tabs -->
             <div id="portalTabs" class="portalTabs" style="display:none; margin-top:0;">
               <button class="ptab" data-ptab="driver" data-accent="summer" type="button"><span class="tabBar"></span>Driver</button>
+              <button class="ptab" data-ptab="raceNumber" data-accent="summer" type="button"><span class="tabBar"></span>Race Number</button>
               <button class="ptab" data-ptab="card" data-accent="spring" type="button"><span class="tabBar"></span>Driver Card</button>
               <button class="ptab" data-ptab="events" data-accent="spring" type="button"><span class="tabBar"></span>My Events</button>
               <button class="ptab active" data-ptab="points" data-accent="summer" type="button"><span class="tabBar"></span>Points</button>
@@ -2459,6 +2461,9 @@
                 <div class="portalTab-menu-grid">
                   <button class="portalTab-option" data-ptab="driver">
                     <span class="portalTab-option-label">Driver Profile</span>
+                  </button>
+                  <button class="portalTab-option" data-ptab="raceNumber">
+                    <span class="portalTab-option-label">Race Number</span>
                   </button>
                   <button class="portalTab-option" data-ptab="card">
                     <span class="portalTab-option-label">Driver Card</span>
@@ -2519,12 +2524,9 @@
                         <option value="KZ2">KZ2</option>
                       </select>
                     </div>
-                    <div>
-                      <label>Race number</label>
-                      <input id="p_race_number" placeholder="e.g. 27" />
-                      <div id="p_race_number_hint" class="hint" style="margin-top:4px;"></div>
-                    </div>
                   </div>
+
+                  <div class="hint" style="margin-top:-4px;">Your racing number is now managed on its own <strong>Race Number</strong> tab.</div>
 
                   <div class="row">
                     <div>
@@ -2581,6 +2583,29 @@
                 <div class="panel" style="margin-top:14px;">
                   <div class="panelTitle"><span class="accentBar" style="background:var(--winter)"></span>Medical &amp; Consent</div>
                   <div id="p_medicalBlock" class="hint">No data loaded.</div>
+                </div>
+              </div>
+
+              <div class="portalSection" data-psection="raceNumber">
+                <div class="panel">
+                  <div class="panelTitle"><span class="accentBar" style="background:var(--summer)"></span>Race Number</div>
+                  <div class="hint">Choose your racing number for next season. Numbers must be unique within your class - we'll tell you right away if a number is already taken.</div>
+
+                  <div class="row">
+                    <div>
+                      <label>Class</label>
+                      <input id="rn_class_display" readonly placeholder="Set your class in Driver Profile first" />
+                    </div>
+                    <div>
+                      <label>Race number</label>
+                      <input id="p_race_number" placeholder="e.g. 27" />
+                      <div id="p_race_number_hint" class="hint" style="margin-top:4px;"></div>
+                    </div>
+                  </div>
+
+                  <div class="btnbar">
+                    <button class="btn primary" id="btnSaveRaceNumber" type="button" disabled>Save Race Number</button>
+                  </div>
                 </div>
               </div>
 
@@ -3849,6 +3874,7 @@
       if(currentLabel) {
         const labels = {
           'driver': 'Driver',
+          'raceNumber': 'Race Number',
           'card': 'Driver Card',
           'contacts': 'Entrant',
           'medical': 'Medical',
@@ -4047,6 +4073,8 @@
       document.getElementById("btnLogout").disabled = true;
       document.getElementById("btnSaveProfile").disabled = true;
       document.getElementById("btnSendRequest").disabled = true;
+      const btnSaveRaceNumberLogout = document.getElementById("btnSaveRaceNumber");
+      if (btnSaveRaceNumberLogout) btnSaveRaceNumberLogout.disabled = true;
       
       // Hide inline status buttons
       const inlineBtns = document.getElementById("statusInlineButtons");
@@ -4056,6 +4084,10 @@
 
       ["p_first_name","p_last_name","p_class","p_race_number","p_license_number","p_transponder_number","p_kart_brand","p_team_name","p_coach_name"]
         .forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+      const rnClassDisplayLogout = document.getElementById("rn_class_display");
+      if (rnClassDisplayLogout) rnClassDisplayLogout.value = "";
+      const rnHintLogout = document.getElementById("p_race_number_hint");
+      if (rnHintLogout) rnHintLogout.textContent = "";
 
       document.getElementById("p_contactsTable").innerHTML = `<div class="hint">No data loaded.</div>`;
       document.getElementById("p_medicalBlock").innerHTML = `<div class="hint">No data loaded.</div>`;
@@ -4092,6 +4124,8 @@
       document.getElementById("btnLogout").disabled = false;
       document.getElementById("btnSaveProfile").disabled = false;
       document.getElementById("btnSendRequest").disabled = false;
+      const btnSaveRaceNumber = document.getElementById("btnSaveRaceNumber");
+      if (btnSaveRaceNumber) btnSaveRaceNumber.disabled = false;
       
       // Show inline status buttons (Logout/Home in status card header)
       const inlineBtns = document.getElementById("statusInlineButtons");
@@ -4108,6 +4142,8 @@
       document.getElementById("p_last_name").value = d.last_name || "";
       document.getElementById("p_class").value = d.class || "";
       document.getElementById("p_race_number").value = d.race_number || "";
+      const rnClassDisplay = document.getElementById("rn_class_display");
+      if (rnClassDisplay) rnClassDisplay.value = d.class || "";
       document.getElementById("p_license_number").value = d.license_number || "";
       document.getElementById("p_transponder_number").value = d.transponder_number || "";
 
@@ -6208,12 +6244,6 @@
 
         setButtonLoading_(btn, true, "Save Changes");
 
-        // Re-validate race number availability right before saving
-        const raceNumberOk = await checkRaceNumberAvailability_();
-        if (!raceNumberOk) {
-          throw new Error("That race number is already taken in this class. Please choose a different number.");
-        }
-
         const updatedProfile = {
           driver_id: currentDriverId,
           email: currentEmail,
@@ -6221,7 +6251,6 @@
           first_name: document.getElementById("p_first_name").value.trim(),
           last_name: document.getElementById("p_last_name").value.trim(),
           class: document.getElementById("p_class").value.trim(),
-          race_number: document.getElementById("p_race_number").value.trim(),
           license_number: document.getElementById("p_license_number").value.trim(),
           transponder_number: document.getElementById("p_transponder_number").value.trim(),
           kart_brand: document.getElementById("p_kart_brand").value.trim(),
@@ -6248,7 +6277,8 @@
           document.getElementById("p_first_name").value = d.first_name || "";
           document.getElementById("p_last_name").value = d.last_name || "";
           document.getElementById("p_class").value = d.class || "";
-          document.getElementById("p_race_number").value = d.race_number || "";
+          const rnClassDisplaySync = document.getElementById("rn_class_display");
+          if (rnClassDisplaySync) rnClassDisplaySync.value = d.class || "";
           document.getElementById("p_license_number").value = d.license_number || "";
           document.getElementById("p_transponder_number").value = d.transponder_number || "";
           document.getElementById("p_kart_brand").value = d.kart_brand || "";
@@ -6281,6 +6311,8 @@
     document.getElementById("p_class").addEventListener("change", function() {
       const selectedClass = this.value;
       const classColor = classColors[selectedClass] || '#9ca3af';
+      const rnClassDisplayChange = document.getElementById("rn_class_display");
+      if (rnClassDisplayChange) rnClassDisplayChange.value = selectedClass;
       
       // Update the class display in the status card if logged in
       if (currentProfile && currentProfile.driver) {
@@ -6295,6 +6327,45 @@
         });
       }
       checkRaceNumberAvailability_();
+    });
+
+    document.getElementById("btnSaveRaceNumber").addEventListener("click", async ()=>{
+      const btn = document.getElementById("btnSaveRaceNumber");
+      try {
+        toast("", "");
+        if(!currentEmail || !currentPassword) throw new Error("Not logged in.");
+
+        const cls = document.getElementById("p_class").value.trim();
+        const raceNumber = document.getElementById("p_race_number").value.trim();
+        if (!cls) throw new Error("Please set your class in Driver Profile before choosing a race number.");
+        if (!raceNumber) throw new Error("Please enter a race number.");
+
+        setButtonLoading_(btn, true, "Save Race Number");
+
+        const raceNumberOk = await checkRaceNumberAvailability_();
+        if (!raceNumberOk) {
+          throw new Error("That race number is already taken in this class. Please choose a different number.");
+        }
+
+        const result = await api('updateDriver', {
+          driver_id: currentDriverId,
+          email: currentEmail,
+          password: currentPassword,
+          race_number: raceNumber
+        });
+
+        await showConfirmation("Race Number Saved", `Your race number #${raceNumber} has been saved for ${cls}.`);
+
+        if (result.driver) {
+          currentProfile = result.driver;
+          document.getElementById("p_race_number").value = result.driver.race_number || "";
+        }
+      } catch(err) {
+        console.error("Save race number error:", err);
+        toast("bad", err.message || "Failed to save race number.");
+      } finally {
+        setButtonLoading_(btn, false, "Save Race Number");
+      }
     });
 
     // Race number uniqueness-per-class check ---------------------------------
