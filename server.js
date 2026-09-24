@@ -8088,6 +8088,63 @@ app.get('/api/driver-points/:driverId', async (req, res) => {
       [driverId]
     );
 
+    // Mark each NATS row with the drop-adjusted (net) total and whether it holds the
+    // dropped heat, and add a gross/adjusted pair to each NATS seasonTotals entry.
+    const natsRows = pointsResult.rows.filter(p => p.championship_type === 'ROK NATS');
+    const natsByClass = new Map();
+    for (const row of natsRows) {
+      if (!natsByClass.has(row.class)) natsByClass.set(row.class, {});
+      natsByClass.get(row.class)[parseInt(row.round, 10)] = [row.heat1_points, row.heat2_points, row.final_points];
+    }
+    const droppedHeatsByClass = new Map(); // class -> Set of "round-heatIndex"
+    const adjustedByClass = new Map(); // class -> {full, adjusted}
+    for (const [cls, rounds] of natsByClass) {
+      const { full, adjusted, droppedKeys } = calcAdjustedTotalWithDrops(rounds);
+      adjustedByClass.set(cls, { full, adjusted });
+      droppedHeatsByClass.set(cls, droppedKeys);
+    }
+    const points = pointsResult.rows.map(p => {
+      if (p.championship_type !== 'ROK NATS') return p;
+      const dropped = droppedHeatsByClass.get(p.class) || new Set();
+      const rnd = parseInt(p.round, 10);
+      return {
+        ...p,
+        heat1_dropped: dropped.has(`${rnd}-0`),
+        heat2_dropped: dropped.has(`${rnd}-1`),
+        final_dropped: dropped.has(`${rnd}-2`)
+      };
+    });
+    const seasonTotalsOut = seasonTotals.rows.map(s => {
+      if (s.championship_type !== 'ROK NATS') return s;
+      const adj = adjustedByClass.get(s.class);
+      return { ...s, full_total_points: adj ? adj.full : Number(s.total_points), adjusted_total_points: adj ? adj.adjusted : Number(s.total_points) };
+    });
+
+    // Regional score = NR Round 1 + NATS Round 1 & 2 (Summer Nats) + NATS Round 5 & 6
+    // (Winter Nats) = 5 races. Simple sum, no drop applied.
+    const REGIONAL_LEGS = [
+      { champ: 'Northern Regions', round: '1', label: 'Northern Regions · Rd 1' },
+      { champ: 'ROK NATS', round: '1', label: 'Summer Nats · Rd 1' },
+      { champ: 'ROK NATS', round: '2', label: 'Summer Nats · Rd 2' },
+      { champ: 'ROK NATS', round: '5', label: 'Winter Nats · Rd 1' },
+      { champ: 'ROK NATS', round: '6', label: 'Winter Nats · Rd 2' }
+    ];
+    const regionalClasses = [...new Set(pointsResult.rows.map(p => p.class))];
+    const regional = regionalClasses.map(cls => {
+      const races = REGIONAL_LEGS.map(leg => {
+        const row = pointsResult.rows.find(p => p.class === cls && p.championship_type === leg.champ && String(p.round) === leg.round);
+        return {
+          label: leg.label,
+          event: row ? row.event : null,
+          total_points: row ? Number(row.total_points) : null,
+          present: !!row
+        };
+      });
+      const total_points = races.reduce((sum, r) => sum + (r.total_points || 0), 0);
+      const races_completed = races.filter(r => r.present).length;
+      return { season: '2026', class: cls, total_points, races_completed, races };
+    }).filter(r => r.races_completed > 0);
+
     // Get driver info for display
     const driverInfo = await pool.query(
       `SELECT first_name, last_name, race_number, class, championship
@@ -8100,8 +8157,9 @@ app.get('/api/driver-points/:driverId', async (req, res) => {
     
     res.json({ 
       success: true, 
-      points: pointsResult.rows,
-      seasonTotals: seasonTotals.rows,
+      points,
+      seasonTotals: seasonTotalsOut,
+      regional,
       driver: driverInfo.rows[0] || {}
     });
   } catch (err) {
@@ -8132,6 +8190,31 @@ function calcAdjustedTotal(roundsByNumber) {
     dropSum += Math.min(...allHeats);
   }
   return { full, adjusted: full - dropSum };
+}
+
+// Same as calcAdjustedTotal but also returns which exact (round, heatIndex) got dropped,
+// so a per-race table can mark it (e.g. strikethrough) for a single driver's view.
+function calcAdjustedTotalWithDrops(roundsByNumber) {
+  let full = 0;
+  for (const heats of Object.values(roundsByNumber)) {
+    if (heats) heats.forEach(h => { full += (h === null || h === undefined) ? 0 : Number(h); });
+  }
+  let dropSum = 0;
+  const droppedKeys = new Set();
+  for (let wi = 0; wi < 4; wi++) {
+    const ra = roundsByNumber[wi * 2 + 1];
+    const rb = roundsByNumber[wi * 2 + 2];
+    if (!Array.isArray(ra) || !Array.isArray(rb)) continue;
+    const heats = [];
+    ra.forEach((h, hi) => { if (h !== null && h !== undefined) heats.push({ round: wi * 2 + 1, hi, val: Number(h) }); });
+    rb.forEach((h, hi) => { if (h !== null && h !== undefined) heats.push({ round: wi * 2 + 2, hi, val: Number(h) }); });
+    if (!heats.length) continue;
+    let minIdx = 0;
+    heats.forEach((o, i) => { if (o.val < heats[minIdx].val) minIdx = i; });
+    dropSum += heats[minIdx].val;
+    droppedKeys.add(`${heats[minIdx].round}-${heats[minIdx].hi}`);
+  }
+  return { full, adjusted: full - dropSum, droppedKeys };
 }
 
 app.get('/api/championship-standings/:season/:class', async (req, res) => {

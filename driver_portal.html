@@ -4659,10 +4659,23 @@
                   <div style="font-size:10px;color:${accentDark};opacity:0.75;">National standings · ${escapeHtml(s.class)}</div>
                 </div>
               </div>` : '';
+            const hasAdjusted = s.adjusted_total_points !== undefined && s.adjusted_total_points !== s.full_total_points;
+            const scoreBlock = hasAdjusted ? `
+              <div style="display:flex;gap:14px;margin-bottom:4px;">
+                <div>
+                  <div style="font-size:28px;font-weight:800;color:${accentDark};line-height:1;">${escapeHtml(s.adjusted_total_points)}</div>
+                  <div style="font-size:10px;font-weight:700;color:${accentDark};text-transform:uppercase;letter-spacing:0.5px;">Actual (after drops)</div>
+                </div>
+                <div style="padding-left:14px;border-left:1px solid ${accentColor}40;">
+                  <div style="font-size:20px;font-weight:700;color:${accentDark};opacity:0.7;line-height:1.4;">${escapeHtml(s.full_total_points)}</div>
+                  <div style="font-size:10px;font-weight:700;color:${accentDark};opacity:0.7;text-transform:uppercase;letter-spacing:0.5px;">Gross (before drops)</div>
+                </div>
+              </div>` : `
+              <div style="font-size:28px;font-weight:800;color:${accentDark};margin-bottom:4px;">${escapeHtml(s.total_points||0)}</div>
+              <div style="font-size:10px;font-weight:700;color:${accentDark};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Total Points</div>`;
             return `
               <div style="flex:1;min-width:0;max-width:340px;padding:18px;background:${cardGrad};border-radius:8px;border:2px solid ${accentBorder};box-shadow:0 4px 12px ${accentColor}30;">
-                <div style="font-size:28px;font-weight:800;color:${accentDark};margin-bottom:4px;">${escapeHtml(s.total_points||0)}</div>
-                <div style="font-size:10px;font-weight:700;color:${accentDark};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Total Points</div>
+                ${scoreBlock}
                 <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid ${accentColor}40;">
                   <div>
                     <div style="font-size:17px;font-weight:700;color:${accentDark};">${escapeHtml(s.races_completed)}</div>
@@ -4697,15 +4710,22 @@
             const bg  = i % 2 === 0 ? '#111' : '#0a0a0a';
             const tc  = p.total_points >= 75 ? '#16a34a' : p.total_points >= 50 ? '#d97706' : '#6b7280';
             const dsqNote = p.notes && p.notes.includes('DSQ') ? ` <span style="font-size:10px;color:#dc2626;font-weight:700;">DSQ</span>` : '';
+            const heatCell = (val, isDropped) => {
+              const display = (val === null || val === undefined) ? '—' : val;
+              if (isDropped) {
+                return `<span style="text-decoration:line-through;opacity:0.55;">${display}</span> <span style="font-size:9px;font-weight:700;color:#dc2626;background:#dc262620;padding:1px 5px;border-radius:3px;">DROP</span>`;
+              }
+              return String(display);
+            };
             return `
               <tr style="border-bottom:1px solid #1f1f1f;background:${bg};" onmouseover="this.style.background='#1a1a1a'" onmouseout="this.style.background='${bg}'">
                 <td style="padding:10px 8px;">
                   <div style="font-weight:600;color:var(--ink);font-size:13px;">${escapeHtml(p.event||'Event')}</div>
                   <div style="font-size:11px;color:var(--muted);margin-top:2px;">Round ${escapeHtml(String(p.round||'—'))} · ${escapeHtml(p.class||'')}</div>
                 </td>
-                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.heat1_points||'—'}${p.notes&&p.notes.includes('R1')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
-                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.heat2_points||'—'}${p.notes&&p.notes.includes('R2')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
-                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${p.final_points||'—'}${p.notes&&p.notes.includes('R3')&&p.notes.includes('DSQ')?' <span style="color:#dc2626;font-size:10px">✕</span>':''}</td>
+                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${heatCell(p.heat1_points, p.heat1_dropped)}</td>
+                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${heatCell(p.heat2_points, p.heat2_dropped)}</td>
+                <td style="padding:10px 8px;text-align:center;font-size:13px;color:var(--muted);">${heatCell(p.final_points, p.final_dropped)}</td>
                 <td style="padding:10px 8px;text-align:center;">
                   <div style="font-size:15px;font-weight:700;color:${tc};">${p.total_points||0}${dsqNote}</div>
                 </td>
@@ -4744,7 +4764,67 @@
             </div>`;
         }
 
-        const nrSection   = buildChampSection('Northern Regions', data.points, data.seasonTotals, true,  {});
+        // Regional score = Northern Regions Rd1 + Summer Nats Rd1&2 + Winter Nats Rd1&2
+        // (5 races, simple sum, no drop) - see data.regional from /api/driver-points
+        function buildRegionalSection(regional) {
+          const accentColor = '#0ea5e9', accentLight = '#e0f2fe', accentDark = '#0c4a6e', accentBorder = '#7dd3fc';
+          const cardGrad = 'linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%)';
+          if (!regional || !regional.length) {
+            return `
+              <div style="margin-bottom:32px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${accentColor};">
+                  <span style="font-size:17px;font-weight:700;color:var(--ink);">🗺️ Northern Regions Championship</span>
+                  <span style="font-size:12px;background:${accentLight};color:${accentDark};padding:3px 10px;border-radius:20px;font-weight:600;">0 points</span>
+                </div>
+                <div style="text-align:center;padding:32px 20px;color:var(--muted);background:#0f0f0f;border-radius:8px;border:1px dashed #1f1f1f;">
+                  <div style="font-size:32px;margin-bottom:10px;opacity:0.3;">🗺️</div>
+                  <div style="font-size:14px;">No Regional results yet.</div>
+                  <div style="font-size:12px;margin-top:4px;opacity:0.7;">Regional score = Northern Regions Rd1 + Summer Nats Rd1&2 + Winter Nats Rd1&2 (5 races, no drop).</div>
+                </div>
+              </div>`;
+          }
+          const sections = regional.map(r => {
+            const rows = r.races.map(race => `
+              <tr style="border-bottom:1px solid #1f1f1f;">
+                <td style="padding:10px 8px;font-size:13px;color:var(--ink);font-weight:600;">${escapeHtml(race.label)}</td>
+                <td style="padding:10px 8px;font-size:12px;color:var(--muted);">${race.event ? escapeHtml(race.event) : '<span style="opacity:0.5;">Not yet raced</span>'}</td>
+                <td style="padding:10px 8px;text-align:center;font-size:14px;font-weight:700;color:${race.present ? accentDark : '#6b7280'};">${race.present ? race.total_points : '—'}</td>
+              </tr>`).join('');
+            return `
+              <div style="margin-bottom:18px;">
+                <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:stretch;margin-bottom:12px;">
+                  <div style="flex:1;min-width:0;max-width:340px;padding:18px;background:${cardGrad};border-radius:8px;border:2px solid ${accentBorder};box-shadow:0 4px 12px ${accentColor}30;">
+                    <div style="font-size:28px;font-weight:800;color:${accentDark};margin-bottom:4px;">${r.total_points}</div>
+                    <div style="font-size:10px;font-weight:700;color:${accentDark};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Regional Total (sum, no drop)</div>
+                    <div style="font-size:12px;font-weight:600;color:${accentDark};">${r.races_completed} of 5 races counted · ${escapeHtml(r.class)}</div>
+                  </div>
+                </div>
+                <div style="overflow-x:auto;border-radius:8px;border:1px solid #1f1f1f;">
+                  <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                      <tr style="background:#0f0f0f;border-bottom:2px solid ${accentColor}40;">
+                        <th style="padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Race</th>
+                        <th style="padding:10px 8px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Event</th>
+                        <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">Points</th>
+                      </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                  </table>
+                </div>
+              </div>`;
+          }).join('');
+          const grandTotal = regional.reduce((s, r) => s + r.total_points, 0);
+          return `
+            <div style="margin-bottom:32px;">
+              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid ${accentColor};">
+                <span style="font-size:17px;font-weight:700;color:var(--ink);">🗺️ Northern Regions Championship</span>
+                <span style="font-size:12px;background:${accentLight};color:${accentDark};padding:3px 10px;border-radius:20px;font-weight:600;">${grandTotal} pts total</span>
+              </div>
+              ${sections}
+            </div>`;
+        }
+
+        const nrSection   = buildRegionalSection(data.regional);
         const natsSection = buildChampSection('ROK NATS',         data.points, data.seasonTotals, false, natsRankMap);
 
         // ── Championship Gap Visualiser ──────────────────────────────────────
