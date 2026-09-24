@@ -326,8 +326,10 @@
         +Array(8).fill('<div class="skel" style="height:52px;margin-bottom:1px;"></div>').join('')
         +'</div>';
     }
-    // Per weekend, drop the single lowest eligible heat. A started numeric zero is
-    // protected; null marks a DSQ/exclusion and is also protected. A missing round contributes zero.
+    // Per weekend, drop the single lowest heat - simple MIN over all 6 heat values for
+    // that weekend, matching the master championship workbook's Excel formula exactly:
+    // IF(AND(COUNTA(day1)>0,COUNTA(day2)>0), MIN(day1:day2), 0). No exception for a
+    // scored zero - it's just as droppable as any other value.
     function calcScores(driver){
       var full=0;
       driver.rounds.forEach(function(r){
@@ -337,15 +339,13 @@
       var droppedHeat={};
       WEEKENDS.forEach(function(wk,wi){
         var ra=driver.rounds[wi*2],rb=driver.rounds[wi*2+1];
-        if(ra===null&&rb===null)return;
-        var raArr=ra===null?[0,0,0]:ra, rbArr=rb===null?[0,0,0]:rb;
-        var raFull=ra!==null, rbFull=rb!==null;
+        if(ra===null||rb===null)return;
         var heats=[];
-        raArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2,hi:hi,val:v,eligible:h>0||!raFull});});
-        rbArr.forEach(function(h,hi){var v=hv(h);heats.push({ri:wi*2+1,hi:hi,val:v,eligible:h>0||!rbFull});});
-        var minVal=Infinity,minIdx=-1;
-        heats.forEach(function(o,i){if(o.eligible&&o.val<minVal){minVal=o.val;minIdx=i;}});
-        if(minIdx===-1)return;
+        ra.forEach(function(h,hi){if(h!==null&&h!==undefined)heats.push({ri:wi*2,hi:hi,val:hv(h)});});
+        rb.forEach(function(h,hi){if(h!==null&&h!==undefined)heats.push({ri:wi*2+1,hi:hi,val:hv(h)});});
+        if(!heats.length)return;
+        var minIdx=0;
+        heats.forEach(function(o,i){if(o.val<heats[minIdx].val)minIdx=i;});
         droppedHeat[heats[minIdx].ri+'-'+heats[minIdx].hi]=heats[minIdx].val;
       });
       var dropSum=0;

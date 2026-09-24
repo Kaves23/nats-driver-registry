@@ -8111,27 +8111,25 @@ app.get('/api/driver-points/:driverId', async (req, res) => {
 });
 
 // Get championship standings for a specific class/season/championship_type
-// Per weekend (rounds 1&2, 3&4, 5&6, 7&8), drop the single lowest eligible heat.
-// A started numeric zero is protected; a round the driver didn't enter contributes zero
-// and isn't eligible for the drop. Mirrors the client-side calcScores() in
-// sa-nationals-standings.html so every view of the championship agrees on the same number.
+// Per weekend (rounds 1&2, 3&4, 5&6, 7&8), drop the single lowest heat - simple MIN
+// over all 6 heat values, exactly matching the master championship workbook's Excel
+// formula: IF(AND(COUNTA(day1)>0,COUNTA(day2)>0), MIN(day1:day2), 0). No drop unless
+// the driver has at least one entered value on both days of that weekend.
 function calcAdjustedTotal(roundsByNumber) {
   let full = 0;
-  let dropSum = 0;
   for (const heats of Object.values(roundsByNumber)) {
     if (heats) heats.forEach(h => { full += (h === null || h === undefined) ? 0 : Number(h); });
   }
+  let dropSum = 0;
   for (let wi = 0; wi < 4; wi++) {
-    const ra = roundsByNumber[wi * 2 + 1] || null;
-    const rb = roundsByNumber[wi * 2 + 2] || null;
-    if (!ra && !rb) continue;
-    const raArr = ra || [0, 0, 0], rbArr = rb || [0, 0, 0];
-    const heats = [];
-    raArr.forEach(h => heats.push({ val: Number(h) || 0, eligible: Number(h) > 0 || !ra }));
-    rbArr.forEach(h => heats.push({ val: Number(h) || 0, eligible: Number(h) > 0 || !rb }));
-    let minVal = Infinity, minIdx = -1;
-    heats.forEach((o, i) => { if (o.eligible && o.val < minVal) { minVal = o.val; minIdx = i; } });
-    if (minIdx !== -1) dropSum += heats[minIdx].val;
+    const ra = roundsByNumber[wi * 2 + 1];
+    const rb = roundsByNumber[wi * 2 + 2];
+    // A round "counts" as attempted if it has a row at all (matches Excel's COUNTA,
+    // which treats a DSQ/DNS text cell as present even though it holds no points).
+    if (!Array.isArray(ra) || !Array.isArray(rb)) continue;
+    const allHeats = [...ra, ...rb].filter(h => h !== null && h !== undefined).map(Number);
+    if (!allHeats.length) continue;
+    dropSum += Math.min(...allHeats);
   }
   return { full, adjusted: full - dropSum };
 }
