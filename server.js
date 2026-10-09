@@ -437,6 +437,25 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000  // Fail fast if can't connect in 5s
 });
 
+let driverIdentitySchemaPromise;
+function ensureDriverIdentityColumns() {
+  if (!driverIdentitySchemaPromise) {
+    driverIdentitySchemaPromise = pool.query(`
+      ALTER TABLE drivers
+        ADD COLUMN IF NOT EXISTS id_or_passport_number VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS id_or_passport_masked VARCHAR(20)
+    `).catch(err => {
+      driverIdentitySchemaPromise = null;
+      throw err;
+    });
+  }
+  return driverIdentitySchemaPromise;
+}
+
+ensureDriverIdentityColumns().catch(err => {
+  console.error('Driver identity columns initialization failed:', err.message);
+});
+
 // Handle pool errors to prevent crashes
 pool.on('error', (err, client) => {
   console.error('❌ PostgreSQL pool error:', err.message);
@@ -2796,6 +2815,10 @@ app.post('/api/loginWithPassword', validateBody(loginSchema), async (req, res) =
       return res.status(400).json({ success: false, error: { message: 'Invalid email or password' } });
     }
 
+    const driverProfile = { ...driver };
+    delete driverProfile.id_or_passport_number;
+    delete driverProfile.id_or_passport_masked;
+
     // Successful login - clear rate limit counter
     clearLoginAttempts(clientIp);
 
@@ -2818,7 +2841,7 @@ app.post('/api/loginWithPassword', validateBody(loginSchema), async (req, res) =
     res.json({
       success: true,
       data: {
-        driver: driver,
+        driver: driverProfile,
         contacts: contacts.rows,
         medical: medical.rows[0] || {},
         points: points.rows
@@ -2882,6 +2905,8 @@ app.get('/api/debug/contacts-sample', requireAdmin, async (req, res) => {
 app.post('/api/registerDriver', validateBody(registerDriverSchema), async (req, res) => {
   const client = await pool.connect();
   try {
+    await ensureDriverIdentityColumns();
+
     console.log('📥 registerDriver request received:', {
       first_name: req.body.first_name,
       last_name: req.body.last_name,
@@ -2940,21 +2965,18 @@ app.post('/api/registerDriver', validateBody(registerDriverSchema), async (req, 
       throw new Error('Failed to create driver record: ' + insertErr.message);
     }
 
-    // Try to update with additional optional fields
-    try {
-      await client.query(
-        `UPDATE drivers SET date_of_birth = $1, nationality = $2, gender = $3,
-          championship = $4, class = $5, race_number = $6,
-          team_name = $7, coach_name = $8, kart_brand = $9, engine_type = $10,
-          transponder_number = $11, license_number = $12, msa_license_number = $12
-        WHERE driver_id = $13`,
-        [date_of_birth, nationality, gender, championship, klass,
-          race_number, team_name, coach_name, kart_brand, engine_type, transponder_number, id_or_passport_number, driver_id]
-      );
-      console.log(`✅ Driver additional fields updated`);
-    } catch (e) {
-      console.log('⚠️ Could not update additional driver fields:', e.message);
-    }
+    const identityNumber = String(id_or_passport_number || '').trim();
+    await client.query(
+      `UPDATE drivers SET date_of_birth = $1, nationality = $2, gender = $3,
+        championship = $4, class = $5, race_number = $6,
+        team_name = $7, coach_name = $8, kart_brand = $9, engine_type = $10,
+        transponder_number = $11, id_or_passport_number = $12, id_or_passport_masked = $13
+      WHERE driver_id = $14`,
+      [date_of_birth, nationality, gender, championship, klass,
+        race_number, team_name, coach_name, kart_brand, engine_type, transponder_number,
+        identityNumber || null, identityNumber ? identityNumber.slice(-4) : null, driver_id]
+    );
+    console.log('✅ Driver additional fields updated');
 
     // Insert email as first contact - REQUIRED
     try {
@@ -4038,6 +4060,40 @@ app.get('/api/check-schema', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/api/admin/driver-identity/:driverId', async (req, res) => {
+  try {
+    await ensureDriverIdentityColumns();
+    const result = await pool.query(
+      `SELECT id_or_passport_number, id_or_passport_masked,
+              CASE
+                WHEN id_or_passport_number IS NOT NULL THEN 'registration'
+                WHEN msa_license_number IS NOT NULL THEN 'legacy_msa_license'
+                WHEN license_number IS NOT NULL THEN 'legacy_license'
+                ELSE NULL
+              END AS identity_source,
+              COALESCE(id_or_passport_number, msa_license_number, license_number) AS identity_candidate
+       FROM drivers WHERE driver_id = $1`,
+      [req.params.driverId]
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ success: false, error: { message: 'Driver not found' } });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id_or_passport_number: result.rows[0].identity_candidate || null,
+        id_or_passport_masked: result.rows[0].id_or_passport_masked
+          || (result.rows[0].identity_candidate ? String(result.rows[0].identity_candidate).slice(-4) : null),
+        identity_source: result.rows[0].identity_source
+      }
+    });
+  } catch (err) {
+    console.error('Admin driver identity lookup failed:', err.message);
+    res.status(400).json({ success: false, error: { message: 'Unable to load driver identity details' } });
+  }
+});
+
 app.post('/api/getAllDrivers', async (req, res) => {
   try {
     const { email, name, status, paid } = req.body;
@@ -4056,10 +4112,7 @@ app.post('/api/getAllDrivers', async (req, res) => {
       });
     }
 
-    // Get the first driver to inspect what columns actually exist
-    const sampleDriver = driverResult.rows[0];
-    console.log('Sample driver:', JSON.stringify(sampleDriver, null, 2));
-    console.log('Sample driver keys:', Object.keys(sampleDriver));
+    console.log('Driver database columns:', Object.keys(driverResult.rows[0]));
 
     const driverIds = driverResult.rows.map(d => d.driver_id);
     console.log('Driver IDs:', driverIds);

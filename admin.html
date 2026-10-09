@@ -2080,6 +2080,14 @@
         <input type="text" id="editLastName">
       </div>
       <div class="form-group">
+        <label>ID / Passport Number</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="driverIdentityValue" aria-live="polite">Hidden</span>
+          <button type="button" class="search-btn" id="driverIdentityToggle" onclick="toggleDriverIdentity()">Show</button>
+        </div>
+        <small style="display: block; margin-top: 6px; color: #666; font-size: 11px;">Loaded only when requested; hidden again when this profile closes. Older records may show a license number as an unverified candidate.</small>
+      </div>
+      <div class="form-group">
         <label>Class</label>
         <input type="text" id="editClass">
       </div>
@@ -2545,6 +2553,8 @@
     let currentDriver = null;
     let allDrivers = [];
     let advancedView = false;
+    let driverIdentityVisible = false;
+    let driverIdentityRequestId = 0;
     let adminToken = sessionStorage.getItem('adminToken') || null;
 
     // Helper: get admin auth headers for all fetch calls
@@ -2904,6 +2914,7 @@
       }
       
       currentDriver = driver;
+      resetDriverIdentityDisplay();
       
       // Set form values safely - handle undefined/null fields
       const setVal = (id, value) => {
@@ -2978,6 +2989,59 @@
       }
     }
 
+    function resetDriverIdentityDisplay() {
+      driverIdentityRequestId++;
+      driverIdentityVisible = false;
+      const value = document.getElementById('driverIdentityValue');
+      const button = document.getElementById('driverIdentityToggle');
+      if (value) value.textContent = 'Hidden';
+      if (button) {
+        button.textContent = 'Show';
+        button.disabled = false;
+      }
+    }
+
+    async function toggleDriverIdentity() {
+      const value = document.getElementById('driverIdentityValue');
+      const button = document.getElementById('driverIdentityToggle');
+      if (!value || !button || !currentDriver) return;
+
+      if (driverIdentityVisible) {
+        resetDriverIdentityDisplay();
+        return;
+      }
+
+      const requestId = ++driverIdentityRequestId;
+      const driverId = currentDriver.driver_id;
+      button.disabled = true;
+      value.textContent = 'Loading...';
+      try {
+        const response = await fetch(`/api/admin/driver-identity/${encodeURIComponent(driverId)}`);
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Unable to load driver identity details');
+        }
+        if (requestId !== driverIdentityRequestId) return;
+
+        const number = result.data?.id_or_passport_number;
+        const masked = result.data?.id_or_passport_masked;
+        const source = result.data?.identity_source;
+        const legacyNote = source === 'legacy_license' || source === 'legacy_msa_license'
+          ? ' (legacy license field; unverified)'
+          : '';
+        value.textContent = (number ? `${number}${legacyNote}` : (masked ? `Full number not stored; last 4: ****${String(masked).slice(-4)}` : 'Not recorded'));
+        driverIdentityVisible = true;
+        button.textContent = 'Hide';
+      } catch (err) {
+        if (requestId === driverIdentityRequestId) {
+          value.textContent = 'Unable to load';
+          showToast(err.message, 'error');
+        }
+      } finally {
+        if (requestId === driverIdentityRequestId) button.disabled = false;
+      }
+    }
+
     async function viewDriverFile(driverId, fileType) {
       try {
         const response = await fetch('/api/downloadDriverFile', {
@@ -3013,6 +3077,7 @@
       if (modal) {
         modal.classList.remove('show');
       }
+      resetDriverIdentityDisplay();
     }
 
     async function saveDriver() {

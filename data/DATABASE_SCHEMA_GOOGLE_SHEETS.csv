@@ -40,6 +40,7 @@ province,VARCHAR,NULL,-,State/Province
 postal_code,VARCHAR,NULL,-,ZIP/Postal code
 country,VARCHAR,NULL,-,Country
 id_or_passport_masked,VARCHAR,NULL,-,Last 4 digits only
+id_or_passport_number,VARCHAR,NULL,-,Restricted personal data; reveal only through the authenticated admin driver profile
 profile_photo_drive_file_id,VARCHAR,NULL,-,Google Drive file ID
 profile_photo_filename,VARCHAR,NULL,-,Photo filename
 rookie_flag,VARCHAR,NULL,-,"'Y' or 'N' - first time racer"

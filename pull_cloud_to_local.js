@@ -77,6 +77,9 @@ async function main() {
   const localClient = await localPool.connect();
   try {
     await localClient.query('BEGIN');
+    await localClient.query(
+      'ALTER TABLE drivers ADD COLUMN IF NOT EXISTS id_or_passport_number VARCHAR(100)'
+    );
 
     // ── 1. events ──────────────────────────────────────────────────────────
     process.stdout.write('Syncing events...          ');
@@ -114,7 +117,7 @@ async function main() {
               engine_type, tyre_class, license_number, license_expiry_date,
               address_line1, suburb, city, province, postal_code, country,
               rookie_flag, academy_driver, medical_flag, notes_internal,
-              id_or_passport_masked, season_engine_rental,
+              id_or_passport_masked, id_or_passport_number, season_engine_rental,
               is_deleted, deleted_at, national_package,
               password_hash, password_salt
        FROM drivers WHERE is_deleted IS NOT TRUE`
@@ -128,18 +131,20 @@ async function main() {
             engine_type, tyre_class, license_number, license_expiry_date,
             address_line1, suburb, city, province, postal_code, country,
             rookie_flag, academy_driver, medical_flag, notes_internal,
-            id_or_passport_masked, season_engine_rental,
+            id_or_passport_masked, id_or_passport_number, season_engine_rental,
             is_deleted, deleted_at, national_package,
             password_hash, password_salt)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
                  $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,
-                 $33,$34,$35,$36,$37,$38)
+                 $33,$34,$35,$36,$37,$38,$39)
          ON CONFLICT (driver_id) DO UPDATE SET
            first_name=EXCLUDED.first_name, last_name=EXCLUDED.last_name,
            preferred_name=EXCLUDED.preferred_name, race_number=EXCLUDED.race_number,
            transponder_number=EXCLUDED.transponder_number, team_name=EXCLUDED.team_name,
            class=EXCLUDED.class, championship=EXCLUDED.championship,
            license_number=EXCLUDED.license_number, license_expiry_date=EXCLUDED.license_expiry_date,
+           id_or_passport_masked=EXCLUDED.id_or_passport_masked,
+           id_or_passport_number=EXCLUDED.id_or_passport_number,
            is_deleted=EXCLUDED.is_deleted, deleted_at=EXCLUDED.deleted_at,
            national_package=EXCLUDED.national_package,
            password_hash=EXCLUDED.password_hash, password_salt=EXCLUDED.password_salt,
@@ -152,7 +157,7 @@ async function main() {
          row.license_expiry_date, row.address_line1, row.suburb, row.city,
          row.province, row.postal_code, row.country, row.rookie_flag,
          row.academy_driver, row.medical_flag, row.notes_internal,
-         row.id_or_passport_masked, row.season_engine_rental,
+         row.id_or_passport_masked, row.id_or_passport_number, row.season_engine_rental,
          row.is_deleted, row.deleted_at, row.national_package,
          row.password_hash, row.password_salt]
       );

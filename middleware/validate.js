@@ -78,6 +78,7 @@ const registerDriverSchema = {
   last_name:  { required: true, type: 'string', minLength: 1, maxLength: 100 },
   email:      { required: true, type: 'email',  maxLength: 254 },
   password:   { required: true, type: 'string', minLength: 8,  maxLength: 128 },
+  id_or_passport_number: { required: true, type: 'string', minLength: 1, maxLength: 100 },
 };
 
 const raceEntrySchema = {
