@@ -6720,7 +6720,17 @@
     // ── Per-class pricing (championship-aware) ────────────────────────────────
     // p1 = single day price, pb = both-days package price
     function getEntryConfig(cls, champ) {
-      const isMini  = cls === 'MINI ROK' || cls === 'MINI ROK U/10';
+      const cfg = getEntryConfigRaw(cls, champ);
+      if (window.selectedEventRegionalOnly === true) {
+        // Regional-only race: no controlled fuel, no pool engines (own engine or pre-booked rental)
+        cfg.items = cfg.items.filter(i => i.key !== 'fuel').map(i => i.key === 'engine'
+          ? { ...i, required: false, optional: true, warning: '⚠️ IMPORTANT: There are NO pool engines for this race. You must either race your own engine or rent one using this form. NO engines are available to rent at the track — all rental engines must be pre-booked here.' }
+          : i);
+      }
+      return cfg;
+    }
+    function getEntryConfigRaw(cls, champ) {
+      const isMini   = cls === 'MINI ROK' || cls === 'MINI ROK U/10';
       const isOK    = cls === 'OK-J' || cls === 'OK-N' || cls === 'KZ2';
       const isCadet = cls === 'CADET';
       const isNat   = champ !== 'Regional';   // National or Both → national pricing
@@ -6916,7 +6926,7 @@
             </div>
           </div>
 
-          <div style="font-size:12px;color:#9ca3af;font-weight:600;margin-bottom:8px;">Race day(s)</div>
+          <div id="raceDaysLabelM" style="font-size:12px;color:#9ca3af;font-weight:600;margin-bottom:8px;">Race day(s)</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;" id="dayTilesM">
             <div onclick="selectEntryDay('Saturday')" data-val="Saturday"
                  style="border:2px solid rgba(255,255,255,0.12);border-radius:8px;padding:14px 6px;text-align:center;cursor:pointer;transition:all .15s;">
@@ -7131,6 +7141,7 @@
                 <div style="font-weight:700;color:#fff;font-size:14px;margin-bottom:4px;">${item.name}</div>
                 ${tag}
                 ${item.note ? `<div style="font-size:11px;color:#6b7280;margin-top:5px;">${item.note}</div>` : ''}
+                ${item.warning ? `<div style="margin-top:8px;padding:10px 12px;border:2px solid rgba(239,68,68,0.60);border-radius:6px;background:rgba(239,68,68,0.12);color:#fca5a5;font-size:12px;font-weight:700;line-height:1.5;">${item.warning}</div>` : ''}
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
                 <div style="font-size:16px;font-weight:800;color:#22c55e;">R${price.toLocaleString('en-ZA')}</div>
@@ -7141,6 +7152,13 @@
             ${both && item.p1 !== item.pb ? `<div style="font-size:11px;color:#86efac;margin-top:6px;">📅 Saving R${(item.p1*2 - item.pb).toLocaleString('en-ZA')} on both-day rate</div>` : ''}
           </div>`;
       });
+
+      if (window.selectedEventRegionalOnly === true && cfg.items.some(i => i.key === 'engine')) {
+        html += `
+          <div style="padding:12px 14px;border:2px solid rgba(245,158,11,0.45);border-radius:8px;margin-bottom:10px;background:rgba(245,158,11,0.08);color:#fcd34d;font-size:12px;font-weight:600;line-height:1.5;">
+            ⛽ <strong>No controlled fuel</strong> at this race. The FK fuel pump will be used.
+          </div>`;
+      }
 
       document.getElementById('entryItemsContainer').innerHTML = html;
       document.getElementById('teamCodeInput').value = '';
@@ -7329,6 +7347,10 @@
         tilesContainer.querySelectorAll('[data-val]').forEach(tile => tile.style.display = '');
       }
       document.getElementById('bothDaySavingM').style.display = 'none';
+      // Regional-only race runs Saturday only — hide the race-day selection
+      document.getElementById('raceDaysLabelM').style.display = regionalOnly ? 'none' : '';
+      document.getElementById('dayTilesM').style.display = regionalOnly ? 'none' : 'grid';
+      if (regionalOnly) entryDays = 'Saturday';
       const cls = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
       document.getElementById('modalRaceClass').textContent = cls;
       document.getElementById('modalEventName').textContent = window.selectedEventName || '—';
