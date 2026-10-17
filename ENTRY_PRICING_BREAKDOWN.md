@@ -18,6 +18,7 @@ Every entry starts with two choices in **Step A** of the entry modal:
 - **National or Both** → national pricing applies and race tyres become **required**.
 - **Regional only** → regional (lower) pricing applies and race tyres are **optional**.
 - **Both Days** package is always cheaper than buying two single days separately.
+- The event's **Championship Options** setting can restrict entries to National only or Regional only; the entry modal preselects the permitted option.
 
 ---
 

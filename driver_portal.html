@@ -7273,7 +7273,7 @@
                 ? `<button type="button" style="width:100%;padding:8px;background:#22c55e;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:800;">Select This Event</button>`
                 : `<div style="width:100%;padding:8px;background:rgba(255,255,255,0.04);color:#6b7280;border:1px solid rgba(255,255,255,0.08);border-radius:4px;font-size:13px;font-weight:600;text-align:center;">Registration Closed</div>`}
             </div>`;
-          if (isOpen) card.addEventListener('click', () => selectEvent(event.event_id, event.event_name, event.location, event.national_only));
+          if (isOpen) card.addEventListener('click', () => selectEvent(event.event_id, event.event_name, event.location, event.national_only, event.regional_only));
           container.appendChild(card);
         });
       } catch (err) {
@@ -7290,11 +7290,12 @@
     function closeEventSelectionModal() {
       document.getElementById('eventSelectionModal').style.display = 'none';
     }
-    function selectEvent(eventId, eventName, location, nationalOnly) {
+    function selectEvent(eventId, eventName, location, nationalOnly, regionalOnly) {
       window.selectedEventId           = eventId;
       window.selectedEventName         = eventName;
       window.selectedEventLocation     = location;
       window.selectedEventNationalOnly = nationalOnly === true || nationalOnly === 'true';
+      window.selectedEventRegionalOnly = regionalOnly === true || regionalOnly === 'true';
       closeEventSelectionModal();
       openRaceEntryModal();
     }
@@ -7308,19 +7309,24 @@
         t.style.borderColor = 'rgba(255,255,255,0.12)';
         t.style.background  = 'transparent';
       });
-      // Hide Regional / Both tiles for national-only events
+      // Restrict championship choices when an event is limited to one championship.
       const natOnly = window.selectedEventNationalOnly === true;
+      const regionalOnly = window.selectedEventRegionalOnly === true;
       const tilesContainer = document.getElementById('champTilesM');
-      if (natOnly) {
+      if (natOnly || regionalOnly) {
         tilesContainer.style.gridTemplateColumns = '1fr';
-        tilesContainer.querySelectorAll('[data-val="Regional"],[data-val="Both"]').forEach(t => t.style.display = 'none');
-        // Auto-select National since it's the only option
-        entryChamp = 'National';
-        tilesContainer.querySelector('[data-val="National"]').style.borderColor = '#f59e0b';
-        tilesContainer.querySelector('[data-val="National"]').style.background  = 'rgba(245,158,11,0.12)';
+        tilesContainer.querySelectorAll('[data-val]').forEach(tile => {
+          tile.style.display = tile.dataset.val === (regionalOnly ? 'Regional' : 'National') ? '' : 'none';
+        });
+        entryChamp = regionalOnly ? 'Regional' : 'National';
+        const selectedTile = tilesContainer.querySelector(`[data-val="${entryChamp}"]`);
+        const color = regionalOnly ? '#3b82f6' : '#f59e0b';
+        const background = regionalOnly ? 'rgba(59,130,246,0.10)' : 'rgba(245,158,11,0.12)';
+        selectedTile.style.borderColor = color;
+        selectedTile.style.background = background;
       } else {
         tilesContainer.style.gridTemplateColumns = '1fr 1fr 1fr';
-        tilesContainer.querySelectorAll('[data-val="Regional"],[data-val="Both"]').forEach(t => t.style.display = '');
+        tilesContainer.querySelectorAll('[data-val]').forEach(tile => tile.style.display = '');
       }
       document.getElementById('bothDaySavingM').style.display = 'none';
       const cls = (document.getElementById('p_class') && document.getElementById('p_class').value) || 'CADET';
@@ -7417,8 +7423,8 @@
           // Required item checks (engine + fuel for applicable classes)
           const engineItem = cfg.items.find(i => i.key === 'engine');
           const fuelItem   = cfg.items.find(i => i.key === 'fuel');
-          if (engineItem && !hasEngine) { showModalError('Engine rental is required. Please select it.'); return; }
-          if (fuelItem   && !hasFuel)   { showModalError('Controlled fuel is required. Please select it.'); return; }
+          if (engineItem && engineItem.required && !hasEngine) { showModalError('Engine rental is required. Please select it.'); return; }
+          if (fuelItem   && fuelItem.required   && !hasFuel)   { showModalError('Controlled fuel is required. Please select it.'); return; }
           hideModalError();
 
           const appliedDiscount = window.appliedDiscountCode;

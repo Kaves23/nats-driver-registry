@@ -855,7 +855,8 @@ const initEventsTable = async () => {
       ADD COLUMN IF NOT EXISTS start_date DATE,
       ADD COLUMN IF NOT EXISTS end_date DATE,
       ADD COLUMN IF NOT EXISTS registration_open BOOLEAN DEFAULT false,
-      ADD COLUMN IF NOT EXISTS national_only BOOLEAN DEFAULT false
+      ADD COLUMN IF NOT EXISTS national_only BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS regional_only BOOLEAN DEFAULT false
     `);
 
     // Auto-flag known national-only events (Autumn NATS is nationals only, no regional option)
@@ -8000,7 +8001,7 @@ app.get('/api/admin/getAllPoolEngineRentals', async (req, res) => {
 app.get('/api/getAvailableEvents', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open, national_only
+      `SELECT event_id, event_name, event_date, location, registration_deadline, entry_fee, registration_open, national_only, regional_only
        FROM events
        WHERE registration_deadline >= CURRENT_DATE
          AND LOWER(event_name) NOT LIKE 'test%'
@@ -8701,7 +8702,7 @@ app.get('/api/getAllEvents', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT e.event_id, e.event_name, e.event_date, e.start_date, e.end_date, e.location, e.entry_fee, 
-              e.registration_deadline, e.registration_open, e.created_at,
+              e.registration_deadline, e.registration_open, e.national_only, e.regional_only, e.created_at,
               COUNT(*) FILTER (
                 WHERE r.entry_status != 'cancelled'
                   AND r.payment_status IN ('Completed','completed','Confirmed','confirmed','paid')
@@ -8744,7 +8745,7 @@ app.get('/api/getEvent/:eventId', async (req, res) => {
 // Create new event
 app.post('/api/createEvent', async (req, res) => {
   try {
-    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only, regional_only } = req.body;
 
     if (!event_name || !location || !entry_fee || !registration_deadline) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -8762,12 +8763,13 @@ app.post('/api/createEvent', async (req, res) => {
     // Default registration_open to false if not provided
     const regOpen = registration_open === true || registration_open === 'true' ? true : false;
     const natOnly = national_only === true || national_only === 'true' ? true : false;
+    const regionalOnly = !natOnly && (regional_only === true || regional_only === 'true');
 
     const result = await pool.query(
-      `INSERT INTO events (event_id, event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO events (event_id, event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only, regional_only)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [event_id, event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, natOnly]
+      [event_id, event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, natOnly, regionalOnly]
     );
 
     console.log(`✅ Event created: ${event_name} (${start_date && end_date ? `${start_date} to ${end_date}` : mainEventDate})`);
@@ -8782,7 +8784,7 @@ app.post('/api/createEvent', async (req, res) => {
 app.put('/api/updateEvent/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
-    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only } = req.body;
+    const { event_name, event_date, start_date, end_date, location, entry_fee, registration_deadline, registration_open, national_only, regional_only } = req.body;
     
     // Use start_date as event_date if provided, otherwise use event_date for backwards compatibility
     const mainEventDate = start_date || event_date;
@@ -8790,13 +8792,14 @@ app.put('/api/updateEvent/:eventId', async (req, res) => {
     // Convert registration_open/national_only to booleans
     const regOpen = registration_open === true || registration_open === 'true' ? true : false;
     const natOnly = national_only === true || national_only === 'true' ? true : false;
+    const regionalOnly = !natOnly && (regional_only === true || regional_only === 'true');
 
     const result = await pool.query(
       `UPDATE events 
-       SET event_name = $1, event_date = $2, start_date = $3, end_date = $4, location = $5, entry_fee = $6, registration_deadline = $7, registration_open = $8, national_only = $9, updated_at = NOW()
-       WHERE event_id = $10
+       SET event_name = $1, event_date = $2, start_date = $3, end_date = $4, location = $5, entry_fee = $6, registration_deadline = $7, registration_open = $8, national_only = $9, regional_only = $10, updated_at = NOW()
+       WHERE event_id = $11
        RETURNING *`,
-      [event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, natOnly, eventId]
+      [event_name, mainEventDate, start_date, end_date, location, entry_fee, registration_deadline, regOpen, natOnly, regionalOnly, eventId]
     );
 
     if (result.rows.length === 0) {

@@ -2262,6 +2262,14 @@
           <option value="true">OPEN</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>Championship Options</label>
+        <select id="eventNationalOnly" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+          <option value="all">National + Regional (show all options)</option>
+          <option value="national">National Only</option>
+          <option value="regional">Regional Only</option>
+        </select>
+      </div>
       <div class="modal-buttons">
         <button class="cancel-btn" onclick="closeEventModal()">Cancel</button>
         <button id="eventDeleteBtn" class="cancel-btn" style="background: #ef4444; display: none;" onclick="deleteEvent()">Delete</button>
@@ -4828,6 +4836,7 @@
       document.getElementById('eventEntryFee').value = '';
       document.getElementById('eventDeadline').value = '';
       document.getElementById('eventRegStatus').value = 'false';
+      document.getElementById('eventNationalOnly').value = 'all';
       document.getElementById('eventDeleteBtn').style.display = 'none';
       document.getElementById('eventModal').style.display = 'flex';
     }
@@ -4855,6 +4864,9 @@
         document.getElementById('eventEntryFee').value = event.entry_fee;
         document.getElementById('eventDeadline').value = event.registration_deadline.split('T')[0];
         document.getElementById('eventRegStatus').value = (event.registration_open === true || event.registration_open === 'true') ? 'true' : 'false';
+        const isRegionalOnly = event.regional_only === true || event.regional_only === 'true';
+        const isNationalOnly = event.national_only === true || event.national_only === 'true';
+        document.getElementById('eventNationalOnly').value = isRegionalOnly ? 'regional' : isNationalOnly ? 'national' : 'all';
         document.getElementById('eventDeleteBtn').style.display = 'block';
         document.getElementById('eventModal').style.display = 'flex';
       } catch (err) {
@@ -4887,6 +4899,7 @@
         const method = currentEvent ? 'PUT' : 'POST';
 
         const regStatus = document.getElementById('eventRegStatus').value === 'true';
+        const championshipOptions = document.getElementById('eventNationalOnly').value;
         
         const response = await fetch(url, {
           method,
@@ -4899,7 +4912,9 @@
             location,
             entry_fee: fee,
             registration_deadline: deadline,
-            registration_open: regStatus
+            registration_open: regStatus,
+            national_only: championshipOptions === 'national',
+            regional_only: championshipOptions === 'regional'
           })
         });
 
