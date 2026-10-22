@@ -2320,7 +2320,7 @@
       
       <div class="form-group">
         <label>Race Class</label>
-        <input type="text" id="quickAddClass" placeholder="Will auto-fill from driver profile" readonly style="background: #f3f4f6;">
+        <input type="text" id="quickAddClass" placeholder="Defaults to driver profile class; edit for another class">
       </div>
       
       <div class="form-group">
@@ -5575,7 +5575,7 @@
           });
         }
         
-        // Add change listener to auto-fill class
+        // Default to the driver's profile class; admins can change it for an additional class.
         select.onchange = function() {
           const selectedOption = this.options[this.selectedIndex];
           const driverClass = selectedOption.getAttribute('data-class') || '';

@@ -7282,14 +7282,19 @@ app.post('/api/adminAddRaceEntry', async (req, res) => {
     
     const driver = driverResult.rows[0];
     
-    // Check for existing entry
+    // Prevent duplicate manual entries for the same class while allowing a driver
+    // to enter another class in the same event.
     const existingEntry = await pool.query(
-      'SELECT * FROM race_entries WHERE driver_id = $1 AND event_id = $2 AND (payment_reference IS NULL OR payment_reference = \'\')',
-      [driver_id, event_id]
+      `SELECT entry_id FROM race_entries
+       WHERE driver_id = $1
+         AND event_id = $2
+         AND (payment_reference IS NULL OR payment_reference = '')
+         AND LOWER(TRIM(COALESCE(race_class, ''))) = LOWER(TRIM($3))`,
+      [driver_id, event_id, race_class]
     );
     
     if (existingEntry.rows.length > 0) {
-      return res.json({ success: false, error: 'Driver already has a manual entry for this event' });
+      return res.json({ success: false, error: `Driver already has a manual ${race_class} entry for this event` });
     }
     
     // Generate race_entry_id and ticket references (using same format as payment entries)
