@@ -8348,7 +8348,8 @@ app.get('/api/championship-heats/:season/:class', async (req, res) => {
 
     const result = await pool.query(
       `SELECT d.driver_id, d.first_name, d.last_name, d.race_number, d.team_name,
-              p.round, p.heat1_points, p.heat2_points, p.final_points, p.total_points, p.position
+              p.round, p.heat1_points, p.heat2_points, p.final_points, p.total_points, p.position,
+              substring(p.notes from 'DNS_HEATS=([0-9:,]+)') AS dns_heats
        FROM points p
        JOIN drivers d ON p.driver_id = d.driver_id
        WHERE p.season = $1 AND p.class = $2
